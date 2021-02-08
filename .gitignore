@@ -108,3 +108,7 @@ node_modules
 #Hardhat files
 cache
 artifacts
+
+#IntelliJ
+.idea
+*.iml
