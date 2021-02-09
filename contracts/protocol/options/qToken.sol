@@ -49,6 +49,13 @@ contract QToken is ERC20 {
         _;
     }
 
+    /// @notice Configures the parameters of a new option token
+    /// @param _quantConfig the address of the Quant system configuration contract
+    /// @param _underlyingAsset asset that the option references
+    /// @param _strikeAsset asset that the strike is denominated in
+    /// @param _strikePrice strike price with 18 decimals
+    /// @param _expiryTime expiration timestamp as a unix timestamp
+    /// @param _isCall true if it's a call option, false if it's a put option
     constructor(
         address _quantConfig,
         address _underlyingAsset,
