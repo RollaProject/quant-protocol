@@ -14,6 +14,8 @@ contract QuantConfig is AccessControl {
     bytes32 public constant OPTIONS_CONTROLLER_ROLE =
         keccak256("OPTIONS_CONTROLLER_ROLE");
 
+    /// @notice Initializes the system roles and assign them to the given admin address
+    /// @param _admin Address to receive the system roles
     constructor(address _admin) {
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
         // On deployment, this role should be transferd to the OptionsFactory as its only admin
@@ -21,6 +23,9 @@ contract QuantConfig is AccessControl {
         admin = _admin;
     }
 
+    /// @notice Set the protocol fee
+    /// @dev Only accounts or contracts with the admin role should call this function
+    /// @param _fee The new amount to set as the protocol fee
     function setFee(uint256 _fee) external {
         require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
         fee = _fee;
