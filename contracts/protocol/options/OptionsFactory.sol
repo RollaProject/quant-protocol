@@ -9,13 +9,13 @@ import "../QuantConfig.sol";
 contract OptionsFactory {
     using SafeMath for uint256;
 
-    QuantConfig public quantConfig;
+    /// @notice array of all the created options
+    address[] public options;
+
+    QuantConfig private _quantConfig;
 
     /// @dev constant salt because options will only be deployed with the same parameters once
     bytes32 private constant _SALT = bytes32(0);
-
-    /// @notice array of all the created options
-    address[] public options;
 
     mapping(bytes32 => address) private _hashToAddress;
 
@@ -31,9 +31,9 @@ contract OptionsFactory {
     );
 
     /// @notice Initializes a new options factory
-    /// @param _quantConfig the address of the Quant system configuration contract
-    constructor(address _quantConfig) {
-        quantConfig = QuantConfig(_quantConfig);
+    /// @param quantConfig_ the address of the Quant system configuration contract
+    constructor(address quantConfig_) {
+        _quantConfig = QuantConfig(quantConfig_);
     }
 
     /// @notice Creates new QTokens
@@ -76,7 +76,7 @@ contract OptionsFactory {
             abi.encodePacked(
                 type(QToken).creationCode,
                 abi.encode(
-                    address(quantConfig),
+                    address(_quantConfig),
                     _underlyingAsset,
                     _strikeAsset,
                     _strikePrice,
@@ -103,10 +103,38 @@ contract OptionsFactory {
         return newOption;
     }
 
-    /// @notice get the total number of options created by the factory
-    /// @return length of the options array
-    function getOptionsLength() external view returns (uint256) {
-        return options.length;
+    /// @notice get the address at which a new QToken with the given parameters would be deployed
+    /// @notice return the exact address the QToken will be deployed at with OpenZeppelin's Create2
+    /// library computeAddress function
+    /// @param _underlyingAsset asset that the option references
+    /// @param _strikeAsset asset that the strike is denominated in
+    /// @param _strikePrice strike price with 18 decimals
+    /// @param _expiryTime expiration timestamp as a unix timestamp
+    /// @param _isCall true if it's a call option, false if it's a put option
+    /// @return the address where a QToken would be deployed
+    function getTargetQTokenAddress(
+        address _underlyingAsset,
+        address _strikeAsset,
+        uint256 _strikePrice,
+        uint256 _expiryTime,
+        bool _isCall
+    ) external view returns (address) {
+        bytes32 bytecodeHash =
+            keccak256(
+                abi.encodePacked(
+                    type(QToken).creationCode,
+                    abi.encode(
+                        address(_quantConfig),
+                        _underlyingAsset,
+                        _strikeAsset,
+                        _strikePrice,
+                        _expiryTime,
+                        _isCall
+                    )
+                )
+            );
+
+        return Create2.computeAddress(_SALT, bytecodeHash);
     }
 
     /// @notice get the QToken address for an already created QToken, if no QToken has been created
@@ -136,38 +164,10 @@ contract OptionsFactory {
         return _hashToAddress[optionHash];
     }
 
-    /// @notice get the address at which a new QToken with the given parameters would be deployed
-    /// @notice return the exact address the QToken will be deployed at with OpenZeppelin's Create2
-    /// library computeAddress function
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _strikePrice strike price with 18 decimals
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @return the address where a QToken would be deployed
-    function getTargetQTokenAddress(
-        address _underlyingAsset,
-        address _strikeAsset,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
-    ) external view returns (address) {
-        bytes32 bytecodeHash =
-            keccak256(
-                abi.encodePacked(
-                    type(QToken).creationCode,
-                    abi.encode(
-                        address(quantConfig),
-                        _underlyingAsset,
-                        _strikeAsset,
-                        _strikePrice,
-                        _expiryTime,
-                        _isCall
-                    )
-                )
-            );
-
-        return Create2.computeAddress(_SALT, bytecodeHash);
+    /// @notice get the total number of options created by the factory
+    /// @return length of the options array
+    function getOptionsLength() external view returns (uint256) {
+        return options.length;
     }
 
     /// @notice Returns a unique option hash based on its parameters
