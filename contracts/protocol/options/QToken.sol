@@ -35,20 +35,6 @@ contract QToken is ERC20 {
      */
     bool public isCall;
 
-    /**
-     * @dev Only allow the OptionsFactory or governance/admin to call a certain function
-     */
-    modifier onlyOptionsController(string memory _message) {
-        require(
-            quantConfig.hasRole(
-                quantConfig.OPTIONS_CONTROLLER_ROLE(),
-                msg.sender
-            ),
-            _message
-        );
-        _;
-    }
-
     /// @notice Configures the parameters of a new option token
     /// @param _quantConfig the address of the Quant system configuration contract
     /// @param _underlyingAsset asset that the option references
@@ -78,12 +64,14 @@ contract QToken is ERC20 {
      * @param account account to mint token to
      * @param amount amount to mint
      */
-    function mint(address account, uint256 amount)
-        external
-        onlyOptionsController(
+    function mint(address account, uint256 amount) external {
+        require(
+            quantConfig.hasRole(
+                quantConfig.OPTIONS_CONTROLLER_ROLE(),
+                msg.sender
+            ),
             "QToken: Only the OptionsFactory can mint QTokens"
-        )
-    {
+        );
         _mint(account, amount);
     }
 
@@ -93,12 +81,14 @@ contract QToken is ERC20 {
      * @param account account to burn token from
      * @param amount amount to burn
      */
-    function burn(address account, uint256 amount)
-        external
-        onlyOptionsController(
+    function burn(address account, uint256 amount) external {
+        require(
+            quantConfig.hasRole(
+                quantConfig.OPTIONS_CONTROLLER_ROLE(),
+                msg.sender
+            ),
             "QToken: Only the OptionsFactory can burn QTokens"
-        )
-    {
+        );
         _burn(account, amount);
     }
 }
