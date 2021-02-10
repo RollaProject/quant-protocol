@@ -63,12 +63,7 @@ contract QToken is ERC20 {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    )
-        ERC20("tokenName", "tokenSymbol")
-        onlyOptionsController(
-            "QToken: Only the OptionsFactory can create new QTokens"
-        )
-    {
+    ) ERC20("tokenName", "tokenSymbol") {
         quantConfig = QuantConfig(_quantConfig);
         underlyingAsset = _underlyingAsset;
         strikeAsset = _strikeAsset;
