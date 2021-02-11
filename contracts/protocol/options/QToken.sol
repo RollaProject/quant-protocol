@@ -147,6 +147,8 @@ contract QToken is ERC20 {
         /// concatenated name string
         tokenName = string(
             abi.encodePacked(
+                "QUANT",
+                " ",
                 underlying,
                 "-",
                 strike,
