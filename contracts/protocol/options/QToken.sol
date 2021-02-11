@@ -148,6 +148,7 @@ contract QToken is ERC20 {
         tokenName = string(
             abi.encodePacked(
                 underlying,
+                "-",
                 strike,
                 " ",
                 _uintToChars(day),
@@ -157,6 +158,7 @@ contract QToken is ERC20 {
                 Strings.toString(year),
                 " ",
                 displayStrikePrice,
+                " ",
                 typeFull
             )
         );
@@ -193,8 +195,10 @@ contract QToken is ERC20 {
         /// concatenated symbol string
         tokenSymbol = string(
             abi.encodePacked(
-                "q",
+                "QUANT",
+                "-",
                 underlying,
+                "-",
                 strike,
                 "-",
                 _uintToChars(day),
@@ -202,6 +206,7 @@ contract QToken is ERC20 {
                 _uintToChars(year),
                 "-",
                 displayStrikePrice,
+                "-",
                 typeSymbol
             )
         );
