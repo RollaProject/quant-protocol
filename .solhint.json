@@ -3,7 +3,7 @@
   "plugins": ["prettier"],
   "rules": {
     "prettier/prettier": "error",
-    "code-complexity": ["error", 5],
+    "code-complexity": ["error", 12],
     "function-max-lines": ["error", 80],
     "max-line-length": ["error", 120],
     "max-states-count": ["error", 10],

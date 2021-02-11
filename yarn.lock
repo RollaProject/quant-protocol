@@ -582,6 +582,11 @@
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-3.4.0-solc-0.7.tgz#c4fbd1b761714745c4bce6fc97e8b44d4c29d5b9"
   integrity sha512-bJz1YgmeKRYVnYZedYSiy5/YmaYTxOhb76ftCseN1z2r4DK7PwCGvRCF2fRavTxAmGkIC/Q5zSy/Dr3OerPw0w==
 
+"@quant-finance/solidity-datetime@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@quant-finance/solidity-datetime/-/solidity-datetime-2.0.0.tgz#9f89c2d919f54f038c4560d117e7e546a02d1ce7"
+  integrity sha512-1phdoJRCV4mBtpDfotN1oFJF8p6BS4KEAqhiPfRJuhSvBr73nrptwwIG8lrhj1vFWhasF79aZMzV782qhll0ag==
+
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
   resolved "https://registry.yarnpkg.com/@resolver-engine/core/-/core-0.3.3.tgz#590f77d85d45bc7ecc4e06c654f41345db6ca967"
