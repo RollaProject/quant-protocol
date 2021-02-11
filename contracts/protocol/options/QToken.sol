@@ -25,6 +25,11 @@ contract QToken is ERC20 {
     address public strikeAsset;
 
     /**
+     * @dev Address of the oracle to be used with this option
+     */
+    address public oracle;
+
+    /**
      * @dev The strike price for the token with the strike asset precision.
      */
     uint256 public strikePrice;
@@ -46,6 +51,7 @@ contract QToken is ERC20 {
     /// @param _quantConfig the address of the Quant system configuration contract
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
+    /// @param _oracle price oracle for the underlying
     /// @param _strikePrice strike price with 18 decimals
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
@@ -53,6 +59,7 @@ contract QToken is ERC20 {
         address _quantConfig,
         address _underlyingAsset,
         address _strikeAsset,
+        address _oracle,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
@@ -77,6 +84,7 @@ contract QToken is ERC20 {
         quantConfig = QuantConfig(_quantConfig);
         underlyingAsset = _underlyingAsset;
         strikeAsset = _strikeAsset;
+        oracle = _oracle;
         strikePrice = _strikePrice;
         expiryTime = _expiryTime;
         isCall = _isCall;

@@ -25,6 +25,7 @@ contract OptionsFactory {
         address creator,
         address indexed underlying,
         address indexed strike,
+        address oracle,
         uint256 strikePrice,
         uint256 expiry,
         bool isCall
@@ -40,6 +41,7 @@ contract OptionsFactory {
     /// @dev The CREATE2 opcode is used to deterministically deploy new QTokens
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
+    /// @param _oracle price oracle for the option underlying
     /// @param _strikePrice strike price with 18 decimals
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
@@ -47,6 +49,7 @@ contract OptionsFactory {
     function createOption(
         address _underlyingAsset,
         address _strikeAsset,
+        address _oracle,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
@@ -59,6 +62,7 @@ contract OptionsFactory {
             _optionHash(
                 _underlyingAsset,
                 _strikeAsset,
+                _oracle,
                 _strikePrice,
                 _expiryTime,
                 _isCall
@@ -95,6 +99,7 @@ contract OptionsFactory {
             msg.sender,
             _underlyingAsset,
             _strikeAsset,
+            _oracle,
             _strikePrice,
             _expiryTime,
             _isCall
@@ -108,6 +113,7 @@ contract OptionsFactory {
     /// library computeAddress function
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
+    /// @param _oracle price oracle for the option underlying
     /// @param _strikePrice strike price with 18 decimals
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
@@ -115,6 +121,7 @@ contract OptionsFactory {
     function getTargetQTokenAddress(
         address _underlyingAsset,
         address _strikeAsset,
+        address _oracle,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
@@ -127,6 +134,7 @@ contract OptionsFactory {
                         address(_quantConfig),
                         _underlyingAsset,
                         _strikeAsset,
+                        _oracle,
                         _strikePrice,
                         _expiryTime,
                         _isCall
@@ -141,6 +149,7 @@ contract OptionsFactory {
     /// with these parameters, it will return the zero address
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
+    /// @param _oracle price oracle for the option underlying
     /// @param _strikePrice strike price with 18 decimals
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
@@ -148,6 +157,7 @@ contract OptionsFactory {
     function getQToken(
         address _underlyingAsset,
         address _strikeAsset,
+        address _oracle,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
@@ -156,6 +166,7 @@ contract OptionsFactory {
             _optionHash(
                 _underlyingAsset,
                 _strikeAsset,
+                _oracle,
                 _strikePrice,
                 _expiryTime,
                 _isCall
@@ -173,6 +184,7 @@ contract OptionsFactory {
     /// @notice Returns a unique option hash based on its parameters
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
+    /// @param _oracle price oracle for the option underlying
     /// @param _strikePrice strike price with 18 decimals
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
@@ -180,6 +192,7 @@ contract OptionsFactory {
     function _optionHash(
         address _underlyingAsset,
         address _strikeAsset,
+        address _oracle,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
@@ -189,6 +202,7 @@ contract OptionsFactory {
                 abi.encodePacked(
                     _underlyingAsset,
                     _strikeAsset,
+                    _oracle,
                     _strikePrice,
                     _expiryTime,
                     _isCall
