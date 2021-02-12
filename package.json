@@ -38,6 +38,7 @@
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.1",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/hardhat-upgrades": "^1.6.0",
     "@types/chai": "^4.2.14",
     "@types/mocha": "^8.2.0",
     "@types/node": "^14.14.25",
@@ -50,6 +51,8 @@
     "ethereum-waffle": "^3.2.2",
     "ethers": "^5.0.29",
     "hardhat": "^2.0.8",
+    "hardhat-deploy": "^0.7.0-beta.44",
+    "hardhat-deploy-ethers": "^0.3.0-beta.7",
     "husky": "^4.3.8",
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "^1.0.0-beta.4",
@@ -64,6 +67,7 @@
   "type": "module",
   "dependencies": {
     "@openzeppelin/contracts": "3.4.0-solc-0.7",
+    "@openzeppelin/contracts-upgradeable": "^3.4.0",
     "@quant-finance/solidity-datetime": "^2.0.0"
   }
 }
