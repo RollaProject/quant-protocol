@@ -3,6 +3,7 @@ import "@nomiclabs/hardhat-waffle";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
+import "hardhat-typechain";
 import { HardhatUserConfig } from "hardhat/config";
 
 const config: HardhatUserConfig = {
@@ -12,6 +13,10 @@ const config: HardhatUserConfig = {
 
   mocha: {
     timeout: 1000000,
+  },
+
+  typechain: {
+    target: "ethers-v5",
   },
 };
 
