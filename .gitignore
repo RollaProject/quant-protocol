@@ -114,3 +114,5 @@ artifacts
 *.iml
 
 package-lock.json
+
+typechain/

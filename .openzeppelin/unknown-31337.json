@@ -1,9 +1,9 @@
 {
   "manifestVersion": "3.1",
   "impls": {
-    "2297b92592950e1ffa30bd91071ecbb159728b7da5a77fd9e5c1d0119b5ec4dd": {
-      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-      "txHash": "0x88e55466e4cb637be29d52ce201f3d644801cdfbfeca46e5c1cc1bad9877669c",
+    "6c2445c04e86f9555b848fcf90abc8d1cb32e94f0e0dc8bb4075251bf5c5abdc": {
+      "address": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+      "txHash": "0x80d45033cbcbfa288bfe0f3b1f80f80d63d9e8f3958088211f0a8ba708d4c143",
       "layout": {
         "storage": [
           {
@@ -25,16 +25,22 @@
             "src": "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol:30"
           },
           {
-            "contract": "QuantConfig",
+            "contract": "QuantConfigV2",
             "label": "admin",
             "type": "t_address",
-            "src": "contracts/protocol/QuantConfig.sol:12"
+            "src": "contracts/protocol/test/QuantConfigV2.sol:12"
           },
           {
-            "contract": "QuantConfig",
+            "contract": "QuantConfigV2",
             "label": "fee",
             "type": "t_uint256",
-            "src": "contracts/protocol/QuantConfig.sol:13"
+            "src": "contracts/protocol/test/QuantConfigV2.sol:13"
+          },
+          {
+            "contract": "QuantConfigV2",
+            "label": "newV2StateVariable",
+            "type": "t_uint256",
+            "src": "contracts/protocol/test/QuantConfigV2.sol:18"
           }
         ],
         "types": {
@@ -97,46 +103,46 @@
         }
       }
     },
-    "6c2445c04e86f9555b848fcf90abc8d1cb32e94f0e0dc8bb4075251bf5c5abdc": {
-      "address": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
-      "txHash": "0x80d45033cbcbfa288bfe0f3b1f80f80d63d9e8f3958088211f0a8ba708d4c143",
+    "b0a23aca77010b1946b250ab3ce7263635f538e87330bf6c592f6fb18ee87d8a": {
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "txHash": "0x362f6769fb70a3eefeada990139be720b6f554f8be7f0eac483bd01bb87afc55",
       "layout": {
         "storage": [
           {
             "contract": "AccessControl",
             "label": "_roles",
             "type": "t_mapping(t_bytes32,t_struct(RoleData)328_storage)",
-            "src": "@openzeppelin/contracts/access/AccessControl.sol:53"
+            "src": "@openzeppelin\\contracts\\access\\AccessControl.sol:53"
           },
           {
             "contract": "Initializable",
             "label": "_initialized",
             "type": "t_bool",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol:25"
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
           },
           {
             "contract": "Initializable",
             "label": "_initializing",
             "type": "t_bool",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol:30"
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
           },
           {
-            "contract": "QuantConfigV2",
+            "contract": "QuantConfig",
             "label": "admin",
             "type": "t_address",
-            "src": "contracts/protocol/test/QuantConfigV2.sol:12"
+            "src": "contracts\\protocol\\QuantConfig.sol:12"
           },
           {
-            "contract": "QuantConfigV2",
+            "contract": "QuantConfig",
             "label": "fee",
             "type": "t_uint256",
-            "src": "contracts/protocol/test/QuantConfigV2.sol:13"
+            "src": "contracts\\protocol\\QuantConfig.sol:13"
           },
           {
-            "contract": "QuantConfigV2",
-            "label": "newV2StateVariable",
-            "type": "t_uint256",
-            "src": "contracts/protocol/test/QuantConfigV2.sol:18"
+            "contract": "QuantConfig",
+            "label": "priceRegistry",
+            "type": "t_address",
+            "src": "contracts\\protocol\\QuantConfig.sol:14"
           }
         ],
         "types": {
