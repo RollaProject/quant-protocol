@@ -44,8 +44,8 @@ contract QToken is ERC20 {
      */
     bool public isCall;
 
-    uint256 private constant _STRIKE_PRICE_SCALE = 1e8;
-    uint256 private constant _STRIKE_PRICE_DIGITS = 8;
+    uint256 private constant _STRIKE_PRICE_SCALE = 1e18;
+    uint256 private constant _STRIKE_PRICE_DIGITS = 18;
 
     /// @notice Configures the parameters of a new option token
     /// @param _quantConfig the address of the Quant system configuration contract
