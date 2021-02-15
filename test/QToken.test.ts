@@ -18,18 +18,19 @@ describe("QToken", () => {
   let USDC: MockContract;
   let WETH: MockContract;
   let userAddress: string;
+  const timestamp = ethers.BigNumber.from("1618592400"); // April 16th, 2021
+  const strkePrice = ethers.utils.parseEther("1400");
+  const oracle = ethers.constants.AddressZero;
 
   const createSamplePutOption = async () => {
-    const timestamp = "1618592400"; // April 16th, 2021
-    const strkePrice = "1400";
     const qToken = <QToken>(
       await deployContract(admin, QTokenJSON, [
         quantConfig.address,
         WETH.address,
         USDC.address,
-        ethers.constants.AddressZero,
-        ethers.utils.parseEther(strkePrice),
-        ethers.BigNumber.from(timestamp),
+        oracle,
+        strkePrice,
+        timestamp,
         false,
       ])
     );
@@ -65,6 +66,13 @@ describe("QToken", () => {
     expect(await qToken.name()).to.equal(
       "QUANT WETH-USDC 16-April-2021 1400 Put"
     );
+    expect(await qToken.quantConfig()).to.equal(quantConfig.address);
+    expect(await qToken.underlyingAsset()).to.equal(WETH.address);
+    expect(await qToken.strikeAsset()).to.equal(USDC.address);
+    expect(await qToken.oracle()).to.equal(oracle);
+    expect(await qToken.strikePrice()).to.equal(strkePrice);
+    expect(await qToken.expiryTime()).to.equal(timestamp);
+    expect(await qToken.isCall()).to.be.false;
   });
 
   it("Admin should be able to mint options", async () => {
