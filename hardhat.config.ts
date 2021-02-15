@@ -1,4 +1,8 @@
+import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
+import "@openzeppelin/hardhat-upgrades";
+import "hardhat-deploy";
+import "hardhat-deploy-ethers";
 import { HardhatUserConfig } from "hardhat/config";
 
 const config: HardhatUserConfig = {

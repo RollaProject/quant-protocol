@@ -7,18 +7,15 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 /// @title A central config for the quant system. Also acts as a central access control manager.
 /// @notice For storing constants, variables and allowing them to be changed by the admin (governance)
 /// @dev This should be used as a central access control manager which other contracts use to check permissions
-contract QuantConfig is AccessControl, Initializable {
+contract QuantConfigV2 is AccessControl, Initializable {
     //this should be some admin/governance address
     address public admin;
     uint256 public fee;
-    address public priceRegistry;
 
     bytes32 public constant OPTIONS_CONTROLLER_ROLE =
         keccak256("OPTIONS_CONTROLLER_ROLE");
-    bytes32 public constant ORACLE_MANAGER_ROLE =
-        keccak256("ORACLE_MANAGER_ROLE");
-    bytes32 public constant PRICE_SUBMITTER_ROLE =
-        keccak256("PRICE_SUBMITTER_ROLE");
+
+    uint256 public newV2StateVariable;
 
     /// @notice Set the protocol fee
     /// @dev Only accounts or contracts with the admin role should call this function
