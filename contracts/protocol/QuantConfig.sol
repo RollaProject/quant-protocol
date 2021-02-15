@@ -37,8 +37,7 @@ contract QuantConfig is AccessControl {
     }
 
     //todo only allow setter to be called once. otherwise admins can switch out the registry and manipulate
-    function setPriceRegistry(address _priceRegistry)
-    external {
+    function setPriceRegistry(address _priceRegistry) external {
         require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
         priceRegistry = _priceRegistry;
     }

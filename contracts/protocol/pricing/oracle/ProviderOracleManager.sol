@@ -15,9 +15,7 @@ abstract contract ProviderOracleManager {
     /// @notice exhaustive list of asset addresses in map
     address[] public assets;
 
-    constructor(
-        address _config
-    ) {
+    constructor(address _config) {
         config = QuantConfig(_config);
     }
 
@@ -25,15 +23,15 @@ abstract contract ProviderOracleManager {
     /// @dev Once this is set for an asset, it can't be changed or removed
     /// @param _asset the address of the asset token we are adding the oracle for
     /// @param _oracle the address of the oracle
-    function addAssetOracle(
-        address _asset,
-        address _oracle
-    ) external {
+    function addAssetOracle(address _asset, address _oracle) external {
         require(
             config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
             "OracleManager: Only an oracle admin can add an oracle"
         );
-        require(assetOracles[_asset] == address(0), "OracleManager: Oracle already set for asset");
+        require(
+            assetOracles[_asset] == address(0),
+            "OracleManager: Oracle already set for asset"
+        );
         assets.push(_asset);
         assetOracles[_asset] = _oracle;
     }
@@ -58,5 +56,9 @@ abstract contract ProviderOracleManager {
     /// @notice Function that should be overridden which should return the current price of an asset from the provider
     /// @param _asset the address of the asset token we want the price for
     /// @return the current price of the asset
-    function getCurrentPrice(address _asset) external virtual view returns (uint256);
+    function getCurrentPrice(address _asset)
+        external
+        view
+        virtual
+        returns (uint256);
 }

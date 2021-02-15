@@ -11,14 +11,10 @@ contract PriceRegistry {
     /// @dev oracle => asset => expiry => price
     mapping(address => mapping(address => mapping(uint256 => uint256))) settlementPrices;
 
-    enum PRICE_STATUS {
-        ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED
-    }
+    enum PRICE_STATUS {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
 
     /// @param _config address of quant central configuration
-    constructor(
-        address _config
-    ) {
+    constructor(address _config) {
         config = QuantConfig(_config);
     }
 
@@ -45,17 +41,20 @@ contract PriceRegistry {
         address _asset,
         uint256 _expiryTimestamp
     ) external view returns (uint256) {
-        uint256 settlementPrice = settlementPrices[_oracle][_asset][_expiryTimestamp];
-        require(settlementPrice != 0, "PriceRegistry: No settlement price has been set");
+        uint256 settlementPrice =
+            settlementPrices[_oracle][_asset][_expiryTimestamp];
+        require(
+            settlementPrice != 0,
+            "PriceRegistry: No settlement price has been set"
+        );
 
         return settlementPrice;
     }
 
-    /// @notice Fetch the settlement price from an oracle for an asset at a particular timestamp.
-    /// @param _oracle oracle which price should come from
-    /// @param _asset asset to fetch price for
-    /// @param _expiryTimestamp timestamp we want the price for
-    /// @return the price which has been submitted for the asset at the timestamp by that oracle
+    /// @notice Set the price at settlement for a particular asset, expiry
+    /// @param _asset asset to set price for
+    /// @param _settlementPrice price at settlement
+    /// @param _expiryTimestamp timestamp of price to set
     function setSettlementPrice(
         address _asset,
         uint256 _settlementPrice,
@@ -66,26 +65,34 @@ contract PriceRegistry {
             "PriceRegistry: Price submitter is not an oracle"
         );
 
-        uint256 currentSettlementPrice = settlementPrices[msg.sender][_asset][_expiryTimestamp];
+        uint256 currentSettlementPrice =
+            settlementPrices[msg.sender][_asset][_expiryTimestamp];
 
-        require(currentSettlementPrice == 0, "PriceRegistry: Settlement price has already been set");
+        require(
+            currentSettlementPrice == 0,
+            "PriceRegistry: Settlement price has already been set"
+        );
 
-        settlementPrices[msg.sender][_asset][_expiryTimestamp] = _settlementPrice;
+        settlementPrices[msg.sender][_asset][
+            _expiryTimestamp
+        ] = _settlementPrice;
     }
 
     /// @notice Get the price status of the option.
     /// @param _qToken option we want the status for
     /// @return the price status of the option. option is either active, awaiting settlement price or settled
     //todo should this live in the option itself?
-    function getOptionPriceStatus(
-        address _qToken
-    ) external view returns(PRICE_STATUS) {
+    function getOptionPriceStatus(address _qToken)
+        external
+        view
+        returns (PRICE_STATUS)
+    {
         address oracle = address(0);
         address asset = address(0);
         uint256 expiryTimestamp = 123;
 
-        if(block.timestamp > expiryTimestamp) {
-            if(hasSettlementPrice(oracle, asset, expiryTimestamp)) {
+        if (block.timestamp > expiryTimestamp) {
+            if (hasSettlementPrice(oracle, asset, expiryTimestamp)) {
                 return PRICE_STATUS.SETTLED;
             }
             return PRICE_STATUS.AWAITING_SETTLEMENT_PRICE;

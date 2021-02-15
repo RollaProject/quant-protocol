@@ -16,9 +16,7 @@ contract OracleProviderRegistry {
     QuantConfig public config;
 
     /// @param _config address of quant central configuration
-    constructor(
-        address _config
-    ) {
+    constructor(address _config) {
         config = QuantConfig(_config);
     }
 
@@ -26,14 +24,15 @@ contract OracleProviderRegistry {
     /// @dev Once this is set for an asset, it can't be changed or removed
     /// @param _oracle the address of the oracle
     /// @return the id of the oracle
-    function addOracle(
-        address _oracle
-    ) external returns (uint256) {
+    function addOracle(address _oracle) external returns (uint256) {
         require(
             config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
             "OracleRegistry: Only an oracle admin can add an oracle"
         );
-        require(oracleIds[_oracle] == 0, "OracleRegistry: Oracle already exists in registry");
+        require(
+            oracleIds[_oracle] == 0,
+            "OracleRegistry: Oracle already exists in registry"
+        );
         oracles.push(_oracle);
         oracleIds[_oracle] = oracles.length; //todo check this index is correct
         return oracles.length;
@@ -41,7 +40,7 @@ contract OracleProviderRegistry {
 
     /// @notice Get total number of oracles in registry
     /// @return the number of oracles in the registry
-    function getOraclesLength() external view returns(uint256) {
+    function getOraclesLength() external view returns (uint256) {
         return oracles.length;
     }
 }
