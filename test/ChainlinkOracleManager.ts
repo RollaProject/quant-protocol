@@ -1,25 +1,21 @@
-const { ethers } = require("hardhat"); //to be explicit
-const { use, expect } = require("chai");
-const { utils } = require("ethers");
-
-const { MockProvider } = require("@ethereum-waffle/provider");
-const { waffleChai } = require("@ethereum-waffle/chai");
-const { deployMockContract } = require("@ethereum-waffle/mock-contract");
-
-const CONFIG = require("../../../artifacts/@openzeppelin/contracts/access/AccessControl.sol/AccessControl.json")
-  .abi;
-//const CONFIG = require("../../../artifacts/contracts/protocol/QuantConfig.sol/QuantConfig.json").abi;
+import { waffleChai } from "@ethereum-waffle/chai";
+import { deployMockContract } from "@ethereum-waffle/mock-contract";
+import { MockProvider } from "@ethereum-waffle/provider";
+import { use } from "chai";
+import { Contract, ContractFactory, Signer } from "ethers";
+import { ethers } from "hardhat"; //to be explicit
+import { beforeEach, describe, it } from "mocha";
+import CONFIG from "../artifacts/@openzeppelin/contracts/access/AccessControl.sol/AccessControl.json";
 
 use(waffleChai);
 
 describe("Chainlink Oracle Manager", function () {
-  let ChainlinkOracleManager;
-  let deployedChainlinkOracleManager;
-  let mockConfig;
-  let owner;
-  let addr1;
-  let addr2;
-  let addrs;
+  let ChainlinkOracleManager: ContractFactory;
+  let deployedChainlinkOracleManager: Contract;
+  let mockConfig: Contract;
+  let owner: Signer;
+  let addr1: Signer;
+  let addr2: Signer;
 
   async function setupMocks() {
     const [sender, receiver] = new MockProvider().getWallets();
@@ -30,7 +26,7 @@ describe("Chainlink Oracle Manager", function () {
     ChainlinkOracleManager = await ethers.getContractFactory(
       "ChainlinkOracleManager"
     );
-    [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+    [owner, addr1, addr2] = await ethers.getSigners();
 
     await setupMocks();
 
@@ -65,6 +61,8 @@ describe("Chainlink Oracle Manager", function () {
   });
 
   describe("Pricing", function () {
-    it("Should allow a mint, and update total debt correctly", async function () {});
+    it("Should allow a mint, and update total debt correctly", async function () {
+      //do stuff
+    });
   });
 });
