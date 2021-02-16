@@ -11,9 +11,14 @@ contract QuantConfigV2 is AccessControl, Initializable {
     //this should be some admin/governance address
     address public admin;
     uint256 public fee;
+    address public priceRegistry;
 
     bytes32 public constant OPTIONS_CONTROLLER_ROLE =
         keccak256("OPTIONS_CONTROLLER_ROLE");
+    bytes32 public constant ORACLE_MANAGER_ROLE =
+        keccak256("ORACLE_MANAGER_ROLE");
+    bytes32 public constant PRICE_SUBMITTER_ROLE =
+        keccak256("PRICE_SUBMITTER_ROLE");
 
     uint256 public newV2StateVariable;
 
