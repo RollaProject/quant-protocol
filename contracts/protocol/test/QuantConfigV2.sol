@@ -10,8 +10,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 contract QuantConfigV2 is AccessControl, Initializable {
     //this should be some admin/governance address
     address public admin;
-    uint256 public fee;
     address public priceRegistry;
+    uint256 public fee;
 
     bytes32 public constant OPTIONS_CONTROLLER_ROLE =
         keccak256("OPTIONS_CONTROLLER_ROLE");

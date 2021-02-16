@@ -49,7 +49,7 @@ contract QToken is ERC20 {
     /**
      * @dev Current pricing status of option. Only SETTLED options can be exercised
      */
-    enum PRICE_STATUS {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
+    enum PriceStatus {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
 
     uint256 private constant _STRIKE_PRICE_SCALE = 1e18;
     uint256 private constant _STRIKE_PRICE_DIGITS = 18;
@@ -347,19 +347,22 @@ contract QToken is ERC20 {
 
     /// @notice Get the price status of the option.
     /// @return the price status of the option. option is either active, awaiting settlement price or settled
-    function getOptionPriceStatus()
-    external
-    view
-    returns (PRICE_STATUS)
-    {
+    function getOptionPriceStatus() external view returns (PriceStatus) {
         if (block.timestamp > expiryTime) {
-            PriceRegistry priceRegistry = PriceRegistry(quantConfig.priceRegistry());
-            if (priceRegistry.hasSettlementPrice(oracle, underlyingAsset, expiryTime)) {
-                return PRICE_STATUS.SETTLED;
+            PriceRegistry priceRegistry =
+                PriceRegistry(quantConfig.priceRegistry());
+            if (
+                priceRegistry.hasSettlementPrice(
+                    oracle,
+                    underlyingAsset,
+                    expiryTime
+                )
+            ) {
+                return PriceStatus.SETTLED;
             }
-            return PRICE_STATUS.AWAITING_SETTLEMENT_PRICE;
+            return PriceStatus.AWAITING_SETTLEMENT_PRICE;
         } else {
-            return PRICE_STATUS.ACTIVE;
+            return PriceStatus.ACTIVE;
         }
     }
 }
