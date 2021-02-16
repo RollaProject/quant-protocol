@@ -11,8 +11,6 @@ contract PriceRegistry {
     /// @dev oracle => asset => expiry => price
     mapping(address => mapping(address => mapping(uint256 => uint256))) settlementPrices;
 
-    enum PRICE_STATUS {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
-
     /// @param _config address of quant central configuration
     constructor(address _config) {
         config = QuantConfig(_config);
@@ -76,28 +74,5 @@ contract PriceRegistry {
         settlementPrices[msg.sender][_asset][
             _expiryTimestamp
         ] = _settlementPrice;
-    }
-
-    /// @notice Get the price status of the option.
-    /// @param _qToken option we want the status for
-    /// @return the price status of the option. option is either active, awaiting settlement price or settled
-    //todo should this live in the option itself?
-    function getOptionPriceStatus(address _qToken)
-        external
-        view
-        returns (PRICE_STATUS)
-    {
-        address oracle = address(0);
-        address asset = address(0);
-        uint256 expiryTimestamp = 123;
-
-        if (block.timestamp > expiryTimestamp) {
-            if (hasSettlementPrice(oracle, asset, expiryTimestamp)) {
-                return PRICE_STATUS.SETTLED;
-            }
-            return PRICE_STATUS.AWAITING_SETTLEMENT_PRICE;
-        } else {
-            return PRICE_STATUS.ACTIVE;
-        }
     }
 }

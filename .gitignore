@@ -115,4 +115,4 @@ artifacts
 
 package-lock.json
 
-.open-zeppelin
+typechain/

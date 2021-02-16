@@ -42,7 +42,7 @@ abstract contract ProviderOracleManager {
         return assets.length;
     }
 
-    //todo we need to change the round id parameter to a generic param as roundid is exclusive to chainlink
+    //todo we need to change the round id parameter to a bytes32 as roundid is exclusive to chainlink
     /// @notice Get the expiry price from oracle and store it in the price registry so we have a copy
     /// @param _asset asset to set price of
     /// @param _expiryTimestamp timestamp of price
