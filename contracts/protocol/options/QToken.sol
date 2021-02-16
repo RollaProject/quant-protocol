@@ -6,9 +6,11 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
 import "../QuantConfig.sol";
+import "../pricing/PriceRegistry.sol";
 
 contract QToken is ERC20 {
     using SafeMath for uint256;
+
     /**
      * @dev Address of system config.
      */
@@ -43,6 +45,11 @@ contract QToken is ERC20 {
      * @dev True if the option is a CALL. False if the option is a PUT.
      */
     bool public isCall;
+
+    /**
+     * @dev Current pricing status of option. Only SETTLED options can be exercised
+     */
+    enum PRICE_STATUS {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
 
     uint256 private constant _STRIKE_PRICE_SCALE = 1e18;
     uint256 private constant _STRIKE_PRICE_DIGITS = 18;
@@ -335,6 +342,24 @@ contract QToken is ERC20 {
             return ("NOV", "November");
         } else {
             return ("DEC", "December");
+        }
+    }
+
+    /// @notice Get the price status of the option.
+    /// @return the price status of the option. option is either active, awaiting settlement price or settled
+    function getOptionPriceStatus()
+    external
+    view
+    returns (PRICE_STATUS)
+    {
+        if (block.timestamp > expiryTime) {
+            PriceRegistry priceRegistry = PriceRegistry(quantConfig.priceRegistry());
+            if (priceRegistry.hasSettlementPrice(oracle, underlyingAsset, expiryTime)) {
+                return PRICE_STATUS.SETTLED;
+            }
+            return PRICE_STATUS.AWAITING_SETTLEMENT_PRICE;
+        } else {
+            return PRICE_STATUS.ACTIVE;
         }
     }
 }
