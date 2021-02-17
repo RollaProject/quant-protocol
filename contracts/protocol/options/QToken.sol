@@ -88,6 +88,8 @@ contract QToken is ERC20 {
             )
         )
     {
+        //TODO: We need to do 2 checks in here. 1 to ensure that the oracle is legit (exists in OracleRegistry)
+        //TODO: 2nd check is to ensure that oracle has a price feed for that underlyingAsset
         quantConfig = QuantConfig(_quantConfig);
         underlyingAsset = _underlyingAsset;
         strikeAsset = _strikeAsset;
@@ -364,5 +366,11 @@ contract QToken is ERC20 {
         } else {
             return PriceStatus.ACTIVE;
         }
+    }
+
+    /// @notice Get the collateral for an option. Underlying for CALLs, USDC for PUTs
+    /// @return the price status of the option. option is either active, awaiting settlement price or settled
+    function getCollateralAsset() public view returns (address) {
+        return isCall ? underlyingAsset : strikeAsset;
     }
 }

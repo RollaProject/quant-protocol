@@ -53,7 +53,7 @@ abstract contract ProviderOracleManager {
         return assets.length;
     }
 
-    /// @notice Function that should be overridden which should return the current price of an asset from the provider
+    /// @notice Get the current price of an asset from the provider
     /// @param _asset the address of the asset token we want the price for
     /// @return the current price of the asset
     function getCurrentPrice(address _asset)
@@ -61,4 +61,14 @@ abstract contract ProviderOracleManager {
         view
         virtual
         returns (uint256);
+
+    /// @notice Check is an asset has a price feed
+    /// @param _asset the address of the asset token we want to check is supported
+    /// @return true if there is a price feed for the asset
+    function supportsAsset(address _asset)
+        external
+        view
+        returns (bool) {
+        return assetOracles[_asset] != 0;
+    }
 }

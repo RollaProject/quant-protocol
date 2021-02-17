@@ -20,6 +20,7 @@ contract QuantConfig is AccessControl, Initializable {
     bytes32 public constant PRICE_SUBMITTER_ROLE =
         keccak256("PRICE_SUBMITTER_ROLE");
 
+    //todo add timelock to this
     /// @notice Set the protocol fee
     /// @dev Only accounts or contracts with the admin role should call this function
     /// @param _fee The new amount to set as the protocol fee
