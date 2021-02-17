@@ -9,8 +9,11 @@ import "../QuantConfig.sol";
 contract OptionsFactory {
     using SafeMath for uint256;
 
-    /// @notice array of all the created options
-    address[] public options;
+    /// @notice array of all the created QTokens
+    address[] public qTokens;
+
+    ///@notice array of all the created CollateralTokens
+    bytes32[] public collateralTokens;
 
     QuantConfig private _quantConfig;
 
@@ -92,7 +95,7 @@ contract OptionsFactory {
         address newOption = Create2.deploy(0, _SALT, bytecode);
 
         _hashToAddress[optionHash] = newOption;
-        options.push(newOption);
+        qTokens.push(newOption);
 
         emit OptionCreated(
             newOption,
@@ -178,7 +181,7 @@ contract OptionsFactory {
     /// @notice get the total number of options created by the factory
     /// @return length of the options array
     function getOptionsLength() external view returns (uint256) {
-        return options.length;
+        return qTokens.length;
     }
 
     /// @notice Returns a unique option hash based on its parameters
