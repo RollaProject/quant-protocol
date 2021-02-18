@@ -1,8 +1,9 @@
 ## `OptionsFactory`
 
+Creates long (QToken) and short (CollateralToken) positions
 
 
-
+This contract follows the factory design pattern
 
 
 ### `constructor(address quantConfig_, address collateralToken_)` (public)

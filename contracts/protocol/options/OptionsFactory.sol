@@ -7,6 +7,10 @@ import "./QToken.sol";
 import "./CollateralToken.sol";
 import "../QuantConfig.sol";
 
+/// @title Factory contract for Quant options
+/// @author Quant Finance
+/// @notice Creates long (QToken) and short (CollateralToken) positions
+/// @dev This contract follows the factory design pattern
 contract OptionsFactory {
     using SafeMath for uint256;
 
