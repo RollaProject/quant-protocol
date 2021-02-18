@@ -42,6 +42,8 @@ contract CollateralToken is ERC1155 {
     }
 
     /// @notice Create new CollateralTokens
+    /// @dev Should also be used elsewhere where getting a CollateralToken id from
+    /// its parameters is necessary
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
     /// @param _oracle price oracle for the option underlying
@@ -49,6 +51,7 @@ contract CollateralToken is ERC1155 {
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _collateralizedFrom initial spread collateral
     /// @param _isCall true if it's a call option, false if it's a put option
+    /// @return id the id for the CollateralToken with the given arguments
     function createCollateralToken(
         address _underlyingAsset,
         address _strikeAsset,
@@ -57,39 +60,51 @@ contract CollateralToken is ERC1155 {
         uint256 _expiryTime,
         uint256 _collateralizedFrom,
         bool _isCall
-    ) external {
-        uint256 id =
-            uint256(
-                keccak256(
-                    abi.encodePacked(
-                        _underlyingAsset,
-                        _strikeAsset,
-                        _oracle,
-                        _strikePrice,
-                        _expiryTime,
-                        _collateralizedFrom,
-                        _isCall
-                    )
+    ) external returns (uint256 id) {
+        id = uint256(
+            keccak256(
+                abi.encodePacked(
+                    _underlyingAsset,
+                    _strikeAsset,
+                    _oracle,
+                    _strikePrice,
+                    _expiryTime,
+                    _collateralizedFrom,
+                    _isCall
                 )
-            );
+            )
+        );
 
-        _idToInfo[id] = CollateralTokenInfo({
-            underlyingAsset: _underlyingAsset,
-            strikeAsset: _strikeAsset,
-            oracle: _oracle,
-            strikePrice: _strikePrice,
-            expiryTime: _expiryTime,
-            collateralizedFrom: _collateralizedFrom,
-            isCall: _isCall
-        });
+        if (
+            // The function caller has permission to create new CollateralTokens
+            quantConfig.hasRole(
+                quantConfig.OPTIONS_CONTROLLER_ROLE(),
+                msg.sender
+            ) && _idToInfo[id].underlyingAsset != address(0)
+            // The CollateralToken with this id has not been created yet
+        ) {
+            _idToInfo[id] = CollateralTokenInfo({
+                underlyingAsset: _underlyingAsset,
+                strikeAsset: _strikeAsset,
+                oracle: _oracle,
+                strikePrice: _strikePrice,
+                expiryTime: _expiryTime,
+                collateralizedFrom: _collateralizedFrom,
+                isCall: _isCall
+            });
 
-        collateralTokensIds.push(id);
+            collateralTokensIds.push(id);
+        }
     }
 
+    /// @notice Mint CollateralTokens for a given account
+    /// @param recipient address to receive the minted tokens
+    /// @param amount amount of tokens to mint
+    /// @param collateralTokenId id of the token to be minted
     function mintCollateralToken(
         address recipient,
         uint256 amount,
-        bytes32 collateralTokenHash
+        uint256 collateralTokenId
     ) external {
         require(
             quantConfig.hasRole(
@@ -98,21 +113,25 @@ contract CollateralToken is ERC1155 {
             ),
             "CollateralToken: Only the OptionsFactory can mint CollateralTokens"
         );
-        _mint(recipient, amount, uint256(collateralTokenHash), "");
+        _mint(recipient, amount, collateralTokenId, "");
     }
 
+    /// @notice Mint CollateralTokens for a given account
+    /// @param owner address to burn tokens from
+    /// @param amount amount of tokens to burn
+    /// @param collateralTokenId id of the token to be burned
     function burnCollateralToken(
         address owner,
         uint256 amount,
-        bytes32 collateralTokenHash
+        uint256 collateralTokenId
     ) external {
         require(
             quantConfig.hasRole(
                 quantConfig.OPTIONS_CONTROLLER_ROLE(),
                 msg.sender
             ),
-            "CollateralToken: Only the OptionsFactory can mint CollateralTokens"
+            "CollateralToken: Only the OptionsFactory can burn CollateralTokens"
         );
-        _burn(owner, uint256(collateralTokenHash), amount);
+        _burn(owner, collateralTokenId, amount);
     }
 }
