@@ -36,4 +36,22 @@ Mint CollateralTokens for a given account
 
 
 
+### `mintCollateralTokenBatch(address recipient, uint256[] ids, uint256[] amounts)` (external)
+
+Batched minting of multiple CollateralTokens for a given account
+
+
+Should be used when minting multiple CollateralTokens for a single user,
+i.e., when a user buys more than one short position through the interface
+ids and amounts must have the same length
+
+### `burnCollateralTokenBatch(address owner, uint256[] ids, uint256[] amounts)` (external)
+
+Batched burning of of multiple CollateralTokens from a given account
+
+
+Should be used when burning multiple CollateralTokens for a single user,
+i.e., when a user sells more than one short position through the interface
+ids and amounts shoud have the same length
+
 

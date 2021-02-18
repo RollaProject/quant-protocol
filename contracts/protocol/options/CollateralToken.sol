@@ -134,4 +134,48 @@ contract CollateralToken is ERC1155 {
         );
         _burn(owner, collateralTokenId, amount);
     }
+
+    /// @notice Batched minting of multiple CollateralTokens for a given account
+    /// @dev Should be used when minting multiple CollateralTokens for a single user,
+    /// i.e., when a user buys more than one short position through the interface
+    /// @param recipient address to receive the minted tokens
+    /// @param ids array of CollateralToken ids to be minted
+    /// @param amounts array of amounts of tokens to be minted
+    /// @dev ids and amounts must have the same length
+    function mintCollateralTokenBatch(
+        address recipient,
+        uint256[] calldata ids,
+        uint256[] calldata amounts
+    ) external {
+        require(
+            quantConfig.hasRole(
+                quantConfig.OPTIONS_CONTROLLER_ROLE(),
+                msg.sender
+            ),
+            "CollateralToken: Only the OptionsFactory can mint CollateralTokens"
+        );
+        _mintBatch(recipient, ids, amounts, "");
+    }
+
+    /// @notice Batched burning of of multiple CollateralTokens from a given account
+    /// @dev Should be used when burning multiple CollateralTokens for a single user,
+    /// i.e., when a user sells more than one short position through the interface
+    /// @param owner address to burn tokens from
+    /// @param ids array of CollateralToken ids to be burned
+    /// @param amounts array of amounts of tokens to be burned
+    /// @dev ids and amounts shoud have the same length
+    function burnCollateralTokenBatch(
+        address owner,
+        uint256[] calldata ids,
+        uint256[] calldata amounts
+    ) external {
+        require(
+            quantConfig.hasRole(
+                quantConfig.OPTIONS_CONTROLLER_ROLE(),
+                msg.sender
+            ),
+            "CollateralToken: Only the OptionsFactory can burn CollateralTokens"
+        );
+        _burnBatch(owner, ids, amounts);
+    }
 }
