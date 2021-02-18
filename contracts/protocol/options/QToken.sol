@@ -11,44 +11,28 @@ import "../pricing/PriceRegistry.sol";
 contract QToken is ERC20 {
     using SafeMath for uint256;
 
-    /**
-     * @dev Address of system config.
-     */
+    /// @dev Address of system config.
     QuantConfig public quantConfig;
 
-    /**
-     * @dev Address of the underlying asset. WETH for ethereum options.
-     */
+    /// @dev Address of the underlying asset. WETH for ethereum options.
     address public underlyingAsset;
 
-    /**
-     * @dev Address of the strike asset. Quant Web options always use USDC.
-     */
+    /// @dev Address of the strike asset. Quant Web options always use USDC.
     address public strikeAsset;
 
-    /**
-     * @dev Address of the oracle to be used with this option
-     */
+    /// @dev Address of the oracle to be used with this option
     address public oracle;
 
-    /**
-     * @dev The strike price for the token with the strike asset precision.
-     */
+    /// @dev The strike price for the token with the strike asset precision.
     uint256 public strikePrice;
 
-    /**
-     * @dev UNIX time for the expiry of the option
-     */
+    /// @dev UNIX time for the expiry of the option
     uint256 public expiryTime;
 
-    /**
-     * @dev True if the option is a CALL. False if the option is a PUT.
-     */
+    /// @dev True if the option is a CALL. False if the option is a PUT.
     bool public isCall;
 
-    /**
-     * @dev Current pricing status of option. Only SETTLED options can be exercised
-     */
+    /// @dev Current pricing status of option. Only SETTLED options can be exercised
     enum PriceStatus {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
 
     uint256 private constant _STRIKE_PRICE_SCALE = 1e18;
@@ -97,12 +81,9 @@ contract QToken is ERC20 {
         isCall = _isCall;
     }
 
-    /**
-     * @notice mint option token for an account
-     * @dev Controller only method where access control is taken care of by _beforeTokenTransfer hook
-     * @param account account to mint token to
-     * @param amount amount to mint
-     */
+    /// @notice mint option token for an account
+    /// @param account account to mint token to
+    /// @param amount amount to mint
     function mint(address account, uint256 amount) external {
         require(
             quantConfig.hasRole(
@@ -114,12 +95,9 @@ contract QToken is ERC20 {
         _mint(account, amount);
     }
 
-    /**
-     * @notice burn option token from an account.
-     * @dev Controller only method where access control is taken care of by _beforeTokenTransfer hook
-     * @param account account to burn token from
-     * @param amount amount to burn
-     */
+    /// @notice burn option token from an account.
+    /// @param account account to burn token from
+    /// @param amount amount to burn
     function burn(address account, uint256 amount) external {
         require(
             quantConfig.hasRole(
@@ -274,18 +252,18 @@ contract QToken is ERC20 {
     /// @dev get the representation of a number using 2 characters, adding a leading 0 if it's one digit,
     /// and two trailing digits if it's a 3 digit number
     /// @return 2 characters that correspond to a number
-    function _uintToChars(uint256 number)
+    function _uintToChars(uint256 _number)
         internal
         pure
         returns (string memory)
     {
-        if (number > 99) {
-            number %= 100;
+        if (_number > 99) {
+            _number %= 100;
         }
 
-        string memory str = Strings.toString(number);
+        string memory str = Strings.toString(_number);
 
-        if (number < 10) {
+        if (_number < 10) {
             return string(abi.encodePacked("0", str));
         }
 
