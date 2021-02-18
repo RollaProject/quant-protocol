@@ -12,9 +12,6 @@ contract OptionsFactory {
     /// @notice array of all the created QTokens
     address[] public qTokens;
 
-    ///@notice array of all the created CollateralTokens
-    bytes32[] public collateralTokens;
-
     QuantConfig private _quantConfig;
 
     /// @dev constant salt because options will only be deployed with the same parameters once
@@ -45,7 +42,7 @@ contract OptionsFactory {
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
     /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with 18 decimals
+    /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return address of the created option
@@ -117,7 +114,7 @@ contract OptionsFactory {
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
     /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with 18 decimals
+    /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return the address where a QToken would be deployed
@@ -153,7 +150,7 @@ contract OptionsFactory {
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
     /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with 18 decimals
+    /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return address of the requested option
@@ -188,7 +185,7 @@ contract OptionsFactory {
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
     /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with 18 decimals
+    /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return 32-bytes hash unique to an option
