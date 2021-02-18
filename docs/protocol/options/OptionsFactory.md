@@ -1,6 +1,6 @@
 ## `OptionsFactory`
 
-Creates long (QToken) and short (CollateralToken) positions
+Creates tokens for long (QToken) and short (CollateralToken) positions
 
 
 This contract follows the factory design pattern
