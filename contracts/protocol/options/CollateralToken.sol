@@ -6,6 +6,11 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "../QuantConfig.sol";
 
+/// @title Tokens representing a Quant user's short positions
+/// @author Quant Finance
+/// @notice Can be used by owners to claim their collateral
+/// @dev This is a multi-token contract that implements the ERC1155 token standard:
+/// https://eips.ethereum.org/EIPS/eip-1155
 contract CollateralToken is ERC1155 {
     /// @dev stores metadata for a CollateralToken with an specific id
     /// @param underlyingAsset asset that the option references

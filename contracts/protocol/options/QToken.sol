@@ -8,6 +8,10 @@ import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
 import "../QuantConfig.sol";
 import "../pricing/PriceRegistry.sol";
 
+/// @title Token that represents a user's long position
+/// @author Quant Finance
+/// @notice Can be used by owners to exercise their options
+/// @dev Every option long position is an ERC20 token: https://eips.ethereum.org/EIPS/eip-20
 contract QToken is ERC20 {
     using SafeMath for uint256;
 

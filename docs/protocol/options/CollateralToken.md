@@ -1,8 +1,10 @@
 ## `CollateralToken`
 
+Can be used by owners to claim their collateral
 
 
-
+This is a multi-token contract that implements the ERC1155 token standard:
+https://eips.ethereum.org/EIPS/eip-1155
 
 
 ### `constructor(address _quantConfig)` (public)

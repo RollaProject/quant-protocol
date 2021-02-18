@@ -1,8 +1,9 @@
 ## `QToken`
 
+Can be used by owners to exercise their options
 
 
-
+Every option long position is an ERC20 token: https://eips.ethereum.org/EIPS/eip-20
 
 
 ### `constructor(address _quantConfig, address _underlyingAsset, address _strikeAsset, address _oracle, uint256 _strikePrice, uint256 _expiryTime, bool _isCall)` (public)
@@ -54,7 +55,7 @@ get the string representation of the option type
 convert the option strike price scaled to a human readable value
 
 
-### `_uintToChars(uint256 number) → string` (internal)
+### `_uintToChars(uint256 _number) → string` (internal)
 
 
 
