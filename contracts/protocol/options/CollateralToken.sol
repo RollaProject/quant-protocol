@@ -37,34 +37,34 @@ contract CollateralToken is ERC1155 {
     }
 
     /// @notice Create new CollateralTokens
-    /// @dev Should also be used elsewhere where getting a CollateralToken id from
-    /// its parameters is necessary
     /// @param _qTokenAddress address of the corresponding QToken
     /// @param _collateralizedFrom initial spread collateral
-    /// @return id the id for the CollateralToken with the given arguments
+    /// @return id the id for the CollateralToken created with the given arguments
     function createCollateralToken(
         address _qTokenAddress,
         uint256 _collateralizedFrom
     ) external returns (uint256 id) {
-        id = uint256(
-            keccak256(abi.encodePacked(_qTokenAddress, _collateralizedFrom))
-        );
+        id = _collateralTokenId(_qTokenAddress, _collateralizedFrom);
 
-        if (
-            // The function caller has permission to create new CollateralTokens
+        require(
             quantConfig.hasRole(
                 quantConfig.OPTIONS_CONTROLLER_ROLE(),
                 msg.sender
-            ) && _idToInfo[id].qTokenAddress != address(0)
-            // The CollateralToken with this id has not been created yet
-        ) {
-            _idToInfo[id] = CollateralTokenInfo({
-                qTokenAddress: _qTokenAddress,
-                collateralizedFrom: _collateralizedFrom
-            });
+            ),
+            "CollateralToken: Only the OptionsFactory can create new CollateralTokens"
+        );
 
-            collateralTokensIds.push(id);
-        }
+        require(
+            _idToInfo[id].qTokenAddress == address(0),
+            "CollateralToken: this token has already been created"
+        );
+
+        _idToInfo[id] = CollateralTokenInfo({
+            qTokenAddress: _qTokenAddress,
+            collateralizedFrom: _collateralizedFrom
+        });
+
+        collateralTokensIds.push(id);
     }
 
     /// @notice Mint CollateralTokens for a given account
@@ -147,5 +147,17 @@ contract CollateralToken is ERC1155 {
             "CollateralToken: Only the OptionsFactory can burn CollateralTokens"
         );
         _burnBatch(owner, ids, amounts);
+    }
+
+    /// @dev Returns a unique CollateralToken id based on its parameters
+    /// @param _qToken the address of the corresponding QToken
+    /// @param _collateralizedFrom initial spread collateral
+    /// @return id the id for the CollateralToken with the given arguments
+    function _collateralTokenId(address _qToken, uint256 _collateralizedFrom)
+        internal
+        pure
+        returns (uint256 id)
+    {
+        id = uint256(keccak256(abi.encodePacked(_qToken, _collateralizedFrom)));
     }
 }

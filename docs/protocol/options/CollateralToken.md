@@ -20,8 +20,6 @@ users' short positions
 Create new CollateralTokens
 
 
-Should also be used elsewhere where getting a CollateralToken id from
-its parameters is necessary
 
 
 ### `mintCollateralToken(address recipient, uint256 amount, uint256 collateralTokenId)` (external)
@@ -55,5 +53,12 @@ Batched burning of of multiple CollateralTokens from a given account
 Should be used when burning multiple CollateralTokens for a single user,
 i.e., when a user sells more than one short position through the interface
 ids and amounts shoud have the same length
+
+### `_collateralTokenId(address _qToken, uint256 _collateralizedFrom) → uint256 id` (internal)
+
+
+
+Returns a unique CollateralToken id based on its parameters
+
 
 
