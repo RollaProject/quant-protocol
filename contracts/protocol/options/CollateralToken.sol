@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../QuantConfig.sol";
 
 /// @title Tokens representing a Quant user's short positions
@@ -12,6 +13,8 @@ import "../QuantConfig.sol";
 /// @dev This is a multi-token contract that implements the ERC1155 token standard:
 /// https://eips.ethereum.org/EIPS/eip-1155
 contract CollateralToken is ERC1155 {
+    using SafeMath for uint256;
+
     /// @dev stores metadata for a CollateralToken with an specific id
     /// @param qTokenAddress address of the corresponding QToken
     /// @param collateralizedFrom initial spread collateral
@@ -28,6 +31,9 @@ contract CollateralToken is ERC1155 {
 
     /// @notice array of all the created CollateralToken ids
     uint256[] public collateralTokensIds;
+
+    /// @notice mapping from token ids to their supplies
+    mapping(uint256 => uint256) public tokenSupplies;
 
     /// @notice Initializes a new ERC1155 multi-token contract for representing
     /// users' short positions
@@ -84,6 +90,10 @@ contract CollateralToken is ERC1155 {
             "CollateralToken: Only the OptionsFactory can mint CollateralTokens"
         );
         _mint(recipient, amount, collateralTokenId, "");
+
+        tokenSupplies[collateralTokenId] = tokenSupplies[collateralTokenId].add(
+            amount
+        );
     }
 
     /// @notice Mint CollateralTokens for a given account
@@ -103,6 +113,10 @@ contract CollateralToken is ERC1155 {
             "CollateralToken: Only the OptionsFactory can burn CollateralTokens"
         );
         _burn(owner, collateralTokenId, amount);
+
+        tokenSupplies[collateralTokenId] = tokenSupplies[collateralTokenId].sub(
+            amount
+        );
     }
 
     /// @notice Batched minting of multiple CollateralTokens for a given account
@@ -125,6 +139,10 @@ contract CollateralToken is ERC1155 {
             "CollateralToken: Only the OptionsFactory can mint CollateralTokens"
         );
         _mintBatch(recipient, ids, amounts, "");
+
+        for (uint256 i = 0; i < ids.length; i = i.add(i)) {
+            tokenSupplies[ids[i]] = tokenSupplies[ids[i]].add(amounts[i]);
+        }
     }
 
     /// @notice Batched burning of of multiple CollateralTokens from a given account
@@ -147,6 +165,10 @@ contract CollateralToken is ERC1155 {
             "CollateralToken: Only the OptionsFactory can burn CollateralTokens"
         );
         _burnBatch(owner, ids, amounts);
+
+        for (uint256 i = 0; i < ids.length; i = i.add(i)) {
+            tokenSupplies[ids[i]] = tokenSupplies[ids[i]].sub(amounts[i]);
+        }
     }
 
     /// @dev Returns a unique CollateralToken id based on its parameters
