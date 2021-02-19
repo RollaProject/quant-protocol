@@ -13,21 +13,11 @@ import "../QuantConfig.sol";
 /// https://eips.ethereum.org/EIPS/eip-1155
 contract CollateralToken is ERC1155 {
     /// @dev stores metadata for a CollateralToken with an specific id
-    /// @param underlyingAsset asset that the option references
-    /// @param strikeAsset asset that the strike is denominated in
-    /// @param oracle price oracle for the option underlying
-    /// @param strikePrice strike price with as many decimals in the strike asset
-    /// @param expiryTime expiration timestamp as a unix timestamp
+    /// @param qTokenAddress address of the corresponding QToken
     /// @param collateralizedFrom initial spread collateral
-    /// @param isCall true if it's a call option, false if it's a put option
     struct CollateralTokenInfo {
-        address underlyingAsset;
-        address strikeAsset;
-        address oracle;
-        uint256 strikePrice;
-        uint256 expiryTime;
+        address qTokenAddress;
         uint256 collateralizedFrom;
-        bool isCall;
     }
 
     /// @dev The Quant system config
@@ -49,35 +39,15 @@ contract CollateralToken is ERC1155 {
     /// @notice Create new CollateralTokens
     /// @dev Should also be used elsewhere where getting a CollateralToken id from
     /// its parameters is necessary
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _expiryTime expiration timestamp as a unix timestamp
+    /// @param _qTokenAddress address of the corresponding QToken
     /// @param _collateralizedFrom initial spread collateral
-    /// @param _isCall true if it's a call option, false if it's a put option
     /// @return id the id for the CollateralToken with the given arguments
     function createCollateralToken(
-        address _underlyingAsset,
-        address _strikeAsset,
-        address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        uint256 _collateralizedFrom,
-        bool _isCall
+        address _qTokenAddress,
+        uint256 _collateralizedFrom
     ) external returns (uint256 id) {
         id = uint256(
-            keccak256(
-                abi.encodePacked(
-                    _underlyingAsset,
-                    _strikeAsset,
-                    _oracle,
-                    _strikePrice,
-                    _expiryTime,
-                    _collateralizedFrom,
-                    _isCall
-                )
-            )
+            keccak256(abi.encodePacked(_qTokenAddress, _collateralizedFrom))
         );
 
         if (
@@ -85,17 +55,12 @@ contract CollateralToken is ERC1155 {
             quantConfig.hasRole(
                 quantConfig.OPTIONS_CONTROLLER_ROLE(),
                 msg.sender
-            ) && _idToInfo[id].underlyingAsset != address(0)
+            ) && _idToInfo[id].qTokenAddress != address(0)
             // The CollateralToken with this id has not been created yet
         ) {
             _idToInfo[id] = CollateralTokenInfo({
-                underlyingAsset: _underlyingAsset,
-                strikeAsset: _strikeAsset,
-                oracle: _oracle,
-                strikePrice: _strikePrice,
-                expiryTime: _expiryTime,
-                collateralizedFrom: _collateralizedFrom,
-                isCall: _isCall
+                qTokenAddress: _qTokenAddress,
+                collateralizedFrom: _collateralizedFrom
             });
 
             collateralTokensIds.push(id);

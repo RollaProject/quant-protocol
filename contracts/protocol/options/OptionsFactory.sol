@@ -106,13 +106,8 @@ contract OptionsFactory {
         qTokens.push(newQToken);
 
         newCollateralTokenId = _collateralToken.createCollateralToken(
-            _underlyingAsset,
-            _strikeAsset,
-            _oracle,
-            _strikePrice,
-            _expiryTime,
-            0,
-            _isCall
+            newQToken,
+            0
         );
 
         emit OptionCreated(

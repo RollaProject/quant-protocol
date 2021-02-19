@@ -15,7 +15,7 @@ users' short positions
 
 
 
-### `createCollateralToken(address _underlyingAsset, address _strikeAsset, address _oracle, uint256 _strikePrice, uint256 _expiryTime, uint256 _collateralizedFrom, bool _isCall) → uint256 id` (external)
+### `createCollateralToken(address _qTokenAddress, uint256 _collateralizedFrom) → uint256 id` (external)
 
 Create new CollateralTokens
 
