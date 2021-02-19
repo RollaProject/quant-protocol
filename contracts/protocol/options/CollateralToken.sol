@@ -23,11 +23,11 @@ contract CollateralToken is ERC1155 {
         uint256 collateralizedFrom;
     }
 
-    /// @dev The Quant system config
+    /// @notice The Quant system config
     QuantConfig public quantConfig;
 
-    /// @dev mapping of CollateralToken ids to their respective info struct
-    mapping(uint256 => CollateralTokenInfo) private _idToInfo;
+    /// @notice mapping of CollateralToken ids to their respective info struct
+    mapping(uint256 => CollateralTokenInfo) public idToInfo;
 
     /// @notice array of all the created CollateralToken ids
     uint256[] public collateralTokensIds;
@@ -50,7 +50,7 @@ contract CollateralToken is ERC1155 {
         address _qTokenAddress,
         uint256 _collateralizedFrom
     ) external returns (uint256 id) {
-        id = _collateralTokenId(_qTokenAddress, _collateralizedFrom);
+        id = getCollateralTokenId(_qTokenAddress, _collateralizedFrom);
 
         require(
             quantConfig.hasRole(
@@ -61,11 +61,11 @@ contract CollateralToken is ERC1155 {
         );
 
         require(
-            _idToInfo[id].qTokenAddress == address(0),
+            idToInfo[id].qTokenAddress == address(0),
             "CollateralToken: this token has already been created"
         );
 
-        _idToInfo[id] = CollateralTokenInfo({
+        idToInfo[id] = CollateralTokenInfo({
             qTokenAddress: _qTokenAddress,
             collateralizedFrom: _collateralizedFrom
         });
@@ -171,12 +171,12 @@ contract CollateralToken is ERC1155 {
         }
     }
 
-    /// @dev Returns a unique CollateralToken id based on its parameters
+    /// @notice Returns a unique CollateralToken id based on its parameters
     /// @param _qToken the address of the corresponding QToken
     /// @param _collateralizedFrom initial spread collateral
     /// @return id the id for the CollateralToken with the given arguments
-    function _collateralTokenId(address _qToken, uint256 _collateralizedFrom)
-        internal
+    function getCollateralTokenId(address _qToken, uint256 _collateralizedFrom)
+        public
         pure
         returns (uint256 id)
     {
