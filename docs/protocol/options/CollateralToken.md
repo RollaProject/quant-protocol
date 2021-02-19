@@ -54,11 +54,11 @@ Should be used when burning multiple CollateralTokens for a single user,
 i.e., when a user sells more than one short position through the interface
 ids and amounts shoud have the same length
 
-### `_collateralTokenId(address _qToken, uint256 _collateralizedFrom) → uint256 id` (internal)
-
-
+### `getCollateralTokenId(address _qToken, uint256 _collateralizedFrom) → uint256 id` (public)
 
 Returns a unique CollateralToken id based on its parameters
+
+
 
 
 
