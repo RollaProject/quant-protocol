@@ -18,6 +18,15 @@ const config: HardhatUserConfig = {
   typechain: {
     target: "ethers-v5",
   },
+
+  networks: {
+    hardhat: {
+      forking: {
+        url:
+          "https://eth-mainnet.alchemyapi.io/v2/Iwe5TXkwrAUY5XYKdd76vrIzkhiTucpz",
+      },
+    },
+  },
 };
 
 export default config;
