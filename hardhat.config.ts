@@ -5,6 +5,7 @@ import "hardhat-deploy";
 import "hardhat-deploy-ethers";
 import "hardhat-typechain";
 import { HardhatUserConfig } from "hardhat/config";
+import "solidity-coverage";
 
 const config: HardhatUserConfig = {
   solidity: {

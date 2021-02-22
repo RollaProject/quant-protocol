@@ -44,3 +44,9 @@ jobs:
       - run: yarn lint
       - run: yarn test
       - run: yarn docs
+      - run: yarn coverage
+
+      - name: Coveralls GitHub Action
+        uses: coverallsapp/github-action@v1.1.2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
