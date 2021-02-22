@@ -116,3 +116,5 @@ artifacts
 package-lock.json
 
 typechain/
+
+coverage.json
