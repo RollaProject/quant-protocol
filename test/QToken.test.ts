@@ -103,4 +103,94 @@ describe("QToken", () => {
       parseInt(previousBalance.toString())
     );
   });
+
+  it("Should revert when an unauthorized account tries to mint options", async () => {
+    await expect(
+      qToken
+        .connect(secondAccount)
+        .mint(userAddress, ethers.utils.parseEther("2"))
+    ).to.be.revertedWith("QToken: Only the OptionsFactory can mint QTokens");
+  });
+
+  it("Should revert when an unauthorized account tries to burn options", async () => {
+    await expect(
+      qToken
+        .connect(secondAccount)
+        .burn(await admin.getAddress(), ethers.BigNumber.from("4"))
+    ).to.be.revertedWith("QToken: Only the OptionsFactory can burn QTokens");
+  });
+
+  it("Should create CALL options with different parameters", async () => {
+    qToken = <QToken>(
+      await deployContract(admin, QTokenJSON, [
+        quantConfig.address,
+        WETH.address,
+        USDC.address,
+        oracle,
+        ethers.BigNumber.from("1912340000000000000000"),
+        ethers.BigNumber.from("1630768904"),
+        true,
+      ])
+    );
+    expect(await qToken.symbol()).to.equal("QUANT-WETH-USDC-04SEP21-1912.44-C");
+    expect(await qToken.name()).to.equal(
+      "QUANT WETH-USDC 04-September-2021 1912.44 Call"
+    );
+  });
+
+  it("Should be able to create options expiring on any month", async () => {
+    const months: { [month: string]: string } = {
+      JAN: "January",
+      FEB: "February",
+      MAR: "March",
+      APR: "April",
+      MAY: "May",
+      JUN: "June",
+      JUL: "July",
+      AUG: "August",
+      SEP: "September",
+      OCT: "October",
+      NOV: "November",
+      DEC: "December",
+    };
+
+    const getMonth = async (
+      optionToken: QToken,
+      optionMetadata: string,
+      isMetadataAMonthName = true
+    ): Promise<string> => {
+      if (isMetadataAMonthName) {
+        // e.g., January
+        return (await optionToken.name()).split(" ")[2].split("-")[1];
+      }
+      // it's a string like JAN
+      return (await optionToken.symbol()).split("-", 4)[3].slice(2, 5);
+    };
+
+    let optionTimestamp = 1609773704;
+    const aMonthInSeconds = 2629746;
+    for (const month in months) {
+      qToken = <QToken>(
+        await deployContract(admin, QTokenJSON, [
+          quantConfig.address,
+          WETH.address,
+          USDC.address,
+          oracle,
+          strkePrice,
+          ethers.BigNumber.from(optionTimestamp.toString()),
+          false,
+        ])
+      );
+
+      expect(await getMonth(qToken, await qToken.name())).to.equal(
+        months[month]
+      );
+
+      expect(await getMonth(qToken, await qToken.symbol(), false)).to.equal(
+        month
+      );
+
+      optionTimestamp += aMonthInSeconds;
+    }
+  });
 });
