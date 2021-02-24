@@ -21,7 +21,7 @@ contract OracleRegistry {
     address[] public oracles;
 
     /// @dev the oracle id of the last added oracle, if there is one. oracles start at id of 1
-    uint256 currentId;
+    uint256 private _currentId;
 
     /// @notice quant central configuration
     QuantConfig public config;
@@ -45,11 +45,11 @@ contract OracleRegistry {
         );
 
         oracles.push(_oracle);
-        currentId = currentId.add(1);
+        _currentId = _currentId.add(1);
 
-        emit AddedOracle(_oracle, currentId);
+        emit AddedOracle(_oracle, _currentId);
 
-        oracleInfo[_oracle] = OracleInfo(false, currentId);
+        oracleInfo[_oracle] = OracleInfo(false, _currentId);
         return oracles.length;
     }
 
