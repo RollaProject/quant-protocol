@@ -111,7 +111,7 @@
     },
     "69a341c547e2fe93c81bff0762fc896ffac54912d0786cf60cf9d9edc38982e9": {
       "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-      "txHash": "0x5c995714f75b8f4efd6c613e5bf018a7d97fa641def2b382cdba2e82d8ba8b61",
+      "txHash": "0xda2ee28b87742541dacf934cee3dcca6bad99731cdff5219418a749f25c2376d",
       "layout": {
         "storage": [
           {
@@ -178,7 +178,7 @@
             "members": [
               {
                 "label": "members",
-                "type": "t_struct(AddressSet)1542_storage"
+                "type": "t_struct(AddressSet)3489_storage"
               },
               {
                 "label": "adminRole",
@@ -186,16 +186,16 @@
               }
             ]
           },
-          "t_struct(AddressSet)1542_storage": {
+          "t_struct(AddressSet)3489_storage": {
             "label": "struct EnumerableSet.AddressSet",
             "members": [
               {
                 "label": "_inner",
-                "type": "t_struct(Set)1277_storage"
+                "type": "t_struct(Set)3224_storage"
               }
             ]
           },
-          "t_struct(Set)1277_storage": {
+          "t_struct(Set)3224_storage": {
             "label": "struct EnumerableSet.Set",
             "members": [
               {
@@ -219,7 +219,7 @@
     },
     "f128e0104917e23be76c0b530e00298700fd39d319906536c2b3766ce62476a7": {
       "address": "0x9BcC604D4381C5b0Ad12Ff3Bf32bEdE063416BC7",
-      "txHash": "0xfda614ec581b8814c6c5a25b751dfa2408bcdeabd49e676e31f0a8fdf54bbf2f",
+      "txHash": "0xea00ba35e556477fe3a6ca9461ae6f119a452393e0f262ac8f03ab0794cf0cc5",
       "layout": {
         "storage": [
           {

@@ -69,7 +69,10 @@ contract OracleRegistry {
     /// @param _oracle the oracle to get the id of
     function getOracleId(address _oracle) external view returns (uint256) {
         uint256 oracleId = oracleInfo[_oracle].oracleId;
-        require(oracleId != 0, "OracleRegistry: Oracle doesn't exist in registry");
+        require(
+            oracleId != 0,
+            "OracleRegistry: Oracle doesn't exist in registry"
+        );
         return oracleId;
     }
 
