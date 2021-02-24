@@ -1,14 +1,14 @@
 import { MockContract } from "ethereum-waffle";
 import { Signer } from "ethers";
-import { ethers, upgrades, waffle } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
-import ERC20 from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json";
 import QTokenJSON from "../artifacts/contracts/protocol/options/QToken.sol/QToken.json";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
+import { createSampleOption, deployQuantConfig, mockERC20 } from "./testUtils";
 
-const { deployContract, deployMockContract } = waffle;
+const { deployContract } = waffle;
 
 describe("QToken", () => {
   let quantConfig: QuantConfig;
@@ -18,25 +18,9 @@ describe("QToken", () => {
   let USDC: MockContract;
   let WETH: MockContract;
   let userAddress: string;
-  const timestamp = ethers.BigNumber.from("1618592400"); // April 16th, 2021
+  const expiryTime = ethers.BigNumber.from("1618592400"); // April 16th, 2021
   const strkePrice = ethers.utils.parseEther("1400");
   const oracle = ethers.constants.AddressZero;
-
-  const createSamplePutOption = async () => {
-    const qToken = <QToken>(
-      await deployContract(admin, QTokenJSON, [
-        quantConfig.address,
-        WETH.address,
-        USDC.address,
-        oracle,
-        strkePrice,
-        timestamp,
-        false,
-      ])
-    );
-
-    return qToken;
-  };
 
   const mintOptionsToAccount = async (account: string, amount: number) => {
     await qToken
@@ -47,18 +31,22 @@ describe("QToken", () => {
   beforeEach(async () => {
     [admin, secondAccount] = provider.getWallets();
     userAddress = await secondAccount.getAddress();
-    const QuantConfig = await ethers.getContractFactory("QuantConfig");
-    quantConfig = <QuantConfig>(
-      await upgrades.deployProxy(QuantConfig, [await admin.getAddress()])
+
+    quantConfig = await deployQuantConfig(admin);
+
+    USDC = await mockERC20(admin, "USDC");
+    WETH = await mockERC20(admin, "WETH");
+
+    qToken = await createSampleOption(
+      admin,
+      quantConfig,
+      WETH.address,
+      USDC.address,
+      oracle,
+      strkePrice,
+      expiryTime,
+      false
     );
-
-    USDC = await deployMockContract(admin, ERC20.abi);
-    await USDC.mock.symbol.returns("USDC");
-
-    WETH = await deployMockContract(admin, ERC20.abi);
-    await WETH.mock.symbol.returns("WETH");
-
-    qToken = await createSamplePutOption();
   });
 
   it("Should be able to create a new option", async () => {
@@ -71,7 +59,7 @@ describe("QToken", () => {
     expect(await qToken.strikeAsset()).to.equal(USDC.address);
     expect(await qToken.oracle()).to.equal(oracle);
     expect(await qToken.strikePrice()).to.equal(strkePrice);
-    expect(await qToken.expiryTime()).to.equal(timestamp);
+    expect(await qToken.expiryTime()).to.equal(expiryTime);
     expect(await qToken.isCall()).to.be.false;
   });
 
@@ -167,7 +155,7 @@ describe("QToken", () => {
       return (await optionToken.symbol()).split("-", 4)[3].slice(2, 5);
     };
 
-    let optionTimestamp = 1609773704;
+    let optionexpiryTime = 1609773704;
     const aMonthInSeconds = 2629746;
     for (const month in months) {
       qToken = <QToken>(
@@ -177,7 +165,7 @@ describe("QToken", () => {
           USDC.address,
           oracle,
           strkePrice,
-          ethers.BigNumber.from(optionTimestamp.toString()),
+          ethers.BigNumber.from(optionexpiryTime.toString()),
           false,
         ])
       );
@@ -190,7 +178,7 @@ describe("QToken", () => {
         month
       );
 
-      optionTimestamp += aMonthInSeconds;
+      optionexpiryTime += aMonthInSeconds;
     }
   });
 });
