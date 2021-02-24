@@ -79,8 +79,8 @@ contract CollateralToken is ERC1155 {
     /// @param collateralTokenId id of the token to be minted
     function mintCollateralToken(
         address recipient,
-        uint256 amount,
-        uint256 collateralTokenId
+        uint256 collateralTokenId,
+        uint256 amount
     ) external {
         require(
             quantConfig.hasRole(
@@ -89,7 +89,7 @@ contract CollateralToken is ERC1155 {
             ),
             "CollateralToken: Only the OptionsFactory can mint CollateralTokens"
         );
-        _mint(recipient, amount, collateralTokenId, "");
+        _mint(recipient, collateralTokenId, amount, "");
 
         tokenSupplies[collateralTokenId] = tokenSupplies[collateralTokenId].add(
             amount
@@ -102,8 +102,8 @@ contract CollateralToken is ERC1155 {
     /// @param collateralTokenId id of the token to be burned
     function burnCollateralToken(
         address owner,
-        uint256 amount,
-        uint256 collateralTokenId
+        uint256 collateralTokenId,
+        uint256 amount
     ) external {
         require(
             quantConfig.hasRole(
@@ -140,7 +140,7 @@ contract CollateralToken is ERC1155 {
         );
         _mintBatch(recipient, ids, amounts, "");
 
-        for (uint256 i = 0; i < ids.length; i = i.add(i)) {
+        for (uint256 i = 0; i < ids.length; i++) {
             tokenSupplies[ids[i]] = tokenSupplies[ids[i]].add(amounts[i]);
         }
     }
@@ -166,7 +166,7 @@ contract CollateralToken is ERC1155 {
         );
         _burnBatch(owner, ids, amounts);
 
-        for (uint256 i = 0; i < ids.length; i = i.add(i)) {
+        for (uint256 i = 0; i < ids.length; i++) {
             tokenSupplies[ids[i]] = tokenSupplies[ids[i]].sub(amounts[i]);
         }
     }
