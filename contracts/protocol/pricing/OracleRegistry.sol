@@ -1,16 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../QuantConfig.sol";
 
 /// @title For centrally managing a list of oracle providers
 /// @notice oracle provider registry for holding a list of oracle providers and their id
-contract OracleProviderRegistry {
-    /// @notice oracle => id
-    mapping(address => uint256) public oracleIds;
+contract OracleRegistry {
+    using SafeMath for uint256;
+
+    struct OracleInfo {
+        bool isActive;
+        uint256 oracleId;
+    }
+
+    /// @notice oracle address => OracleInfo
+    mapping(address => OracleInfo) public oracleInfo;
 
     /// @notice exhaustive list of oracles in map
     address[] public oracles;
+
+    /// @dev the oracle id of the last added oracle, if there is one. oracles start at id of 1
+    uint256 currentId;
 
     /// @notice quant central configuration
     QuantConfig public config;
@@ -20,8 +31,7 @@ contract OracleProviderRegistry {
         config = QuantConfig(_config);
     }
 
-    /// @notice Add an asset to the oracle registry which will generate an id
-    /// @dev Once this is set for an asset, it can't be changed or removed
+    /// @notice Add an oracle to the oracle registry which will generate an id. By default oracles are deactivated
     /// @param _oracle the address of the oracle
     /// @return the id of the oracle
     function addOracle(address _oracle) external returns (uint256) {
@@ -30,12 +40,71 @@ contract OracleProviderRegistry {
             "OracleRegistry: Only an oracle admin can add an oracle"
         );
         require(
-            oracleIds[_oracle] == 0,
+            oracleInfo[_oracle].oracleId == 0,
             "OracleRegistry: Oracle already exists in registry"
         );
+
         oracles.push(_oracle);
-        oracleIds[_oracle] = oracles.length; //todo check this index is correct
+        currentId = currentId.add(1);
+
+        emit AddedOracle(_oracle, currentId);
+
+        oracleInfo[_oracle] = OracleInfo(false, currentId);
         return oracles.length;
+    }
+
+    /// @notice Check if an oracle is registered in the registry
+    /// @param _oracle the oracle to check
+    function isOracleRegistered(address _oracle) external view returns (bool) {
+        return oracleInfo[_oracle].oracleId != 0;
+    }
+
+    /// @notice Check if an oracle is active i.e. are we allowed to create options with this oracle
+    /// @param _oracle the oracle to check
+    function isOracleActive(address _oracle) external view returns (bool) {
+        return oracleInfo[_oracle].isActive;
+    }
+
+    /// @notice Get the numeric id of an oracle
+    /// @param _oracle the oracle to get the id of
+    function getOracleId(address _oracle) external view returns (uint256) {
+        uint256 oracleId = oracleInfo[_oracle].oracleId;
+        require(oracleId != 0, "OracleRegistry: Oracle doesn't exist in registry");
+        return oracleId;
+    }
+
+    /// @notice Deactivate an oracle so no new options can be created with this oracle address.
+    /// @param _oracle the oracle to deactivate
+    function deactivateOracle(address _oracle) external returns (bool) {
+        require(
+            config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
+            "OracleRegistry: Only an oracle admin can add an oracle"
+        );
+        require(
+            oracleInfo[_oracle].isActive,
+            "OracleRegistry: Oracle is already deactivated"
+        );
+
+        emit DeactivatedOracle(_oracle);
+
+        return oracleInfo[_oracle].isActive = false;
+    }
+
+    /// @notice Activate an oracle so options can be created with this oracle address.
+    /// @param _oracle the oracle to activate
+    function activateOracle(address _oracle) external returns (bool) {
+        require(
+            config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
+            "OracleRegistry: Only an oracle admin can add an oracle"
+        );
+        require(
+            !oracleInfo[_oracle].isActive,
+            "OracleRegistry: Oracle is already activated"
+        );
+
+        emit ActivatedOracle(_oracle);
+
+        return oracleInfo[_oracle].isActive = true;
     }
 
     /// @notice Get total number of oracles in registry
@@ -43,4 +112,10 @@ contract OracleProviderRegistry {
     function getOraclesLength() external view returns (uint256) {
         return oracles.length;
     }
+
+    event AddedOracle(address oracle, uint256 oracleId);
+
+    event ActivatedOracle(address oracle);
+
+    event DeactivatedOracle(address oracle);
 }
