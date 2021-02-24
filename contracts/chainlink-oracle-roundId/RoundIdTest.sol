@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
+import "hardhat/console.sol";
 import "./IEACAggregatorProxy.sol";
 
 contract RoundIdTest {
@@ -12,16 +13,19 @@ contract RoundIdTest {
         view
         returns (uint256)
     {
-        // Get the roundId corresponding to the current round of the aggregator implementation
-        // This is the upper bound of what we'll search
-        uint64 lastRoundId = uint64(roundId);
+        // This is the roundId that's in the aggregator implementation contract
+        uint64 previousRoundId = uint64(roundId);
 
-        // Get the timestamp of round 1
         uint16 phaseOffset = 64;
-        uint16 phaseId = uint16(lastRoundId >> phaseOffset);
-        uint80 firstRound = uint80((phaseId << phaseOffset) | 1);
-        uint256 firstTimestamp = _AGGREGATOR.getTimestamp(uint256(firstRound));
+        uint16 phaseId = uint16(roundId >> phaseOffset);
 
-        return firstTimestamp;
+        // This is the roundId that's in the aggregator proxy contract
+        uint80 previousRound =
+            uint80((uint256(phaseId) << phaseOffset) | previousRoundId);
+
+        uint256 previousTimestamp =
+            _AGGREGATOR.getTimestamp(uint256(previousRound));
+
+        return previousTimestamp;
     }
 }
