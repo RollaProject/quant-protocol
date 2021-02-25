@@ -1,15 +1,17 @@
 import { MockContract } from "ethereum-waffle";
 import { BigNumber, BigNumberish, Signer } from "ethers";
-import { ethers, waffle } from "hardhat";
+import { ethers } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
-import CollateralTokenJSON from "../artifacts/contracts/protocol/options/CollateralToken.sol/CollateralToken.json";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
-import { createSampleOption, deployQuantConfig, mockERC20 } from "./testUtils";
-
-const { deployContract } = waffle;
+import {
+  deployCollateralToken,
+  deployQToken,
+  deployQuantConfig,
+  mockERC20,
+} from "./testUtils";
 
 describe("CollateralToken", () => {
   let quantConfig: QuantConfig;
@@ -37,7 +39,7 @@ describe("CollateralToken", () => {
       ethers.BigNumber.from("0")
     );
 
-    const secondQToken = await createSampleOption(
+    const secondQToken = await deployQToken(
       admin,
       quantConfig,
       USDC.address,
@@ -64,16 +66,9 @@ describe("CollateralToken", () => {
     WETH = await mockERC20(admin, "WETH");
     USDC = await mockERC20(admin, "USDC");
 
-    qToken = await createSampleOption(
-      admin,
-      quantConfig,
-      WETH.address,
-      USDC.address
-    );
+    qToken = await deployQToken(admin, quantConfig, WETH.address, USDC.address);
 
-    collateralToken = <CollateralToken>(
-      await deployContract(admin, CollateralTokenJSON, [quantConfig.address])
-    );
+    collateralToken = await deployCollateralToken(admin, quantConfig);
   });
 
   it("Should be able to create a new CollateralToken", async () => {

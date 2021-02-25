@@ -2,7 +2,11 @@ import { MockContract } from "ethereum-waffle";
 import { BigNumber, Signer } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
 import ERC20 from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json";
+import CollateralTokenJSON from "../artifacts/contracts/protocol/options/CollateralToken.sol/CollateralToken.json";
+import OptionsFactoryJSON from "../artifacts/contracts/protocol/options/OptionsFactory.sol/OptionsFactory.json";
 import QTokenJSON from "../artifacts/contracts/protocol/options/QToken.sol/QToken.json";
+import { OptionsFactory } from "../typechain";
+import { CollateralToken } from "../typechain/CollateralToken";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 
@@ -36,7 +40,7 @@ const deployQuantConfig = async (admin: Signer): Promise<QuantConfig> => {
   );
 };
 
-const createSampleOption = async (
+const deployQToken = async (
   deployer: Signer,
   quantConfig: QuantConfig,
   underlyingAsset: string,
@@ -61,4 +65,36 @@ const createSampleOption = async (
   return qToken;
 };
 
-export { createSampleOption, deployQuantConfig, mockERC20 };
+const deployCollateralToken = async (
+  deployer: Signer,
+  quantConfig: QuantConfig
+): Promise<CollateralToken> => {
+  const collateralToken = <CollateralToken>(
+    await deployContract(deployer, CollateralTokenJSON, [quantConfig.address])
+  );
+
+  return collateralToken;
+};
+
+const deployOptionsFactory = async (
+  deployer: Signer,
+  quantConfig: QuantConfig,
+  collateralToken: CollateralToken
+): Promise<OptionsFactory> => {
+  const optionsFactory = <OptionsFactory>(
+    await deployContract(deployer, OptionsFactoryJSON, [
+      quantConfig.address,
+      collateralToken.address,
+    ])
+  );
+
+  return optionsFactory;
+};
+
+export {
+  deployCollateralToken,
+  deployOptionsFactory,
+  deployQToken,
+  deployQuantConfig,
+  mockERC20,
+};
