@@ -3,44 +3,44 @@
   "impls": {
     "4c5b4ca2b7a526faa748cf7c6ac072ed75a2e66ea7cfee0a91a4e199bd5db8b9": {
       "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-      "txHash": "0x480128fdd63c62146f448efb95ca1e82a70b87a3a0586853dae6bf66fc07d8b7",
+      "txHash": "0x26a685411d89b2cb1c6823077abb49e9c7e8f5eec1a0bf40089bb7196938e383",
       "layout": {
         "storage": [
           {
             "contract": "AccessControl",
             "label": "_roles",
             "type": "t_mapping(t_bytes32,t_struct(RoleData)328_storage)",
-            "src": "@openzeppelin/contracts/access/AccessControl.sol:53"
+            "src": "@openzeppelin\\contracts\\access\\AccessControl.sol:53"
           },
           {
             "contract": "Initializable",
             "label": "_initialized",
             "type": "t_bool",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol:25"
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
           },
           {
             "contract": "Initializable",
             "label": "_initializing",
             "type": "t_bool",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol:30"
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
           },
           {
             "contract": "QuantConfig",
             "label": "admin",
             "type": "t_address",
-            "src": "contracts/protocol/QuantConfig.sol:12"
+            "src": "contracts\\protocol\\QuantConfig.sol:12"
           },
           {
             "contract": "QuantConfig",
             "label": "priceRegistry",
             "type": "t_address",
-            "src": "contracts/protocol/QuantConfig.sol:13"
+            "src": "contracts\\protocol\\QuantConfig.sol:13"
           },
           {
             "contract": "QuantConfig",
             "label": "fee",
             "type": "t_uint256",
-            "src": "contracts/protocol/QuantConfig.sol:14"
+            "src": "contracts\\protocol\\QuantConfig.sol:14"
           }
         ],
         "types": {
@@ -64,7 +64,7 @@
             "members": [
               {
                 "label": "members",
-                "type": "t_struct(AddressSet)2234_storage"
+                "type": "t_struct(AddressSet)2123_storage"
               },
               {
                 "label": "adminRole",
@@ -72,16 +72,16 @@
               }
             ]
           },
-          "t_struct(AddressSet)2234_storage": {
+          "t_struct(AddressSet)2123_storage": {
             "label": "struct EnumerableSet.AddressSet",
             "members": [
               {
                 "label": "_inner",
-                "type": "t_struct(Set)1969_storage"
+                "type": "t_struct(Set)1858_storage"
               }
             ]
           },
-          "t_struct(Set)1969_storage": {
+          "t_struct(Set)1858_storage": {
             "label": "struct EnumerableSet.Set",
             "members": [
               {
@@ -104,51 +104,51 @@
       }
     },
     "476eac7a49c5c7fda18e8014473f7268f25a7db176752f0c780790e62ba2a7eb": {
-      "address": "0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9",
-      "txHash": "0xa7aa64ee290f90511aa57656fad17202a7938f77eaf28e064b6cff562984093e",
+      "address": "0x9BcC604D4381C5b0Ad12Ff3Bf32bEdE063416BC7",
+      "txHash": "0xb10e0de67d4279f57bfbf2982be7ba1c0747284a5f02e9f760c00661c5baa255",
       "layout": {
         "storage": [
           {
             "contract": "AccessControl",
             "label": "_roles",
             "type": "t_mapping(t_bytes32,t_struct(RoleData)328_storage)",
-            "src": "@openzeppelin/contracts/access/AccessControl.sol:53"
+            "src": "@openzeppelin\\contracts\\access\\AccessControl.sol:53"
           },
           {
             "contract": "Initializable",
             "label": "_initialized",
             "type": "t_bool",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol:25"
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
           },
           {
             "contract": "Initializable",
             "label": "_initializing",
             "type": "t_bool",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol:30"
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
           },
           {
             "contract": "QuantConfigV2",
             "label": "admin",
             "type": "t_address",
-            "src": "contracts/protocol/test/QuantConfigV2.sol:12"
+            "src": "contracts\\protocol\\test\\QuantConfigV2.sol:12"
           },
           {
             "contract": "QuantConfigV2",
             "label": "priceRegistry",
             "type": "t_address",
-            "src": "contracts/protocol/test/QuantConfigV2.sol:13"
+            "src": "contracts\\protocol\\test\\QuantConfigV2.sol:13"
           },
           {
             "contract": "QuantConfigV2",
             "label": "fee",
             "type": "t_uint256",
-            "src": "contracts/protocol/test/QuantConfigV2.sol:14"
+            "src": "contracts\\protocol\\test\\QuantConfigV2.sol:14"
           },
           {
             "contract": "QuantConfigV2",
             "label": "newV2StateVariable",
             "type": "t_uint256",
-            "src": "contracts/protocol/test/QuantConfigV2.sol:23"
+            "src": "contracts\\protocol\\test\\QuantConfigV2.sol:23"
           }
         ],
         "types": {
@@ -172,7 +172,7 @@
             "members": [
               {
                 "label": "members",
-                "type": "t_struct(AddressSet)1187_storage"
+                "type": "t_struct(AddressSet)3489_storage"
               },
               {
                 "label": "adminRole",
@@ -180,16 +180,16 @@
               }
             ]
           },
-          "t_struct(AddressSet)1187_storage": {
+          "t_struct(AddressSet)3489_storage": {
             "label": "struct EnumerableSet.AddressSet",
             "members": [
               {
                 "label": "_inner",
-                "type": "t_struct(Set)922_storage"
+                "type": "t_struct(Set)3224_storage"
               }
             ]
           },
-          "t_struct(Set)922_storage": {
+          "t_struct(Set)3224_storage": {
             "label": "struct EnumerableSet.Set",
             "members": [
               {
