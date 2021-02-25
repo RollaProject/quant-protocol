@@ -9,9 +9,6 @@ import "../options/QToken.sol";
 /// @title A registry of options that can be added to by priveleged users
 /// @notice An options registry which anyone can deploy a version of. This is independent from the Quant protocol.
 contract OptionsRegistry is AccessControl {
-    bytes32 public constant OPTION_MANAGER_ROLE =
-        keccak256("OPTION_MANAGER_ROLE");
-
     struct OptionDetails {
         // address of qToken
         address qToken;
@@ -19,29 +16,28 @@ contract OptionsRegistry is AccessControl {
         bool isVisible;
     }
 
+    bytes32 public constant OPTION_MANAGER_ROLE =
+        keccak256("OPTION_MANAGER_ROLE");
+
     /// @notice underlying => list of options
     mapping(address => OptionDetails[]) public options;
 
     /// @notice exhaustive list of underlying assets in registry
     address[] public underlyingAssets;
 
+    event NewOption(address underlyingAsset, address qToken, uint256 index);
+
+    event OptionVisibilityChanged(
+        address underlyingAsset,
+        address qToken,
+        uint256 index,
+        bool isVisible
+    );
+
     /// @param _admin administrator address which can manage options and assign option managers
     constructor(address _admin) {
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
         _setupRole(OPTION_MANAGER_ROLE, _admin);
-    }
-
-    function getOptionDetails(address _underlyingAsset, uint256 _index)
-        external
-        view
-        returns (OptionDetails memory)
-    {
-        OptionDetails[] memory optionsArray = options[_underlyingAsset];
-        require(
-            optionsArray.length >= _index,
-            "OptionsRegistry: Trying to access an option at an index that doesn't exist"
-        );
-        return optionsArray[_index];
     }
 
     function addOption(address _qToken) external {
@@ -92,6 +88,19 @@ contract OptionsRegistry is AccessControl {
         emit OptionVisibilityChanged(underlyingAsset, _qToken, index, false);
     }
 
+    function getOptionDetails(address _underlyingAsset, uint256 _index)
+        external
+        view
+        returns (OptionDetails memory)
+    {
+        OptionDetails[] memory optionsArray = options[_underlyingAsset];
+        require(
+            optionsArray.length >= _index,
+            "OptionsRegistry: Trying to access an option at an index that doesn't exist"
+        );
+        return optionsArray[_index];
+    }
+
     function numberOfUnderlyingAssets() external view returns (uint256) {
         return underlyingAssets.length;
     }
@@ -103,13 +112,4 @@ contract OptionsRegistry is AccessControl {
     {
         return options[_underlying].length;
     }
-
-    event NewOption(address underlyingAsset, address qToken, uint256 index);
-
-    event OptionVisibilityChanged(
-        address underlyingAsset,
-        address qToken,
-        uint256 index,
-        bool isVisible
-    );
 }

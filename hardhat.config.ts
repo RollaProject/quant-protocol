@@ -19,6 +19,12 @@ const config: HardhatUserConfig = {
   typechain: {
     target: "ethers-v5",
   },
+
+  networks: {
+    hardhat: {
+      blockGasLimit: 0x1fffffffffffff,
+    },
+  },
 };
 
 export default config;
