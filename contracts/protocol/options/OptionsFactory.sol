@@ -2,7 +2,6 @@
 pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Create2.sol";
 import "./QToken.sol";
 import "./CollateralToken.sol";
 import "./OptionsUtils.sol";
@@ -45,6 +44,68 @@ contract OptionsFactory {
         _collateralToken = CollateralToken(collateralToken_);
     }
 
+    /// @notice get the address at which a new QToken with the given parameters would be deployed
+    /// @notice return the exact address the QToken will be deployed at with OpenZeppelin's Create2
+    /// library computeAddress function
+    /// @param _underlyingAsset asset that the option references
+    /// @param _strikeAsset asset that the strike is denominated in
+    /// @param _oracle price oracle for the option underlying
+    /// @param _strikePrice strike price with as many decimals in the strike asset
+    /// @param _expiryTime expiration timestamp as a unix timestamp
+    /// @param _isCall true if it's a call option, false if it's a put option
+    /// @return the address where a QToken would be deployed
+    function getTargetQTokenAddress(
+        address _underlyingAsset,
+        address _strikeAsset,
+        address _oracle,
+        uint256 _strikePrice,
+        uint256 _expiryTime,
+        bool _isCall
+    ) external view returns (address) {
+        return
+            OptionsUtils.getTargetQTokenAddress(
+                address(_quantConfig),
+                _underlyingAsset,
+                _strikeAsset,
+                _oracle,
+                _strikePrice,
+                _expiryTime,
+                _isCall
+            );
+    }
+
+    /// @notice get the id that a CollateralToken with the given parameters would have
+    /// @param _underlyingAsset asset that the option references
+    /// @param _strikeAsset asset that the strike is denominated in
+    /// @param _oracle price oracle for the option underlying
+    /// @param _strikePrice strike price with as many decimals in the strike asset
+    /// @param _expiryTime expiration timestamp as a unix timestamp
+    /// @param _collateralizedFrom initial spread collateral
+    /// @param _isCall true if it's a call option, false if it's a put option
+    /// @return the id that a CollateralToken would have
+    function getTargetCollateralTokenId(
+        address _underlyingAsset,
+        address _strikeAsset,
+        address _oracle,
+        uint256 _strikePrice,
+        uint256 _expiryTime,
+        uint256 _collateralizedFrom,
+        bool _isCall
+    ) external view returns (uint256) {
+        return
+            OptionsUtils.getTargetCollateralTokenId(
+                _collateralToken,
+                address(_quantConfig),
+                _underlyingAsset,
+                _strikeAsset,
+                _oracle,
+                _strikePrice,
+                _expiryTime,
+                _collateralizedFrom,
+                _isCall
+            );
+    }
+
     /// @notice Creates new options (QToken + CollateralToken)
     /// @dev The CREATE2 opcode is used to deterministically deploy new QTokens
     /// @param _underlyingAsset asset that the option references
@@ -85,20 +146,17 @@ contract OptionsFactory {
             "OptionsFactory: strike for put can't be 0"
         );
 
-        bytes memory bytecode =
-            abi.encodePacked(
-                type(QToken).creationCode,
-                abi.encode(
-                    address(_quantConfig),
-                    _underlyingAsset,
-                    _strikeAsset,
-                    _strikePrice,
-                    _expiryTime,
-                    _isCall
-                )
-            );
-
-        newQToken = Create2.deploy(0, OptionsUtils.SALT, bytecode);
+        newQToken = address(
+            new QToken{salt: OptionsUtils.SALT}(
+                address(_quantConfig),
+                _underlyingAsset,
+                _strikeAsset,
+                _oracle,
+                _strikePrice,
+                _expiryTime,
+                _isCall
+            )
+        );
 
         _qTokenHashToAddress[qTokenHash] = newQToken;
         qTokens.push(newQToken);
