@@ -6,7 +6,7 @@ import QTokenJSON from "../artifacts/contracts/protocol/options/QToken.sol/QToke
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
-import { createSampleOption, deployQuantConfig, mockERC20 } from "./testUtils";
+import { deployQToken, deployQuantConfig, mockERC20 } from "./testUtils";
 
 const { deployContract } = waffle;
 
@@ -37,7 +37,7 @@ describe("QToken", () => {
     USDC = await mockERC20(admin, "USDC");
     WETH = await mockERC20(admin, "WETH");
 
-    qToken = await createSampleOption(
+    qToken = await deployQToken(
       admin,
       quantConfig,
       WETH.address,
