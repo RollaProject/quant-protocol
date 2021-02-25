@@ -10,7 +10,7 @@ import "./CollateralToken.sol";
 /// @dev This library must be deployed and linked while deploying contracts that use it
 library OptionsUtils {
     /// @notice constant salt because options will only be deployed with the same parameters once
-    bytes32 public constant SALT = bytes32(0);
+    bytes32 public constant SALT = bytes32("QUANT.FINANCE");
 
     /// @notice get the address at which a new QToken with the given parameters would be deployed
     /// @notice return the exact address the QToken will be deployed at with OpenZeppelin's Create2
@@ -71,7 +71,7 @@ library OptionsUtils {
         bool _isCall
     ) internal view returns (uint256) {
         address qToken =
-            OptionsUtils.getTargetQTokenAddress(
+            getTargetQTokenAddress(
                 _quantConfig,
                 _underlyingAsset,
                 _strikeAsset,
