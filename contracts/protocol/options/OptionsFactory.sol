@@ -139,7 +139,7 @@ contract OptionsFactory {
             );
         require(
             _qTokenHashToAddress[qTokenHash] == address(0),
-            "OptionsFactory: option already creted"
+            "OptionsFactory: option already created"
         );
         require(
             _isCall || _strikePrice > 0,
