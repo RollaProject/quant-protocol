@@ -2,9 +2,9 @@
 pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Create2.sol";
 import "./QToken.sol";
 import "./CollateralToken.sol";
+import "./OptionsUtils.sol";
 import "../QuantConfig.sol";
 
 /// @title Factory contract for Quant options
@@ -20,9 +20,6 @@ contract OptionsFactory {
     QuantConfig private _quantConfig;
 
     CollateralToken private _collateralToken;
-
-    /// @dev constant salt because options will only be deployed with the same parameters once
-    bytes32 private constant _SALT = bytes32(0);
 
     mapping(bytes32 => address) private _qTokenHashToAddress;
 
@@ -45,6 +42,68 @@ contract OptionsFactory {
     constructor(address quantConfig_, address collateralToken_) {
         _quantConfig = QuantConfig(quantConfig_);
         _collateralToken = CollateralToken(collateralToken_);
+    }
+
+    /// @notice get the address at which a new QToken with the given parameters would be deployed
+    /// @notice return the exact address the QToken will be deployed at with OpenZeppelin's Create2
+    /// library computeAddress function
+    /// @param _underlyingAsset asset that the option references
+    /// @param _strikeAsset asset that the strike is denominated in
+    /// @param _oracle price oracle for the option underlying
+    /// @param _strikePrice strike price with as many decimals in the strike asset
+    /// @param _expiryTime expiration timestamp as a unix timestamp
+    /// @param _isCall true if it's a call option, false if it's a put option
+    /// @return the address where a QToken would be deployed
+    function getTargetQTokenAddress(
+        address _underlyingAsset,
+        address _strikeAsset,
+        address _oracle,
+        uint256 _strikePrice,
+        uint256 _expiryTime,
+        bool _isCall
+    ) external view returns (address) {
+        return
+            OptionsUtils.getTargetQTokenAddress(
+                address(_quantConfig),
+                _underlyingAsset,
+                _strikeAsset,
+                _oracle,
+                _strikePrice,
+                _expiryTime,
+                _isCall
+            );
+    }
+
+    /// @notice get the id that a CollateralToken with the given parameters would have
+    /// @param _underlyingAsset asset that the option references
+    /// @param _strikeAsset asset that the strike is denominated in
+    /// @param _oracle price oracle for the option underlying
+    /// @param _strikePrice strike price with as many decimals in the strike asset
+    /// @param _expiryTime expiration timestamp as a unix timestamp
+    /// @param _collateralizedFrom initial spread collateral
+    /// @param _isCall true if it's a call option, false if it's a put option
+    /// @return the id that a CollateralToken would have
+    function getTargetCollateralTokenId(
+        address _underlyingAsset,
+        address _strikeAsset,
+        address _oracle,
+        uint256 _strikePrice,
+        uint256 _expiryTime,
+        uint256 _collateralizedFrom,
+        bool _isCall
+    ) external view returns (uint256) {
+        return
+            OptionsUtils.getTargetCollateralTokenId(
+                _collateralToken,
+                address(_quantConfig),
+                _underlyingAsset,
+                _strikeAsset,
+                _oracle,
+                _strikePrice,
+                _expiryTime,
+                _collateralizedFrom,
+                _isCall
+            );
     }
 
     /// @notice Creates new options (QToken + CollateralToken)
@@ -70,7 +129,7 @@ contract OptionsFactory {
             "OptionsFactory: given expiry time is in the past"
         );
         bytes32 qTokenHash =
-            _qTokenHash(
+            OptionsUtils.qTokenHash(
                 _underlyingAsset,
                 _strikeAsset,
                 _oracle,
@@ -80,27 +139,24 @@ contract OptionsFactory {
             );
         require(
             _qTokenHashToAddress[qTokenHash] == address(0),
-            "OptionsFactory: option already creted"
+            "OptionsFactory: option already created"
         );
         require(
             _isCall || _strikePrice > 0,
             "OptionsFactory: strike for put can't be 0"
         );
 
-        bytes memory bytecode =
-            abi.encodePacked(
-                type(QToken).creationCode,
-                abi.encode(
-                    address(_quantConfig),
-                    _underlyingAsset,
-                    _strikeAsset,
-                    _strikePrice,
-                    _expiryTime,
-                    _isCall
-                )
-            );
-
-        newQToken = Create2.deploy(0, _SALT, bytecode);
+        newQToken = address(
+            new QToken{salt: OptionsUtils.SALT}(
+                address(_quantConfig),
+                _underlyingAsset,
+                _strikeAsset,
+                _oracle,
+                _strikePrice,
+                _expiryTime,
+                _isCall
+            )
+        );
 
         _qTokenHashToAddress[qTokenHash] = newQToken;
         qTokens.push(newQToken);
@@ -121,37 +177,6 @@ contract OptionsFactory {
             newCollateralTokenId,
             _isCall
         );
-    }
-
-    /// @notice get the id that a CollateralToken with the given parameters would have
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _collateralizedFrom initial spread collateral
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @return the id that a CollateralToken would have
-    function getTargetCollateralTokenId(
-        address _underlyingAsset,
-        address _strikeAsset,
-        address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        uint256 _collateralizedFrom,
-        bool _isCall
-    ) public view returns (uint256) {
-        address qToken =
-            getTargetQTokenAddress(
-                _underlyingAsset,
-                _strikeAsset,
-                _oracle,
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            );
-        return
-            _collateralToken.getCollateralTokenId(qToken, _collateralizedFrom);
     }
 
     /// @notice get the CollateralToken id for an already created CollateralToken,
@@ -190,43 +215,6 @@ contract OptionsFactory {
         return storedQToken != address(0) ? id : 0;
     }
 
-    /// @notice get the address at which a new QToken with the given parameters would be deployed
-    /// @notice return the exact address the QToken will be deployed at with OpenZeppelin's Create2
-    /// library computeAddress function
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @return the address where a QToken would be deployed
-    function getTargetQTokenAddress(
-        address _underlyingAsset,
-        address _strikeAsset,
-        address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
-    ) public view returns (address) {
-        bytes32 bytecodeHash =
-            keccak256(
-                abi.encodePacked(
-                    type(QToken).creationCode,
-                    abi.encode(
-                        address(_quantConfig),
-                        _underlyingAsset,
-                        _strikeAsset,
-                        _oracle,
-                        _strikePrice,
-                        _expiryTime,
-                        _isCall
-                    )
-                )
-            );
-
-        return Create2.computeAddress(_SALT, bytecodeHash);
-    }
-
     /// @notice get the QToken address for an already created QToken, if no QToken has been created
     /// with these parameters, it will return the zero address
     /// @param _underlyingAsset asset that the option references
@@ -245,7 +233,7 @@ contract OptionsFactory {
         bool _isCall
     ) public view returns (address) {
         bytes32 qTokenHash =
-            _qTokenHash(
+            OptionsUtils.qTokenHash(
                 _underlyingAsset,
                 _strikeAsset,
                 _oracle,
@@ -261,34 +249,5 @@ contract OptionsFactory {
     /// @return length of the options array
     function getOptionsLength() external view returns (uint256) {
         return qTokens.length;
-    }
-
-    /// @notice Returns a unique option hash based on its parameters
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @return 32-bytes hash unique to an option
-    function _qTokenHash(
-        address _underlyingAsset,
-        address _strikeAsset,
-        address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
-    ) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    _underlyingAsset,
-                    _strikeAsset,
-                    _oracle,
-                    _strikePrice,
-                    _expiryTime,
-                    _isCall
-                )
-            );
     }
 }

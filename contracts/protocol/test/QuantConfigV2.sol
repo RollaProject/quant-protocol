@@ -11,6 +11,7 @@ contract QuantConfigV2 is AccessControl, Initializable {
     //this should be some admin/governance address
     address public admin;
     address public priceRegistry;
+    address public oracleRegistry;
     uint256 public fee;
 
     bytes32 public constant OPTIONS_CONTROLLER_ROLE =
@@ -36,6 +37,7 @@ contract QuantConfigV2 is AccessControl, Initializable {
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
         // On deployment, this role should be transferd to the OptionsFactory as its only admin
         _setupRole(OPTIONS_CONTROLLER_ROLE, _admin);
+        _setupRole(ORACLE_MANAGER_ROLE, _admin);
         admin = _admin;
     }
 }
