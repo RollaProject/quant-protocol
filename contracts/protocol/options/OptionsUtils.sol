@@ -5,8 +5,11 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 import "./QToken.sol";
 import "./CollateralToken.sol";
 
+/// @title Options utilities for Quant's QToken and CollateralToken
+/// @author Quant Finance
+/// @dev This library must be deployed and linked while deploying contracts that use it
 library OptionsUtils {
-    /// @dev constant salt because options will only be deployed with the same parameters once
+    /// @notice constant salt because options will only be deployed with the same parameters once
     bytes32 public constant SALT = bytes32(0);
 
     /// @notice get the address at which a new QToken with the given parameters would be deployed
