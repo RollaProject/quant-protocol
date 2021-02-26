@@ -1,35 +1,26 @@
 import { MockContract } from "ethereum-waffle";
 import { BigNumber, Signer } from "ethers";
-import { ethers, waffle } from "hardhat";
+import { ethers } from "hardhat";
 import { beforeEach, describe } from "mocha";
-import OptionsUtilsJSON from "../artifacts/contracts/protocol/options/OptionsUtils.sol/OptionsUtils.json";
 import { OptionsFactory } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
-import { OptionsUtils } from "../typechain/OptionsUtils";
-import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
 import {
   deployCollateralToken,
   deployOptionsFactory,
-  deployQToken,
   deployQuantConfig,
   mockERC20,
 } from "./testUtils";
 
-const { deployContract } = waffle;
-
 describe("OptionsFactory", () => {
   let quantConfig: QuantConfig;
   let collateralToken: CollateralToken;
-  let qToken: QToken;
   let admin: Signer;
   let secondAccount: Signer;
-  let userAddress: string;
   let WETH: MockContract;
   let USDC: MockContract;
   let optionsFactory: OptionsFactory;
-  let optionsUtils: OptionsUtils;
   let futureTimestamp: number;
   let samplePutOptionParameters: [
     string,
@@ -51,14 +42,11 @@ describe("OptionsFactory", () => {
 
   beforeEach(async () => {
     [admin, secondAccount] = await provider.getWallets();
-    userAddress = await admin.getAddress();
 
     quantConfig = await deployQuantConfig(admin);
 
     WETH = await mockERC20(admin, "WETH");
     USDC = await mockERC20(admin, "USDC");
-
-    qToken = await deployQToken(admin, quantConfig, WETH.address, USDC.address);
 
     collateralToken = await deployCollateralToken(admin, quantConfig);
 
@@ -67,8 +55,6 @@ describe("OptionsFactory", () => {
       quantConfig,
       collateralToken
     );
-
-    optionsUtils = <OptionsUtils>await deployContract(admin, OptionsUtilsJSON);
 
     await quantConfig.grantRole(
       await quantConfig.OPTIONS_CONTROLLER_ROLE(),
