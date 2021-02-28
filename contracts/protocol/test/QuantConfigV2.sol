@@ -20,6 +20,8 @@ contract QuantConfigV2 is AccessControl, Initializable {
         keccak256("ORACLE_MANAGER_ROLE");
     bytes32 public constant PRICE_SUBMITTER_ROLE =
         keccak256("PRICE_SUBMITTER_ROLE");
+    bytes32 public constant FALLBACK_PRICE_ROLE =
+        keccak256("FALLBACK_PRICE_ROLE");
 
     uint256 public newV2StateVariable;
 

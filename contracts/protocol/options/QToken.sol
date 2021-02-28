@@ -15,6 +15,9 @@ import "../pricing/PriceRegistry.sol";
 contract QToken is ERC20 {
     using SafeMath for uint256;
 
+    /// @dev Current pricing status of option. Only SETTLED options can be exercised
+    enum PriceStatus {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
+
     /// @dev Address of system config.
     QuantConfig public quantConfig;
 
@@ -35,9 +38,6 @@ contract QToken is ERC20 {
 
     /// @dev True if the option is a CALL. False if the option is a PUT.
     bool public isCall;
-
-    /// @dev Current pricing status of option. Only SETTLED options can be exercised
-    enum PriceStatus {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
 
     uint256 private constant _STRIKE_PRICE_SCALE = 1e18;
     uint256 private constant _STRIKE_PRICE_DIGITS = 18;
@@ -333,6 +333,7 @@ contract QToken is ERC20 {
         if (block.timestamp > expiryTime) {
             PriceRegistry priceRegistry =
                 PriceRegistry(quantConfig.priceRegistry());
+
             if (
                 priceRegistry.hasSettlementPrice(
                     oracle,

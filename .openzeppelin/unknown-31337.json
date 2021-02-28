@@ -1,9 +1,123 @@
 {
   "manifestVersion": "3.1",
   "impls": {
-    "69a341c547e2fe93c81bff0762fc896ffac54912d0786cf60cf9d9edc38982e9": {
+    "f128e0104917e23be76c0b530e00298700fd39d319906536c2b3766ce62476a7": {
+      "address": "0xAdE429ba898c34722e722415D722A70a297cE3a2",
+      "txHash": "0x61473e9464109186ef581d4c3810acc1e3c6204e1a18d7b78b172a70d652b068",
+      "layout": {
+        "storage": [
+          {
+            "contract": "AccessControl",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)328_storage)",
+            "src": "@openzeppelin\\contracts\\access\\AccessControl.sol:53"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
+          },
+          {
+            "contract": "QuantConfigV2",
+            "label": "admin",
+            "type": "t_address",
+            "src": "contracts\\protocol\\test\\QuantConfigV2.sol:12"
+          },
+          {
+            "contract": "QuantConfigV2",
+            "label": "priceRegistry",
+            "type": "t_address",
+            "src": "contracts\\protocol\\test\\QuantConfigV2.sol:13"
+          },
+          {
+            "contract": "QuantConfigV2",
+            "label": "oracleRegistry",
+            "type": "t_address",
+            "src": "contracts\\protocol\\test\\QuantConfigV2.sol:14"
+          },
+          {
+            "contract": "QuantConfigV2",
+            "label": "fee",
+            "type": "t_uint256",
+            "src": "contracts\\protocol\\test\\QuantConfigV2.sol:15"
+          },
+          {
+            "contract": "QuantConfigV2",
+            "label": "newV2StateVariable",
+            "type": "t_uint256",
+            "src": "contracts\\protocol\\test\\QuantConfigV2.sol:24"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)328_storage)": {
+            "label": "mapping(bytes32 => struct AccessControl.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)328_storage": {
+            "label": "struct AccessControl.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_struct(AddressSet)3489_storage"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_struct(AddressSet)3489_storage": {
+            "label": "struct EnumerableSet.AddressSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)3224_storage"
+              }
+            ]
+          },
+          "t_struct(Set)3224_storage": {
+            "label": "struct EnumerableSet.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)"
+              }
+            ]
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)"
+          }
+        }
+      }
+    },
+    "cf69201782b8cd4068da83feaa6090681a03cb700f7f4c5dd71578a4feba8c0e": {
       "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-      "txHash": "0xda2ee28b87742541dacf934cee3dcca6bad99731cdff5219418a749f25c2376d",
+      "txHash": "0x5a3422a3990dba4cf943a8312c0a831a59edc0c6b1d770d0300d4f8aec35c06f",
       "layout": {
         "storage": [
           {
@@ -109,9 +223,9 @@
         }
       }
     },
-    "f128e0104917e23be76c0b530e00298700fd39d319906536c2b3766ce62476a7": {
-      "address": "0x2625760C4A8e8101801D3a48eE64B2bEA42f1E96",
-      "txHash": "0xc83df6d44cfa664b01ff9959cc5950b54cc09a1d7c486ecc4c7967a15caf82d8",
+    "b9bf05a2db4ed19e0f674db9ef2cee48a08553c7228feedfad4fc433cbe996b6": {
+      "address": "0x8fC8CFB7f7362E44E472c690A6e025B80E406458",
+      "txHash": "0x46b884d7985b754c9868a34bc5a847debe5c587092c78f1aa8708656628a91b0",
       "layout": {
         "storage": [
           {
@@ -160,7 +274,7 @@
             "contract": "QuantConfigV2",
             "label": "newV2StateVariable",
             "type": "t_uint256",
-            "src": "contracts\\protocol\\test\\QuantConfigV2.sol:24"
+            "src": "contracts\\protocol\\test\\QuantConfigV2.sol:26"
           }
         ],
         "types": {

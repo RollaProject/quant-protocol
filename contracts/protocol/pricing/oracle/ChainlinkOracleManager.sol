@@ -4,17 +4,24 @@ pragma solidity ^0.7.0;
 import "../../../external/chainlink/AggregatorInterface.sol";
 import "../PriceRegistry.sol";
 import "./ProviderOracleManager.sol";
+import "./IOracleFallbackMechanism.sol";
 
 /// @title For managing chainlink oracles and which assets use them
 /// @notice Once an oracle is added for an asset it can't be changed!
-contract ChainlinkOracleManager is ProviderOracleManager {
+contract ChainlinkOracleManager is
+    ProviderOracleManager,
+    IOracleFallbackMechanism
+{
     event ChainlinkPriceSubmission(
         address asset,
         uint256 expiryTimestamp,
         uint256 price,
         uint256 roundId,
-        address oracle
+        address oracle,
+        bool isFallback
     );
+
+    uint256 public FALLBACK_PERIOD_SECONDS = 7 * 86400; //todo; this should come from config
 
     /// @param _config address of quant central configuration
     // solhint-disable-next-line no-empty-blocks
@@ -50,7 +57,8 @@ contract ChainlinkOracleManager is ProviderOracleManager {
             _expiryTimestamp,
             price,
             _roundId,
-            assetOracles[_asset]
+            assetOracles[_asset],
+            false
         );
         PriceRegistry(config.priceRegistry()).setSettlementPrice(
             _asset,
@@ -80,5 +88,40 @@ contract ChainlinkOracleManager is ProviderOracleManager {
         );
 
         return uint256(answer);
+    }
+
+    /// @notice Fallback mechanism to submit price to the registry after the lock up period is passed with no successful submission
+    /// @param _asset asset to set price of
+    /// @param _expiryTimestamp timestamp of price
+    /// @param _price price to submit
+    function setExpiryPriceInRegistryFallback(
+        address _asset,
+        uint256 _expiryTimestamp,
+        uint256 _price
+    ) external override {
+        require(
+            config.hasRole(config.FALLBACK_PRICE_ROLE(), msg.sender),
+            "ChainlinkOracleManager: Only the fallback price submitter can submit a fallback price"
+        );
+
+        require(
+            block.timestamp >= _expiryTimestamp + FALLBACK_PERIOD_SECONDS,
+            "ChainlinkOracleManager: The fallback price period has not passed"
+        );
+
+        emit ChainlinkPriceSubmission(
+            _asset,
+            _expiryTimestamp,
+            _price,
+            0,
+            assetOracles[_asset],
+            true
+        );
+
+        PriceRegistry(config.priceRegistry()).setSettlementPrice(
+            _asset,
+            _expiryTimestamp,
+            _price
+        );
     }
 }

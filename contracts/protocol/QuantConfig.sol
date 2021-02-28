@@ -20,6 +20,8 @@ contract QuantConfig is AccessControl, Initializable {
         keccak256("ORACLE_MANAGER_ROLE");
     bytes32 public constant PRICE_SUBMITTER_ROLE =
         keccak256("PRICE_SUBMITTER_ROLE");
+    bytes32 public constant FALLBACK_PRICE_ROLE =
+        keccak256("FALLBACK_PRICE_ROLE");
 
     /// @notice Set the protocol fee
     /// @dev Only accounts or contracts with the admin role should call this function

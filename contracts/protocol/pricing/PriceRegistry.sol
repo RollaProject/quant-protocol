@@ -2,11 +2,10 @@
 pragma solidity ^0.7.0;
 
 import "../QuantConfig.sol";
+import "./OracleRegistry.sol";
 
 /// @title For centrally managing a log of settlement prices, for each option.
 contract PriceRegistry {
-    enum PriceStatus {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
-
     /// @notice quant central configuration
     QuantConfig public config;
 
@@ -25,8 +24,8 @@ contract PriceRegistry {
     /// @param _expiryTimestamp timestamp of price to set
     function setSettlementPrice(
         address _asset,
-        uint256 _settlementPrice,
-        uint256 _expiryTimestamp
+        uint256 _expiryTimestamp,
+        uint256 _settlementPrice
     ) external {
         require(
             config.hasRole(config.PRICE_SUBMITTER_ROLE(), msg.sender),
@@ -39,6 +38,11 @@ contract PriceRegistry {
         require(
             currentSettlementPrice == 0,
             "PriceRegistry: Settlement price has already been set"
+        );
+
+        require(
+            _expiryTimestamp <= block.timestamp,
+            "PriceRegistry: Can't set a price for a time in the future"
         );
 
         _settlementPrices[msg.sender][_asset][
@@ -64,29 +68,6 @@ contract PriceRegistry {
         );
 
         return settlementPrice;
-    }
-
-    /// @notice Get the price status of the option.
-    /// @param _qToken option we want the status for
-    /// @return the price status of the option. option is either active, awaiting settlement price or settled
-    //todo should this live in the option itself?
-    function getOptionPriceStatus(address _qToken)
-        external
-        view
-        returns (PriceStatus)
-    {
-        address oracle = address(0);
-        address asset = _qToken; // TODO: Change it to info from the QToken
-        uint256 expiryTimestamp = 123;
-
-        if (block.timestamp > expiryTimestamp) {
-            if (hasSettlementPrice(oracle, asset, expiryTimestamp)) {
-                return PriceStatus.SETTLED;
-            }
-            return PriceStatus.AWAITING_SETTLEMENT_PRICE;
-        } else {
-            return PriceStatus.ACTIVE;
-        }
     }
 
     /// @notice Check if the settlement price for an asset exists from an oracle at a particular timestamp
