@@ -6,5 +6,7 @@ import { ethers } from "hardhat";
   await roundIdTest.deployed();
 
   const proxyRoundId = ethers.BigNumber.from("55340232221128675793");
-  console.log((await roundIdTest.getLastValidRound(proxyRoundId)).toString());
+  console.log(
+    (await roundIdTest.getLastValidRoundLoop(proxyRoundId)).toString()
+  );
 })();
