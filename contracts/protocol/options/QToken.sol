@@ -39,8 +39,8 @@ contract QToken is ERC20 {
     /// @dev Current pricing status of option. Only SETTLED options can be exercised
     enum PriceStatus {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
 
-    uint256 private constant _STRIKE_PRICE_SCALE = 1e18;
-    uint256 private constant _STRIKE_PRICE_DIGITS = 18;
+    uint256 private constant _STRIKE_PRICE_SCALE = 1e6;
+    uint256 private constant _STRIKE_PRICE_DIGITS = 6;
 
     /// @notice Configures the parameters of a new option token
     /// @param _quantConfig the address of the Quant system configuration contract
