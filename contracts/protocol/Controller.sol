@@ -58,9 +58,7 @@ contract Controller {
         } else {
             IERC20 strike = IERC20(qToken.strikeAsset());
 
-            collateralAmount = _optionsAmount.mul(
-                qToken.strikePrice().mul(10**ERC20(address(strike)).decimals())
-            );
+            collateralAmount = _optionsAmount.mul(qToken.strikePrice());
 
             strike.safeTransferFrom(
                 msg.sender,
