@@ -1,12 +1,12 @@
-import { MockContract } from "ethereum-waffle";
 import { BigNumber, Signer } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
-import ERC20 from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json";
 import CollateralTokenJSON from "../artifacts/contracts/protocol/options/CollateralToken.sol/CollateralToken.json";
 import OptionsFactoryJSON from "../artifacts/contracts/protocol/options/OptionsFactory.sol/OptionsFactory.json";
 import QTokenJSON from "../artifacts/contracts/protocol/options/QToken.sol/QToken.json";
+import MockERC20JSON from "../artifacts/contracts/protocol/test/MockERC20.sol/MockERC20.json";
 import { OptionsFactory } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
+import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 
@@ -17,19 +17,14 @@ const mockERC20 = async (
   tokenSymbol: string,
   tokenName?: string,
   decimals?: number
-): Promise<MockContract> => {
-  const erc20 = await deployMockContract(deployer, ERC20.abi);
-
-  await erc20.mock.symbol.returns(tokenSymbol);
-
-  if (tokenName !== undefined) {
-    await erc20.mock.name.returns(tokenName);
-  }
-  if (decimals !== undefined) {
-    await erc20.mock.decimals.returns(decimals);
-  }
-
-  return erc20;
+): Promise<MockERC20> => {
+  return <MockERC20>(
+    await deployContract(deployer, MockERC20JSON, [
+      tokenName ?? "Mocked ERC20",
+      tokenSymbol,
+      decimals ?? 18,
+    ])
+  );
 };
 
 const deployQuantConfig = async (admin: Signer): Promise<QuantConfig> => {
