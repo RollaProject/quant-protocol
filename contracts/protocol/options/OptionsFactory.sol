@@ -23,6 +23,9 @@ contract OptionsFactory {
 
     mapping(bytes32 => address) private _qTokenHashToAddress;
 
+    /// @notice mapping that can be used to check if a QToken at a given address has already been created
+    mapping(address => bool) public qTokenCreated;
+
     /// @notice emitted when the factory creates a new option
     event OptionCreated(
         address qTokenAddress,
@@ -160,6 +163,7 @@ contract OptionsFactory {
 
         _qTokenHashToAddress[qTokenHash] = newQToken;
         qTokens.push(newQToken);
+        qTokenCreated[newQToken] = true;
 
         newCollateralTokenId = _collateralToken.createCollateralToken(
             newQToken,
