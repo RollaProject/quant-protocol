@@ -1,4 +1,4 @@
-import { Signer } from "ethers";
+import { BigNumber, Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import QTokenJSON from "../artifacts/contracts/protocol/options/QToken.sol/QToken.json";
@@ -18,8 +18,9 @@ describe("QToken", () => {
   let USDC: MockERC20;
   let WETH: MockERC20;
   let userAddress: string;
+  let scaledStrikePrice: BigNumber;
+  const strikePrice = "1400";
   const expiryTime = ethers.BigNumber.from("1618592400"); // April 16th, 2021
-  const strkePrice = ethers.utils.parseEther("1400");
   const oracle = ethers.constants.AddressZero;
 
   const mintOptionsToAccount = async (account: string, amount: number) => {
@@ -34,8 +35,10 @@ describe("QToken", () => {
 
     quantConfig = await deployQuantConfig(admin);
 
-    USDC = await mockERC20(admin, "USDC");
-    WETH = await mockERC20(admin, "WETH");
+    WETH = await mockERC20(admin, "WETH", "Wrapped Ether");
+    USDC = await mockERC20(admin, "USDC", "USD Coin", 6);
+
+    scaledStrikePrice = ethers.utils.parseUnits("1400", await USDC.decimals());
 
     qToken = await deployQToken(
       admin,
@@ -43,7 +46,7 @@ describe("QToken", () => {
       WETH.address,
       USDC.address,
       oracle,
-      strkePrice,
+      strikePrice,
       expiryTime,
       false
     );
@@ -58,7 +61,7 @@ describe("QToken", () => {
     expect(await qToken.underlyingAsset()).to.equal(WETH.address);
     expect(await qToken.strikeAsset()).to.equal(USDC.address);
     expect(await qToken.oracle()).to.equal(oracle);
-    expect(await qToken.strikePrice()).to.equal(strkePrice);
+    expect(await qToken.strikePrice()).to.equal(scaledStrikePrice);
     expect(await qToken.expiryTime()).to.equal(expiryTime);
     expect(await qToken.isCall()).to.be.false;
   });
@@ -109,17 +112,15 @@ describe("QToken", () => {
   });
 
   it("Should create CALL options with different parameters", async () => {
-    qToken = <QToken>(
-      await deployContract(admin, QTokenJSON, [
-        quantConfig.address,
-        WETH.address,
-        USDC.address,
-        oracle,
-        ethers.BigNumber.from("1912340000000000000000"),
-        ethers.BigNumber.from("1630768904"),
-        true,
-      ])
-    );
+    qToken = <QToken>await deployContract(admin, QTokenJSON, [
+      quantConfig.address,
+      WETH.address,
+      USDC.address,
+      oracle,
+      ethers.BigNumber.from("1912340000"), // USDC has 6 decimals
+      ethers.BigNumber.from("1630768904"),
+      true,
+    ]);
     expect(await qToken.symbol()).to.equal("QUANT-WETH-USDC-04SEP21-1912.44-C");
     expect(await qToken.name()).to.equal(
       "QUANT WETH-USDC 04-September-2021 1912.44 Call"
@@ -164,7 +165,7 @@ describe("QToken", () => {
           WETH.address,
           USDC.address,
           oracle,
-          strkePrice,
+          strikePrice,
           ethers.BigNumber.from(optionexpiryTime.toString()),
           false,
         ])

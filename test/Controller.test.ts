@@ -64,7 +64,7 @@ describe("Controller", () => {
       WETH.address,
       USDC.address,
       ethers.constants.AddressZero,
-      ethers.BigNumber.from("1400"),
+      ethers.utils.parseUnits("1400", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       false,
     ];
@@ -79,7 +79,7 @@ describe("Controller", () => {
       WETH.address,
       USDC.address,
       ethers.constants.AddressZero,
-      ethers.utils.parseEther("2000"),
+      ethers.utils.parseUnits("2000", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       true,
     ];
@@ -234,7 +234,7 @@ describe("Controller", () => {
         WETH.address,
         USDC.address,
         ethers.constants.AddressZero,
-        ethers.utils.parseEther("2000"),
+        ethers.utils.parseUnits("2000", await USDC.decimals()),
         ethers.BigNumber.from(futureTimestamp),
         ethers.BigNumber.from("0"),
         true
@@ -284,7 +284,7 @@ describe("Controller", () => {
         WETH.address,
         USDC.address,
         ethers.constants.AddressZero,
-        ethers.BigNumber.from("1400"),
+        ethers.utils.parseUnits("1400", 6),
         ethers.BigNumber.from(futureTimestamp),
         ethers.BigNumber.from("0"),
         false

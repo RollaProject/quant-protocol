@@ -68,7 +68,7 @@ describe("OptionsFactory", () => {
       WETH.address,
       USDC.address,
       ethers.constants.AddressZero,
-      ethers.BigNumber.from("1400"),
+      ethers.utils.parseUnits("1400", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       false,
     ];
@@ -77,7 +77,7 @@ describe("OptionsFactory", () => {
       WETH.address,
       USDC.address,
       ethers.constants.AddressZero,
-      ethers.BigNumber.from("1400"),
+      ethers.utils.parseUnits("1400", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       ethers.BigNumber.from("0"),
       false,
@@ -127,7 +127,7 @@ describe("OptionsFactory", () => {
           WETH.address,
           USDC.address,
           ethers.constants.AddressZero,
-          ethers.BigNumber.from("1400"),
+          ethers.utils.parseUnits("1400", await USDC.decimals()),
           ethers.BigNumber.from(pastTimestamp),
           false
         )
