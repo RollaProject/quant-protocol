@@ -1,8 +1,8 @@
-import { MockContract } from "ethereum-waffle";
 import { BigNumber, BigNumberish, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import { CollateralToken } from "../typechain/CollateralToken";
+import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
@@ -20,8 +20,8 @@ describe("CollateralToken", () => {
   let admin: Signer;
   let secondAccount: Signer;
   let userAddress: string;
-  let WETH: MockContract;
-  let USDC: MockContract;
+  let WETH: MockERC20;
+  let USDC: MockERC20;
 
   const createCollateralToken = async (
     account: Signer,
@@ -42,8 +42,8 @@ describe("CollateralToken", () => {
     const secondQToken = await deployQToken(
       admin,
       quantConfig,
-      USDC.address,
       WETH.address,
+      USDC.address,
       ethers.constants.AddressZero,
       ethers.utils.parseEther("2000"),
       ethers.BigNumber.from("1618592400"),
