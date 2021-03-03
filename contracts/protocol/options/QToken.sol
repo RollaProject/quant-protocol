@@ -94,7 +94,7 @@ contract QToken is ERC20 {
                 quantConfig.OPTIONS_CONTROLLER_ROLE(),
                 msg.sender
             ),
-            "QToken: Only the OptionsFactory can mint QTokens"
+            "QToken: Only the Controller can mint QTokens"
         );
         _mint(account, amount);
     }
