@@ -1,9 +1,9 @@
-import { MockContract } from "ethereum-waffle";
 import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import { OptionsFactory } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
+import { MockERC20 } from "../typechain/MockERC20";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
 import {
@@ -18,8 +18,8 @@ describe("OptionsFactory", () => {
   let collateralToken: CollateralToken;
   let admin: Signer;
   let secondAccount: Signer;
-  let WETH: MockContract;
-  let USDC: MockContract;
+  let WETH: MockERC20;
+  let USDC: MockERC20;
   let optionsFactory: OptionsFactory;
   let futureTimestamp: number;
   let samplePutOptionParameters: [
@@ -85,7 +85,7 @@ describe("OptionsFactory", () => {
   });
 
   describe("createOption", () => {
-    it("Admin should be able to create new options", async () => {
+    it("Anyone should be able to create new options", async () => {
       await expect(optionsFactory.qTokens(ethers.BigNumber.from("0"))).to.be
         .reverted;
 
@@ -98,12 +98,14 @@ describe("OptionsFactory", () => {
       );
 
       await expect(
-        optionsFactory.connect(admin).createOption(...samplePutOptionParameters)
+        optionsFactory
+          .connect(secondAccount)
+          .createOption(...samplePutOptionParameters)
       )
         .to.emit(optionsFactory, "OptionCreated")
         .withArgs(
           qTokenAddress,
-          await admin.getAddress(),
+          await secondAccount.getAddress(),
           ...samplePutOptionParameters.slice(0, 5),
           collateralTokenId,
           false

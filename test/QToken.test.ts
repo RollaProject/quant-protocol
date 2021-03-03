@@ -1,8 +1,8 @@
-import { MockContract } from "ethereum-waffle";
 import { Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import QTokenJSON from "../artifacts/contracts/protocol/options/QToken.sol/QToken.json";
+import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
@@ -15,8 +15,8 @@ describe("QToken", () => {
   let qToken: QToken;
   let admin: Signer;
   let secondAccount: Signer;
-  let USDC: MockContract;
-  let WETH: MockContract;
+  let USDC: MockERC20;
+  let WETH: MockERC20;
   let userAddress: string;
   const expiryTime = ethers.BigNumber.from("1618592400"); // April 16th, 2021
   const strkePrice = ethers.utils.parseEther("1400");
@@ -97,7 +97,7 @@ describe("QToken", () => {
       qToken
         .connect(secondAccount)
         .mint(userAddress, ethers.utils.parseEther("2"))
-    ).to.be.revertedWith("QToken: Only the OptionsFactory can mint QTokens");
+    ).to.be.revertedWith("QToken: Only the Controller can mint QTokens");
   });
 
   it("Should revert when an unauthorized account tries to burn options", async () => {
