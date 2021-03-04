@@ -1,4 +1,4 @@
-## `QuantConfig`
+## `QuantConfigV2`
 
 For storing constants, variables and allowing them to be changed by the admin (governance)
 
@@ -9,8 +9,6 @@ This should be used as a central access control manager which other contracts us
 Set the protocol fee
 
 Only accounts or contracts with the admin role should call this function
-
-### `setPriceRegistry(address _priceRegistry)` (external)
 
 ### `initialize(address _admin)` (public)
 
