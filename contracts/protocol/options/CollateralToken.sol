@@ -35,6 +35,38 @@ contract CollateralToken is ERC1155 {
     /// @notice mapping from token ids to their supplies
     mapping(uint256 => uint256) public tokenSupplies;
 
+    /// @notice event emitted when a new CollateralToken is created
+    /// @param qTokenAddress address of the corresponding QToken
+    /// @param collateralizedFrom initial spread collateral
+    /// @param id unique id of the created CollateralToken
+    /// @param allCollateralTokensLength the updated number of already created CollateralTokens
+    event CollateralTokenCreated(
+        address indexed qTokenAddress,
+        uint256 collateralizedFrom,
+        uint256 id,
+        uint256 allCollateralTokensLength
+    );
+
+    /// @notice event emitted when CollateralTokens are minted
+    /// @param recipient address that received the minted CollateralTokens
+    /// @param id unique id of the minted CollateralToken
+    /// @param amount the amount of CollateralToken minted
+    event CollateralTokenMinted(
+        address indexed recipient,
+        uint256 indexed id,
+        uint256 amount
+    );
+
+    /// @notice event emitted when CollateralTokens are burned
+    /// @param owner address that the CollateralToken was burned from
+    /// @param id unique id of the burned CollateralToken
+    /// @param amount the amount of CollateralToken burned
+    event CollateralTokenBurned(
+        address indexed owner,
+        uint256 indexed id,
+        uint256 amount
+    );
+
     /// @notice Initializes a new ERC1155 multi-token contract for representing
     /// users' short positions
     /// @param _quantConfig the address of the Quant system configuration contract
@@ -71,6 +103,13 @@ contract CollateralToken is ERC1155 {
         });
 
         collateralTokensIds.push(id);
+
+        emit CollateralTokenCreated(
+            _qTokenAddress,
+            _collateralizedFrom,
+            id,
+            collateralTokensIds.length
+        );
     }
 
     /// @notice Mint CollateralTokens for a given account
@@ -94,6 +133,8 @@ contract CollateralToken is ERC1155 {
         tokenSupplies[collateralTokenId] = tokenSupplies[collateralTokenId].add(
             amount
         );
+
+        emit CollateralTokenMinted(recipient, collateralTokenId, amount);
     }
 
     /// @notice Mint CollateralTokens for a given account
@@ -117,6 +158,8 @@ contract CollateralToken is ERC1155 {
         tokenSupplies[collateralTokenId] = tokenSupplies[collateralTokenId].sub(
             amount
         );
+
+        emit CollateralTokenBurned(owner, collateralTokenId, amount);
     }
 
     /// @notice Batched minting of multiple CollateralTokens for a given account
@@ -142,6 +185,7 @@ contract CollateralToken is ERC1155 {
 
         for (uint256 i = 0; i < ids.length; i++) {
             tokenSupplies[ids[i]] = tokenSupplies[ids[i]].add(amounts[i]);
+            emit CollateralTokenMinted(recipient, ids[i], amounts[i]);
         }
     }
 
@@ -168,6 +212,7 @@ contract CollateralToken is ERC1155 {
 
         for (uint256 i = 0; i < ids.length; i++) {
             tokenSupplies[ids[i]] = tokenSupplies[ids[i]].sub(amounts[i]);
+            emit CollateralTokenBurned(owner, ids[i], amounts[i]);
         }
     }
 

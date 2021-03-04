@@ -42,6 +42,16 @@ contract QToken is ERC20 {
     uint256 private constant _STRIKE_PRICE_SCALE = 1e6;
     uint256 private constant _STRIKE_PRICE_DIGITS = 6;
 
+    /// @notice event emitted when QTokens are minted
+    /// @param account account the QToken was minted to
+    /// @param amount the amount of QToken minted
+    event QTokenMinted(address indexed account, uint256 amount);
+
+    /// @notice event emitted when QTokens are burned
+    /// @param account account the QToken was burned from
+    /// @param amount the amount of QToken burned
+    event QTokenBurned(address indexed account, uint256 amount);
+
     /// @notice Configures the parameters of a new option token
     /// @param _quantConfig the address of the Quant system configuration contract
     /// @param _underlyingAsset asset that the option references
@@ -97,6 +107,7 @@ contract QToken is ERC20 {
             "QToken: Only the Controller can mint QTokens"
         );
         _mint(account, amount);
+        emit QTokenMinted(account, amount);
     }
 
     /// @notice burn option token from an account.
@@ -111,6 +122,7 @@ contract QToken is ERC20 {
             "QToken: Only the OptionsFactory can burn QTokens"
         );
         _burn(account, amount);
+        emit QTokenBurned(account, amount);
     }
 
     /// @notice generates the name for an option
