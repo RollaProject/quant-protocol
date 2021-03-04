@@ -182,4 +182,17 @@ describe("QToken", () => {
       optionexpiryTime += aMonthInSeconds;
     }
   });
+
+  it("Should emit the QTokenMinted event", async () => {
+    await expect(qToken.connect(admin).mint(userAddress, 4))
+      .to.emit(qToken, "QTokenMinted")
+      .withArgs(userAddress, 4);
+  });
+
+  it("Should emit the QTokenBurned event", async () => {
+    await mintOptionsToAccount(userAddress, 6);
+    await expect(qToken.connect(admin).burn(userAddress, 3))
+      .to.emit(qToken, "QTokenBurned")
+      .withArgs(userAddress, 3);
+  });
 });
