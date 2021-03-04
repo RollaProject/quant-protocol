@@ -36,6 +36,7 @@ contract OptionsFactory {
         uint256 strikePrice,
         uint256 expiry,
         uint256 collateralTokenId,
+        uint256 allOptionsLength,
         bool isCall
     );
 
@@ -179,6 +180,7 @@ contract OptionsFactory {
             _strikePrice,
             _expiryTime,
             newCollateralTokenId,
+            qTokens.length,
             _isCall
         );
     }
