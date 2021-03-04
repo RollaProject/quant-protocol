@@ -108,6 +108,7 @@ describe("OptionsFactory", () => {
           await secondAccount.getAddress(),
           ...samplePutOptionParameters.slice(0, 5),
           collateralTokenId,
+          ethers.BigNumber.from("1"),
           false
         );
 
