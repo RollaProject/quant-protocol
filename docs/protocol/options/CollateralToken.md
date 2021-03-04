@@ -62,3 +62,24 @@ Returns a unique CollateralToken id based on its parameters
 
 
 
+### `CollateralTokenCreated(address qTokenAddress, uint256 collateralizedFrom, uint256 id, uint256 allCollateralTokensLength)`
+
+event emitted when a new CollateralToken is created
+
+
+
+
+### `CollateralTokenMinted(address recipient, uint256 id, uint256 amount)`
+
+event emitted when CollateralTokens are minted
+
+
+
+
+### `CollateralTokenBurned(address owner, uint256 id, uint256 amount)`
+
+event emitted when CollateralTokens are burned
+
+
+
+
