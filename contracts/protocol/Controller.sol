@@ -10,8 +10,6 @@ import "./options/OptionsFactory.sol";
 import "./options/QToken.sol";
 import "./options/CollateralToken.sol";
 
-import "hardhat/console.sol";
-
 contract Controller {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -41,6 +39,10 @@ contract Controller {
             "Controller: Cannot mint expired options"
         );
 
+        uint256 amountToMint = _optionsAmount.mul(10**18);
+
+        emit OptionsPositionMinted(msg.sender, amountToMint);
+
         // Get the collateral required to mint the given _optionsAmount
         uint256 collateralAmount;
         if (qToken.isCall()) {
@@ -68,7 +70,6 @@ contract Controller {
         }
 
         // Mint the options to the sender's address
-        uint256 amountToMint = _optionsAmount.mul(10**qToken.decimals());
         qToken.mint(msg.sender, amountToMint);
         uint256 collateralTokenId =
             _collateralToken.getCollateralTokenId(_qToken, 0);
@@ -77,7 +78,5 @@ contract Controller {
             collateralTokenId,
             amountToMint
         );
-
-        emit OptionsPositionMinted(msg.sender, amountToMint);
     }
 }
