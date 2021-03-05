@@ -166,9 +166,16 @@ contract OptionsFactory {
         qTokens.push(newQToken);
         qTokenCreated[newQToken] = true;
 
-        newCollateralTokenId = _collateralToken.createCollateralToken(
-            newQToken,
-            0
+        newCollateralTokenId = OptionsUtils.getTargetCollateralTokenId(
+            _collateralToken,
+            address(_quantConfig),
+            _underlyingAsset,
+            _strikeAsset,
+            _oracle,
+            _strikePrice,
+            _expiryTime,
+            0,
+            _isCall
         );
 
         emit OptionCreated(
@@ -183,6 +190,8 @@ contract OptionsFactory {
             qTokens.length,
             _isCall
         );
+
+        _collateralToken.createCollateralToken(newQToken, 0);
     }
 
     /// @notice get the CollateralToken id for an already created CollateralToken,

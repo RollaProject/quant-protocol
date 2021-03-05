@@ -128,13 +128,14 @@ contract CollateralToken is ERC1155 {
             ),
             "CollateralToken: Only the OptionsFactory can mint CollateralTokens"
         );
-        _mint(recipient, collateralTokenId, amount, "");
 
         tokenSupplies[collateralTokenId] = tokenSupplies[collateralTokenId].add(
             amount
         );
 
         emit CollateralTokenMinted(recipient, collateralTokenId, amount);
+
+        _mint(recipient, collateralTokenId, amount, "");
     }
 
     /// @notice Mint CollateralTokens for a given account
@@ -181,12 +182,13 @@ contract CollateralToken is ERC1155 {
             ),
             "CollateralToken: Only the OptionsFactory can mint CollateralTokens"
         );
-        _mintBatch(recipient, ids, amounts, "");
 
         for (uint256 i = 0; i < ids.length; i++) {
             tokenSupplies[ids[i]] = tokenSupplies[ids[i]].add(amounts[i]);
             emit CollateralTokenMinted(recipient, ids[i], amounts[i]);
         }
+
+        _mintBatch(recipient, ids, amounts, "");
     }
 
     /// @notice Batched burning of of multiple CollateralTokens from a given account
