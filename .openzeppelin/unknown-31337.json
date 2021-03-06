@@ -116,8 +116,8 @@
       }
     },
     "cf69201782b8cd4068da83feaa6090681a03cb700f7f4c5dd71578a4feba8c0e": {
-      "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-      "txHash": "0x5a3422a3990dba4cf943a8312c0a831a59edc0c6b1d770d0300d4f8aec35c06f",
+      "address": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+      "txHash": "0x8f2bef3c3d47019876043db02386e54d53eb245a243353cf8c3672a3ec10019b",
       "layout": {
         "storage": [
           {
@@ -184,7 +184,7 @@
             "members": [
               {
                 "label": "members",
-                "type": "t_struct(AddressSet)3489_storage"
+                "type": "t_struct(AddressSet)1542_storage"
               },
               {
                 "label": "adminRole",
@@ -192,16 +192,16 @@
               }
             ]
           },
-          "t_struct(AddressSet)3489_storage": {
+          "t_struct(AddressSet)1542_storage": {
             "label": "struct EnumerableSet.AddressSet",
             "members": [
               {
                 "label": "_inner",
-                "type": "t_struct(Set)3224_storage"
+                "type": "t_struct(Set)1277_storage"
               }
             ]
           },
-          "t_struct(Set)3224_storage": {
+          "t_struct(Set)1277_storage": {
             "label": "struct EnumerableSet.Set",
             "members": [
               {
@@ -224,8 +224,8 @@
       }
     },
     "b9bf05a2db4ed19e0f674db9ef2cee48a08553c7228feedfad4fc433cbe996b6": {
-      "address": "0x8fC8CFB7f7362E44E472c690A6e025B80E406458",
-      "txHash": "0x46b884d7985b754c9868a34bc5a847debe5c587092c78f1aa8708656628a91b0",
+      "address": "0xDde063eBe8E85D666AD99f731B4Dbf8C98F29708",
+      "txHash": "0x2d19a329095bfd95db0c0de664d2c51c141c9b4b76f726b57baa0e045ce25fab",
       "layout": {
         "storage": [
           {
@@ -339,7 +339,7 @@
     }
   },
   "admin": {
-    "address": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
-    "txHash": "0x7d97770fdf1cb6f930c0239d1b494e16e78cbb7cdc7b03f69b1cd3cb2b6dc9c6"
+    "address": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+    "txHash": "0xcc777fe0196657a24e70c90e66ba5471a227590f91947bed38e1e202f9c5f0f3"
   }
 }

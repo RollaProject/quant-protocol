@@ -34,17 +34,18 @@ abstract contract ProviderOracleManager {
         );
         assets.push(_asset);
         assetOracles[_asset] = _oracle;
+
+        //todo add event in here
     }
 
-    //todo we need to change the round id parameter to a bytes32 as roundid is exclusive to chainlink
     /// @notice Get the expiry price from oracle and store it in the price registry so we have a copy
     /// @param _asset asset to set price of
     /// @param _expiryTimestamp timestamp of price
-    /// @param _roundId the chainlink round id
+    /// @param _calldata additional parameter that the method may need to execute
     function setExpiryPriceInRegistry(
         address _asset,
         uint256 _expiryTimestamp,
-        uint256 _roundId
+        bytes32 _calldata
     ) external virtual;
 
     /// @notice Get the total number of assets managed by the oracle manager
