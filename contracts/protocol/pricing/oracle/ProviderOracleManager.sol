@@ -6,6 +6,8 @@ import "../../QuantConfig.sol";
 /// @title Oracle manager for holding asset addresses and their oracle addresses for a single provider
 /// @notice Once an oracle is added for an asset it can't be changed!
 abstract contract ProviderOracleManager {
+    event OracleAdded(address asset, address oracle);
+
     /// @notice quant central configuration
     QuantConfig public config;
 
@@ -35,7 +37,7 @@ abstract contract ProviderOracleManager {
         assets.push(_asset);
         assetOracles[_asset] = _oracle;
 
-        //todo add event in here
+        emit OracleAdded(_asset, _oracle);
     }
 
     /// @notice Get the expiry price from oracle and store it in the price registry so we have a copy
