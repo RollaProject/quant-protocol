@@ -1,7 +1,7 @@
 import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe } from "mocha";
-import { OptionsFactory } from "../typechain";
+import { OptionsFactory, Whitelist } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QuantConfig } from "../typechain/QuantConfig";
@@ -10,6 +10,7 @@ import {
   deployCollateralToken,
   deployOptionsFactory,
   deployQuantConfig,
+  deployWhitelist,
   mockERC20,
 } from "./testUtils";
 
@@ -21,6 +22,7 @@ describe("OptionsFactory", () => {
   let WETH: MockERC20;
   let USDC: MockERC20;
   let optionsFactory: OptionsFactory;
+  let whitelist: Whitelist;
   let futureTimestamp: number;
   let samplePutOptionParameters: [
     string,
@@ -45,15 +47,22 @@ describe("OptionsFactory", () => {
 
     quantConfig = await deployQuantConfig(admin);
 
-    WETH = await mockERC20(admin, "WETH");
-    USDC = await mockERC20(admin, "USDC");
+    WETH = await mockERC20(admin, "WETH", "Wrapped Ether");
+    USDC = await mockERC20(admin, "USDC", "USD Coin", 6);
 
     collateralToken = await deployCollateralToken(admin, quantConfig);
+
+    whitelist = await deployWhitelist(admin, quantConfig);
+
+    await whitelist
+      .connect(admin)
+      .whitelistUnderlying(WETH.address, await WETH.decimals());
 
     optionsFactory = await deployOptionsFactory(
       admin,
       quantConfig,
-      collateralToken
+      collateralToken,
+      whitelist
     );
 
     await quantConfig.grantRole(
@@ -160,6 +169,21 @@ describe("OptionsFactory", () => {
             false
           )
       ).to.be.revertedWith("OptionsFactory: strike for put can't be 0");
+    });
+
+    it("Should revert when trying to create an option with an underlying that's not whitelisted", async () => {
+      await expect(
+        optionsFactory
+          .connect(secondAccount)
+          .createOption(
+            ethers.constants.AddressZero,
+            USDC.address,
+            ethers.constants.AddressZero,
+            ethers.utils.parseUnits("1400", await USDC.decimals()),
+            futureTimestamp,
+            false
+          )
+      ).to.be.revertedWith("OptionsFactory: underlying is not whitelisted");
     });
   });
 

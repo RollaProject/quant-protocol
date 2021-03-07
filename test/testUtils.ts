@@ -3,8 +3,9 @@ import { ethers, upgrades, waffle } from "hardhat";
 import CollateralTokenJSON from "../artifacts/contracts/protocol/options/CollateralToken.sol/CollateralToken.json";
 import OptionsFactoryJSON from "../artifacts/contracts/protocol/options/OptionsFactory.sol/OptionsFactory.json";
 import QTokenJSON from "../artifacts/contracts/protocol/options/QToken.sol/QToken.json";
+import WhitelistJSON from "../artifacts/contracts/protocol/options/Whitelist.sol/Whitelist.json";
 import MockERC20JSON from "../artifacts/contracts/protocol/test/MockERC20.sol/MockERC20.json";
-import { OptionsFactory } from "../typechain";
+import { OptionsFactory, Whitelist } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
@@ -85,16 +86,29 @@ const deployCollateralToken = async (
 const deployOptionsFactory = async (
   deployer: Signer,
   quantConfig: QuantConfig,
-  collateralToken: CollateralToken
+  collateralToken: CollateralToken,
+  whitelist: Whitelist
 ): Promise<OptionsFactory> => {
   const optionsFactory = <OptionsFactory>(
     await deployContract(deployer, OptionsFactoryJSON, [
       quantConfig.address,
       collateralToken.address,
+      whitelist.address,
     ])
   );
 
   return optionsFactory;
+};
+
+const deployWhitelist = async (
+  deployer: Signer,
+  quantConfig: QuantConfig
+): Promise<Whitelist> => {
+  const whitelist = <Whitelist>(
+    await deployContract(deployer, WhitelistJSON, [quantConfig.address])
+  );
+
+  return whitelist;
 };
 
 export {
@@ -102,5 +116,6 @@ export {
   deployOptionsFactory,
   deployQToken,
   deployQuantConfig,
+  deployWhitelist,
   mockERC20,
 };
