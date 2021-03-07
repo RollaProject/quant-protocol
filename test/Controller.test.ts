@@ -2,7 +2,7 @@ import { BigNumber, Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import ControllerJSON from "../artifacts/contracts/protocol/Controller.sol/Controller.json";
-import { OptionsFactory } from "../typechain";
+import { OptionsFactory, Whitelist } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
 import { MockERC20 } from "../typechain/MockERC20";
@@ -13,6 +13,7 @@ import {
   deployCollateralToken,
   deployOptionsFactory,
   deployQuantConfig,
+  deployWhitelist,
   mockERC20,
 } from "./testUtils";
 
@@ -29,6 +30,7 @@ describe("Controller", () => {
   let WETH: MockERC20;
   let USDC: MockERC20;
   let optionsFactory: OptionsFactory;
+  let whitelist: Whitelist;
   let futureTimestamp: number;
   let samplePutOptionParameters: optionParameters;
   let sampleCallOptionParameters: optionParameters;
@@ -46,10 +48,17 @@ describe("Controller", () => {
     USDC = await mockERC20(admin, "USDC", "USD Coin", 6);
     collateralToken = await deployCollateralToken(admin, quantConfig);
 
+    whitelist = await deployWhitelist(admin, quantConfig);
+
+    await whitelist
+      .connect(admin)
+      .whitelistUnderlying(WETH.address, await WETH.decimals());
+
     optionsFactory = await deployOptionsFactory(
       admin,
       quantConfig,
-      collateralToken
+      collateralToken,
+      whitelist
     );
 
     await quantConfig.grantRole(
@@ -94,6 +103,7 @@ describe("Controller", () => {
       await deployContract(admin, ControllerJSON, [
         optionsFactory.address,
         collateralToken.address,
+        whitelist.address,
       ])
     );
 

@@ -4,11 +4,11 @@ pragma solidity ^0.7.0;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./QuantConfig.sol";
 import "./options/OptionsFactory.sol";
 import "./options/QToken.sol";
 import "./options/CollateralToken.sol";
+import "./options/Whitelist.sol";
 
 contract Controller {
     using SafeMath for uint256;
@@ -16,19 +16,25 @@ contract Controller {
 
     OptionsFactory private immutable _optionsFactory;
     CollateralToken private immutable _collateralToken;
+    Whitelist private immutable _whitelist;
 
     event OptionsPositionMinted(address indexed account, uint256 optionsAmount);
 
-    constructor(address optionsFactory_, address collateralToken_) {
+    constructor(
+        address optionsFactory_,
+        address collateralToken_,
+        address whitelist_
+    ) {
         _optionsFactory = OptionsFactory(optionsFactory_);
         _collateralToken = CollateralToken(collateralToken_);
+        _whitelist = Whitelist(whitelist_);
     }
 
     function mintOptionsPosition(address _qToken, uint256 _optionsAmount)
         external
     {
         require(
-            _optionsFactory.qTokenCreated(_qToken),
+            _optionsFactory.qTokenAddressToHash(_qToken) != bytes32(0),
             "Controller: Option needs to be created by the factory first"
         );
 
@@ -49,7 +55,10 @@ contract Controller {
             IERC20 underlying = IERC20(qToken.underlyingAsset());
 
             collateralAmount = _optionsAmount.mul(
-                10**ERC20(address(underlying)).decimals()
+                10 **
+                    _whitelist.whitelistedUnderlyingDecimals(
+                        address(underlying)
+                    )
             );
 
             underlying.safeTransferFrom(
