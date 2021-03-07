@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./QToken.sol";
 import "./CollateralToken.sol";
 import "./OptionsUtils.sol";
+import "./Whitelist.sol";
 import "../QuantConfig.sol";
 
 /// @title Factory contract for Quant options
@@ -21,10 +22,12 @@ contract OptionsFactory {
 
     CollateralToken private _collateralToken;
 
+    Whitelist private _whitelist;
+
     mapping(bytes32 => address) private _qTokenHashToAddress;
 
     /// @notice mapping that can be used to check if a QToken at a given address has already been created
-    mapping(address => bool) public qTokenCreated;
+    mapping(address => bytes32) public qTokenAddressToHash;
 
     /// @notice emitted when the factory creates a new option
     event OptionCreated(
@@ -43,9 +46,15 @@ contract OptionsFactory {
     /// @notice Initializes a new options factory
     /// @param quantConfig_ the address of the Quant system configuration contract
     /// @param collateralToken_ address of the CollateralToken contract
-    constructor(address quantConfig_, address collateralToken_) {
+    /// @param whitelist_ address of the Whitelist for underlying tokens contract
+    constructor(
+        address quantConfig_,
+        address collateralToken_,
+        address whitelist_
+    ) {
         _quantConfig = QuantConfig(quantConfig_);
         _collateralToken = CollateralToken(collateralToken_);
+        _whitelist = Whitelist(whitelist_);
     }
 
     /// @notice get the address at which a new QToken with the given parameters would be deployed
@@ -149,6 +158,10 @@ contract OptionsFactory {
             _isCall || _strikePrice > 0,
             "OptionsFactory: strike for put can't be 0"
         );
+        require(
+            _whitelist.whitelistedUnderlyingDecimals(_underlyingAsset) != 0,
+            "OptionsFactory: underlying is not whitelisted"
+        );
 
         newQToken = address(
             new QToken{salt: OptionsUtils.SALT}(
@@ -164,7 +177,7 @@ contract OptionsFactory {
 
         _qTokenHashToAddress[qTokenHash] = newQToken;
         qTokens.push(newQToken);
-        qTokenCreated[newQToken] = true;
+        qTokenAddressToHash[newQToken] = qTokenHash;
 
         newCollateralTokenId = OptionsUtils.getTargetCollateralTokenId(
             _collateralToken,
