@@ -189,6 +189,7 @@ contract QToken is ERC20 {
         uint256 _expiryTime,
         bool _isCall
     ) internal view returns (string memory tokenSymbol) {
+        // TODO: get name and symbol from AssetsRegistry
         string memory underlying = ERC20(_underlyingAsset).symbol();
         string memory strike = ERC20(_strikeAsset).symbol();
         string memory displayStrikePrice = _displayedStrikePrice(_strikePrice);

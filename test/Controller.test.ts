@@ -2,7 +2,7 @@ import { BigNumber, Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import ControllerJSON from "../artifacts/contracts/protocol/Controller.sol/Controller.json";
-import { OptionsFactory, Whitelist } from "../typechain";
+import { AssetsRegistry, OptionsFactory } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
 import { MockERC20 } from "../typechain/MockERC20";
@@ -10,10 +10,10 @@ import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
 import {
+  deployAssetsRegistry,
   deployCollateralToken,
   deployOptionsFactory,
   deployQuantConfig,
-  deployWhitelist,
   mockERC20,
 } from "./testUtils";
 
@@ -30,7 +30,7 @@ describe("Controller", () => {
   let WETH: MockERC20;
   let USDC: MockERC20;
   let optionsFactory: OptionsFactory;
-  let whitelist: Whitelist;
+  let assetsRegistry: AssetsRegistry;
   let futureTimestamp: number;
   let samplePutOptionParameters: optionParameters;
   let sampleCallOptionParameters: optionParameters;
@@ -48,17 +48,21 @@ describe("Controller", () => {
     USDC = await mockERC20(admin, "USDC", "USD Coin", 6);
     collateralToken = await deployCollateralToken(admin, quantConfig);
 
-    whitelist = await deployWhitelist(admin, quantConfig);
+    assetsRegistry = await deployAssetsRegistry(admin, quantConfig);
 
-    await whitelist
+    await assetsRegistry
       .connect(admin)
-      .whitelistUnderlying(WETH.address, await WETH.decimals());
+      .addAsset(
+        WETH.address,
+        await WETH.name(),
+        await WETH.symbol(),
+        await WETH.decimals()
+      );
 
     optionsFactory = await deployOptionsFactory(
       admin,
       quantConfig,
-      collateralToken,
-      whitelist
+      collateralToken
     );
 
     await quantConfig.grantRole(
@@ -100,11 +104,7 @@ describe("Controller", () => {
       .createOption(...sampleCallOptionParameters);
 
     controller = <Controller>(
-      await deployContract(admin, ControllerJSON, [
-        optionsFactory.address,
-        collateralToken.address,
-        whitelist.address,
-      ])
+      await deployContract(admin, ControllerJSON, [optionsFactory.address])
     );
 
     await quantConfig.grantRole(
@@ -168,7 +168,7 @@ describe("Controller", () => {
       // the user mints options through the controller
       await controller
         .connect(secondAccount)
-        .mintOptionsPosition(qTokenCallAddress, ethers.BigNumber.from("2"));
+        .mintOptionsPosition(qTokenCallAddress, ethers.utils.parseEther("2"));
 
       // the user's WETH balance should have decreased
       expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
@@ -190,31 +190,31 @@ describe("Controller", () => {
       // mint USDC to the user account
       await USDC.connect(admin).mint(
         await secondAccount.getAddress(),
-        ethers.utils.parseUnits("4000", "6") // USDC has 6 decimals
+        ethers.utils.parseUnits("4000", await USDC.decimals()) // USDC has 6 decimals
       );
       expect(await USDC.balanceOf(await secondAccount.getAddress())).to.equal(
-        ethers.utils.parseUnits("4000", "6")
+        ethers.utils.parseUnits("4000", await USDC.decimals())
       );
 
       // user needs to approve the controller to use his funds
       await USDC.connect(secondAccount).approve(
         controller.address,
-        ethers.utils.parseUnits("2800", "6")
+        ethers.utils.parseUnits("2800", await USDC.decimals())
       );
 
       // the user mints options through the controller
       await controller
         .connect(secondAccount)
-        .mintOptionsPosition(qTokenPutAddress, ethers.BigNumber.from("2"));
+        .mintOptionsPosition(qTokenPutAddress, ethers.utils.parseEther("2"));
 
       // the user's USDC balance should have decreased
       expect(await USDC.balanceOf(await secondAccount.getAddress())).to.equal(
-        ethers.utils.parseUnits("1200", "6")
+        ethers.utils.parseUnits("1200", await USDC.decimals())
       );
 
       // the controller should have received the user's collateral
       expect(await USDC.balanceOf(controller.address)).to.equal(
-        ethers.utils.parseUnits("2800", "6")
+        ethers.utils.parseUnits("2800", await USDC.decimals())
       );
     });
 
@@ -232,7 +232,7 @@ describe("Controller", () => {
       await expect(
         controller
           .connect(secondAccount)
-          .mintOptionsPosition(qTokenCallAddress, ethers.BigNumber.from("4"))
+          .mintOptionsPosition(qTokenCallAddress, ethers.utils.parseEther("4"))
       )
         .to.emit(controller, "OptionsPositionMinted")
         .withArgs(
@@ -271,18 +271,18 @@ describe("Controller", () => {
     it("Users should be able to mint PUT options positions", async () => {
       await USDC.connect(admin).mint(
         await secondAccount.getAddress(),
-        ethers.utils.parseUnits("8000", "6") // USDC has 6 decimals
+        ethers.utils.parseUnits("8000", await USDC.decimals()) // USDC has 6 decimals
       );
 
       await USDC.connect(secondAccount).approve(
         controller.address,
-        ethers.utils.parseUnits("5600", "6")
+        ethers.utils.parseUnits("5600", await USDC.decimals())
       );
 
       await expect(
         controller
           .connect(secondAccount)
-          .mintOptionsPosition(qTokenPutAddress, ethers.BigNumber.from("4"))
+          .mintOptionsPosition(qTokenPutAddress, ethers.utils.parseEther("4"))
       )
         .to.emit(controller, "OptionsPositionMinted")
         .withArgs(

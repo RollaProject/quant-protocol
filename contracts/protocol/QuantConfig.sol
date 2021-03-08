@@ -12,6 +12,7 @@ contract QuantConfig is AccessControl, Initializable {
     address public admin;
     address public priceRegistry;
     address public oracleRegistry;
+    address public assetsRegistry;
     uint256 public fee;
     bool private _priceRegistrySetted;
 
@@ -38,6 +39,17 @@ contract QuantConfig is AccessControl, Initializable {
         require(!_priceRegistrySetted, "Can only set the price registry once");
         priceRegistry = _priceRegistry;
         _priceRegistrySetted = true;
+    }
+
+    /// @notice Set the protocol assets registry
+    /// @dev Only accounts or contracts with the admin role should call this contract
+    /// @param _assetsRegistry address of the AssetsRegistry to be used by the protocol
+    function setAssetsRegistry(address _assetsRegistry) external {
+        require(
+            hasRole(OPTIONS_CONTROLLER_ROLE, msg.sender),
+            "Caller is not admin"
+        );
+        assetsRegistry = _assetsRegistry;
     }
 
     /// @notice Initializes the system roles and assign them to the given admin address
