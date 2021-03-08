@@ -1,16 +1,16 @@
 import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe } from "mocha";
-import { OptionsFactory, Whitelist } from "../typechain";
+import { AssetsRegistry, OptionsFactory } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
 import {
+  deployAssetsRegistry,
   deployCollateralToken,
   deployOptionsFactory,
   deployQuantConfig,
-  deployWhitelist,
   mockERC20,
 } from "./testUtils";
 
@@ -22,7 +22,7 @@ describe("OptionsFactory", () => {
   let WETH: MockERC20;
   let USDC: MockERC20;
   let optionsFactory: OptionsFactory;
-  let whitelist: Whitelist;
+  let assetsRegistry: AssetsRegistry;
   let futureTimestamp: number;
   let samplePutOptionParameters: [
     string,
@@ -52,17 +52,21 @@ describe("OptionsFactory", () => {
 
     collateralToken = await deployCollateralToken(admin, quantConfig);
 
-    whitelist = await deployWhitelist(admin, quantConfig);
+    assetsRegistry = await deployAssetsRegistry(admin, quantConfig);
 
-    await whitelist
+    await assetsRegistry
       .connect(admin)
-      .whitelistUnderlying(WETH.address, await WETH.decimals());
+      .addAsset(
+        WETH.address,
+        await WETH.name(),
+        await WETH.symbol(),
+        await WETH.decimals()
+      );
 
     optionsFactory = await deployOptionsFactory(
       admin,
       quantConfig,
-      collateralToken,
-      whitelist
+      collateralToken
     );
 
     await quantConfig.grantRole(
@@ -171,7 +175,7 @@ describe("OptionsFactory", () => {
       ).to.be.revertedWith("OptionsFactory: strike for put can't be 0");
     });
 
-    it("Should revert when trying to create an option with an underlying that's not whitelisted", async () => {
+    it("Should revert when trying to create an option with an underlying that's not in the assets registry", async () => {
       await expect(
         optionsFactory
           .connect(secondAccount)
@@ -183,7 +187,9 @@ describe("OptionsFactory", () => {
             futureTimestamp,
             false
           )
-      ).to.be.revertedWith("OptionsFactory: underlying is not whitelisted");
+      ).to.be.revertedWith(
+        "OptionsFactory: underlying is not in the assets registry"
+      );
     });
   });
 
