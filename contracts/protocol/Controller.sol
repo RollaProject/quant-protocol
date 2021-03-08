@@ -4,37 +4,32 @@ pragma solidity ^0.7.0;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./QuantConfig.sol";
 import "./options/OptionsFactory.sol";
 import "./options/QToken.sol";
 import "./options/CollateralToken.sol";
-import "./options/Whitelist.sol";
+import "./options/AssetsRegistry.sol";
+
+import "hardhat/console.sol";
 
 contract Controller {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    OptionsFactory private immutable _optionsFactory;
-    CollateralToken private immutable _collateralToken;
-    Whitelist private immutable _whitelist;
+    OptionsFactory public immutable optionsFactory;
+
+    uint8 public constant OPTIONS_DECIMALS = 18;
 
     event OptionsPositionMinted(address indexed account, uint256 optionsAmount);
 
-    constructor(
-        address optionsFactory_,
-        address collateralToken_,
-        address whitelist_
-    ) {
-        _optionsFactory = OptionsFactory(optionsFactory_);
-        _collateralToken = CollateralToken(collateralToken_);
-        _whitelist = Whitelist(whitelist_);
+    constructor(address _optionsFactory) {
+        optionsFactory = OptionsFactory(_optionsFactory);
     }
 
-    function mintOptionsPosition(address _qToken, uint256 _optionsAmount)
-        external
-    {
+    modifier validQToken(address _qToken) {
         require(
-            _optionsFactory.qTokenAddressToHash(_qToken) != bytes32(0),
+            optionsFactory.qTokenAddressToHash(_qToken) != bytes32(0),
             "Controller: Option needs to be created by the factory first"
         );
 
@@ -45,47 +40,94 @@ contract Controller {
             "Controller: Cannot mint expired options"
         );
 
-        uint256 amountToMint = _optionsAmount.mul(10**18);
+        _;
+    }
 
-        emit OptionsPositionMinted(msg.sender, amountToMint);
+    function mintOptionsPosition(address _qToken, uint256 _optionsAmount)
+        external
+        validQToken(_qToken)
+    {
+        QToken qToken = QToken(_qToken);
 
-        // Get the collateral required to mint the given _optionsAmount
-        uint256 collateralAmount;
-        if (qToken.isCall()) {
-            IERC20 underlying = IERC20(qToken.underlyingAsset());
+        emit OptionsPositionMinted(msg.sender, _optionsAmount);
 
-            collateralAmount = _optionsAmount.mul(
-                10 **
-                    _whitelist.whitelistedUnderlyingDecimals(
-                        address(underlying)
-                    )
-            );
+        (address collateral, uint256 collateralAmount) =
+            _getCollateralRequirement(_qToken, address(0), _optionsAmount);
 
-            underlying.safeTransferFrom(
-                msg.sender,
-                address(this),
-                collateralAmount
-            );
-        } else {
-            IERC20 strike = IERC20(qToken.strikeAsset());
-
-            collateralAmount = _optionsAmount.mul(qToken.strikePrice());
-
-            strike.safeTransferFrom(
-                msg.sender,
-                address(this),
-                collateralAmount
-            );
-        }
+        IERC20(collateral).safeTransferFrom(
+            msg.sender,
+            address(this),
+            collateralAmount
+        );
 
         // Mint the options to the sender's address
-        qToken.mint(msg.sender, amountToMint);
+        qToken.mint(msg.sender, _optionsAmount);
         uint256 collateralTokenId =
-            _collateralToken.getCollateralTokenId(_qToken, 0);
-        _collateralToken.mintCollateralToken(
+            optionsFactory.collateralToken().getCollateralTokenId(_qToken, 0);
+        optionsFactory.collateralToken().mintCollateralToken(
             msg.sender,
             collateralTokenId,
-            amountToMint
+            _optionsAmount
         );
+    }
+
+    function mintSpread(address _qTokenLong, address _qTokenShort)
+        external
+        // uint256 _optionsAmount
+        validQToken(_qTokenLong)
+        validQToken(_qTokenShort)
+    {
+        QToken qTokenLong = QToken(_qTokenLong);
+        QToken qTokenShort = QToken(_qTokenShort);
+
+        // Check that expiries match
+        require(
+            qTokenLong.expiryTime() == qTokenShort.expiryTime(),
+            "Controller: Can't create spreads from options with different expiries"
+        );
+
+        // Check that the underlyings match
+        require(
+            qTokenLong.underlyingAsset() == qTokenShort.underlyingAsset(),
+            "Controller: Can't create spreads from options with different underlying assets"
+        );
+    }
+
+    function _getCollateralRequirement(
+        address _qTokenLong,
+        address _qTokenShort,
+        uint256 _optionsAmount
+    ) internal view returns (address collateral, uint256 collateralAmount) {
+        QToken qTokenLong = QToken(_qTokenLong);
+
+        if (qTokenLong.isCall()) {
+            address underlying = qTokenLong.underlyingAsset();
+
+            collateralAmount = _optionsAmount.mul(
+                (10**ERC20(underlying).decimals()).div(10**OPTIONS_DECIMALS)
+            );
+
+            return (underlying, collateralAmount);
+        } else {
+            uint256 qTokenLongStrikePrice = qTokenLong.strikePrice();
+
+            // Initially required collateral is the long strike price
+            uint256 collateralPerOption = qTokenLongStrikePrice;
+
+            if (_qTokenShort != address(0)) {
+                QToken qTokenShort = QToken(_qTokenShort);
+                uint256 qTokenShortStrikePrice = qTokenShort.strikePrice();
+                collateralPerOption = qTokenShortStrikePrice >
+                    qTokenLongStrikePrice
+                    ? 0 // PUT Credit Spread
+                    : qTokenShortStrikePrice.sub(qTokenLongStrikePrice); // Put Debit Spread
+            }
+
+            collateralAmount = _optionsAmount.mul(collateralPerOption).div(
+                10**OPTIONS_DECIMALS
+            );
+
+            return (qTokenLong.strikeAsset(), collateralAmount);
+        }
     }
 }
