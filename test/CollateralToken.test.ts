@@ -7,6 +7,7 @@ import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
 import {
+  deployAssetsRegistry,
   deployCollateralToken,
   deployQToken,
   deployQuantConfig,
@@ -65,6 +66,11 @@ describe("CollateralToken", () => {
 
     WETH = await mockERC20(admin, "WETH");
     USDC = await mockERC20(admin, "USDC");
+
+    const assetsRegistry = await deployAssetsRegistry(admin, quantConfig);
+
+    await assetsRegistry.connect(admin).addAsset(WETH.address, "", "", 0);
+    await assetsRegistry.connect(admin).addAsset(USDC.address, "", "", 0);
 
     qToken = await deployQToken(admin, quantConfig, WETH.address, USDC.address);
 

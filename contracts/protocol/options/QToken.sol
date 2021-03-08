@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
+import "./AssetsRegistry.sol";
 import "../QuantConfig.sol";
 import "../pricing/PriceRegistry.sol";
 
@@ -71,6 +72,7 @@ contract QToken is ERC20 {
     )
         ERC20(
             _qTokenName(
+                _quantConfig,
                 _underlyingAsset,
                 _strikeAsset,
                 _strikePrice,
@@ -78,6 +80,7 @@ contract QToken is ERC20 {
                 _isCall
             ),
             _qTokenSymbol(
+                _quantConfig,
                 _underlyingAsset,
                 _strikeAsset,
                 _strikePrice,
@@ -125,7 +128,25 @@ contract QToken is ERC20 {
         emit QTokenBurned(account, amount);
     }
 
+    /// @notice get the ERC20 token symbol from the AssetsRegistry
+    /// @dev the asset is assumed to be in the AssetsRegistry since QTokens
+    /// must be created through the OptionsFactory, which performs that check
+    /// @param _quantConfig address of the Quant system configuration contract
+    /// @param _asset address of the asset in the AssetsRegistry
+    /// @return symbol string stored as the ERC20 token symbol
+    function _assetSymbol(address _quantConfig, address _asset)
+        internal
+        view
+        returns (string memory symbol)
+    {
+        (, symbol, ) = AssetsRegistry(
+            QuantConfig(_quantConfig).assetsRegistry()
+        )
+            .assetProperties(_asset);
+    }
+
     /// @notice generates the name for an option
+    /// @param _quantConfig address of the Quant system configuration contract
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
     /// @param _strikePrice strike price with as many decimals in the strike asset
@@ -133,14 +154,15 @@ contract QToken is ERC20 {
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return tokenName name string for the QToken
     function _qTokenName(
+        address _quantConfig,
         address _underlyingAsset,
         address _strikeAsset,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
     ) internal view returns (string memory tokenName) {
-        string memory underlying = ERC20(_underlyingAsset).symbol();
-        string memory strike = ERC20(_strikeAsset).symbol();
+        string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
+        string memory strike = _assetSymbol(_quantConfig, _strikeAsset);
         string memory displayStrikePrice = _displayedStrikePrice(_strikePrice);
 
         // convert the expiry to a readable string
@@ -177,21 +199,22 @@ contract QToken is ERC20 {
 
     /// @notice generates the symbol for an option
     /// @param _underlyingAsset asset that the option references
+    /// @param _quantConfig address of the Quant system configuration contract
     /// @param _strikeAsset asset that the strike is denominated in
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return tokenSymbol symbol string for the QToken
     function _qTokenSymbol(
+        address _quantConfig,
         address _underlyingAsset,
         address _strikeAsset,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
     ) internal view returns (string memory tokenSymbol) {
-        // TODO: get name and symbol from AssetsRegistry
-        string memory underlying = ERC20(_underlyingAsset).symbol();
-        string memory strike = ERC20(_strikeAsset).symbol();
+        string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
+        string memory strike = _assetSymbol(_quantConfig, _strikeAsset);
         string memory displayStrikePrice = _displayedStrikePrice(_strikePrice);
 
         // convert the expiry to a readable string
