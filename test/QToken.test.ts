@@ -6,7 +6,12 @@ import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
-import { deployQToken, deployQuantConfig, mockERC20 } from "./testUtils";
+import {
+  deployAssetsRegistry,
+  deployQToken,
+  deployQuantConfig,
+  mockERC20,
+} from "./testUtils";
 
 const { deployContract } = waffle;
 
@@ -37,6 +42,11 @@ describe("QToken", () => {
 
     WETH = await mockERC20(admin, "WETH", "Wrapped Ether");
     USDC = await mockERC20(admin, "USDC", "USD Coin", 6);
+
+    const assetsRegistry = await deployAssetsRegistry(admin, quantConfig);
+
+    await assetsRegistry.connect(admin).addAsset(WETH.address, "", "", 0);
+    await assetsRegistry.connect(admin).addAsset(USDC.address, "", "", 0);
 
     scaledStrikePrice = ethers.utils.parseUnits("1400", await USDC.decimals());
 

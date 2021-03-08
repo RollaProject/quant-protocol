@@ -54,6 +54,8 @@ describe("OptionsFactory", () => {
 
     assetsRegistry = await deployAssetsRegistry(admin, quantConfig);
 
+    await quantConfig.connect(admin).setAssetsRegistry(assetsRegistry.address);
+
     await assetsRegistry
       .connect(admin)
       .addAsset(
