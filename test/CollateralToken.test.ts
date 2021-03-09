@@ -46,7 +46,7 @@ describe("CollateralToken", () => {
       WETH.address,
       USDC.address,
       ethers.constants.AddressZero,
-      "2000",
+      ethers.utils.parseUnits("2000", await USDC.decimals()),
       ethers.BigNumber.from("1618592400"),
       true
     );

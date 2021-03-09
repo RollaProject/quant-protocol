@@ -15,7 +15,7 @@ import {
 
 const { deployContract } = waffle;
 
-describe("QToken", () => {
+describe("QToken", async () => {
   let quantConfig: QuantConfig;
   let qToken: QToken;
   let admin: Signer;
@@ -24,7 +24,7 @@ describe("QToken", () => {
   let WETH: MockERC20;
   let userAddress: string;
   let scaledStrikePrice: BigNumber;
-  const strikePrice = "1400";
+  const strikePrice = ethers.utils.parseUnits("1400", 6);
   const expiryTime = ethers.BigNumber.from("1618592400"); // April 16th, 2021
   const oracle = ethers.constants.AddressZero;
 

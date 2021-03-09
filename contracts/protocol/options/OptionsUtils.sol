@@ -83,33 +83,4 @@ library OptionsUtils {
         return
             _collateralToken.getCollateralTokenId(qToken, _collateralizedFrom);
     }
-
-    /// @notice Returns a unique option hash based on its parameters
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @return 32-bytes hash unique to an option
-    function qTokenHash(
-        address _underlyingAsset,
-        address _strikeAsset,
-        address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
-    ) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    _underlyingAsset,
-                    _strikeAsset,
-                    _oracle,
-                    _strikePrice,
-                    _expiryTime,
-                    _isCall
-                )
-            );
-    }
 }
