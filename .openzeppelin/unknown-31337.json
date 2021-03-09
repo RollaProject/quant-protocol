@@ -184,7 +184,7 @@
             "members": [
               {
                 "label": "members",
-                "type": "t_struct(AddressSet)3489_storage"
+                "type": "t_struct(AddressSet)1542_storage"
               },
               {
                 "label": "adminRole",
@@ -192,16 +192,16 @@
               }
             ]
           },
-          "t_struct(AddressSet)3489_storage": {
+          "t_struct(AddressSet)1542_storage": {
             "label": "struct EnumerableSet.AddressSet",
             "members": [
               {
                 "label": "_inner",
-                "type": "t_struct(Set)3224_storage"
+                "type": "t_struct(Set)1277_storage"
               }
             ]
           },
-          "t_struct(Set)3224_storage": {
+          "t_struct(Set)1277_storage": {
             "label": "struct EnumerableSet.Set",
             "members": [
               {

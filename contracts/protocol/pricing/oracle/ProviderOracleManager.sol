@@ -2,6 +2,7 @@
 pragma solidity ^0.7.0;
 
 import "../../QuantConfig.sol";
+import "hardhat/console.sol";
 
 /// @title Oracle manager for holding asset addresses and their oracle addresses for a single provider
 /// @notice Once an oracle is added for an asset it can't be changed!
@@ -26,6 +27,7 @@ abstract contract ProviderOracleManager {
     /// @param _asset the address of the asset token we are adding the oracle for
     /// @param _oracle the address of the oracle
     function addAssetOracle(address _asset, address _oracle) external {
+        console.log(msg.sender);
         require(
             config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
             "OracleManager: Only an oracle admin can add an oracle"

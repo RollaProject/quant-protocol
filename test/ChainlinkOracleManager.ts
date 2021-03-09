@@ -1,7 +1,7 @@
 import { waffleChai } from "@ethereum-waffle/chai";
 import { deployMockContract } from "@ethereum-waffle/mock-contract";
 import { MockProvider } from "@ethereum-waffle/provider";
-import { use } from "chai";
+import { use, expect } from "chai";
 import { ContractFactory, Signer } from "ethers";
 import { ethers, waffle } from "hardhat"; //to be explicit
 import { beforeEach, describe, it } from "mocha";
@@ -10,7 +10,7 @@ import CONFIG from "../artifacts/contracts/protocol/QuantConfig.sol/QuantConfig.
 import AGGREGATOR from "../artifacts/contracts/external/chainlink/IEACAggregatorProxy.sol/IEACAggregatorProxy.json";
 import PRICE_REGISTRY from "../artifacts/contracts/protocol/pricing/PriceRegistry.sol/PriceRegistry.json";
 import { MockContract } from "ethereum-waffle";
-import { expect } from "./setup";
+//import { expect } from "./setup";
 import { ChainlinkOracleManager } from "../typechain";
 
 use(waffleChai);
@@ -106,7 +106,7 @@ describe("Chainlink Oracle Manager", function () {
           .connect(oracleManagerAccount)
           .addAssetOracle(assetOne, oracleOne)
       )
-        .to.emit(chainlinkOracleManager, "OracleAdded")
+        .to.emit(chainlinkOracleManager, "OracleAdffded")
         .withArgs(assetOne, oracleOne);
 
       expect(await chainlinkOracleManager.getAssetsLength()).to.be.equal(1);
@@ -142,7 +142,7 @@ describe("Chainlink Oracle Manager", function () {
     it("Should not allow a non oracle manager account to add an asset", async function () {
       expect(await chainlinkOracleManager.getAssetsLength()).to.be.equal(0);
       expect(
-        await chainlinkOracleManager
+        chainlinkOracleManager
           .connect(normalUserAccount)
           .addAssetOracle(assetOne, oracleOne)
       ).to.be.revertedWith(
@@ -150,7 +150,7 @@ describe("Chainlink Oracle Manager", function () {
       );
     });
   });
-
+  /*
   describe("Pricing", function () {
     it("Fallback method should allow a fallback submitter to submit only after the fallback period", async function () {
       //time in the past
@@ -252,7 +252,7 @@ describe("Chainlink Oracle Manager", function () {
         )
       ).to.be.equal(0);
     });
-
     //todo does search work if theres only 1 round?
   });
+  */
 });
