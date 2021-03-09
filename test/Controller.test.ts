@@ -1,4 +1,4 @@
-import { BigNumber, Signer } from "ethers";
+import { BigNumber, ContractInterface, Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import ControllerJSON from "../artifacts/contracts/protocol/Controller.sol/Controller.json";
@@ -34,10 +34,173 @@ describe("Controller", () => {
   let futureTimestamp: number;
   let samplePutOptionParameters: optionParameters;
   let sampleCallOptionParameters: optionParameters;
-  let qTokenPutAddress: string;
-  let qTokenCallAddress: string;
+  let qTokenPut1400: QToken;
+  let qTokenCall2000: QToken;
+  let QTokenInterface: ContractInterface;
+  let mockERC20Interface: ContractInterface;
 
   const aMonth = 30 * 24 * 3600; // in seconds
+
+  const getCollateralRequirement = async (
+    qTokenShort: QToken,
+    qTokenLong: QToken,
+    optionsAmount: BigNumber
+  ): Promise<[string, BigNumber]> => {
+    if (await qTokenShort.isCall()) {
+      const underlying = <MockERC20>(
+        new ethers.Contract(
+          await qTokenShort.underlyingAsset(),
+          mockERC20Interface,
+          provider
+        )
+      );
+      const collateralAmount = optionsAmount.mul(
+        ethers.BigNumber.from("10")
+          .pow(await underlying.decimals())
+          .div(ethers.BigNumber.from("10").pow(18))
+      );
+      return [underlying.address, collateralAmount];
+    } else {
+      const qTokenShortStrikePrice = await qTokenShort.strikePrice();
+      let collateralPerOption = qTokenShortStrikePrice;
+
+      if (qTokenLong.address !== ethers.constants.AddressZero) {
+        const qTokenLongStrikePrice = await qTokenLong.strikePrice();
+        collateralPerOption = qTokenShortStrikePrice.gt(qTokenLongStrikePrice)
+          ? qTokenShortStrikePrice.sub(qTokenLongStrikePrice) // PUT Credit Spread
+          : ethers.BigNumber.from("0"); // Put Debit Spread
+      }
+      const collateralAmount = optionsAmount
+        .mul(collateralPerOption)
+        .div(ethers.BigNumber.from("10").pow(18));
+      return [await qTokenShort.strikeAsset(), collateralAmount];
+    }
+  };
+
+  const testMintingOptions = async (
+    qTokenShortAddress: string,
+    optionsAmount: BigNumber,
+    qTokenLongAddress: string = ethers.constants.AddressZero
+  ) => {
+    const qTokenShort = <QToken>(
+      new ethers.Contract(qTokenShortAddress, QTokenInterface, provider)
+    );
+
+    const qTokenLong = <QToken>(
+      new ethers.Contract(qTokenLongAddress, QTokenInterface, provider)
+    );
+    const underlying = <MockERC20>(
+      new ethers.Contract(
+        await qTokenShort.underlyingAsset(),
+        mockERC20Interface,
+        provider
+      )
+    );
+
+    const [collateral, collateralAmount] = await getCollateralRequirement(
+      qTokenShort,
+      qTokenLong,
+      optionsAmount
+    );
+
+    expect(
+      await controller.getCollateralRequirement(
+        qTokenShort.address,
+        qTokenLong.address,
+        optionsAmount
+      )
+    ).to.eql([collateral, collateralAmount]);
+
+    // user should have 0 underlying initially
+    expect(
+      await underlying.balanceOf(await secondAccount.getAddress())
+    ).to.equal(ethers.BigNumber.from("0"));
+
+    if (qTokenLongAddress === ethers.constants.AddressZero) {
+      // mint required collateral to the user account
+      if ((await qTokenShort.isCall()) === true) {
+        await WETH.connect(admin).mint(
+          await secondAccount.getAddress(),
+          optionsAmount
+        );
+
+        expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
+          optionsAmount
+        );
+
+        await WETH.connect(secondAccount).approve(
+          controller.address,
+          optionsAmount
+        );
+
+        await expect(
+          controller
+            .connect(secondAccount)
+            .mintOptionsPosition(qTokenShortAddress, optionsAmount)
+        )
+          .to.emit(controller, "OptionsPositionMinted")
+          .withArgs(
+            await secondAccount.getAddress(),
+            qTokenShortAddress,
+            optionsAmount
+          );
+
+        expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
+          ethers.BigNumber.from("0")
+        );
+
+        expect(await WETH.balanceOf(controller.address)).to.equal(
+          optionsAmount
+        );
+      } else {
+        const requiredCollateral = optionsAmount
+          .mul(await qTokenShort.strikePrice())
+          .div(ethers.BigNumber.from("1000000000000000000"));
+
+        await USDC.connect(admin).mint(
+          await secondAccount.getAddress(),
+          requiredCollateral
+        );
+
+        expect(await USDC.balanceOf(await secondAccount.getAddress())).to.equal(
+          requiredCollateral
+        );
+
+        await USDC.connect(secondAccount).approve(
+          controller.address,
+          requiredCollateral
+        );
+
+        await controller
+          .connect(secondAccount)
+          .mintOptionsPosition(qTokenShortAddress, optionsAmount);
+
+        expect(await USDC.balanceOf(await secondAccount.getAddress())).to.equal(
+          ethers.BigNumber.from("0")
+        );
+
+        expect(await USDC.balanceOf(controller.address)).to.equal(
+          requiredCollateral
+        );
+      }
+
+      // Check that the user received the QToken and the CollateralToken
+      expect(
+        await qTokenShort.balanceOf(await secondAccount.getAddress())
+      ).to.equal(optionsAmount);
+
+      const collateralTokenId = await optionsFactory.qTokenAddressToCollateralTokenId(
+        qTokenShortAddress
+      );
+
+      expect(
+        await collateralToken.balanceOf(
+          await secondAccount.getAddress(),
+          collateralTokenId
+        )
+      ).to.equal(optionsAmount);
+    }
+  };
 
   beforeEach(async () => {
     [admin, secondAccount] = await provider.getWallets();
@@ -58,6 +221,20 @@ describe("Controller", () => {
         await WETH.symbol(),
         await WETH.decimals()
       );
+
+    await assetsRegistry
+      .connect(admin)
+      .addAsset(
+        USDC.address,
+        await USDC.name(),
+        await USDC.symbol(),
+        await USDC.decimals()
+      );
+
+    QTokenInterface = (await ethers.getContractFactory("QToken")).interface;
+
+    mockERC20Interface = (await ethers.getContractFactory("MockERC20"))
+      .interface;
 
     optionsFactory = await deployOptionsFactory(
       admin,
@@ -81,12 +258,17 @@ describe("Controller", () => {
       ethers.BigNumber.from(futureTimestamp),
       false,
     ];
-    qTokenPutAddress = await optionsFactory.getTargetQTokenAddress(
+    const qTokenPut1400Address = await optionsFactory.getTargetQTokenAddress(
       ...samplePutOptionParameters
     );
+
     await optionsFactory
       .connect(secondAccount)
       .createOption(...samplePutOptionParameters);
+
+    qTokenPut1400 = <QToken>(
+      new ethers.Contract(qTokenPut1400Address, QTokenInterface, provider)
+    );
 
     sampleCallOptionParameters = [
       WETH.address,
@@ -96,12 +278,18 @@ describe("Controller", () => {
       ethers.BigNumber.from(futureTimestamp),
       true,
     ];
-    qTokenCallAddress = await optionsFactory.getTargetQTokenAddress(
+
+    const qTokenCall2000Address = await optionsFactory.getTargetQTokenAddress(
       ...sampleCallOptionParameters
     );
+
     await optionsFactory
       .connect(secondAccount)
       .createOption(...sampleCallOptionParameters);
+
+    qTokenCall2000 = <QToken>(
+      new ethers.Contract(qTokenCall2000Address, QTokenInterface, provider)
+    );
 
     controller = <Controller>(
       await deployContract(admin, ControllerJSON, [optionsFactory.address])
@@ -137,185 +325,64 @@ describe("Controller", () => {
       await expect(
         controller
           .connect(admin)
-          .mintOptionsPosition(qTokenPutAddress, ethers.BigNumber.from("10"))
+          .mintOptionsPosition(
+            qTokenPut1400.address,
+            ethers.BigNumber.from("10")
+          )
       ).to.be.revertedWith("Controller: Cannot mint expired options");
 
       // Reset the Hardhat Network
       await provider.send("evm_revert", ["0x1"]);
     });
 
-    it("Should transfer the required collateral from the user to mint a CALL option", async () => {
-      // user should have 0 WETH initially
-      expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
-        ethers.BigNumber.from("0")
-      );
-
-      // mint WETH to the user account
-      await WETH.connect(admin).mint(
-        await secondAccount.getAddress(),
-        ethers.utils.parseEther("3")
-      );
-      expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
-        ethers.utils.parseEther("3")
-      );
-
-      // user needs to approve the controller to use his funds
-      await WETH.connect(secondAccount).approve(
-        controller.address,
-        ethers.utils.parseEther("2")
-      );
-
-      // the user mints options through the controller
-      await controller
-        .connect(secondAccount)
-        .mintOptionsPosition(qTokenCallAddress, ethers.utils.parseEther("2"));
-
-      // the user's WETH balance should have decreased
-      expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
-        ethers.utils.parseEther("1")
-      );
-
-      // the controller should have received the user's collateral
-      expect(await WETH.balanceOf(controller.address)).to.equal(
-        ethers.utils.parseEther("2")
-      );
-    });
-
-    it("Should transfer the required collateral from the user to mint a PUT option", async () => {
-      // user should have 0 USDC initially
-      expect(await USDC.balanceOf(await secondAccount.getAddress())).to.equal(
-        ethers.BigNumber.from("0")
-      );
-
-      // mint USDC to the user account
-      await USDC.connect(admin).mint(
-        await secondAccount.getAddress(),
-        ethers.utils.parseUnits("4000", await USDC.decimals()) // USDC has 6 decimals
-      );
-      expect(await USDC.balanceOf(await secondAccount.getAddress())).to.equal(
-        ethers.utils.parseUnits("4000", await USDC.decimals())
-      );
-
-      // user needs to approve the controller to use his funds
-      await USDC.connect(secondAccount).approve(
-        controller.address,
-        ethers.utils.parseUnits("2800", await USDC.decimals())
-      );
-
-      // the user mints options through the controller
-      await controller
-        .connect(secondAccount)
-        .mintOptionsPosition(qTokenPutAddress, ethers.utils.parseEther("2"));
-
-      // the user's USDC balance should have decreased
-      expect(await USDC.balanceOf(await secondAccount.getAddress())).to.equal(
-        ethers.utils.parseUnits("1200", await USDC.decimals())
-      );
-
-      // the controller should have received the user's collateral
-      expect(await USDC.balanceOf(controller.address)).to.equal(
-        ethers.utils.parseUnits("2800", await USDC.decimals())
-      );
-    });
-
     it("Users should be able to mint CALL options positions", async () => {
-      await WETH.connect(admin).mint(
-        await secondAccount.getAddress(),
-        ethers.utils.parseEther("6")
-      );
-
-      await WETH.connect(secondAccount).approve(
-        controller.address,
-        ethers.utils.parseEther("4")
-      );
-
-      await expect(
-        controller
-          .connect(secondAccount)
-          .mintOptionsPosition(qTokenCallAddress, ethers.utils.parseEther("4"))
-      )
-        .to.emit(controller, "OptionsPositionMinted")
-        .withArgs(
-          await secondAccount.getAddress(),
-          ethers.utils.parseEther("4")
-        );
-
-      const collateralTokenId = await optionsFactory.getTargetCollateralTokenId(
-        WETH.address,
-        USDC.address,
-        ethers.constants.AddressZero,
-        ethers.utils.parseUnits("2000", await USDC.decimals()),
-        ethers.BigNumber.from(futureTimestamp),
-        ethers.BigNumber.from("0"),
-        true
-      );
-
-      expect(
-        await collateralToken.balanceOf(
-          await secondAccount.getAddress(),
-          collateralTokenId
-        )
-      ).to.equal(ethers.utils.parseEther("4"));
-
-      const QTokenABI = (await ethers.getContractFactory("QToken")).interface;
-
-      const qToken = <QToken>(
-        new ethers.Contract(qTokenCallAddress, QTokenABI, provider)
-      );
-
-      expect(await qToken.balanceOf(await secondAccount.getAddress())).to.equal(
-        ethers.utils.parseEther("4")
+      await testMintingOptions(
+        qTokenCall2000.address,
+        ethers.utils.parseEther("2")
       );
     });
 
     it("Users should be able to mint PUT options positions", async () => {
-      await USDC.connect(admin).mint(
-        await secondAccount.getAddress(),
-        ethers.utils.parseUnits("8000", await USDC.decimals()) // USDC has 6 decimals
+      await testMintingOptions(
+        qTokenPut1400.address,
+        ethers.utils.parseEther("2")
       );
+    });
+  });
 
-      await USDC.connect(secondAccount).approve(
-        controller.address,
-        ethers.utils.parseUnits("5600", await USDC.decimals())
-      );
+  describe("mintSpread", () => {
+    it("Should require the correct amount of collateral for a PUT Credit spread", async () => {
+      const qTokenShort = qTokenPut1400;
 
-      await expect(
-        controller
-          .connect(secondAccount)
-          .mintOptionsPosition(qTokenPutAddress, ethers.utils.parseEther("4"))
-      )
-        .to.emit(controller, "OptionsPositionMinted")
-        .withArgs(
-          await secondAccount.getAddress(),
-          ethers.utils.parseEther("4")
-        );
-
-      const collateralTokenId = await optionsFactory.getTargetCollateralTokenId(
+      const qTokenPut400Parameters: optionParameters = [
         WETH.address,
         USDC.address,
         ethers.constants.AddressZero,
-        ethers.utils.parseUnits("1400", 6),
+        ethers.utils.parseUnits("400", await USDC.decimals()),
         ethers.BigNumber.from(futureTimestamp),
-        ethers.BigNumber.from("0"),
-        false
+        false,
+      ];
+
+      await optionsFactory
+        .connect(admin)
+        .createOption(...qTokenPut400Parameters);
+
+      const qTokenLongAddress = await optionsFactory.getTargetQTokenAddress(
+        ...qTokenPut400Parameters
       );
 
-      expect(
-        await collateralToken.balanceOf(
-          await secondAccount.getAddress(),
-          collateralTokenId
-        )
-      ).to.equal(ethers.utils.parseEther("4"));
-
-      const QTokenABI = (await ethers.getContractFactory("QToken")).interface;
-
-      const qToken = <QToken>(
-        new ethers.Contract(qTokenPutAddress, QTokenABI, provider)
+      const qTokenLong = <QToken>(
+        new ethers.Contract(qTokenLongAddress, QTokenInterface, provider)
       );
 
-      expect(await qToken.balanceOf(await secondAccount.getAddress())).to.equal(
-        ethers.utils.parseEther("4")
+      const [collateral, collateralAmount] = await getCollateralRequirement(
+        qTokenShort,
+        qTokenLong,
+        ethers.utils.parseEther("2")
       );
+
+      expect(collateral).to.equal(USDC.address);
+      expect(collateralAmount).to.equal(ethers.utils.parseUnits("2000", "6"));
     });
   });
 });
