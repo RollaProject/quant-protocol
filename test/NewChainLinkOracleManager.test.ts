@@ -41,12 +41,11 @@ describe("Greeter", function () {
   const oracleThree = ethers.utils.getAddress(
     "0x00000000000000000000000000000000000000C0"
   );
-  const oracleManagerRole = ethers.utils.keccak256(
-    ethers.utils.toUtf8Bytes("ORACLE_MANAGER_ROLE")
-  );
-  const fallbackPriceRole = ethers.utils.keccak256(
-    ethers.utils.toUtf8Bytes("FALLBACK_PRICE_ROLE")
-  );
+  const oracleManagerRole =
+    "0xced6982f480260bdd8ad5cb18ff2854f0306d78d904ad6cc107e8f3a0f526c18";
+  const fallbackPriceRole = ethers.utils
+    .keccak256(ethers.utils.toUtf8Bytes("FALLBACK_PRICE_ROLE"))
+    .toString();
 
   async function setUpTests() {
     [
@@ -67,13 +66,12 @@ describe("Greeter", function () {
     await mockConfig.mock.FALLBACK_PRICE_ROLE.returns(fallbackPriceRole);
     await mockConfig.mock.priceRegistry.returns(mockPriceRegistry.address);
 
-    oracleManagerAccountAddress = ethers.utils.getAddress(
+    oracleManagerAccountAddress = (
       await oracleManagerAccount.getAddress()
-    );
+    ).toLowerCase();
     normalUserAccountAddress = await normalUserAccount.getAddress();
     fallbackPriceAccountAddress = await fallbackPriceAccount.getAddress();
 
-    /*
     await mockConfig.mock.hasRole
       .withArgs(oracleManagerRole, oracleManagerAccountAddress)
       .returns(true);
@@ -97,9 +95,8 @@ describe("Greeter", function () {
     await mockConfig.mock.hasRole
       .withArgs(oracleManagerRole, oracleManagerAccountAddress)
       .returns(false);
-     */
 
-    await mockConfig.mock.hasRole.returns(true);
+    //await mockConfig.mock.hasRole.returns(true);
 
     ChainlinkOracleManager = await ethers.getContractFactory(
       "ChainlinkOracleManager"
@@ -119,6 +116,7 @@ describe("Greeter", function () {
     it("Should allow the addition of asset oracles, get number of assets and fetch prices", async function () {
       expect(await chainlinkOracleManager.getAssetsLength()).to.be.equal(0);
 
+      console.log(oracleManagerRole);
       console.log(oracleManagerAccountAddress);
 
       await expect(
@@ -131,17 +129,18 @@ describe("Greeter", function () {
 
       expect(await chainlinkOracleManager.getAssetsLength()).to.be.equal(1);
     });
-
+    /*
     it("Should not allow a non oracle manager account to add an asset", async function () {
       expect(await chainlinkOracleManager.getAssetsLength()).to.be.equal(0);
       expect(
-        chainlinkOracleManager
+        await chainlinkOracleManager
           .connect(normalUserAccount)
           .addAssetOracle(assetOne, oracleOne)
       ).to.be.revertedWith(
         "OracleManager: Only an oracle admin can add an oracle"
       );
     });
+    */
   });
 
   /*
