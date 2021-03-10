@@ -1,15 +1,14 @@
-import { ethers } from "hardhat";
 import { deployMockContract } from "@ethereum-waffle/mock-contract";
-import { ContractFactory, Signer } from "ethers";
 import { MockContract } from "ethereum-waffle";
-import CONFIG from "../artifacts/contracts/protocol/QuantConfig.sol/QuantConfig.json";
+import { ContractFactory, Signer } from "ethers";
+import { ethers } from "hardhat";
+import { Address } from "hardhat-deploy/dist/types";
+import { beforeEach, describe, it } from "mocha";
 import AGGREGATOR from "../artifacts/contracts/external/chainlink/IEACAggregatorProxy.sol/IEACAggregatorProxy.json";
 import PRICE_REGISTRY from "../artifacts/contracts/protocol/pricing/PriceRegistry.sol/PriceRegistry.json";
-import CHAINLINK_ORACLE_MANAGER from "../artifacts/contracts/protocol/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
-import { provider, expect } from "./setup";
-import { beforeEach, describe, it } from "mocha";
+import CONFIG from "../artifacts/contracts/protocol/QuantConfig.sol/QuantConfig.json";
 import { ChainlinkOracleManager } from "../typechain";
-import { Address } from "hardhat-deploy/dist/types";
+import { expect, provider } from "./setup";
 
 describe("Greeter", function () {
   let ChainlinkOracleManager: ContractFactory;
@@ -26,11 +25,11 @@ describe("Greeter", function () {
   let normalUserAccountAddress: Address;
   let fallbackPriceAccountAddress: Address;
 
-  const assetOne = "0x000000000000000000000000000000000000000A";
-  const assetTwo = "0x000000000000000000000000000000000000000B";
-  const oracleOne = "0x00000000000000000000000000000000000000A0";
-  const oracleTwo = "0x00000000000000000000000000000000000000B0";
-  const oracleThree = "0x00000000000000000000000000000000000000C0";
+  const assetOne = "0x0000000000000000000000000000000000000001";
+  const assetTwo = "0x0000000000000000000000000000000000000002";
+  const oracleOne = "0x0000000000000000000000000000000000000010";
+  const oracleTwo = "0x0000000000000000000000000000000000000020";
+  const oracleThree = "0x0000000000000000000000000000000000000030";
   const oracleManagerRole =
     "0xced6982f480260bdd8ad5cb18ff2854f0306d78d904ad6cc107e8f3a0f526c18";
   const fallbackPriceRole = ethers.utils
@@ -245,8 +244,8 @@ describe("Greeter", function () {
       await mockAggregator.mock.latestAnswer.returns(0);
       await mockAggregatorTwo.mock.latestAnswer.returns(2);
 
-      expect(
-        await chainlinkOracleManager.getCurrentPrice(mockAggregator.address)
+      await expect(
+        chainlinkOracleManager.getCurrentPrice(mockAggregator.address)
       ).to.be.revertedWith("ChainlinkOracleManager: Asset not supported");
 
       await mockConfig.mock.hasRole.returns(true);
@@ -257,7 +256,7 @@ describe("Greeter", function () {
           .addAssetOracle(assetOne, mockAggregator.address)
       )
         .to.emit(chainlinkOracleManager, "OracleAdded")
-        .withArgs(assetOne, oracleOne);
+        .withArgs(assetOne, mockAggregator.address);
 
       await expect(
         chainlinkOracleManager
@@ -265,14 +264,14 @@ describe("Greeter", function () {
           .addAssetOracle(assetTwo, mockAggregatorTwo.address)
       )
         .to.emit(chainlinkOracleManager, "OracleAdded")
-        .withArgs(assetTwo, oracleTwo);
+        .withArgs(assetTwo, mockAggregatorTwo.address);
 
       await expect(
         chainlinkOracleManager.getCurrentPrice(assetOne)
       ).to.be.revertedWith("ChainlinkOracleManager: No pricing data available");
 
-      await expect(
-        chainlinkOracleManager.getCurrentPrice(assetTwo)
+      expect(
+        await chainlinkOracleManager.getCurrentPrice(assetTwo)
       ).to.be.equal(2);
     });
   });
