@@ -27,10 +27,6 @@ abstract contract ProviderOracleManager {
     /// @param _asset the address of the asset token we are adding the oracle for
     /// @param _oracle the address of the oracle
     function addAssetOracle(address _asset, address _oracle) external {
-        console.log("Sender", msg.sender);
-        console.log("Bytes start");
-        console.logBytes32(config.ORACLE_MANAGER_ROLE());
-        console.log("Bytes end");
         require(
             config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
             "OracleManager: Only an oracle admin can add an oracle"
