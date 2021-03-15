@@ -31,6 +31,23 @@ contract Controller {
         uint256 optionsAmount
     );
 
+    event OptionsExercised(
+        address indexed account,
+        address indexed qToken,
+        uint256 amountExercised,
+        uint256 payout,
+        address payoutAsset
+    );
+
+    event NeutralizePosition(
+        address indexed account,
+        address qToken,
+        uint256 amountNeutralized,
+        uint256 collateralReclaimed,
+        address collateralAsset,
+        address longTokenReturned
+    );
+
     constructor(address _optionsFactory) {
         optionsFactory = OptionsFactory(_optionsFactory);
     }
@@ -149,6 +166,100 @@ contract Controller {
         qTokenToMint.mint(msg.sender, _optionsAmount);
     }
 
+    function exercise(address _qToken, uint256 _amount) external {
+        QToken qToken = QToken(_qToken);
+        require(
+            block.timestamp > qToken.expiryTime(),
+            "Controller: Can not exercise options before their expiry"
+        );
+
+        uint256 amountToExercise;
+        if (_amount == 0) {
+            amountToExercise = qToken.balanceOf(msg.sender);
+        } else {
+            amountToExercise = _amount;
+        }
+
+        (bool isSettled, address payoutToken, uint256 payoutAmount) =
+            getPayout(_qToken, amountToExercise);
+        require(isSettled, "Controller: Cannot exercise unsettled options");
+
+        qToken.burn(msg.sender, amountToExercise);
+
+        IERC20(payoutToken).transfer(msg.sender, payoutAmount);
+    }
+
+    function neutralizePosition(
+        address _qToken,
+        uint256 _collateralTokenId,
+        uint256 _amount
+    ) external {
+        CollateralToken collateralToken = optionsFactory.collateralToken();
+        (address qTokenShort, uint256 collateralizedFrom) =
+            collateralToken.idToInfo(_collateralTokenId);
+
+        require(
+            qTokenShort == _qToken,
+            "Controller: Collateral token ID does not match qToken"
+        );
+
+        //get the amount of collateral tokens owned
+        uint256 collateralTokensOwned =
+            collateralToken.balanceOf(msg.sender, _collateralTokenId);
+
+        //get the amount of qTokens owned
+        uint256 qTokensOwned = QToken(_qToken).balanceOf(msg.sender);
+
+        //the amount of position that can be neutralized
+        uint256 maxNeutralizable =
+            qTokensOwned > collateralTokensOwned
+                ? qTokensOwned
+                : collateralTokensOwned;
+
+        uint256 amountToNeutralize;
+
+        if (_amount != 0) {
+            require(
+                amountToNeutralize >= maxNeutralizable,
+                "Controller: Tried to neutralize more than balance"
+            );
+            amountToNeutralize = _amount;
+        } else {
+            amountToNeutralize = maxNeutralizable;
+        }
+
+        (address collateralType, uint256 collateralOwed) =
+            getCollateralRequirement(_qToken, address(0), amountToNeutralize);
+
+        QToken(_qToken).burn(msg.sender, amountToNeutralize);
+
+        collateralToken.burnCollateralToken(
+            msg.sender,
+            _collateralTokenId,
+            amountToNeutralize
+        );
+
+        IERC20(collateralType).safeTransfer(msg.sender, collateralOwed);
+
+        //give the user their long tokens (if any)
+        if (collateralizedFrom > 0) {
+            QToken shortToken = QToken(qTokenShort);
+
+            //todo: check this works with both puts and calls
+            address longToken =
+                optionsFactory.getQToken(
+                    shortToken.underlyingAsset(),
+                    shortToken.strikeAsset(),
+                    shortToken.oracle(),
+                    collateralizedFrom,
+                    shortToken.expiryTime(),
+                    shortToken.isCall()
+                );
+
+            QToken(longToken).mint(msg.sender, amountToNeutralize);
+        }
+    }
+
     function getCollateralRequirement(
         address _qTokenToMint,
         address _qTokenForCollateral,
@@ -212,5 +323,45 @@ contract Controller {
 
     function _absSub(uint256 a, uint256 b) internal pure returns (uint256) {
         return a > b ? a.sub(b) : b.sub(a);
+    }
+
+    //todo: check the oracle amount of decimals.
+    function getPayout(address _qToken, uint256 _amount)
+        public
+        view
+        returns (
+            bool isSettled,
+            address payoutToken,
+            uint256 payoutAmount
+        )
+    {
+        QToken qToken = QToken(_qToken);
+        isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
+        if (!isSettled) {
+            return (false, address(0), 0);
+        }
+
+        PriceRegistry priceRegistry =
+            PriceRegistry(optionsFactory.quantConfig().priceRegistry());
+
+        uint256 strikePrice = qToken.strikePrice();
+        uint256 expiryPrice =
+            priceRegistry.getSettlementPrice(
+                qToken.oracle(),
+                qToken.underlyingAsset(),
+                qToken.expiryTime()
+            );
+
+        if (qToken.isCall()) {
+            payoutAmount = strikePrice > expiryPrice
+                ? strikePrice.sub(expiryPrice).mul(_amount).div(expiryPrice)
+                : 0;
+            payoutToken = qToken.underlyingAsset();
+        } else {
+            payoutAmount = strikePrice > expiryPrice
+                ? (strikePrice.sub(expiryPrice)).mul(_amount)
+                : 0;
+            payoutToken = qToken.strikeAsset();
+        }
     }
 }
