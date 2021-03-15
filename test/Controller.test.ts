@@ -1,7 +1,9 @@
+import { MockContract } from "ethereum-waffle";
 import { BigNumber, ContractInterface, Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import ControllerJSON from "../artifacts/contracts/protocol/Controller.sol/Controller.json";
+import PriceRegistry from "../artifacts/contracts/protocol/pricing/PriceRegistry.sol/PriceRegistry.json";
 import { AssetsRegistry, OptionsFactory } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
@@ -17,7 +19,7 @@ import {
   mockERC20,
 } from "./testUtils";
 
-const { deployContract } = waffle;
+const { deployContract, deployMockContract } = waffle;
 
 type optionParameters = [string, string, string, BigNumber, BigNumber, boolean];
 
@@ -41,6 +43,7 @@ describe("Controller", () => {
   let mockERC20Interface: ContractInterface;
   let qTokenCall2880: QToken;
   let qTokenCall3520: QToken;
+  let mockPriceRegistry: MockContract;
 
   const aMonth = 30 * 24 * 3600; // in seconds
 
@@ -408,6 +411,12 @@ describe("Controller", () => {
     );
 
     await quantConfig.connect(admin).setAssetsRegistry(assetsRegistry.address);
+
+    mockPriceRegistry = await deployMockContract(admin, PriceRegistry.abi);
+
+    await quantConfig
+      .connect(admin)
+      .setPriceRegistry(mockPriceRegistry.address);
   });
 
   describe("mintOptionsPosition", () => {
@@ -490,6 +499,163 @@ describe("Controller", () => {
         ethers.utils.parseEther("1"),
         qTokenCall2880.address
       );
+    });
+  });
+
+  describe("exercise", () => {
+    it("Should revert when trying to exercise a non-expired option", async () => {
+      await expect(
+        controller
+          .connect(secondAccount)
+          .exercise(qTokenPut1400.address, ethers.utils.parseEther("1"))
+      ).to.be.revertedWith(
+        "Controller: Can not exercise options before their expiry"
+      );
+    });
+
+    it("Should revert when trying to exercise unsettled options", async () => {
+      // Take a snapshot of the Hardhat Network
+      await provider.send("evm_snapshot", []);
+
+      // Increase time to one hour past the expiry
+      await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+      await mockPriceRegistry.mock.hasSettlementPrice.returns(false);
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .exercise(qTokenPut1400.address, ethers.utils.parseEther("1"))
+      ).to.be.revertedWith("Controller: Cannot exercise unsettled options");
+
+      // Reset the Hardhat Network
+      await provider.send("evm_revert", ["0x2"]);
+    });
+
+    it("Users should be able to exercise PUT options", async () => {
+      // Take a snapshot of the Hardhat Network
+      await provider.send("evm_snapshot", []);
+
+      // Increase time to one hour past the expiry
+      await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+      await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+
+      await mockPriceRegistry.mock.getSettlementPrice.returns(
+        ethers.utils.parseUnits("1200", await USDC.decimals())
+      );
+
+      // Mint options to the user
+      const optionsAmount = ethers.utils.parseEther("1");
+      const qTokenToExercise = qTokenPut1400;
+      await qTokenToExercise
+        .connect(admin)
+        .mint(await secondAccount.getAddress(), optionsAmount);
+
+      expect(await USDC.balanceOf(await secondAccount.getAddress())).to.equal(
+        ethers.BigNumber.from("0")
+      );
+
+      expect(
+        await qTokenToExercise.balanceOf(await secondAccount.getAddress())
+      ).to.equal(optionsAmount);
+
+      const payoutAmount = (
+        await controller.getPayout(qTokenToExercise.address, optionsAmount)
+      ).payoutAmount;
+
+      // Mint USDC to the Controller so it can pay the user
+      await USDC.connect(admin).mint(controller.address, payoutAmount);
+      expect(await USDC.balanceOf(controller.address)).to.equal(payoutAmount);
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .exercise(qTokenToExercise.address, optionsAmount)
+      )
+        .to.emit(controller, "OptionsExercised")
+        .withArgs(
+          await secondAccount.getAddress(),
+          qTokenToExercise.address,
+          optionsAmount,
+          payoutAmount,
+          USDC.address
+        );
+
+      expect(await USDC.balanceOf(await secondAccount.getAddress())).to.equal(
+        payoutAmount
+      );
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        ethers.BigNumber.from("0")
+      );
+      expect(
+        await qTokenToExercise.balanceOf(await secondAccount.getAddress())
+      ).to.equal(ethers.BigNumber.from("0"));
+
+      // Reset the Hardhat Network
+      await provider.send("evm_revert", ["0x3"]);
+    });
+
+    it("Users should be able to exercise CALL options", async () => {
+      // Take a snapshot of the Hardhat Network
+      await provider.send("evm_snapshot", []);
+
+      // Increase time to one hour past the expiry
+      await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+      await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+
+      await mockPriceRegistry.mock.getSettlementPrice.returns(
+        ethers.utils.parseUnits("2500", await USDC.decimals())
+      );
+
+      // Mint options to the user
+      const optionsAmount = ethers.utils.parseEther("2");
+      const qTokenToExercise = qTokenCall2000;
+      await qTokenToExercise
+        .connect(admin)
+        .mint(await secondAccount.getAddress(), optionsAmount);
+
+      expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
+        ethers.BigNumber.from("0")
+      );
+
+      expect(
+        await qTokenToExercise.balanceOf(await secondAccount.getAddress())
+      ).to.equal(optionsAmount);
+
+      const payoutAmount = (
+        await controller.getPayout(qTokenToExercise.address, optionsAmount)
+      ).payoutAmount;
+
+      // Mint WETH to the Controller so it can pay the user
+      await WETH.connect(admin).mint(controller.address, payoutAmount);
+      expect(await WETH.balanceOf(controller.address)).to.equal(payoutAmount);
+
+      await expect(
+        controller.connect(secondAccount).exercise(qTokenToExercise.address, 0)
+      )
+        .to.emit(controller, "OptionsExercised")
+        .withArgs(
+          await secondAccount.getAddress(),
+          qTokenToExercise.address,
+          optionsAmount,
+          payoutAmount,
+          WETH.address
+        );
+
+      expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
+        payoutAmount
+      );
+      expect(await WETH.balanceOf(controller.address)).to.equal(
+        ethers.BigNumber.from("0")
+      );
+      expect(
+        await qTokenToExercise.balanceOf(await secondAccount.getAddress())
+      ).to.equal(ethers.BigNumber.from("0"));
+
+      // Reset the Hardhat Network
+      await provider.send("evm_revert", ["0x4"]);
     });
   });
 });
