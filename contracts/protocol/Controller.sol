@@ -74,8 +74,6 @@ contract Controller {
     {
         QToken qToken = QToken(_qToken);
 
-        emit OptionsPositionMinted(msg.sender, _qToken, _optionsAmount);
-
         (address collateral, uint256 collateralAmount) =
             getCollateralRequirement(_qToken, address(0), _optionsAmount);
 
@@ -94,6 +92,8 @@ contract Controller {
             collateralTokenId,
             _optionsAmount
         );
+
+        emit OptionsPositionMinted(msg.sender, _qToken, _optionsAmount);
     }
 
     function mintSpread(
@@ -115,13 +115,6 @@ contract Controller {
             qTokenToMint.underlyingAsset() ==
                 qTokenForCollateral.underlyingAsset(),
             "Controller: Can't create spreads from options with different underlying assets"
-        );
-
-        emit SpreadMinted(
-            msg.sender,
-            _qTokenToMint,
-            _qTokenForCollateral,
-            _optionsAmount
         );
 
         (address collateral, uint256 collateralAmount) =
@@ -164,6 +157,13 @@ contract Controller {
         }
 
         qTokenToMint.mint(msg.sender, _optionsAmount);
+
+        emit SpreadMinted(
+            msg.sender,
+            _qTokenToMint,
+            _qTokenForCollateral,
+            _optionsAmount
+        );
     }
 
     function exercise(address _qToken, uint256 _amount) external {
@@ -186,7 +186,17 @@ contract Controller {
 
         qToken.burn(msg.sender, amountToExercise);
 
-        IERC20(payoutToken).transfer(msg.sender, payoutAmount);
+        if (payoutAmount > 0) {
+            IERC20(payoutToken).transfer(msg.sender, payoutAmount);
+        }
+
+        emit OptionsExercised(
+            msg.sender,
+            _qToken,
+            amountToExercise,
+            payoutAmount,
+            payoutToken
+        );
     }
 
     function neutralizePosition(
@@ -353,13 +363,24 @@ contract Controller {
             );
 
         if (qToken.isCall()) {
-            payoutAmount = strikePrice > expiryPrice
-                ? strikePrice.sub(expiryPrice).mul(_amount).div(expiryPrice)
+            (, , uint8 underlyingDecimals) =
+                AssetsRegistry(optionsFactory.quantConfig().assetsRegistry())
+                    .assetProperties(qToken.underlyingAsset());
+
+            payoutAmount = expiryPrice > strikePrice
+                ? expiryPrice
+                    .sub(strikePrice)
+                    .mul(_amount)
+                    .div(expiryPrice)
+                    .mul(10**underlyingDecimals)
+                    .div(10**OPTIONS_DECIMALS)
                 : 0;
             payoutToken = qToken.underlyingAsset();
         } else {
             payoutAmount = strikePrice > expiryPrice
-                ? (strikePrice.sub(expiryPrice)).mul(_amount)
+                ? (strikePrice.sub(expiryPrice)).mul(_amount).div(
+                    10**OPTIONS_DECIMALS
+                )
                 : 0;
             payoutToken = qToken.strikeAsset();
         }
