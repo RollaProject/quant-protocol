@@ -245,6 +245,177 @@ describe("Controller", () => {
     ).to.equal(optionsAmount);
   };
 
+  const testClaimCollateral = async (
+    collateralTokenId: BigNumber,
+    amountToClaim: BigNumber,
+    expiryPrice: BigNumber
+  ) => {
+    await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+
+    await mockPriceRegistry.mock.getSettlementPrice.returns(expiryPrice);
+
+    const [
+      qTokenShortAddr,
+      collateralizedFrom,
+    ] = await collateralToken.idToInfo(collateralTokenId);
+
+    const qTokenShort = <QToken>(
+      new ethers.Contract(qTokenShortAddr, QTokenInterface, provider)
+    );
+
+    let qTokenLong;
+    if (!collateralizedFrom.eq(ethers.BigNumber.from("0"))) {
+      const qTokenLongAddr = await optionsFactory.getTargetQTokenAddress(
+        await qTokenShort.underlyingAsset(),
+        await qTokenShort.strikeAsset(),
+        await qTokenShort.oracle(),
+        collateralizedFrom,
+        await qTokenShort.expiryTime(),
+        await qTokenShort.isCall()
+      );
+
+      qTokenLong = <QToken>(
+        new ethers.Contract(qTokenLongAddr, QTokenInterface, provider)
+      );
+    } else {
+      qTokenLong = <QToken>(
+        new ethers.Contract(
+          ethers.constants.AddressZero,
+          QTokenInterface,
+          provider
+        )
+      );
+    }
+
+    const [
+      collateralAddress,
+      collateralRequirement,
+    ] = await getCollateralRequirement(qTokenShort, qTokenLong, amountToClaim);
+
+    const collateral = collateralAddress === WETH.address ? WETH : USDC;
+
+    await collateral
+      .connect(admin)
+      .mint(await secondAccount.getAddress(), collateralRequirement);
+
+    await collateral
+      .connect(secondAccount)
+      .approve(controller.address, collateralRequirement);
+
+    if (qTokenLong.address === ethers.constants.AddressZero) {
+      await controller
+        .connect(secondAccount)
+        .mintOptionsPosition(qTokenShort.address, amountToClaim);
+    }
+
+    // Take a snapshot of the Hardhat Network
+    await provider.send("evm_snapshot", []);
+
+    // Increase time to one hour past the expiry
+    await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+    const [payoutFromShort, payoutAsset] = await getPayout(
+      qTokenShort,
+      amountToClaim,
+      expiryPrice
+    );
+
+    const payoutFromLong =
+      qTokenLong.address !== ethers.constants.AddressZero
+        ? (await getPayout(qTokenLong, amountToClaim, expiryPrice))[0]
+        : ethers.BigNumber.from("0");
+
+    const claimableCollateral = payoutFromLong
+      .add(collateralRequirement)
+      .sub(payoutFromShort);
+
+    await controller
+      .connect(secondAccount)
+      .claimCollateral(collateralTokenId, amountToClaim);
+
+    expect(
+      await payoutAsset.balanceOf(await secondAccount.getAddress())
+    ).to.equal(claimableCollateral);
+
+    expect(await payoutAsset.balanceOf(controller.address)).to.equal(
+      collateralRequirement.sub(claimableCollateral)
+    );
+
+    const strikePriceString = (await qTokenShort.strikePrice()).div(
+      ethers.BigNumber.from("10").pow(await USDC.decimals())
+    );
+    const qTokenShortString = `${strikePriceString}${
+      (await qTokenShort.isCall()) ? "CALL" : "PUT"
+    }`;
+
+    const collateralRequirementString =
+      parseInt(collateralRequirement.toString()) /
+      10 ** (await collateral.decimals());
+
+    const expiryPriceString = expiryPrice.div(
+      ethers.BigNumber.from("10").pow(await USDC.decimals())
+    );
+
+    const payoutFromShortString =
+      parseInt(payoutFromShort.toString()) /
+      10 ** (await payoutAsset.decimals());
+
+    const claimableCollateralString = `${
+      parseInt(claimableCollateral.toString()) /
+      10 ** (await collateral.decimals())
+    } ${payoutAsset.address === USDC.address ? "USDC" : "WETH"}`;
+
+    console.log(
+      `${qTokenShortString} -> CollateralToken(${qTokenShortString}, ${collateralizedFrom.div(
+        ethers.BigNumber.from("10").pow(await collateral.decimals())
+      )}) costing ${collateralRequirementString} ${
+        collateral.address === USDC.address ? "USDC" : "WETH"
+      }`
+    );
+    console.log(
+      `Expired at $${expiryPriceString}. Exercised for ${payoutFromShortString} ${
+        payoutAsset.address === USDC.address ? "USDC" : "WETH"
+      } so the user is entitled to ${claimableCollateralString}`
+    );
+  };
+
+  const getPayout = async (
+    qToken: QToken,
+    amount: BigNumber,
+    expiryPrice: BigNumber
+  ): Promise<[BigNumber, MockERC20]> => {
+    const strikePrice = await qToken.strikePrice();
+    const underlyingDecimals = await WETH.decimals();
+    const optionsDecimals = 18;
+
+    let payoutAmount: BigNumber;
+    let payoutToken: MockERC20;
+
+    if (await qToken.isCall()) {
+      payoutAmount = expiryPrice.gt(strikePrice)
+        ? expiryPrice
+            .sub(strikePrice)
+            .mul(amount)
+            .div(expiryPrice)
+            .mul(ethers.BigNumber.from("10").pow(underlyingDecimals))
+            .div(ethers.BigNumber.from("10").pow(optionsDecimals))
+        : ethers.BigNumber.from("0");
+
+      payoutToken = WETH;
+    } else {
+      payoutAmount = strikePrice.gt(expiryPrice)
+        ? strikePrice
+            .sub(expiryPrice)
+            .mul(amount)
+            .div(ethers.BigNumber.from("10").pow(optionsDecimals))
+        : ethers.BigNumber.from("0");
+
+      payoutToken = USDC;
+    }
+
+    return [payoutAmount, payoutToken];
+  };
+
   beforeEach(async () => {
     [admin, secondAccount] = await provider.getWallets();
 
@@ -472,7 +643,7 @@ describe("Controller", () => {
     it("Users should be able to create a PUT Credit spread", async () => {
       await testMintingOptions(
         qTokenPut1400.address,
-        ethers.utils.parseEther("2"),
+        ethers.utils.parseEther("1"),
         qTokenPut400.address
       );
     });
@@ -656,6 +827,204 @@ describe("Controller", () => {
 
       // Reset the Hardhat Network
       await provider.send("evm_revert", ["0x4"]);
+    });
+
+    it("Should revert when a user tries to exercise an amount of options that exceeds his balance", async () => {
+      // Take a snapshot of the Hardhat Network
+      await provider.send("evm_snapshot", []);
+
+      // Increase time to one hour past the expiry
+      await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+      await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+
+      await mockPriceRegistry.mock.getSettlementPrice.returns(
+        ethers.utils.parseUnits("200", await USDC.decimals())
+      );
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .exercise(qTokenPut1400.address, ethers.utils.parseEther("1"))
+      ).to.be.revertedWith("ERC20: burn amount exceeds balance");
+
+      // Reset the Hardhat Network
+      await provider.send("evm_revert", ["0x5"]);
+    });
+  });
+
+  describe("claimCollateral", () => {
+    it("Should revert when trying to claim collateral from an invalid CollateralToken", async () => {
+      await expect(
+        controller
+          .connect(secondAccount)
+          .claimCollateral(
+            ethers.BigNumber.from("123"),
+            ethers.utils.parseEther("1")
+          )
+      ).to.be.revertedWith(
+        "Controller: Can not claim collateral from non-existing option"
+      );
+    });
+
+    it("Should revert when trying to claim collateral from options before their expiry", async () => {
+      await expect(
+        controller
+          .connect(secondAccount)
+          .claimCollateral(
+            await collateralToken.getCollateralTokenId(
+              qTokenPut400.address,
+              ethers.BigNumber.from("0")
+            ),
+            ethers.utils.parseEther("1")
+          )
+      ).to.be.revertedWith(
+        "Controller: Can not claim collateral from options before their expiry"
+      );
+    });
+
+    it("Should revert when trying to claim collateral from options before their expiry price is settled", async () => {
+      // Take a snapshot of the Hardhat Network
+      await provider.send("evm_snapshot", []);
+
+      // Increase time to one hour past the expiry
+      await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+      await mockPriceRegistry.mock.hasSettlementPrice.returns(false);
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .claimCollateral(
+            await collateralToken.getCollateralTokenId(
+              qTokenPut400.address,
+              ethers.BigNumber.from("0")
+            ),
+            ethers.utils.parseEther("1")
+          )
+      ).to.be.revertedWith(
+        "Controller: Can not claim collateral before option is settled"
+      );
+
+      // Reset the Hardhat Network
+      await provider.send("evm_revert", ["0x6"]);
+    });
+
+    it("Users should be able to claim collateral from PUT options that expired ITM", async () => {
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenPut400.address,
+        ethers.BigNumber.from("0")
+      );
+
+      const expiryPrice = ethers.utils.parseUnits("200", await USDC.decimals());
+
+      await testClaimCollateral(
+        collateralTokenId,
+        ethers.utils.parseEther("1"),
+        expiryPrice
+      );
+
+      // Reset the Hardhat Network
+      await provider.send("evm_revert", ["0x7"]);
+    });
+
+    it("Users should be able to claim collateral from PUT options that expired OTM", async () => {
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenPut400.address,
+        ethers.BigNumber.from("0")
+      );
+
+      const expiryPrice = ethers.utils.parseUnits("500", await USDC.decimals());
+
+      await testClaimCollateral(
+        collateralTokenId,
+        ethers.utils.parseEther("1"),
+        expiryPrice
+      );
+
+      // Reset the Hardhat Network
+      await provider.send("evm_revert", ["0x8"]);
+    });
+
+    it("Users should be able to claim collateral from options that expired ATM", async () => {
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenPut400.address,
+        ethers.BigNumber.from("0")
+      );
+
+      const expiryPrice = ethers.utils.parseUnits("400", await USDC.decimals());
+
+      await testClaimCollateral(
+        collateralTokenId,
+        ethers.utils.parseEther("1"),
+        expiryPrice
+      );
+
+      // Reset the Hardhat Network
+      await provider.send("evm_revert", ["0x9"]);
+    });
+
+    it("Users should be able to claim collateral from CALL options that expired ITM", async () => {
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenCall2000.address,
+        ethers.BigNumber.from("0")
+      );
+
+      const expiryPrice = ethers.utils.parseUnits(
+        "2500",
+        await USDC.decimals()
+      );
+
+      await testClaimCollateral(
+        collateralTokenId,
+        ethers.utils.parseEther("1"),
+        expiryPrice
+      );
+
+      // Reset the Hardhat Network
+      await provider.send("evm_revert", ["0xa"]);
+    });
+
+    it("Users should be able to claim collateral from CALL options that expired OTM", async () => {
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenCall2000.address,
+        ethers.BigNumber.from("0")
+      );
+
+      const expiryPrice = ethers.utils.parseUnits(
+        "1800",
+        await USDC.decimals()
+      );
+
+      await testClaimCollateral(
+        collateralTokenId,
+        ethers.utils.parseEther("1"),
+        expiryPrice
+      );
+
+      // Reset the Hardhat Network
+      await provider.send("evm_revert", ["0xb"]);
+    });
+
+    it("Users should be able to claim collateral from CALL options that expired ATM", async () => {
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenCall2000.address,
+        ethers.BigNumber.from("0")
+      );
+
+      const expiryPrice = ethers.utils.parseUnits(
+        "2000",
+        await USDC.decimals()
+      );
+
+      await testClaimCollateral(
+        collateralTokenId,
+        ethers.utils.parseEther("1"),
+        expiryPrice
+      );
+
+      // Reset the Hardhat Network
+      await provider.send("evm_revert", ["0xc"]);
     });
   });
 });
