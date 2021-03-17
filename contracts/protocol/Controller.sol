@@ -48,6 +48,14 @@ contract Controller {
         address longTokenReturned
     );
 
+    event CollateralClaimed(
+        address indexed account,
+        uint256 indexed collateralTokenId,
+        uint256 amountClaimed,
+        uint256 collateralReturned,
+        address collateralAsset
+    );
+
     constructor(address _optionsFactory) {
         optionsFactory = OptionsFactory(_optionsFactory);
     }
@@ -199,6 +207,84 @@ contract Controller {
         );
     }
 
+    function claimCollateral(uint256 _collateralTokenId, uint256 _amount)
+        external
+    {
+        (address _qTokenShort, uint256 collateralizedFrom) =
+            optionsFactory.collateralToken().idToInfo(_collateralTokenId);
+
+        require(
+            _qTokenShort != address(0),
+            "Controller: Can not claim collateral from non-existing option"
+        );
+
+        QToken qTokenShort = QToken(_qTokenShort);
+
+        require(
+            block.timestamp > qTokenShort.expiryTime(),
+            "Controller: Can not claim collateral from options before their expiry"
+        );
+        require(
+            qTokenShort.getOptionPriceStatus() == PriceStatus.SETTLED,
+            "Controller: Can not claim collateral before option is settled"
+        );
+
+        uint256 amountToClaim =
+            _amount == 0
+                ? optionsFactory.collateralToken().balanceOf(
+                    msg.sender,
+                    _collateralTokenId
+                )
+                : _amount;
+
+        address qTokenLong;
+        uint256 payoutFromLong;
+        if (collateralizedFrom != 0) {
+            qTokenLong = optionsFactory.getTargetQTokenAddress(
+                qTokenShort.underlyingAsset(),
+                qTokenShort.strikeAsset(),
+                qTokenShort.oracle(),
+                collateralizedFrom,
+                qTokenShort.expiryTime(),
+                qTokenShort.isCall()
+            );
+
+            (, , payoutFromLong) = getPayout(qTokenLong, amountToClaim);
+        } else {
+            qTokenLong = address(0);
+            payoutFromLong = 0;
+        }
+
+        (address collateralAsset, uint256 collateralRequirement) =
+            getCollateralRequirement(_qTokenShort, qTokenLong, amountToClaim);
+
+        (, , uint256 payoutFromShort) = getPayout(_qTokenShort, amountToClaim);
+
+        uint256 returnableCollateral =
+            payoutFromLong.add(collateralRequirement).sub(payoutFromShort);
+
+        optionsFactory.collateralToken().burnCollateralToken(
+            msg.sender,
+            _collateralTokenId,
+            amountToClaim
+        );
+
+        if (returnableCollateral > 0) {
+            IERC20(collateralAsset).safeTransfer(
+                msg.sender,
+                returnableCollateral
+            );
+        }
+
+        emit CollateralClaimed(
+            msg.sender,
+            _collateralTokenId,
+            amountToClaim,
+            returnableCollateral,
+            collateralAsset
+        );
+    }
+
     function neutralizePosition(
         address _qToken,
         uint256 _collateralTokenId,
@@ -335,7 +421,7 @@ contract Controller {
         return a > b ? a.sub(b) : b.sub(a);
     }
 
-    //todo: check the oracle amount of decimals.
+    //todo: ensure the oracle price is normalized to the amount of decimals in the strikeAsset (e.g., USDC)
     function getPayout(address _qToken, uint256 _amount)
         public
         view
