@@ -45,6 +45,7 @@ describe("Controller", () => {
   let qTokenCall3520: QToken;
   let mockPriceRegistry: MockContract;
   let nullQToken: QToken;
+  let snapshotCounter = 1; // Snapshots start at 1
 
   const aMonth = 30 * 24 * 3600; // in seconds
 
@@ -432,6 +433,13 @@ describe("Controller", () => {
     return [payoutAmount, payoutToken];
   };
 
+  const revertFromSnapshot = async () => {
+    // Reset the Hardhat Network
+    await provider.send("evm_revert", [
+      `0x${(snapshotCounter++).toString(16)}`,
+    ]);
+  };
+
   beforeEach(async () => {
     [admin, secondAccount] = await provider.getWallets();
 
@@ -644,8 +652,7 @@ describe("Controller", () => {
           )
       ).to.be.revertedWith("Controller: Cannot mint expired options");
 
-      // Reset the Hardhat Network
-      await provider.send("evm_revert", ["0x1"]);
+      await revertFromSnapshot();
     });
 
     it("Users should be able to mint CALL options positions", async () => {
@@ -723,8 +730,7 @@ describe("Controller", () => {
           .exercise(qTokenPut1400.address, ethers.utils.parseEther("1"))
       ).to.be.revertedWith("Controller: Cannot exercise unsettled options");
 
-      // Reset the Hardhat Network
-      await provider.send("evm_revert", ["0x2"]);
+      await revertFromSnapshot();
     });
 
     it("Users should be able to exercise PUT options", async () => {
@@ -787,8 +793,7 @@ describe("Controller", () => {
         await qTokenToExercise.balanceOf(await secondAccount.getAddress())
       ).to.equal(ethers.BigNumber.from("0"));
 
-      // Reset the Hardhat Network
-      await provider.send("evm_revert", ["0x3"]);
+      await revertFromSnapshot();
     });
 
     it("Users should be able to exercise CALL options", async () => {
@@ -849,8 +854,7 @@ describe("Controller", () => {
         await qTokenToExercise.balanceOf(await secondAccount.getAddress())
       ).to.equal(ethers.BigNumber.from("0"));
 
-      // Reset the Hardhat Network
-      await provider.send("evm_revert", ["0x4"]);
+      await revertFromSnapshot();
     });
 
     it("Should revert when a user tries to exercise an amount of options that exceeds his balance", async () => {
@@ -872,8 +876,7 @@ describe("Controller", () => {
           .exercise(qTokenPut1400.address, ethers.utils.parseEther("1"))
       ).to.be.revertedWith("ERC20: burn amount exceeds balance");
 
-      // Reset the Hardhat Network
-      await provider.send("evm_revert", ["0x5"]);
+      await revertFromSnapshot();
     });
   });
 
@@ -930,8 +933,7 @@ describe("Controller", () => {
         "Controller: Can not claim collateral before option is settled"
       );
 
-      // Reset the Hardhat Network
-      await provider.send("evm_revert", ["0x6"]);
+      await revertFromSnapshot();
     });
 
     it("Users should be able to claim collateral from PUT options that expired ITM", async () => {
@@ -943,8 +945,7 @@ describe("Controller", () => {
         expiryPrice
       );
 
-      // Reset the Hardhat Network
-      await provider.send("evm_revert", ["0x7"]);
+      await revertFromSnapshot();
     });
 
     it("Users should be able to claim collateral from PUT options that expired OTM", async () => {
@@ -956,8 +957,7 @@ describe("Controller", () => {
         expiryPrice
       );
 
-      // Reset the Hardhat Network
-      await provider.send("evm_revert", ["0x8"]);
+      await revertFromSnapshot();
     });
 
     it("Users should be able to claim collateral from PUT options that expired ATM", async () => {
@@ -969,8 +969,7 @@ describe("Controller", () => {
         expiryPrice
       );
 
-      // Reset the Hardhat Network
-      await provider.send("evm_revert", ["0x9"]);
+      await revertFromSnapshot();
     });
 
     it("Users should be able to claim collateral from CALL options that expired ITM", async () => {
@@ -985,8 +984,7 @@ describe("Controller", () => {
         expiryPrice
       );
 
-      // Reset the Hardhat Network
-      await provider.send("evm_revert", ["0xa"]);
+      await revertFromSnapshot();
     });
 
     it("Users should be able to claim collateral from CALL options that expired OTM", async () => {
@@ -1001,8 +999,7 @@ describe("Controller", () => {
         expiryPrice
       );
 
-      // Reset the Hardhat Network
-      await provider.send("evm_revert", ["0xb"]);
+      await revertFromSnapshot();
     });
 
     it("Users should be able to claim collateral from CALL options that expired ATM", async () => {
@@ -1017,8 +1014,7 @@ describe("Controller", () => {
         expiryPrice
       );
 
-      // Reset the Hardhat Network
-      await provider.send("evm_revert", ["0xc"]);
+      await revertFromSnapshot();
     });
 
     it("Users should be able to claim collateral from PUT Credit Spreads that expired ITM", async () => {
@@ -1034,8 +1030,7 @@ describe("Controller", () => {
         qTokenPut400
       );
 
-      // Reset the Hardhat Network
-      await provider.send("evm_revert", ["0xd"]);
+      await revertFromSnapshot();
     });
   });
 });
