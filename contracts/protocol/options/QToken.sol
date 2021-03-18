@@ -9,6 +9,9 @@ import "./AssetsRegistry.sol";
 import "../QuantConfig.sol";
 import "../pricing/PriceRegistry.sol";
 
+/// @dev Current pricing status of option. Only SETTLED options can be exercised
+enum PriceStatus {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
+
 /// @title Token that represents a user's long position
 /// @author Quant Finance
 /// @notice Can be used by owners to exercise their options
@@ -36,9 +39,6 @@ contract QToken is ERC20 {
 
     /// @dev True if the option is a CALL. False if the option is a PUT.
     bool public isCall;
-
-    /// @dev Current pricing status of option. Only SETTLED options can be exercised
-    enum PriceStatus {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
 
     uint256 private constant _STRIKE_PRICE_SCALE = 1e6;
     uint256 private constant _STRIKE_PRICE_DIGITS = 6;

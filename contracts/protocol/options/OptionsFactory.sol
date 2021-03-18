@@ -92,9 +92,9 @@ contract OptionsFactory {
         address _underlyingAsset,
         address _strikeAsset,
         address _oracle,
+        address _collateralizedFrom,
         uint256 _strikePrice,
         uint256 _expiryTime,
-        uint256 _collateralizedFrom,
         bool _isCall
     ) external view returns (uint256) {
         return
@@ -104,9 +104,9 @@ contract OptionsFactory {
                 _underlyingAsset,
                 _strikeAsset,
                 _oracle,
+                _collateralizedFrom,
                 _strikePrice,
                 _expiryTime,
-                _collateralizedFrom,
                 _isCall
             );
     }
@@ -140,9 +140,9 @@ contract OptionsFactory {
             _underlyingAsset,
             _strikeAsset,
             _oracle,
+            address(0),
             _strikePrice,
             _expiryTime,
-            0,
             _isCall
         );
 
@@ -196,7 +196,7 @@ contract OptionsFactory {
             _isCall
         );
 
-        collateralToken.createCollateralToken(newQToken, 0);
+        collateralToken.createCollateralToken(newQToken, address(0));
     }
 
     /// @notice get the CollateralToken id for an already created CollateralToken,
@@ -213,9 +213,9 @@ contract OptionsFactory {
         address _underlyingAsset,
         address _strikeAsset,
         address _oracle,
+        address _collateralizedFrom,
         uint256 _strikePrice,
         uint256 _expiryTime,
-        uint256 _collateralizedFrom,
         bool _isCall
     ) public view returns (uint256) {
         address qToken =
@@ -259,9 +259,9 @@ contract OptionsFactory {
                 _underlyingAsset,
                 _strikeAsset,
                 _oracle,
+                address(0),
                 _strikePrice,
                 _expiryTime,
-                0,
                 _isCall
             );
 

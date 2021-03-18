@@ -10,6 +10,8 @@ import "./options/QToken.sol";
 import "./options/CollateralToken.sol";
 import "./options/AssetsRegistry.sol";
 
+import "hardhat/console.sol";
+
 contract Controller {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -94,7 +96,10 @@ contract Controller {
         // Mint the options to the sender's address
         qToken.mint(msg.sender, _optionsAmount);
         uint256 collateralTokenId =
-            optionsFactory.collateralToken().getCollateralTokenId(_qToken, 0);
+            optionsFactory.collateralToken().getCollateralTokenId(
+                _qToken,
+                address(0)
+            );
         optionsFactory.collateralToken().mintCollateralToken(
             msg.sender,
             collateralTokenId,
@@ -140,29 +145,29 @@ contract Controller {
                 address(this),
                 collateralAmount
             );
+        }
 
-            // Check if the corresponding CollateralToken has already been created
-            // Create it if it hasn't
-            uint256 collateralTokenId =
-                optionsFactory.collateralToken().getCollateralTokenId(
-                    _qTokenToMint,
-                    collateralAmount
-                );
-            (, uint256 collateralizedFrom) =
-                optionsFactory.collateralToken().idToInfo(collateralTokenId);
-            if (collateralizedFrom == 0) {
-                optionsFactory.collateralToken().createCollateralToken(
-                    _qTokenToMint,
-                    collateralAmount
-                );
-            }
-
-            optionsFactory.collateralToken().mintCollateralToken(
-                msg.sender,
-                collateralTokenId,
-                collateralAmount
+        // Check if the corresponding CollateralToken has already been created
+        // Create it if it hasn't
+        uint256 collateralTokenId =
+            optionsFactory.collateralToken().getCollateralTokenId(
+                _qTokenToMint,
+                _qTokenForCollateral
+            );
+        (, address collateralizedFrom) =
+            optionsFactory.collateralToken().idToInfo(collateralTokenId);
+        if (collateralizedFrom == address(0)) {
+            optionsFactory.collateralToken().createCollateralToken(
+                _qTokenToMint,
+                _qTokenForCollateral
             );
         }
+
+        optionsFactory.collateralToken().mintCollateralToken(
+            msg.sender,
+            collateralTokenId,
+            _optionsAmount
+        );
 
         qTokenToMint.mint(msg.sender, _optionsAmount);
 
@@ -210,7 +215,7 @@ contract Controller {
     function claimCollateral(uint256 _collateralTokenId, uint256 _amount)
         external
     {
-        (address _qTokenShort, uint256 collateralizedFrom) =
+        (address _qTokenShort, address collateralizedFrom) =
             optionsFactory.collateralToken().idToInfo(_collateralTokenId);
 
         require(
@@ -239,15 +244,8 @@ contract Controller {
 
         address qTokenLong;
         uint256 payoutFromLong;
-        if (collateralizedFrom != 0) {
-            qTokenLong = optionsFactory.getTargetQTokenAddress(
-                qTokenShort.underlyingAsset(),
-                qTokenShort.strikeAsset(),
-                qTokenShort.oracle(),
-                collateralizedFrom,
-                qTokenShort.expiryTime(),
-                qTokenShort.isCall()
-            );
+        if (collateralizedFrom != address(0)) {
+            qTokenLong = collateralizedFrom;
 
             (, , payoutFromLong) = getPayout(qTokenLong, amountToClaim);
         } else {
@@ -291,7 +289,7 @@ contract Controller {
         uint256 _amount
     ) external {
         CollateralToken collateralToken = optionsFactory.collateralToken();
-        (address qTokenShort, uint256 collateralizedFrom) =
+        (address qTokenShort, address collateralizedFrom) =
             collateralToken.idToInfo(_collateralTokenId);
 
         require(
@@ -338,21 +336,8 @@ contract Controller {
         IERC20(collateralType).safeTransfer(msg.sender, collateralOwed);
 
         //give the user their long tokens (if any)
-        if (collateralizedFrom > 0) {
-            QToken shortToken = QToken(qTokenShort);
-
-            //todo: check this works with both puts and calls
-            address longToken =
-                optionsFactory.getQToken(
-                    shortToken.underlyingAsset(),
-                    shortToken.strikeAsset(),
-                    shortToken.oracle(),
-                    collateralizedFrom,
-                    shortToken.expiryTime(),
-                    shortToken.isCall()
-                );
-
-            QToken(longToken).mint(msg.sender, amountToNeutralize);
+        if (collateralizedFrom != address(0)) {
+            QToken(collateralizedFrom).mint(msg.sender, amountToNeutralize);
         }
     }
 

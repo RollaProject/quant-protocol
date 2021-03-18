@@ -44,6 +44,7 @@ describe("Controller", () => {
   let qTokenCall2880: QToken;
   let qTokenCall3520: QToken;
   let mockPriceRegistry: MockContract;
+  let nullQToken: QToken;
 
   const aMonth = 30 * 24 * 3600; // in seconds
 
@@ -217,10 +218,9 @@ describe("Controller", () => {
         await qTokenForCollateral.balanceOf(await secondAccount.getAddress())
       ).to.equal(ethers.BigNumber.from("0"));
 
-      // Check that the user received the CollateralToken
       const collateralTokenId = await collateralToken.getCollateralTokenId(
         qTokenToMintAddress,
-        collateralAmount
+        qTokenForCollateral.address
       );
 
       expect(
@@ -228,7 +228,7 @@ describe("Controller", () => {
           await secondAccount.getAddress(),
           collateralTokenId
         )
-      ).to.equal(collateralAmount);
+      ).to.equal(optionsAmount);
     }
 
     expect(
@@ -246,46 +246,20 @@ describe("Controller", () => {
   };
 
   const testClaimCollateral = async (
-    collateralTokenId: BigNumber,
+    qTokenShort: QToken,
     amountToClaim: BigNumber,
-    expiryPrice: BigNumber
+    expiryPrice: BigNumber,
+    qTokenLong: QToken = <QToken>(
+      new ethers.Contract(
+        ethers.constants.AddressZero,
+        QTokenInterface,
+        provider
+      )
+    )
   ) => {
     await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
 
     await mockPriceRegistry.mock.getSettlementPrice.returns(expiryPrice);
-
-    const [
-      qTokenShortAddr,
-      collateralizedFrom,
-    ] = await collateralToken.idToInfo(collateralTokenId);
-
-    const qTokenShort = <QToken>(
-      new ethers.Contract(qTokenShortAddr, QTokenInterface, provider)
-    );
-
-    let qTokenLong;
-    if (!collateralizedFrom.eq(ethers.BigNumber.from("0"))) {
-      const qTokenLongAddr = await optionsFactory.getTargetQTokenAddress(
-        await qTokenShort.underlyingAsset(),
-        await qTokenShort.strikeAsset(),
-        await qTokenShort.oracle(),
-        collateralizedFrom,
-        await qTokenShort.expiryTime(),
-        await qTokenShort.isCall()
-      );
-
-      qTokenLong = <QToken>(
-        new ethers.Contract(qTokenLongAddr, QTokenInterface, provider)
-      );
-    } else {
-      qTokenLong = <QToken>(
-        new ethers.Contract(
-          ethers.constants.AddressZero,
-          QTokenInterface,
-          provider
-        )
-      );
-    }
 
     const [
       collateralAddress,
@@ -298,15 +272,50 @@ describe("Controller", () => {
       .connect(admin)
       .mint(await secondAccount.getAddress(), collateralRequirement);
 
-    await collateral
-      .connect(secondAccount)
-      .approve(controller.address, collateralRequirement);
+    let collateralizedFrom;
+    let collateralRequiredForLong = ethers.BigNumber.from("0");
 
     if (qTokenLong.address === ethers.constants.AddressZero) {
+      collateralizedFrom = ethers.constants.AddressZero;
+
+      await collateral
+        .connect(secondAccount)
+        .approve(controller.address, collateralRequirement);
+
       await controller
         .connect(secondAccount)
         .mintOptionsPosition(qTokenShort.address, amountToClaim);
+    } else {
+      collateralizedFrom = qTokenLong.address;
+
+      collateralRequiredForLong = (
+        await getCollateralRequirement(qTokenLong, nullQToken, amountToClaim)
+      )[1];
+
+      await collateral
+        .connect(admin)
+        .mint(await secondAccount.getAddress(), collateralRequiredForLong);
+
+      await collateral
+        .connect(secondAccount)
+        .approve(
+          controller.address,
+          collateralRequirement.add(collateralRequiredForLong)
+        );
+
+      await controller
+        .connect(secondAccount)
+        .mintOptionsPosition(qTokenLong.address, amountToClaim);
+
+      await controller
+        .connect(secondAccount)
+        .mintSpread(qTokenShort.address, qTokenLong.address, amountToClaim);
     }
+
+    const collateralTokenId = await collateralToken.getCollateralTokenId(
+      qTokenShort.address,
+      collateralizedFrom
+    );
 
     // Take a snapshot of the Hardhat Network
     await provider.send("evm_snapshot", []);
@@ -338,7 +347,9 @@ describe("Controller", () => {
     ).to.equal(claimableCollateral);
 
     expect(await payoutAsset.balanceOf(controller.address)).to.equal(
-      collateralRequirement.sub(claimableCollateral)
+      collateralRequirement
+        .add(collateralRequiredForLong)
+        .sub(claimableCollateral)
     );
 
     const strikePriceString = (await qTokenShort.strikePrice()).div(
@@ -365,10 +376,15 @@ describe("Controller", () => {
       10 ** (await collateral.decimals())
     } ${payoutAsset.address === USDC.address ? "USDC" : "WETH"}`;
 
+    const qTokenLongStrikePriceString =
+      qTokenLong.address !== ethers.constants.AddressZero
+        ? (await qTokenLong.strikePrice()).div(
+            ethers.BigNumber.from("10").pow(await collateral.decimals())
+          )
+        : "0";
+
     console.log(
-      `${qTokenShortString} -> CollateralToken(${qTokenShortString}, ${collateralizedFrom.div(
-        ethers.BigNumber.from("10").pow(await collateral.decimals())
-      )}) costing ${collateralRequirementString} ${
+      `${qTokenShortString} -> CollateralToken(${qTokenShortString}, ${qTokenLongStrikePriceString}) costing ${collateralRequirementString} ${
         collateral.address === USDC.address ? "USDC" : "WETH"
       }`
     );
@@ -567,6 +583,14 @@ describe("Controller", () => {
     qTokenPut400 = <QToken>(
       new ethers.Contract(
         await optionsFactory.getTargetQTokenAddress(...qTokenPut400Parameters),
+        QTokenInterface,
+        provider
+      )
+    );
+
+    nullQToken = <QToken>(
+      new ethers.Contract(
+        ethers.constants.AddressZero,
         QTokenInterface,
         provider
       )
@@ -874,7 +898,7 @@ describe("Controller", () => {
           .claimCollateral(
             await collateralToken.getCollateralTokenId(
               qTokenPut400.address,
-              ethers.BigNumber.from("0")
+              ethers.constants.AddressZero
             ),
             ethers.utils.parseEther("1")
           )
@@ -898,7 +922,7 @@ describe("Controller", () => {
           .claimCollateral(
             await collateralToken.getCollateralTokenId(
               qTokenPut400.address,
-              ethers.BigNumber.from("0")
+              ethers.constants.AddressZero
             ),
             ethers.utils.parseEther("1")
           )
@@ -911,15 +935,10 @@ describe("Controller", () => {
     });
 
     it("Users should be able to claim collateral from PUT options that expired ITM", async () => {
-      const collateralTokenId = await collateralToken.getCollateralTokenId(
-        qTokenPut400.address,
-        ethers.BigNumber.from("0")
-      );
-
       const expiryPrice = ethers.utils.parseUnits("200", await USDC.decimals());
 
       await testClaimCollateral(
-        collateralTokenId,
+        qTokenPut400,
         ethers.utils.parseEther("1"),
         expiryPrice
       );
@@ -929,15 +948,10 @@ describe("Controller", () => {
     });
 
     it("Users should be able to claim collateral from PUT options that expired OTM", async () => {
-      const collateralTokenId = await collateralToken.getCollateralTokenId(
-        qTokenPut400.address,
-        ethers.BigNumber.from("0")
-      );
-
       const expiryPrice = ethers.utils.parseUnits("500", await USDC.decimals());
 
       await testClaimCollateral(
-        collateralTokenId,
+        qTokenPut400,
         ethers.utils.parseEther("1"),
         expiryPrice
       );
@@ -946,16 +960,11 @@ describe("Controller", () => {
       await provider.send("evm_revert", ["0x8"]);
     });
 
-    it("Users should be able to claim collateral from options that expired ATM", async () => {
-      const collateralTokenId = await collateralToken.getCollateralTokenId(
-        qTokenPut400.address,
-        ethers.BigNumber.from("0")
-      );
-
+    it("Users should be able to claim collateral from PUT options that expired ATM", async () => {
       const expiryPrice = ethers.utils.parseUnits("400", await USDC.decimals());
 
       await testClaimCollateral(
-        collateralTokenId,
+        qTokenPut400,
         ethers.utils.parseEther("1"),
         expiryPrice
       );
@@ -965,18 +974,13 @@ describe("Controller", () => {
     });
 
     it("Users should be able to claim collateral from CALL options that expired ITM", async () => {
-      const collateralTokenId = await collateralToken.getCollateralTokenId(
-        qTokenCall2000.address,
-        ethers.BigNumber.from("0")
-      );
-
       const expiryPrice = ethers.utils.parseUnits(
         "2500",
         await USDC.decimals()
       );
 
       await testClaimCollateral(
-        collateralTokenId,
+        qTokenCall2000,
         ethers.utils.parseEther("1"),
         expiryPrice
       );
@@ -986,18 +990,13 @@ describe("Controller", () => {
     });
 
     it("Users should be able to claim collateral from CALL options that expired OTM", async () => {
-      const collateralTokenId = await collateralToken.getCollateralTokenId(
-        qTokenCall2000.address,
-        ethers.BigNumber.from("0")
-      );
-
       const expiryPrice = ethers.utils.parseUnits(
         "1800",
         await USDC.decimals()
       );
 
       await testClaimCollateral(
-        collateralTokenId,
+        qTokenCall2000,
         ethers.utils.parseEther("1"),
         expiryPrice
       );
@@ -1007,24 +1006,36 @@ describe("Controller", () => {
     });
 
     it("Users should be able to claim collateral from CALL options that expired ATM", async () => {
-      const collateralTokenId = await collateralToken.getCollateralTokenId(
-        qTokenCall2000.address,
-        ethers.BigNumber.from("0")
-      );
-
       const expiryPrice = ethers.utils.parseUnits(
         "2000",
         await USDC.decimals()
       );
 
       await testClaimCollateral(
-        collateralTokenId,
+        qTokenCall2000,
         ethers.utils.parseEther("1"),
         expiryPrice
       );
 
       // Reset the Hardhat Network
       await provider.send("evm_revert", ["0xc"]);
+    });
+
+    it("Users should be able to claim collateral from PUT Credit Spreads that expired ITM", async () => {
+      const expiryPrice = ethers.utils.parseUnits(
+        "1100",
+        await USDC.decimals()
+      );
+
+      await testClaimCollateral(
+        qTokenPut1400,
+        ethers.utils.parseEther("1"),
+        expiryPrice,
+        qTokenPut400
+      );
+
+      // Reset the Hardhat Network
+      await provider.send("evm_revert", ["0xd"]);
     });
   });
 });

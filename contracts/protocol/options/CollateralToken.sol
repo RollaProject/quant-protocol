@@ -17,10 +17,10 @@ contract CollateralToken is ERC1155 {
 
     /// @dev stores metadata for a CollateralToken with an specific id
     /// @param qTokenAddress address of the corresponding QToken
-    /// @param collateralizedFrom initial spread collateral
+    /// @param collateralizedFrom QToken address of an option used as collateral in a spread
     struct CollateralTokenInfo {
         address qTokenAddress;
-        uint256 collateralizedFrom;
+        address collateralizedFrom;
     }
 
     /// @notice The Quant system config
@@ -37,12 +37,12 @@ contract CollateralToken is ERC1155 {
 
     /// @notice event emitted when a new CollateralToken is created
     /// @param qTokenAddress address of the corresponding QToken
-    /// @param collateralizedFrom initial spread collateral
+    /// @param collateralizedFrom QToken address of an option used as collateral in a spread
     /// @param id unique id of the created CollateralToken
     /// @param allCollateralTokensLength the updated number of already created CollateralTokens
     event CollateralTokenCreated(
         address indexed qTokenAddress,
-        uint256 collateralizedFrom,
+        address collateralizedFrom,
         uint256 id,
         uint256 allCollateralTokensLength
     );
@@ -76,11 +76,11 @@ contract CollateralToken is ERC1155 {
 
     /// @notice Create new CollateralTokens
     /// @param _qTokenAddress address of the corresponding QToken
-    /// @param _collateralizedFrom initial spread collateral
+    /// @param _collateralizedFrom QToken address of an option used as collateral in a spread
     /// @return id the id for the CollateralToken created with the given arguments
     function createCollateralToken(
         address _qTokenAddress,
-        uint256 _collateralizedFrom
+        address _collateralizedFrom
     ) external returns (uint256 id) {
         id = getCollateralTokenId(_qTokenAddress, _collateralizedFrom);
 
@@ -220,9 +220,9 @@ contract CollateralToken is ERC1155 {
 
     /// @notice Returns a unique CollateralToken id based on its parameters
     /// @param _qToken the address of the corresponding QToken
-    /// @param _collateralizedFrom initial spread collateral
+    /// @param _collateralizedFrom QToken address of an option used as collateral in a spread
     /// @return id the id for the CollateralToken with the given arguments
-    function getCollateralTokenId(address _qToken, uint256 _collateralizedFrom)
+    function getCollateralTokenId(address _qToken, address _collateralizedFrom)
         public
         pure
         returns (uint256 id)

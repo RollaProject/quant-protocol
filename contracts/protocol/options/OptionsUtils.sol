@@ -65,9 +65,9 @@ library OptionsUtils {
         address _underlyingAsset,
         address _strikeAsset,
         address _oracle,
+        address _collateralizedFrom,
         uint256 _strikePrice,
         uint256 _expiryTime,
-        uint256 _collateralizedFrom,
         bool _isCall
     ) internal view returns (uint256) {
         address qToken =

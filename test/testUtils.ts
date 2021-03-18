@@ -11,7 +11,7 @@ import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 
-const { deployContract, deployMockContract } = waffle;
+const { deployContract } = waffle;
 
 const mockERC20 = async (
   deployer: Signer,
