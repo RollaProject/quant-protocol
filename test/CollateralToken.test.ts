@@ -27,11 +27,11 @@ describe("CollateralToken", () => {
   const createCollateralToken = async (
     account: Signer,
     qToken: QToken,
-    collateralizedFrom: string
+    qTokenAsCollateral: string
   ) => {
     await collateralToken
       .connect(account)
-      .createCollateralToken(qToken.address, collateralizedFrom);
+      .createCollateralToken(qToken.address, qTokenAsCollateral);
   };
 
   const createTwoCollateralTokens = async (): Promise<Array<BigNumber>> => {
@@ -105,7 +105,7 @@ describe("CollateralToken", () => {
       );
 
       expect(collateralTokenInfo.qTokenAddress).to.equal(qToken.address);
-      expect(collateralTokenInfo.collateralizedFrom).to.equal(
+      expect(collateralTokenInfo.qTokenAsCollateral).to.equal(
         ethers.constants.AddressZero
       );
     });

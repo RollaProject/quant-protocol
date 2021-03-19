@@ -56,7 +56,7 @@ library OptionsUtils {
     /// @param _oracle price oracle for the option underlying
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _collateralizedFrom initial spread collateral
+    /// @param _qTokenAsCollateral initial spread collateral
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return the id that a CollateralToken would have
     function getTargetCollateralTokenId(
@@ -65,7 +65,7 @@ library OptionsUtils {
         address _underlyingAsset,
         address _strikeAsset,
         address _oracle,
-        address _collateralizedFrom,
+        address _qTokenAsCollateral,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
@@ -81,6 +81,6 @@ library OptionsUtils {
                 _isCall
             );
         return
-            _collateralToken.getCollateralTokenId(qToken, _collateralizedFrom);
+            _collateralToken.getCollateralTokenId(qToken, _qTokenAsCollateral);
     }
 }

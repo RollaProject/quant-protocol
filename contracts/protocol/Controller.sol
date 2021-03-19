@@ -10,8 +10,6 @@ import "./options/QToken.sol";
 import "./options/CollateralToken.sol";
 import "./options/AssetsRegistry.sol";
 
-import "hardhat/console.sol";
-
 contract Controller {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -154,9 +152,9 @@ contract Controller {
                 _qTokenToMint,
                 _qTokenForCollateral
             );
-        (, address collateralizedFrom) =
+        (, address qTokenAsCollateral) =
             optionsFactory.collateralToken().idToInfo(collateralTokenId);
-        if (collateralizedFrom == address(0)) {
+        if (qTokenAsCollateral == address(0)) {
             optionsFactory.collateralToken().createCollateralToken(
                 _qTokenToMint,
                 _qTokenForCollateral
@@ -215,7 +213,7 @@ contract Controller {
     function claimCollateral(uint256 _collateralTokenId, uint256 _amount)
         external
     {
-        (address _qTokenShort, address collateralizedFrom) =
+        (address _qTokenShort, address qTokenAsCollateral) =
             optionsFactory.collateralToken().idToInfo(_collateralTokenId);
 
         require(
@@ -244,8 +242,8 @@ contract Controller {
 
         address qTokenLong;
         uint256 payoutFromLong;
-        if (collateralizedFrom != address(0)) {
-            qTokenLong = collateralizedFrom;
+        if (qTokenAsCollateral != address(0)) {
+            qTokenLong = qTokenAsCollateral;
 
             (, , payoutFromLong) = getPayout(qTokenLong, amountToClaim);
         } else {
@@ -283,26 +281,19 @@ contract Controller {
         );
     }
 
-    function neutralizePosition(
-        address _qToken,
-        uint256 _collateralTokenId,
-        uint256 _amount
-    ) external {
+    function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
+        external
+    {
         CollateralToken collateralToken = optionsFactory.collateralToken();
-        (address qTokenShort, address collateralizedFrom) =
+        (address qTokenShort, address qTokenAsCollateral) =
             collateralToken.idToInfo(_collateralTokenId);
-
-        require(
-            qTokenShort == _qToken,
-            "Controller: Collateral token ID does not match qToken"
-        );
 
         //get the amount of collateral tokens owned
         uint256 collateralTokensOwned =
             collateralToken.balanceOf(msg.sender, _collateralTokenId);
 
         //get the amount of qTokens owned
-        uint256 qTokensOwned = QToken(_qToken).balanceOf(msg.sender);
+        uint256 qTokensOwned = QToken(qTokenShort).balanceOf(msg.sender);
 
         //the amount of position that can be neutralized
         uint256 maxNeutralizable =
@@ -314,7 +305,7 @@ contract Controller {
 
         if (_amount != 0) {
             require(
-                amountToNeutralize >= maxNeutralizable,
+                _amount <= maxNeutralizable,
                 "Controller: Tried to neutralize more than balance"
             );
             amountToNeutralize = _amount;
@@ -323,9 +314,13 @@ contract Controller {
         }
 
         (address collateralType, uint256 collateralOwed) =
-            getCollateralRequirement(_qToken, address(0), amountToNeutralize);
+            getCollateralRequirement(
+                qTokenShort,
+                address(0),
+                amountToNeutralize
+            );
 
-        QToken(_qToken).burn(msg.sender, amountToNeutralize);
+        QToken(qTokenShort).burn(msg.sender, amountToNeutralize);
 
         collateralToken.burnCollateralToken(
             msg.sender,
@@ -336,9 +331,18 @@ contract Controller {
         IERC20(collateralType).safeTransfer(msg.sender, collateralOwed);
 
         //give the user their long tokens (if any)
-        if (collateralizedFrom != address(0)) {
-            QToken(collateralizedFrom).mint(msg.sender, amountToNeutralize);
+        if (qTokenAsCollateral != address(0)) {
+            QToken(qTokenAsCollateral).mint(msg.sender, amountToNeutralize);
         }
+
+        emit NeutralizePosition(
+            msg.sender,
+            qTokenShort,
+            amountToNeutralize,
+            collateralOwed,
+            collateralType,
+            qTokenAsCollateral
+        );
     }
 
     function getCollateralRequirement(

@@ -85,14 +85,14 @@ contract OptionsFactory {
     /// @param _oracle price oracle for the option underlying
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _collateralizedFrom initial spread collateral
+    /// @param _qTokenAsCollateral initial spread collateral
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return the id that a CollateralToken would have
     function getTargetCollateralTokenId(
         address _underlyingAsset,
         address _strikeAsset,
         address _oracle,
-        address _collateralizedFrom,
+        address _qTokenAsCollateral,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
@@ -104,7 +104,7 @@ contract OptionsFactory {
                 _underlyingAsset,
                 _strikeAsset,
                 _oracle,
-                _collateralizedFrom,
+                _qTokenAsCollateral,
                 _strikePrice,
                 _expiryTime,
                 _isCall
@@ -206,14 +206,14 @@ contract OptionsFactory {
     /// @param _oracle price oracle for the option underlying
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _collateralizedFrom initial spread collateral
+    /// @param _qTokenAsCollateral initial spread collateral
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return id of the requested CollateralToken
     function getCollateralToken(
         address _underlyingAsset,
         address _strikeAsset,
         address _oracle,
-        address _collateralizedFrom,
+        address _qTokenAsCollateral,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
@@ -229,7 +229,7 @@ contract OptionsFactory {
             );
 
         uint256 id =
-            collateralToken.getCollateralTokenId(qToken, _collateralizedFrom);
+            collateralToken.getCollateralTokenId(qToken, _qTokenAsCollateral);
 
         (address storedQToken, ) = collateralToken.idToInfo(id);
         return storedQToken != address(0) ? id : 0;
