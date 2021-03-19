@@ -1343,20 +1343,6 @@ describe("Controller", () => {
   });
 
   describe("neutralizePosition", () => {
-    it("Should revert when passing unrelated QTokens and CollateralTokens", async () => {
-      const collateralTokenId = await collateralToken.getCollateralTokenId(
-        qTokenCall2000.address,
-        ethers.constants.AddressZero
-      );
-      await expect(
-        controller
-          .connect(secondAccount)
-          .neutralizePosition(collateralTokenId, ethers.utils.parseEther("1"))
-      ).to.be.revertedWith(
-        "Controller: Collateral token ID does not match qToken"
-      );
-    });
-
     it("Should revert when users try to neutralize more options than they have", async () => {
       await expect(
         controller
