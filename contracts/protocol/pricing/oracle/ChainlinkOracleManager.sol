@@ -6,7 +6,7 @@ import "../PriceRegistry.sol";
 import "./ProviderOracleManager.sol";
 import "./IOracleFallbackMechanism.sol";
 
-/// @title For managing chainlink oracles and which assets use them
+/// @title For managing chainlink oracles for assets and submitting chainlink prices to the registry
 /// @notice Once an oracle is added for an asset it can't be changed!
 contract ChainlinkOracleManager is
     ProviderOracleManager,
@@ -19,7 +19,7 @@ contract ChainlinkOracleManager is
         uint256 expiryTimestamp,
         uint256 price,
         uint256 expiryRoundId,
-        address oracle,
+        address priceSubmitter,
         bool isFallback
     );
 
@@ -41,6 +41,10 @@ contract ChainlinkOracleManager is
         FALLBACK_PERIOD_SECONDS = _fallbackPeriodSeconds;
     }
 
+    /// @notice Set the price of an asset at a timestamp using a chainlink round id
+    /// @param _asset address of asset to set price for
+    /// @param _expiryTimestamp expiry timestamp to set the price at
+    /// @param _roundIdAfterExpiry the chainlink round id immediately after the expiry timestamp
     function setExpiryPriceInRegistryByRound(
         address _asset,
         uint256 _expiryTimestamp,
@@ -49,7 +53,7 @@ contract ChainlinkOracleManager is
         _setExpiryPriceInRegistryByRound(_asset, _expiryTimestamp, _roundIdAfterExpiry);
     }
 
-    /// @notice Get the expiry price from oracle and store it in the price registry so we have a copy
+    /// @notice Get the expiry price from chainlink asset oracle and store it in the price registry
     /// @param _asset asset to set price of
     /// @param _expiryTimestamp timestamp of price
     /// @param _roundIdAfterExpiry the chainlink round id immediately after the option expired
@@ -58,11 +62,13 @@ contract ChainlinkOracleManager is
         uint256 _expiryTimestamp,
         uint256 _roundIdAfterExpiry
     ) internal {
-        IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracles[_asset]);
+        address assetOracle = getAssetOracle(_asset);
+
+        IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
 
         require(
             aggregator.getTimestamp(uint256(_roundIdAfterExpiry)) > _expiryTimestamp,
-            "ChainlinkOracleManager: The round after is not after the expiry timestamp"
+            "ChainlinkOracleManager: The round posted is not after the expiry timestamp"
         );
 
         uint16 phaseOffset = 64;
@@ -73,7 +79,7 @@ contract ChainlinkOracleManager is
 
         require(
             aggregator.getTimestamp(uint256(expiryRoundId)) <= _expiryTimestamp,
-            "ChainlinkOracleManager: The expiry round is not before or equal to the expiry timestamp"
+            "ChainlinkOracleManager: The expiry round prior to the one posted is not before or equal to the expiry timestamp"
         );
 
         uint256 price = uint256(aggregator.getAnswer(expiryRoundId));
@@ -83,7 +89,7 @@ contract ChainlinkOracleManager is
             _expiryTimestamp,
             price,
             expiryRoundId,
-            assetOracles[_asset],
+            msg.sender,
             false
         );
 
@@ -94,47 +100,61 @@ contract ChainlinkOracleManager is
         );
     }
 
+    /// @notice Searches for the correct price from chainlink and publishes it to the price registry
+    /// @param _asset address of asset to set price for
+    /// @param _expiryTimestamp expiry timestamp to set the price at
+    /// @param _calldata this parameter is ignored (inherited from interface)
     function setExpiryPriceInRegistry(
         address _asset,
         uint256 _expiryTimestamp,
         bytes32 _calldata
     ) external override {
-        uint8 maxIterations = 50;
+        address assetOracle = getAssetOracle(_asset);
 
-        IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracles[_asset]);
-
-        (uint80 latestRound,,,,) = aggregator.latestRoundData();
+        IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
 
         //search and get round
-        uint80 roundAfterExpiry = searchRoundToSubmit(_asset, _expiryTimestamp, latestRound, maxIterations);
+        uint80 roundAfterExpiry = searchRoundToSubmit(_asset, _expiryTimestamp);
 
         //submit price to registry
         _setExpiryPriceInRegistryByRound(_asset, _expiryTimestamp, roundAfterExpiry);
     }
 
+    /// @notice Searches for the round in the asset oracle immediately after the expiry timestamp
+    /// @param _asset address of asset to search price for
+    /// @param _expiryTimestamp expiry timestamp to find the price at or before
+    /// @return the round id immediately after the timestamp submitted
     function searchRoundToSubmit(
         address _asset,
-        uint256 _expiryTimestamp,
-        uint80 _latestRound,
-        uint8 _maxIterations
+        uint256 _expiryTimestamp
     ) public view returns(uint80) {
-        IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracles[_asset]);
+        address assetOracle = getAssetOracle(_asset);
+
+        IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
 
         require(
             aggregator.latestTimestamp() > _expiryTimestamp,
             "ChainlinkOracleManager: The latest round timestamp is not after the expiry timestamp"
         );
 
+        //TODO: check what latestRound should be. in the other file its the proxy round id. Thomas will confirm
+        (uint80 latestRound,,,,) = aggregator.latestRoundData();
+
         uint16 phaseOffset = 64;
-        uint16 phaseId = uint16(_latestRound >> phaseOffset);
+        uint16 phaseId = uint16(latestRound >> phaseOffset);
 
         uint80 lowestPossibleRound = uint80((phaseId << phaseOffset) | 1);
-        uint80 highestPossibleRound = _latestRound;
-        uint80 firstId = 0;
-        uint80 lastId = 0;
+        uint80 highestPossibleRound = latestRound;
+        uint80 firstId = lowestPossibleRound;
+        uint80 lastId = highestPossibleRound;
+
+        require(
+            lastId > firstId,
+            "ChainlinkOracleManager: Not enough rounds to find round after"
+        );
 
         //binary search until we find two values our desired timestamp lies between
-        for (uint8 i = 0; i < _maxIterations; i++) {
+        while(lastId - firstId != 1) {
             BinarySearchResult memory result = _binarySearchStep(
                 aggregator,
                 _expiryTimestamp,
@@ -146,15 +166,16 @@ contract ChainlinkOracleManager is
             highestPossibleRound = result.lastRound;
             firstId = result.firstRoundProxy;
             lastId = result.lastRoundProxy;
-
-            if((lastId - firstId) == 1) {
-                break; //terminate loop as the rounds are adjacent
-            }
         }
 
         return highestPossibleRound; //return round above
     }
 
+    /// @notice Performs a binary search step between the first and last round in the aggregator proxy
+    /// @param _expiryTimestamp expiry timestamp to find the price at
+    /// @param _firstRoundProxy the lowest possible round for the timestamp
+    /// @param _lastRoundProxy the highest possible round for the timestamp
+    /// @return a binary search result object representing lowest and highest possible rounds of the timestamp
     function _binarySearchStep(
         IEACAggregatorProxy aggregator,
         uint256 _expiryTimestamp,
@@ -181,19 +202,17 @@ contract ChainlinkOracleManager is
         return BinarySearchResult(_firstRoundProxy, roundToCheckProxy, firstRoundId, roundToCheck);
     }
 
-    /// @notice Get the expiry price from oracle and store it in the price registry so we have a copy
+    /// @notice Get the current price of the asset from its oracle
     /// @param _asset asset to get price of
+    /// @return current price of asset
     function getCurrentPrice(address _asset)
         external
         view
         override
         returns (uint256)
     {
-        require(
-            assetOracles[_asset] != address(0),
-            "ChainlinkOracleManager: Asset not supported"
-        );
-        IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracles[_asset]);
+        address assetOracle = getAssetOracle(_asset);
+        IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
         int256 answer = aggregator.latestAnswer();
         require(
             answer > 0,
@@ -212,6 +231,8 @@ contract ChainlinkOracleManager is
         uint256 _expiryTimestamp,
         uint256 _price
     ) external override {
+        address assetOracle = getAssetOracle(_asset);
+
         require(
             config.hasRole(config.FALLBACK_PRICE_ROLE(), msg.sender),
             "ChainlinkOracleManager: Only the fallback price submitter can submit a fallback price"
@@ -227,7 +248,7 @@ contract ChainlinkOracleManager is
             _expiryTimestamp,
             _price,
             0,
-            assetOracles[_asset],
+            msg.sender,
             true
         );
 

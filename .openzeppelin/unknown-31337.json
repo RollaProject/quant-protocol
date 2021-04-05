@@ -115,117 +115,9 @@
         }
       }
     },
-    "cf69201782b8cd4068da83feaa6090681a03cb700f7f4c5dd71578a4feba8c0e": {
-      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-      "txHash": "0xadd9a3e0ddbba4261abc4936af7e4464ae847edc7cd0fecc6c54b5ac366fc117",
-      "layout": {
-        "storage": [
-          {
-            "contract": "AccessControl",
-            "label": "_roles",
-            "type": "t_mapping(t_bytes32,t_struct(RoleData)328_storage)",
-            "src": "@openzeppelin\\contracts\\access\\AccessControl.sol:53"
-          },
-          {
-            "contract": "Initializable",
-            "label": "_initialized",
-            "type": "t_bool",
-            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
-          },
-          {
-            "contract": "Initializable",
-            "label": "_initializing",
-            "type": "t_bool",
-            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
-          },
-          {
-            "contract": "QuantConfig",
-            "label": "admin",
-            "type": "t_address",
-            "src": "contracts\\protocol\\QuantConfig.sol:12"
-          },
-          {
-            "contract": "QuantConfig",
-            "label": "priceRegistry",
-            "type": "t_address",
-            "src": "contracts\\protocol\\QuantConfig.sol:13"
-          },
-          {
-            "contract": "QuantConfig",
-            "label": "oracleRegistry",
-            "type": "t_address",
-            "src": "contracts\\protocol\\QuantConfig.sol:14"
-          },
-          {
-            "contract": "QuantConfig",
-            "label": "fee",
-            "type": "t_uint256",
-            "src": "contracts\\protocol\\QuantConfig.sol:15"
-          }
-        ],
-        "types": {
-          "t_address": {
-            "label": "address"
-          },
-          "t_uint256": {
-            "label": "uint256"
-          },
-          "t_bool": {
-            "label": "bool"
-          },
-          "t_mapping(t_bytes32,t_struct(RoleData)328_storage)": {
-            "label": "mapping(bytes32 => struct AccessControl.RoleData)"
-          },
-          "t_bytes32": {
-            "label": "bytes32"
-          },
-          "t_struct(RoleData)328_storage": {
-            "label": "struct AccessControl.RoleData",
-            "members": [
-              {
-                "label": "members",
-                "type": "t_struct(AddressSet)1542_storage"
-              },
-              {
-                "label": "adminRole",
-                "type": "t_bytes32"
-              }
-            ]
-          },
-          "t_struct(AddressSet)1542_storage": {
-            "label": "struct EnumerableSet.AddressSet",
-            "members": [
-              {
-                "label": "_inner",
-                "type": "t_struct(Set)1277_storage"
-              }
-            ]
-          },
-          "t_struct(Set)1277_storage": {
-            "label": "struct EnumerableSet.Set",
-            "members": [
-              {
-                "label": "_values",
-                "type": "t_array(t_bytes32)dyn_storage"
-              },
-              {
-                "label": "_indexes",
-                "type": "t_mapping(t_bytes32,t_uint256)"
-              }
-            ]
-          },
-          "t_array(t_bytes32)dyn_storage": {
-            "label": "bytes32[]"
-          },
-          "t_mapping(t_bytes32,t_uint256)": {
-            "label": "mapping(bytes32 => uint256)"
-          }
-        }
-      }
-    },
     "b9bf05a2db4ed19e0f674db9ef2cee48a08553c7228feedfad4fc433cbe996b6": {
-      "address": "0xcE0066b1008237625dDDBE4a751827de037E53D2",
-      "txHash": "0xa998bc1512e971c5568ab96d0b147fd840ab06f5ea1fa550ada7d596c7ff2f69",
+      "address": "0x75b0B516B47A27b1819D21B26203Abf314d42CCE",
+      "txHash": "0x76e4b6e2340596dc5b5b4d7c44998aca8b02bd506efc4fd0614d5dec7ceec500",
       "layout": {
         "storage": [
           {
@@ -336,10 +228,334 @@
           }
         }
       }
+    },
+    "d2f073a27c2766e0db9b72b1ccee393111b3bbb9d908ba18b85c02876a1a2193": {
+      "address": "0xCD8a1C3ba11CF5ECfa6267617243239504a98d90",
+      "txHash": "0x365f1e0319df4b4c9621ffef5331ca5cd745add99213d13c768ee0c597c50e37",
+      "layout": {
+        "storage": [
+          {
+            "contract": "AccessControl",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)328_storage)",
+            "src": "@openzeppelin\\contracts\\access\\AccessControl.sol:53"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
+          },
+          {
+            "contract": "QuantConfig",
+            "label": "admin",
+            "type": "t_address",
+            "src": "contracts\\protocol\\QuantConfig.sol:14"
+          },
+          {
+            "contract": "QuantConfig",
+            "label": "priceRegistry",
+            "type": "t_address",
+            "src": "contracts\\protocol\\QuantConfig.sol:15"
+          },
+          {
+            "contract": "QuantConfig",
+            "label": "oracleRegistry",
+            "type": "t_address",
+            "src": "contracts\\protocol\\QuantConfig.sol:16"
+          },
+          {
+            "contract": "QuantConfig",
+            "label": "fee",
+            "type": "t_uint256",
+            "src": "contracts\\protocol\\QuantConfig.sol:17"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)328_storage)": {
+            "label": "mapping(bytes32 => struct AccessControl.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)328_storage": {
+            "label": "struct AccessControl.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_struct(AddressSet)3489_storage"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_struct(AddressSet)3489_storage": {
+            "label": "struct EnumerableSet.AddressSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)3224_storage"
+              }
+            ]
+          },
+          "t_struct(Set)3224_storage": {
+            "label": "struct EnumerableSet.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)"
+              }
+            ]
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)"
+          }
+        }
+      }
+    },
+    "0c86ba0f263ca6610d48ae3527d906563b97fb3bf1892d31c574d0830c561302": {
+      "address": "0xB2b580ce436E6F77A5713D80887e14788Ef49c9A",
+      "txHash": "0x8575ca0d1617936820cfc233f610afa1fb601b605a932fbd6f8f9c3ee8dca437",
+      "layout": {
+        "storage": [
+          {
+            "contract": "AccessControl",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)328_storage)",
+            "src": "@openzeppelin\\contracts\\access\\AccessControl.sol:53"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
+          },
+          {
+            "contract": "QuantConfig",
+            "label": "admin",
+            "type": "t_address",
+            "src": "contracts\\protocol\\QuantConfig.sol:14"
+          },
+          {
+            "contract": "QuantConfig",
+            "label": "priceRegistry",
+            "type": "t_address",
+            "src": "contracts\\protocol\\QuantConfig.sol:15"
+          },
+          {
+            "contract": "QuantConfig",
+            "label": "oracleRegistry",
+            "type": "t_address",
+            "src": "contracts\\protocol\\QuantConfig.sol:16"
+          },
+          {
+            "contract": "QuantConfig",
+            "label": "fee",
+            "type": "t_uint256",
+            "src": "contracts\\protocol\\QuantConfig.sol:17"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)328_storage)": {
+            "label": "mapping(bytes32 => struct AccessControl.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)328_storage": {
+            "label": "struct AccessControl.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_struct(AddressSet)3489_storage"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_struct(AddressSet)3489_storage": {
+            "label": "struct EnumerableSet.AddressSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)3224_storage"
+              }
+            ]
+          },
+          "t_struct(Set)3224_storage": {
+            "label": "struct EnumerableSet.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)"
+              }
+            ]
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)"
+          }
+        }
+      }
+    },
+    "cf69201782b8cd4068da83feaa6090681a03cb700f7f4c5dd71578a4feba8c0e": {
+      "address": "0x02df3a3F960393F5B349E40A599FEda91a7cc1A7",
+      "txHash": "0xf563f583cd3aa422fcb5b5116aa7af06b07cf035db9ed0dbed57d6e0ffd32581",
+      "layout": {
+        "storage": [
+          {
+            "contract": "AccessControl",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)328_storage)",
+            "src": "@openzeppelin\\contracts\\access\\AccessControl.sol:53"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:25"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\Initializable.sol:30"
+          },
+          {
+            "contract": "QuantConfig",
+            "label": "admin",
+            "type": "t_address",
+            "src": "contracts\\protocol\\QuantConfig.sol:12"
+          },
+          {
+            "contract": "QuantConfig",
+            "label": "priceRegistry",
+            "type": "t_address",
+            "src": "contracts\\protocol\\QuantConfig.sol:13"
+          },
+          {
+            "contract": "QuantConfig",
+            "label": "oracleRegistry",
+            "type": "t_address",
+            "src": "contracts\\protocol\\QuantConfig.sol:14"
+          },
+          {
+            "contract": "QuantConfig",
+            "label": "fee",
+            "type": "t_uint256",
+            "src": "contracts\\protocol\\QuantConfig.sol:15"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)328_storage)": {
+            "label": "mapping(bytes32 => struct AccessControl.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)328_storage": {
+            "label": "struct AccessControl.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_struct(AddressSet)1542_storage"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_struct(AddressSet)1542_storage": {
+            "label": "struct EnumerableSet.AddressSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)1277_storage"
+              }
+            ]
+          },
+          "t_struct(Set)1277_storage": {
+            "label": "struct EnumerableSet.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)"
+              }
+            ]
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)"
+          }
+        }
+      }
     }
   },
   "admin": {
-    "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    "txHash": "0x52c9be0ab70f72512f49bb48732a9065e7375148954544397ec32cd4022ff196"
+    "address": "0x821f3361D454cc98b7555221A06Be563a7E2E0A6",
+    "txHash": "0x06f0681809d2e7681ca96e71a646ce1f1cf0158cb370fdd6ad33ecd957a8984a"
   }
 }

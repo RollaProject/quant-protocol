@@ -2,7 +2,6 @@
 pragma solidity ^0.7.0;
 
 import "../../QuantConfig.sol";
-import "hardhat/console.sol";
 
 /// @title Oracle manager for holding asset addresses and their oracle addresses for a single provider
 /// @notice Once an oracle is added for an asset it can't be changed!
@@ -12,8 +11,8 @@ abstract contract ProviderOracleManager {
     /// @notice quant central configuration
     QuantConfig public config;
 
-    /// @notice asset address => oracle address
-    mapping(address => address) public assetOracles;
+    // asset address => oracle address
+    mapping(address => address) assetOracles;
 
     /// @notice exhaustive list of asset addresses in map
     address[] public assets;
@@ -29,16 +28,27 @@ abstract contract ProviderOracleManager {
     function addAssetOracle(address _asset, address _oracle) external {
         require(
             config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
-            "OracleManager: Only an oracle admin can add an oracle"
+            "ProviderOracleManager: Only an oracle admin can add an oracle"
         );
         require(
             assetOracles[_asset] == address(0),
-            "OracleManager: Oracle already set for asset"
+            "ProviderOracleManager: Oracle already set for asset"
         );
         assets.push(_asset);
         assetOracles[_asset] = _oracle;
 
         emit OracleAdded(_asset, _oracle);
+    }
+
+    /// @notice Get the current price of the asset from the oracle
+    /// @param _asset asset to get price of
+    function getAssetOracle(address _asset) public view returns (address) {
+        address assetOracle = assetOracles[_asset];
+        require(
+            assetOracles[_asset] != address(0),
+            "ProviderOracleManager: Oracle doesn't exist for that asset"
+        );
+        return assetOracle;
     }
 
     /// @notice Get the expiry price from oracle and store it in the price registry so we have a copy
