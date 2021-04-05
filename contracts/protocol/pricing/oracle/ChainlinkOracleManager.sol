@@ -34,10 +34,9 @@ contract ChainlinkOracleManager is
 
     /// @param _config address of quant central configuration
     /// @param _fallbackPeriodSeconds amount of seconds before fallback price submitter can submit
-    constructor(
-        address _config,
-        uint256 _fallbackPeriodSeconds
-    ) ProviderOracleManager(_config) {
+    constructor(address _config, uint256 _fallbackPeriodSeconds)
+        ProviderOracleManager(_config)
+    {
         FALLBACK_PERIOD_SECONDS = _fallbackPeriodSeconds;
     }
 
@@ -50,7 +49,11 @@ contract ChainlinkOracleManager is
         uint256 _expiryTimestamp,
         uint256 _roundIdAfterExpiry
     ) external {
-        _setExpiryPriceInRegistryByRound(_asset, _expiryTimestamp, _roundIdAfterExpiry);
+        _setExpiryPriceInRegistryByRound(
+            _asset,
+            _expiryTimestamp,
+            _roundIdAfterExpiry
+        );
     }
 
     /// @notice Get the expiry price from chainlink asset oracle and store it in the price registry
@@ -67,7 +70,8 @@ contract ChainlinkOracleManager is
         IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
 
         require(
-            aggregator.getTimestamp(uint256(_roundIdAfterExpiry)) > _expiryTimestamp,
+            aggregator.getTimestamp(uint256(_roundIdAfterExpiry)) >
+                _expiryTimestamp,
             "ChainlinkOracleManager: The round posted is not after the expiry timestamp"
         );
 
@@ -75,7 +79,8 @@ contract ChainlinkOracleManager is
         uint16 phaseId = uint16(_roundIdAfterExpiry >> phaseOffset);
 
         uint64 expiryRound = uint64(_roundIdAfterExpiry) - 1;
-        uint80 expiryRoundId = uint80((uint256(phaseId) << phaseOffset) | expiryRound);
+        uint80 expiryRoundId =
+            uint80((uint256(phaseId) << phaseOffset) | expiryRound);
 
         require(
             aggregator.getTimestamp(uint256(expiryRoundId)) <= _expiryTimestamp,
@@ -117,17 +122,22 @@ contract ChainlinkOracleManager is
         uint80 roundAfterExpiry = searchRoundToSubmit(_asset, _expiryTimestamp);
 
         //submit price to registry
-        _setExpiryPriceInRegistryByRound(_asset, _expiryTimestamp, roundAfterExpiry);
+        _setExpiryPriceInRegistryByRound(
+            _asset,
+            _expiryTimestamp,
+            roundAfterExpiry
+        );
     }
 
     /// @notice Searches for the round in the asset oracle immediately after the expiry timestamp
     /// @param _asset address of asset to search price for
     /// @param _expiryTimestamp expiry timestamp to find the price at or before
     /// @return the round id immediately after the timestamp submitted
-    function searchRoundToSubmit(
-        address _asset,
-        uint256 _expiryTimestamp
-    ) public view returns(uint80) {
+    function searchRoundToSubmit(address _asset, uint256 _expiryTimestamp)
+        public
+        view
+        returns (uint80)
+    {
         address assetOracle = getAssetOracle(_asset);
 
         IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
@@ -138,7 +148,7 @@ contract ChainlinkOracleManager is
         );
 
         //TODO: check what latestRound should be. in the other file its the proxy round id. Thomas will confirm
-        (uint80 latestRound,,,,) = aggregator.latestRoundData();
+        (uint80 latestRound, , , , ) = aggregator.latestRoundData();
 
         uint16 phaseOffset = 64;
         uint16 phaseId = uint16(latestRound >> phaseOffset);
@@ -154,13 +164,14 @@ contract ChainlinkOracleManager is
         );
 
         //binary search until we find two values our desired timestamp lies between
-        while(lastId - firstId != 1) {
-            BinarySearchResult memory result = _binarySearchStep(
-                aggregator,
-                _expiryTimestamp,
-                lowestPossibleRound,
-                highestPossibleRound
-            );
+        while (lastId - firstId != 1) {
+            BinarySearchResult memory result =
+                _binarySearchStep(
+                    aggregator,
+                    _expiryTimestamp,
+                    lowestPossibleRound,
+                    highestPossibleRound
+                );
 
             lowestPossibleRound = result.firstRound;
             highestPossibleRound = result.lastRound;
@@ -188,18 +199,35 @@ contract ChainlinkOracleManager is
         uint64 lastRoundId = uint64(_lastRoundProxy);
         uint64 firstRoundId = uint64(_firstRoundProxy);
 
-        uint80 roundToCheck = _toUint80(uint256(firstRoundId).add(uint256(lastRoundId)).div(2));
-        uint80 roundToCheckProxy = uint80((uint256(phaseId) << phaseOffset) | roundToCheck);
+        uint80 roundToCheck =
+            _toUint80(uint256(firstRoundId).add(uint256(lastRoundId)).div(2));
+        uint80 roundToCheckProxy =
+            uint80((uint256(phaseId) << phaseOffset) | roundToCheck);
 
-        uint256 firstRoundTimestamp = aggregator.getTimestamp(uint256(_firstRoundProxy));
-        uint256 roundToCheckTimestamp = aggregator.getTimestamp(uint256(roundToCheckProxy));
-        uint256 lastRoundTimestamp = aggregator.getTimestamp(uint256(_lastRoundProxy));
+        uint256 firstRoundTimestamp =
+            aggregator.getTimestamp(uint256(_firstRoundProxy));
+        uint256 roundToCheckTimestamp =
+            aggregator.getTimestamp(uint256(roundToCheckProxy));
+        uint256 lastRoundTimestamp =
+            aggregator.getTimestamp(uint256(_lastRoundProxy));
 
-        if(roundToCheckTimestamp <= _expiryTimestamp) {
-            return BinarySearchResult(roundToCheckProxy, _lastRoundProxy, roundToCheck, lastRoundId);
+        if (roundToCheckTimestamp <= _expiryTimestamp) {
+            return
+                BinarySearchResult(
+                    roundToCheckProxy,
+                    _lastRoundProxy,
+                    roundToCheck,
+                    lastRoundId
+                );
         }
 
-        return BinarySearchResult(_firstRoundProxy, roundToCheckProxy, firstRoundId, roundToCheck);
+        return
+            BinarySearchResult(
+                _firstRoundProxy,
+                roundToCheckProxy,
+                firstRoundId,
+                roundToCheck
+            );
     }
 
     /// @notice Get the current price of the asset from its oracle
@@ -270,7 +298,7 @@ contract ChainlinkOracleManager is
      * - input must fit into 80 bits
      */
     function _toUint80(uint256 _value) internal pure returns (uint80) {
-        require(_value < 2**80, "SafeCast: value doesn\'t fit in 80 bits");
+        require(_value < 2**80, "SafeCast: value doesn't fit in 80 bits");
         return uint80(_value);
     }
 }

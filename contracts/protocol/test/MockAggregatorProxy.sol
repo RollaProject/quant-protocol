@@ -28,7 +28,9 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         roundIdAnswers[_roundId] = _answer;
     }
 
-    function setLatestRoundData(LatestRoundData calldata _latestRoundData) external {
+    function setLatestRoundData(LatestRoundData calldata _latestRoundData)
+        external
+    {
         latestRoundDataValue = _latestRoundData;
     }
 
@@ -60,61 +62,75 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         //noop
     }
 
-    function accessController() external override view returns (address) {
+    function accessController() external view override returns (address) {
         return address(0);
     }
 
-    function aggregator() external override view returns (address) {
+    function aggregator() external view override returns (address) {
         return address(0);
     }
 
-    function decimals() external override view returns (uint8) {
+    function decimals() external view override returns (uint8) {
         return 0;
     }
 
-    function description() external override view returns (string memory) {
+    function description() external view override returns (string memory) {
         return "...";
     }
 
-    function getAnswer(uint256 _roundId) external override view returns (int256) {
+    function getAnswer(uint256 _roundId)
+        external
+        view
+        override
+        returns (int256)
+    {
         return roundIdAnswers[_roundId];
     }
 
     function getRoundData(uint80 _roundId)
-    external override
-    view
-    returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    ) {
-        return (0,0,0,0,0);
+        external
+        view
+        override
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
+    {
+        return (0, 0, 0, 0, 0);
     }
 
-    function getTimestamp(uint256 _roundId) external override view returns (uint256){
+    function getTimestamp(uint256 _roundId)
+        external
+        view
+        override
+        returns (uint256)
+    {
         return roundTimestamps[_roundId];
     }
 
-    function latestAnswer() external override view returns (int256) {
+    function latestAnswer() external view override returns (int256) {
         return latestAnswerValue;
     }
 
-    function latestRound() external override view returns (uint256) {
+    function latestRound() external view override returns (uint256) {
         return 0;
     }
 
     function latestRoundData()
-    external override
-    view
-    returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    ) {
+        external
+        view
+        override
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
+    {
         return (
             latestRoundDataValue.roundId,
             latestRoundDataValue.answer,
@@ -124,53 +140,57 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         );
     }
 
-    function latestTimestamp() external override view returns (uint256) {
+    function latestTimestamp() external view override returns (uint256) {
         return latestTimestampValue;
     }
 
-    function owner() external override view returns (address) {
+    function owner() external view override returns (address) {
         return address(0);
     }
 
-    function phaseAggregators(uint16) external override view returns (address) {
+    function phaseAggregators(uint16) external view override returns (address) {
         return address(0);
     }
 
-    function phaseId() external override view returns (uint16) {
+    function phaseId() external view override returns (uint16) {
         return 0;
     }
 
-    function proposedAggregator() external override view returns (address) {
+    function proposedAggregator() external view override returns (address) {
         return address(0);
     }
 
     function proposedGetRoundData(uint80 _roundId)
-    external override
-    view
-    returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    ) {
-        return (0,0,0,0,0);
+        external
+        view
+        override
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
+    {
+        return (0, 0, 0, 0, 0);
     }
 
     function proposedLatestRoundData()
-    external override
-    view
-    returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    ) {
-        return (0,0,0,0,0);
+        external
+        view
+        override
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
+    {
+        return (0, 0, 0, 0, 0);
     }
 
-    function version() external override view returns (uint256) {
+    function version() external view override returns (uint256) {
         return 0;
     }
 }

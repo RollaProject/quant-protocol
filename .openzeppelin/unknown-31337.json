@@ -117,7 +117,7 @@
     },
     "b9bf05a2db4ed19e0f674db9ef2cee48a08553c7228feedfad4fc433cbe996b6": {
       "address": "0x75b0B516B47A27b1819D21B26203Abf314d42CCE",
-      "txHash": "0x76e4b6e2340596dc5b5b4d7c44998aca8b02bd506efc4fd0614d5dec7ceec500",
+      "txHash": "0xf54e3f2783a57baad3885dda1d4d8474ba42e24498ff7021cfa2fc21399e7102",
       "layout": {
         "storage": [
           {
@@ -447,7 +447,7 @@
     },
     "cf69201782b8cd4068da83feaa6090681a03cb700f7f4c5dd71578a4feba8c0e": {
       "address": "0x02df3a3F960393F5B349E40A599FEda91a7cc1A7",
-      "txHash": "0xf563f583cd3aa422fcb5b5116aa7af06b07cf035db9ed0dbed57d6e0ffd32581",
+      "txHash": "0xdad3b83c1e2e67071bf97ee50c69c0d3439473bfe42d743ffc46c61b91f8bb02",
       "layout": {
         "storage": [
           {
@@ -514,7 +514,7 @@
             "members": [
               {
                 "label": "members",
-                "type": "t_struct(AddressSet)1542_storage"
+                "type": "t_struct(AddressSet)3489_storage"
               },
               {
                 "label": "adminRole",
@@ -522,16 +522,16 @@
               }
             ]
           },
-          "t_struct(AddressSet)1542_storage": {
+          "t_struct(AddressSet)3489_storage": {
             "label": "struct EnumerableSet.AddressSet",
             "members": [
               {
                 "label": "_inner",
-                "type": "t_struct(Set)1277_storage"
+                "type": "t_struct(Set)3224_storage"
               }
             ]
           },
-          "t_struct(Set)1277_storage": {
+          "t_struct(Set)3224_storage": {
             "label": "struct EnumerableSet.Set",
             "members": [
               {
