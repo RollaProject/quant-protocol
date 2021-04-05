@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./QToken.sol";
 import "./CollateralToken.sol";
 import "./OptionsUtils.sol";
+import "./AssetsRegistry.sol";
 import "../QuantConfig.sol";
 
 /// @title Factory contract for Quant options
@@ -17,11 +18,14 @@ contract OptionsFactory {
     /// @notice array of all the created QTokens
     address[] public qTokens;
 
-    QuantConfig private _quantConfig;
+    QuantConfig public quantConfig;
 
-    CollateralToken private _collateralToken;
+    CollateralToken public collateralToken;
 
     mapping(bytes32 => address) private _qTokenHashToAddress;
+
+    /// @notice mapping that can be used to check if a QToken at a given address has already been created
+    mapping(address => bytes32) public qTokenAddressToHash;
 
     /// @notice emitted when the factory creates a new option
     event OptionCreated(
@@ -33,15 +37,16 @@ contract OptionsFactory {
         uint256 strikePrice,
         uint256 expiry,
         uint256 collateralTokenId,
+        uint256 allOptionsLength,
         bool isCall
     );
 
     /// @notice Initializes a new options factory
-    /// @param quantConfig_ the address of the Quant system configuration contract
-    /// @param collateralToken_ address of the CollateralToken contract
-    constructor(address quantConfig_, address collateralToken_) {
-        _quantConfig = QuantConfig(quantConfig_);
-        _collateralToken = CollateralToken(collateralToken_);
+    /// @param _quantConfig the address of the Quant system configuration contract
+    /// @param _collateralToken address of the CollateralToken contract
+    constructor(address _quantConfig, address _collateralToken) {
+        quantConfig = QuantConfig(_quantConfig);
+        collateralToken = CollateralToken(_collateralToken);
     }
 
     /// @notice get the address at which a new QToken with the given parameters would be deployed
@@ -64,7 +69,7 @@ contract OptionsFactory {
     ) external view returns (address) {
         return
             OptionsUtils.getTargetQTokenAddress(
-                address(_quantConfig),
+                address(quantConfig),
                 _underlyingAsset,
                 _strikeAsset,
                 _oracle,
@@ -94,8 +99,8 @@ contract OptionsFactory {
     ) external view returns (uint256) {
         return
             OptionsUtils.getTargetCollateralTokenId(
-                _collateralToken,
-                address(_quantConfig),
+                collateralToken,
+                address(quantConfig),
                 _underlyingAsset,
                 _strikeAsset,
                 _oracle,
@@ -146,9 +151,19 @@ contract OptionsFactory {
             "OptionsFactory: strike for put can't be 0"
         );
 
+        {
+            string memory symbol;
+            (, symbol, ) = AssetsRegistry(quantConfig.assetsRegistry())
+                .assetProperties(_underlyingAsset);
+            require(
+                bytes(symbol).length != 0,
+                "OptionsFactory: underlying is not in the assets registry"
+            );
+        }
+
         newQToken = address(
             new QToken{salt: OptionsUtils.SALT}(
-                address(_quantConfig),
+                address(quantConfig),
                 _underlyingAsset,
                 _strikeAsset,
                 _oracle,
@@ -160,10 +175,18 @@ contract OptionsFactory {
 
         _qTokenHashToAddress[qTokenHash] = newQToken;
         qTokens.push(newQToken);
+        qTokenAddressToHash[newQToken] = qTokenHash;
 
-        newCollateralTokenId = _collateralToken.createCollateralToken(
-            newQToken,
-            0
+        newCollateralTokenId = OptionsUtils.getTargetCollateralTokenId(
+            collateralToken,
+            address(quantConfig),
+            _underlyingAsset,
+            _strikeAsset,
+            _oracle,
+            _strikePrice,
+            _expiryTime,
+            0,
+            _isCall
         );
 
         emit OptionCreated(
@@ -175,8 +198,11 @@ contract OptionsFactory {
             _strikePrice,
             _expiryTime,
             newCollateralTokenId,
+            qTokens.length,
             _isCall
         );
+
+        collateralToken.createCollateralToken(newQToken, 0);
     }
 
     /// @notice get the CollateralToken id for an already created CollateralToken,
@@ -209,9 +235,9 @@ contract OptionsFactory {
             );
 
         uint256 id =
-            _collateralToken.getCollateralTokenId(qToken, _collateralizedFrom);
+            collateralToken.getCollateralTokenId(qToken, _collateralizedFrom);
 
-        (address storedQToken, ) = _collateralToken.idToInfo(id);
+        (address storedQToken, ) = collateralToken.idToInfo(id);
         return storedQToken != address(0) ? id : 0;
     }
 

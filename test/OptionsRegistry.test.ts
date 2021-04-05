@@ -1,11 +1,11 @@
+import { MockContract } from "ethereum-waffle";
 import { Signer } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
+import QTokenJSON from "../artifacts/contracts/protocol/options/QToken.sol/QToken.json";
+import OptionsRegistryJSON from "../artifacts/contracts/protocol/periphery/OptionsRegistry.sol/OptionsRegistry.json";
 import { OptionsRegistry, QuantConfig } from "../typechain";
 import { expect, provider } from "./setup";
-import OptionsRegistryJSON from "../artifacts/contracts/protocol/periphery/OptionsRegistry.sol/OptionsRegistry.json";
-import QTokenJSON from "../artifacts/contracts/protocol/options/QToken.sol/QToken.json";
-import { MockContract } from "ethereum-waffle";
 
 const { deployContract, deployMockContract } = waffle;
 

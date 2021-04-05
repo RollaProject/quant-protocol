@@ -48,3 +48,11 @@ get the string representations of a month
 ### `getOptionPriceStatus() → enum QToken.PriceStatus` (external)
 
 Get the price status of the option.
+
+### `QTokenMinted(address account, uint256 amount)`
+
+event emitted when QTokens are minted
+
+### `QTokenBurned(address account, uint256 amount)`
+
+event emitted when QTokens are burned

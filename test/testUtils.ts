@@ -1,10 +1,16 @@
-import { MockContract } from "ethereum-waffle";
 import { BigNumber, Signer } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
-import ERC20 from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json";
+import AssetsRegistryJSON from "../artifacts/contracts/protocol/options/AssetsRegistry.sol/AssetsRegistry.json";
+import CollateralTokenJSON from "../artifacts/contracts/protocol/options/CollateralToken.sol/CollateralToken.json";
+import OptionsFactoryJSON from "../artifacts/contracts/protocol/options/OptionsFactory.sol/OptionsFactory.json";
 import QTokenJSON from "../artifacts/contracts/protocol/options/QToken.sol/QToken.json";
+import MockERC20JSON from "../artifacts/contracts/protocol/test/MockERC20.sol/MockERC20.json";
+import { AssetsRegistry, OptionsFactory } from "../typechain";
+import { CollateralToken } from "../typechain/CollateralToken";
+import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
+import { provider } from "./setup";
 
 const { deployContract, deployMockContract } = waffle;
 
@@ -13,19 +19,14 @@ const mockERC20 = async (
   tokenSymbol: string,
   tokenName?: string,
   decimals?: number
-): Promise<MockContract> => {
-  const erc20 = await deployMockContract(deployer, ERC20.abi);
-
-  await erc20.mock.symbol.returns(tokenSymbol);
-
-  if (tokenName !== undefined) {
-    await erc20.mock.name.returns(tokenName);
-  }
-  if (decimals !== undefined) {
-    await erc20.mock.decimals.returns(decimals);
-  }
-
-  return erc20;
+): Promise<MockERC20> => {
+  return <MockERC20>(
+    await deployContract(deployer, MockERC20JSON, [
+      tokenName ?? "Mocked ERC20",
+      tokenSymbol,
+      decimals ?? 18,
+    ])
+  );
 };
 
 const deployQuantConfig = async (admin: Signer): Promise<QuantConfig> => {
@@ -36,23 +37,33 @@ const deployQuantConfig = async (admin: Signer): Promise<QuantConfig> => {
   );
 };
 
-const createSampleOption = async (
+const deployQToken = async (
   deployer: Signer,
   quantConfig: QuantConfig,
   underlyingAsset: string,
   strikeAsset: string,
   oracle: string = ethers.constants.AddressZero,
-  strikePrice: BigNumber = ethers.utils.parseEther("1400"),
-  expiryTime: BigNumber = ethers.BigNumber.from("1618592400"), // April 16th, 2021
+  strikePrice = "1400",
+  expiryTime: BigNumber = ethers.BigNumber.from(
+    Math.floor(Date.now() / 1000) + 30 * 24 * 3600
+  ), // a month from the current time
   isCall = false
 ): Promise<QToken> => {
+  const ERC20ABI = (await ethers.getContractFactory("ERC20")).interface;
+  const strike = <MockERC20>(
+    new ethers.Contract(strikeAsset, ERC20ABI, provider)
+  );
+  const strikePriceBN = ethers.utils.parseUnits(
+    strikePrice,
+    await strike.decimals()
+  );
   const qToken = <QToken>(
     await deployContract(deployer, QTokenJSON, [
       quantConfig.address,
       underlyingAsset,
       strikeAsset,
       oracle,
-      strikePrice,
+      strikePriceBN,
       expiryTime,
       isCall,
     ])
@@ -61,4 +72,50 @@ const createSampleOption = async (
   return qToken;
 };
 
-export { createSampleOption, deployQuantConfig, mockERC20 };
+const deployCollateralToken = async (
+  deployer: Signer,
+  quantConfig: QuantConfig
+): Promise<CollateralToken> => {
+  const collateralToken = <CollateralToken>(
+    await deployContract(deployer, CollateralTokenJSON, [quantConfig.address])
+  );
+
+  return collateralToken;
+};
+
+const deployOptionsFactory = async (
+  deployer: Signer,
+  quantConfig: QuantConfig,
+  collateralToken: CollateralToken
+): Promise<OptionsFactory> => {
+  const optionsFactory = <OptionsFactory>(
+    await deployContract(deployer, OptionsFactoryJSON, [
+      quantConfig.address,
+      collateralToken.address,
+    ])
+  );
+
+  return optionsFactory;
+};
+
+const deployAssetsRegistry = async (
+  deployer: Signer,
+  quantConfig: QuantConfig
+): Promise<AssetsRegistry> => {
+  const assetsRegistry = <AssetsRegistry>(
+    await deployContract(deployer, AssetsRegistryJSON, [quantConfig.address])
+  );
+
+  await quantConfig.connect(deployer).setAssetsRegistry(assetsRegistry.address);
+
+  return assetsRegistry;
+};
+
+export {
+  deployCollateralToken,
+  deployOptionsFactory,
+  deployQToken,
+  deployQuantConfig,
+  deployAssetsRegistry,
+  mockERC20,
+};

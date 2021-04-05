@@ -14,11 +14,11 @@ users' short positions
 
 Create new CollateralTokens
 
-### `mintCollateralToken(address recipient, uint256 amount, uint256 collateralTokenId)` (external)
+### `mintCollateralToken(address recipient, uint256 collateralTokenId, uint256 amount)` (external)
 
 Mint CollateralTokens for a given account
 
-### `burnCollateralToken(address owner, uint256 amount, uint256 collateralTokenId)` (external)
+### `burnCollateralToken(address owner, uint256 collateralTokenId, uint256 amount)` (external)
 
 Mint CollateralTokens for a given account
 
@@ -41,3 +41,15 @@ ids and amounts shoud have the same length
 ### `getCollateralTokenId(address _qToken, uint256 _collateralizedFrom) → uint256 id` (public)
 
 Returns a unique CollateralToken id based on its parameters
+
+### `CollateralTokenCreated(address qTokenAddress, uint256 collateralizedFrom, uint256 id, uint256 allCollateralTokensLength)`
+
+event emitted when a new CollateralToken is created
+
+### `CollateralTokenMinted(address recipient, uint256 id, uint256 amount)`
+
+event emitted when CollateralTokens are minted
+
+### `CollateralTokenBurned(address owner, uint256 id, uint256 amount)`
+
+event emitted when CollateralTokens are burned
