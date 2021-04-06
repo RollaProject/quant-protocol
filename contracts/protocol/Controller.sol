@@ -115,19 +115,6 @@ contract Controller {
         QToken qTokenToMint = QToken(_qTokenToMint);
         QToken qTokenForCollateral = QToken(_qTokenForCollateral);
 
-        // Check that expiries match
-        require(
-            qTokenToMint.expiryTime() == qTokenForCollateral.expiryTime(),
-            "Controller: Can't create spreads from options with different expiries"
-        );
-
-        // Check that the underlyings match
-        require(
-            qTokenToMint.underlyingAsset() ==
-                qTokenForCollateral.underlyingAsset(),
-            "Controller: Can't create spreads from options with different underlying assets"
-        );
-
         (address collateral, uint256 collateralAmount) =
             getCollateralRequirement(
                 _qTokenToMint,
@@ -356,6 +343,26 @@ contract Controller {
         uint256 qTokenForCollateralStrikePrice;
         if (_qTokenForCollateral != address(0)) {
             QToken qTokenForCollateral = QToken(_qTokenForCollateral);
+
+            // Check that expiries match
+            require(
+                qTokenToMint.expiryTime() == qTokenForCollateral.expiryTime(),
+                "Controller: Can't create spreads from options with different expiries"
+            );
+
+            // Check that the underlyings match
+            require(
+                qTokenToMint.underlyingAsset() ==
+                    qTokenForCollateral.underlyingAsset(),
+                "Controller: Can't create spreads from options with different underlying assets"
+            );
+
+            // Check that the option types match
+            require(
+                qTokenToMint.isCall() == qTokenForCollateral.isCall(),
+                "Controller: Can't create spreads from options with different types"
+            );
+
             qTokenForCollateralStrikePrice = qTokenForCollateral.strikePrice();
         }
 
