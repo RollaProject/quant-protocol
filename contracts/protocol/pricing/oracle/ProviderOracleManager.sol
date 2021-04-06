@@ -18,8 +18,6 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
     /// @notice exhaustive list of asset addresses in map
     address[] public assets;
 
-    event OracleAdded(address asset, address oracle);
-
     constructor(address _config) {
         config = QuantConfig(_config);
     }
@@ -71,7 +69,12 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
 
     /// @notice Get the current price of the asset from the oracle
     /// @param _asset asset to get price of
-    function getAssetOracle(address _asset) public view override returns (address) {
+    function getAssetOracle(address _asset)
+        public
+        view
+        override
+        returns (address)
+    {
         address assetOracle = assetOracles[_asset];
         require(
             assetOracles[_asset] != address(0),
