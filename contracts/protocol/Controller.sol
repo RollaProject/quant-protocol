@@ -453,8 +453,8 @@ contract Controller {
                 ? expiryPrice
                     .sub(strikePrice)
                     .mul(_amount)
-                    .div(expiryPrice)
                     .mul(10**underlyingDecimals)
+                    .div(expiryPrice)
                     .div(10**OPTIONS_DECIMALS)
                 : 0;
             payoutToken = qToken.underlyingAsset();
