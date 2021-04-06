@@ -36,7 +36,7 @@ describe("OptionsFactory", () => {
     string,
     string,
     string,
-    BigNumber,
+    string,
     BigNumber,
     BigNumber,
     boolean
@@ -92,9 +92,9 @@ describe("OptionsFactory", () => {
       WETH.address,
       USDC.address,
       ethers.constants.AddressZero,
+      ethers.constants.AddressZero,
       ethers.utils.parseUnits("1400", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
-      ethers.BigNumber.from("0"),
       false,
     ];
   });
