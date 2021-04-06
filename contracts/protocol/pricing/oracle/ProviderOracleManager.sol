@@ -6,16 +6,16 @@ import "../../QuantConfig.sol";
 /// @title Oracle manager for holding asset addresses and their oracle addresses for a single provider
 /// @notice Once an oracle is added for an asset it can't be changed!
 abstract contract ProviderOracleManager {
-    event OracleAdded(address asset, address oracle);
-
     /// @notice quant central configuration
     QuantConfig public config;
 
     // asset address => oracle address
-    mapping(address => address) assetOracles;
+    mapping(address => address) public assetOracles;
 
     /// @notice exhaustive list of asset addresses in map
     address[] public assets;
+
+    event OracleAdded(address asset, address oracle);
 
     constructor(address _config) {
         config = QuantConfig(_config);
@@ -38,17 +38,6 @@ abstract contract ProviderOracleManager {
         assetOracles[_asset] = _oracle;
 
         emit OracleAdded(_asset, _oracle);
-    }
-
-    /// @notice Get the current price of the asset from the oracle
-    /// @param _asset asset to get price of
-    function getAssetOracle(address _asset) public view returns (address) {
-        address assetOracle = assetOracles[_asset];
-        require(
-            assetOracles[_asset] != address(0),
-            "ProviderOracleManager: Oracle doesn't exist for that asset"
-        );
-        return assetOracle;
     }
 
     /// @notice Get the expiry price from oracle and store it in the price registry so we have a copy
@@ -75,4 +64,15 @@ abstract contract ProviderOracleManager {
         view
         virtual
         returns (uint256);
+
+    /// @notice Get the current price of the asset from the oracle
+    /// @param _asset asset to get price of
+    function getAssetOracle(address _asset) public view returns (address) {
+        address assetOracle = assetOracles[_asset];
+        require(
+            assetOracles[_asset] != address(0),
+            "ProviderOracleManager: Oracle doesn't exist for that asset"
+        );
+        return assetOracle;
+    }
 }

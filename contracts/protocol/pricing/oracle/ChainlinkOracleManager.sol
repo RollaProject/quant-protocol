@@ -30,14 +30,14 @@ contract ChainlinkOracleManager is
         uint80 lastRoundProxy;
     }
 
-    uint256 public immutable FALLBACK_PERIOD_SECONDS;
+    uint256 public immutable fallbackPeriodSeconds;
 
     /// @param _config address of quant central configuration
     /// @param _fallbackPeriodSeconds amount of seconds before fallback price submitter can submit
     constructor(address _config, uint256 _fallbackPeriodSeconds)
         ProviderOracleManager(_config)
     {
-        FALLBACK_PERIOD_SECONDS = _fallbackPeriodSeconds;
+        fallbackPeriodSeconds = _fallbackPeriodSeconds;
     }
 
     /// @notice Set the price of an asset at a timestamp using a chainlink round id
@@ -84,7 +84,7 @@ contract ChainlinkOracleManager is
 
         require(
             aggregator.getTimestamp(uint256(expiryRoundId)) <= _expiryTimestamp,
-            "ChainlinkOracleManager: The expiry round prior to the one posted is not before or equal to the expiry timestamp"
+            "ChainlinkOracleManager: Expiry round prior to the one posted is after the expiry timestamp"
         );
 
         uint256 price = uint256(aggregator.getAnswer(expiryRoundId));
@@ -108,16 +108,11 @@ contract ChainlinkOracleManager is
     /// @notice Searches for the correct price from chainlink and publishes it to the price registry
     /// @param _asset address of asset to set price for
     /// @param _expiryTimestamp expiry timestamp to set the price at
-    /// @param _calldata this parameter is ignored (inherited from interface)
     function setExpiryPriceInRegistry(
         address _asset,
         uint256 _expiryTimestamp,
-        bytes memory _calldata
+        bytes memory
     ) external override {
-        address assetOracle = getAssetOracle(_asset);
-
-        IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
-
         //search and get round
         uint80 roundAfterExpiry = searchRoundToSubmit(_asset, _expiryTimestamp);
 
@@ -203,12 +198,8 @@ contract ChainlinkOracleManager is
         uint80 roundToCheckProxy =
             uint80((uint256(phaseId) << phaseOffset) | roundToCheck);
 
-        uint256 firstRoundTimestamp =
-            aggregator.getTimestamp(uint256(_firstRoundProxy));
         uint256 roundToCheckTimestamp =
             aggregator.getTimestamp(uint256(roundToCheckProxy));
-        uint256 lastRoundTimestamp =
-            aggregator.getTimestamp(uint256(_lastRoundProxy));
 
         if (roundToCheckTimestamp <= _expiryTimestamp) {
             return
@@ -249,7 +240,8 @@ contract ChainlinkOracleManager is
         return uint256(answer);
     }
 
-    /// @notice Fallback mechanism to submit price to the registry after the lock up period is passed with no successful submission
+    /// @notice Fallback mechanism to submit price to the registry after the
+    /// lock up period is passed with no successful submission
     /// @param _asset asset to set price of
     /// @param _expiryTimestamp timestamp of price
     /// @param _price price to submit
@@ -258,15 +250,13 @@ contract ChainlinkOracleManager is
         uint256 _expiryTimestamp,
         uint256 _price
     ) external override {
-        address assetOracle = getAssetOracle(_asset);
-
         require(
             config.hasRole(config.FALLBACK_PRICE_ROLE(), msg.sender),
             "ChainlinkOracleManager: Only the fallback price submitter can submit a fallback price"
         );
 
         require(
-            block.timestamp >= _expiryTimestamp + FALLBACK_PERIOD_SECONDS,
+            block.timestamp >= _expiryTimestamp + fallbackPeriodSeconds,
             "ChainlinkOracleManager: The fallback price period has not passed since the timestamp"
         );
 

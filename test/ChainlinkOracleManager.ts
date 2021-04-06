@@ -29,7 +29,6 @@ describe("ChainlinkOracleManager", function () {
   let oracleManagerAccount: Signer;
   let fallbackPriceAccount: Signer;
   let normalUserAccount: Signer;
-  let oracleManagerAccountAddress: Address;
   let normalUserAccountAddress: Address;
   let fallbackPriceAccountAddress: Address;
 
@@ -66,7 +65,6 @@ describe("ChainlinkOracleManager", function () {
     await mockConfig.mock.PRICE_SUBMITTER_ROLE.returns(priceSubmitterRole);
     await mockConfig.mock.priceRegistry.returns(mockPriceRegistry.address);
 
-    oracleManagerAccountAddress = await oracleManagerAccount.getAddress();
     normalUserAccountAddress = await normalUserAccount.getAddress();
     fallbackPriceAccountAddress = await fallbackPriceAccount.getAddress();
 
@@ -477,7 +475,7 @@ describe("ChainlinkOracleManager", function () {
           .connect(normalUserAccount)
           .setExpiryPriceInRegistryByRound(assetOne, 10, 4)
       ).to.be.revertedWith(
-        "ChainlinkOracleManager: The expiry round prior to the one posted is not before or equal to the expiry timestamp"
+        "ChainlinkOracleManager: Expiry round prior to the one posted is after the expiry timestamp"
       );
     });
 
