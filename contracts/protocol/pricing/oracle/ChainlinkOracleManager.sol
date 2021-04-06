@@ -112,7 +112,7 @@ contract ChainlinkOracleManager is
     function setExpiryPriceInRegistry(
         address _asset,
         uint256 _expiryTimestamp,
-        bytes32 _calldata
+        bytes memory _calldata
     ) external override {
         address assetOracle = getAssetOracle(_asset);
 
@@ -147,8 +147,7 @@ contract ChainlinkOracleManager is
             "ChainlinkOracleManager: The latest round timestamp is not after the expiry timestamp"
         );
 
-        //TODO: check what latestRound should be. in the other file its the proxy round id. Thomas will confirm
-        (uint80 latestRound, , , , ) = aggregator.latestRoundData();
+        uint80 latestRound = uint80(aggregator.latestRound());
 
         uint16 phaseOffset = 64;
         uint16 phaseId = uint16(latestRound >> phaseOffset);

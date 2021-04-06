@@ -19,6 +19,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
     LatestRoundData latestRoundDataValue;
     int256 latestAnswerValue;
     uint256 latestTimestampValue;
+    uint256 latestRoundValue;
 
     function setTimestamp(uint256 _round, uint256 _timestamp) external {
         roundTimestamps[_round] = _timestamp;
@@ -40,6 +41,10 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
 
     function setLatestTimestamp(uint256 _latestTimestamp) external {
         latestTimestampValue = _latestTimestamp;
+    }
+
+    function setLatestRound(uint256 _latestRound) external {
+        latestRoundValue = _latestRound;
     }
 
     function acceptOwnership() external override {
@@ -116,7 +121,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
     }
 
     function latestRound() external view override returns (uint256) {
-        return 0;
+        return latestRoundValue;
     }
 
     function latestRoundData()

@@ -370,6 +370,8 @@ describe("ChainlinkOracleManager", function () {
         answeredInRound: 1,
       });
 
+      await mockAggregatorProxy.setLatestRound(4);
+
       await mockAggregatorProxy.setTimestamp(0, 10);
       await mockAggregatorProxy.setTimestamp(1, 20);
       await mockAggregatorProxy.setTimestamp(2, 30);

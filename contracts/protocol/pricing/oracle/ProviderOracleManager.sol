@@ -58,7 +58,7 @@ abstract contract ProviderOracleManager {
     function setExpiryPriceInRegistry(
         address _asset,
         uint256 _expiryTimestamp,
-        bytes32 _calldata
+        bytes memory _calldata
     ) external virtual;
 
     /// @notice Get the total number of assets managed by the oracle manager
