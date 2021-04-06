@@ -56,19 +56,34 @@ contract OracleRegistry is IOracleRegistry {
 
     /// @notice Check if an oracle is registered in the registry
     /// @param _oracle the oracle to check
-    function isOracleRegistered(address _oracle) external override view returns (bool) {
+    function isOracleRegistered(address _oracle)
+        external
+        view
+        override
+        returns (bool)
+    {
         return oracleInfo[_oracle].oracleId != 0;
     }
 
     /// @notice Check if an oracle is active i.e. are we allowed to create options with this oracle
     /// @param _oracle the oracle to check
-    function isOracleActive(address _oracle) external override view returns (bool) {
+    function isOracleActive(address _oracle)
+        external
+        view
+        override
+        returns (bool)
+    {
         return oracleInfo[_oracle].isActive;
     }
 
     /// @notice Get the numeric id of an oracle
     /// @param _oracle the oracle to get the id of
-    function getOracleId(address _oracle) external override view returns (uint256) {
+    function getOracleId(address _oracle)
+        external
+        view
+        override
+        returns (uint256)
+    {
         uint256 oracleId = oracleInfo[_oracle].oracleId;
         require(
             oracleId != 0,
@@ -79,7 +94,11 @@ contract OracleRegistry is IOracleRegistry {
 
     /// @notice Deactivate an oracle so no new options can be created with this oracle address.
     /// @param _oracle the oracle to deactivate
-    function deactivateOracle(address _oracle) external override returns (bool) {
+    function deactivateOracle(address _oracle)
+        external
+        override
+        returns (bool)
+    {
         require(
             config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
             "OracleRegistry: Only an oracle admin can add an oracle"
@@ -113,7 +132,7 @@ contract OracleRegistry is IOracleRegistry {
 
     /// @notice Get total number of oracles in registry
     /// @return the number of oracles in the registry
-    function getOraclesLength() external override view returns (uint256) {
+    function getOraclesLength() external view override returns (uint256) {
         return oracles.length;
     }
 

@@ -67,7 +67,7 @@ contract OptionsFactory is IOptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) external override view returns (address) {
+    ) external view override returns (address) {
         return
             OptionsUtils.getTargetQTokenAddress(
                 address(quantConfig),
@@ -97,7 +97,7 @@ contract OptionsFactory is IOptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) external override view returns (uint256) {
+    ) external view override returns (uint256) {
         return
             OptionsUtils.getTargetCollateralTokenId(
                 collateralToken,
@@ -129,7 +129,11 @@ contract OptionsFactory is IOptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) external override returns (address newQToken, uint256 newCollateralTokenId) {
+    )
+        external
+        override
+        returns (address newQToken, uint256 newCollateralTokenId)
+    {
         require(
             _expiryTime > block.timestamp,
             "OptionsFactory: given expiry time is in the past"
@@ -218,7 +222,7 @@ contract OptionsFactory is IOptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) public override view returns (uint256) {
+    ) public view override returns (uint256) {
         address qToken =
             getQToken(
                 _underlyingAsset,
@@ -252,7 +256,7 @@ contract OptionsFactory is IOptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) public override view returns (address) {
+    ) public view override returns (address) {
         uint256 collateralTokenId =
             OptionsUtils.getTargetCollateralTokenId(
                 collateralToken,
@@ -271,7 +275,7 @@ contract OptionsFactory is IOptionsFactory {
 
     /// @notice get the total number of options created by the factory
     /// @return length of the options array
-    function getOptionsLength() external override view returns (uint256) {
+    function getOptionsLength() external view override returns (uint256) {
         return qTokens.length;
     }
 }

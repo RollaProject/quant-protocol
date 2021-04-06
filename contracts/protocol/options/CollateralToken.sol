@@ -225,8 +225,8 @@ contract CollateralToken is ERC1155, ICollateralToken {
     /// @return id the id for the CollateralToken with the given arguments
     function getCollateralTokenId(address _qToken, address _qTokenAsCollateral)
         public
-        override
         pure
+        override
         returns (uint256 id)
     {
         id = uint256(keccak256(abi.encodePacked(_qToken, _qTokenAsCollateral)));

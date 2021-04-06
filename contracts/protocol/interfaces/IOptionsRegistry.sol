@@ -17,14 +17,14 @@ interface IOptionsRegistry {
     function makeOptionInvisible(address _qToken, uint256 index) external;
 
     function getOptionDetails(address _underlyingAsset, uint256 _index)
-    external
-    view
-    returns (OptionDetails memory);
+        external
+        view
+        returns (OptionDetails memory);
 
     function numberOfUnderlyingAssets() external view returns (uint256);
 
     function numberOfOptionsForUnderlying(address _underlying)
-    external
-    view
-    returns (uint256);
+        external
+        view
+        returns (uint256);
 }

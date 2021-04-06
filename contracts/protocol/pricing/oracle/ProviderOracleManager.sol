@@ -42,7 +42,7 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
 
         emit OracleAdded(_asset, _oracle);
     }
-    
+
     /// @notice Get the expiry price from oracle and store it in the price registry so we have a copy
     /// @param _asset asset to set price of
     /// @param _expiryTimestamp timestamp of price
@@ -51,11 +51,11 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
         address _asset,
         uint256 _expiryTimestamp,
         bytes memory _calldata
-    ) external override virtual;
+    ) external virtual override;
 
     /// @notice Get the total number of assets managed by the oracle manager
     /// @return total number of assets managed by the oracle manager
-    function getAssetsLength() external override view returns (uint256) {
+    function getAssetsLength() external view override returns (uint256) {
         return assets.length;
     }
 
@@ -64,14 +64,14 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
     /// @return the current price of the asset
     function getCurrentPrice(address _asset)
         external
-        override
         view
         virtual
+        override
         returns (uint256);
 
     /// @notice Get the current price of the asset from the oracle
     /// @param _asset asset to get price of
-    function getAssetOracle(address _asset) public view returns (address) {
+    function getAssetOracle(address _asset) public view override returns (address) {
         address assetOracle = assetOracles[_asset];
         require(
             assetOracles[_asset] != address(0),

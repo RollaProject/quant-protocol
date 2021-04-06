@@ -363,7 +363,12 @@ contract QToken is ERC20, IQToken {
 
     /// @notice Get the price status of the option.
     /// @return the price status of the option. option is either active, awaiting settlement price or settled
-    function getOptionPriceStatus() external override view returns (PriceStatus) {
+    function getOptionPriceStatus()
+        external
+        view
+        override
+        returns (PriceStatus)
+    {
         if (block.timestamp > expiryTime) {
             PriceRegistry priceRegistry =
                 PriceRegistry(quantConfig.priceRegistry());

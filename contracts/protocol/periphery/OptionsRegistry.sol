@@ -56,7 +56,10 @@ contract OptionsRegistry is AccessControl, IOptionsRegistry {
         );
     }
 
-    function makeOptionVisible(address _qToken, uint256 index) external override {
+    function makeOptionVisible(address _qToken, uint256 index)
+        external
+        override
+    {
         require(
             hasRole(OPTION_MANAGER_ROLE, msg.sender),
             "OptionsRegistry: Only an option manager can change visibility of an option"
@@ -69,7 +72,10 @@ contract OptionsRegistry is AccessControl, IOptionsRegistry {
         emit OptionVisibilityChanged(underlyingAsset, _qToken, index, true);
     }
 
-    function makeOptionInvisible(address _qToken, uint256 index) external override {
+    function makeOptionInvisible(address _qToken, uint256 index)
+        external
+        override
+    {
         require(
             hasRole(OPTION_MANAGER_ROLE, msg.sender),
             "OptionsRegistry: Only an option manager can change visibility of an option"
@@ -84,8 +90,8 @@ contract OptionsRegistry is AccessControl, IOptionsRegistry {
 
     function getOptionDetails(address _underlyingAsset, uint256 _index)
         external
-        override
         view
+        override
         returns (OptionDetails memory)
     {
         OptionDetails[] memory optionsArray = options[_underlyingAsset];
@@ -96,14 +102,19 @@ contract OptionsRegistry is AccessControl, IOptionsRegistry {
         return optionsArray[_index];
     }
 
-    function numberOfUnderlyingAssets() external override view returns (uint256) {
+    function numberOfUnderlyingAssets()
+        external
+        view
+        override
+        returns (uint256)
+    {
         return underlyingAssets.length;
     }
 
     function numberOfOptionsForUnderlying(address _underlying)
         external
-        override
         view
+        override
         returns (uint256)
     {
         return options[_underlying].length;

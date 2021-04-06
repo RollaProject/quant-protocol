@@ -33,7 +33,7 @@ interface ICollateralToken {
     ) external;
 
     function getCollateralTokenId(address _qToken, address _qTokenAsCollateral)
-    external
-    pure
-    returns (uint256 id);
+        external
+        pure
+        returns (uint256 id);
 }

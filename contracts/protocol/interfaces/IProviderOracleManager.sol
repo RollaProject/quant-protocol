@@ -14,8 +14,5 @@ interface IProviderOracleManager {
 
     function getAssetsLength() external view returns (uint256);
 
-    function getCurrentPrice(address _asset)
-    external
-    view
-    returns (uint256);
+    function getCurrentPrice(address _asset) external view returns (uint256);
 }

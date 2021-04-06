@@ -60,7 +60,7 @@ contract PriceRegistry is IPriceRegistry {
         address _oracle,
         address _asset,
         uint256 _expiryTimestamp
-    ) external override view returns (uint256) {
+    ) external view override returns (uint256) {
         uint256 settlementPrice =
             _settlementPrices[_oracle][_asset][_expiryTimestamp];
         require(
@@ -80,7 +80,7 @@ contract PriceRegistry is IPriceRegistry {
         address _oracle,
         address _asset,
         uint256 _expiryTimestamp
-    ) public override view returns (bool) {
+    ) public view override returns (bool) {
         return _settlementPrices[_oracle][_asset][_expiryTimestamp] != 0;
     }
 }
