@@ -16,6 +16,14 @@ Set the protocol's price registry
 
 Can only be called once, and by accounts or contracts with the admin role
 
+### `setAssetsRegistry(address _assetsRegistry)` (external)
+
+Set the protocol assets registry
+
+
+Only accounts or contracts with the admin role should call this contract
+
+
 ### `initialize(address _admin)` (public)
 
 Initializes the system roles and assign them to the given admin address

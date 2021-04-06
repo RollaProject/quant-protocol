@@ -22,10 +22,10 @@ contract OptionsFactory {
 
     CollateralToken public collateralToken;
 
-    mapping(bytes32 => address) private _qTokenHashToAddress;
+    mapping(uint256 => address) private _collateralTokenIdToQTokenAddress;
 
     /// @notice mapping that can be used to check if a QToken at a given address has already been created
-    mapping(address => bytes32) public qTokenAddressToHash;
+    mapping(address => uint256) public qTokenAddressToCollateralTokenId;
 
     /// @notice emitted when the factory creates a new option
     event OptionCreated(
@@ -85,16 +85,16 @@ contract OptionsFactory {
     /// @param _oracle price oracle for the option underlying
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _collateralizedFrom initial spread collateral
+    /// @param _qTokenAsCollateral initial spread collateral
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return the id that a CollateralToken would have
     function getTargetCollateralTokenId(
         address _underlyingAsset,
         address _strikeAsset,
         address _oracle,
+        address _qTokenAsCollateral,
         uint256 _strikePrice,
         uint256 _expiryTime,
-        uint256 _collateralizedFrom,
         bool _isCall
     ) external view returns (uint256) {
         return
@@ -104,9 +104,9 @@ contract OptionsFactory {
                 _underlyingAsset,
                 _strikeAsset,
                 _oracle,
+                _qTokenAsCollateral,
                 _strikePrice,
                 _expiryTime,
-                _collateralizedFrom,
                 _isCall
             );
     }
@@ -133,17 +133,22 @@ contract OptionsFactory {
             _expiryTime > block.timestamp,
             "OptionsFactory: given expiry time is in the past"
         );
-        bytes32 qTokenHash =
-            OptionsUtils.qTokenHash(
-                _underlyingAsset,
-                _strikeAsset,
-                _oracle,
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            );
+
+        newCollateralTokenId = OptionsUtils.getTargetCollateralTokenId(
+            collateralToken,
+            address(quantConfig),
+            _underlyingAsset,
+            _strikeAsset,
+            _oracle,
+            address(0),
+            _strikePrice,
+            _expiryTime,
+            _isCall
+        );
+
         require(
-            _qTokenHashToAddress[qTokenHash] == address(0),
+            _collateralTokenIdToQTokenAddress[newCollateralTokenId] ==
+                address(0),
             "OptionsFactory: option already created"
         );
         require(
@@ -173,21 +178,10 @@ contract OptionsFactory {
             )
         );
 
-        _qTokenHashToAddress[qTokenHash] = newQToken;
+        _collateralTokenIdToQTokenAddress[newCollateralTokenId] = newQToken;
         qTokens.push(newQToken);
-        qTokenAddressToHash[newQToken] = qTokenHash;
 
-        newCollateralTokenId = OptionsUtils.getTargetCollateralTokenId(
-            collateralToken,
-            address(quantConfig),
-            _underlyingAsset,
-            _strikeAsset,
-            _oracle,
-            _strikePrice,
-            _expiryTime,
-            0,
-            _isCall
-        );
+        qTokenAddressToCollateralTokenId[newQToken] = newCollateralTokenId;
 
         emit OptionCreated(
             newQToken,
@@ -202,7 +196,7 @@ contract OptionsFactory {
             _isCall
         );
 
-        collateralToken.createCollateralToken(newQToken, 0);
+        collateralToken.createCollateralToken(newQToken, address(0));
     }
 
     /// @notice get the CollateralToken id for an already created CollateralToken,
@@ -212,16 +206,16 @@ contract OptionsFactory {
     /// @param _oracle price oracle for the option underlying
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _collateralizedFrom initial spread collateral
+    /// @param _qTokenAsCollateral initial spread collateral
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return id of the requested CollateralToken
     function getCollateralToken(
         address _underlyingAsset,
         address _strikeAsset,
         address _oracle,
+        address _qTokenAsCollateral,
         uint256 _strikePrice,
         uint256 _expiryTime,
-        uint256 _collateralizedFrom,
         bool _isCall
     ) public view returns (uint256) {
         address qToken =
@@ -235,7 +229,7 @@ contract OptionsFactory {
             );
 
         uint256 id =
-            collateralToken.getCollateralTokenId(qToken, _collateralizedFrom);
+            collateralToken.getCollateralTokenId(qToken, _qTokenAsCollateral);
 
         (address storedQToken, ) = collateralToken.idToInfo(id);
         return storedQToken != address(0) ? id : 0;
@@ -258,17 +252,20 @@ contract OptionsFactory {
         uint256 _expiryTime,
         bool _isCall
     ) public view returns (address) {
-        bytes32 qTokenHash =
-            OptionsUtils.qTokenHash(
+        uint256 collateralTokenId =
+            OptionsUtils.getTargetCollateralTokenId(
+                collateralToken,
+                address(quantConfig),
                 _underlyingAsset,
                 _strikeAsset,
                 _oracle,
+                address(0),
                 _strikePrice,
                 _expiryTime,
                 _isCall
             );
 
-        return _qTokenHashToAddress[qTokenHash];
+        return _collateralTokenIdToQTokenAddress[collateralTokenId];
     }
 
     /// @notice get the total number of options created by the factory

@@ -8,7 +8,7 @@ import "solidity-coverage";
 
 const config: HardhatUserConfig = {
   solidity: {
-    compilers: [{ version: "0.7.6" }],
+    compilers: [{ version: "0.7.5" }],
   },
 
   mocha: {
