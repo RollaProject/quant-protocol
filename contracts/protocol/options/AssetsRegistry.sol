@@ -3,8 +3,9 @@ pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../QuantConfig.sol";
+import "../interfaces/IAssetRegistry.sol";
 
-contract AssetsRegistry {
+contract AssetsRegistry is IAssetsRegistry {
     struct AssetProperties {
         string name;
         string symbol;
@@ -31,7 +32,7 @@ contract AssetsRegistry {
         string calldata _name,
         string calldata _symbol,
         uint8 _decimals
-    ) external {
+    ) external override {
         require(
             _quantConfig.hasRole(
                 _quantConfig.OPTIONS_CONTROLLER_ROLE(),

@@ -2,10 +2,11 @@
 pragma solidity ^0.7.0;
 
 import "../../QuantConfig.sol";
+import "../../interfaces/IProviderOracleManager.sol";
 
 /// @title Oracle manager for holding asset addresses and their oracle addresses for a single provider
 /// @notice Once an oracle is added for an asset it can't be changed!
-abstract contract ProviderOracleManager {
+abstract contract ProviderOracleManager is IProviderOracleManager {
     event OracleAdded(address asset, address oracle);
 
     /// @notice quant central configuration
@@ -25,7 +26,7 @@ abstract contract ProviderOracleManager {
     /// @dev Once this is set for an asset, it can't be changed or removed
     /// @param _asset the address of the asset token we are adding the oracle for
     /// @param _oracle the address of the oracle
-    function addAssetOracle(address _asset, address _oracle) external {
+    function addAssetOracle(address _asset, address _oracle) external override {
         require(
             config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
             "ProviderOracleManager: Only an oracle admin can add an oracle"
@@ -42,7 +43,7 @@ abstract contract ProviderOracleManager {
 
     /// @notice Get the current price of the asset from the oracle
     /// @param _asset asset to get price of
-    function getAssetOracle(address _asset) public view returns (address) {
+    function getAssetOracle(address _asset) public override view returns (address) {
         address assetOracle = assetOracles[_asset];
         require(
             assetOracles[_asset] != address(0),
@@ -59,11 +60,11 @@ abstract contract ProviderOracleManager {
         address _asset,
         uint256 _expiryTimestamp,
         bytes memory _calldata
-    ) external virtual;
+    ) external override virtual;
 
     /// @notice Get the total number of assets managed by the oracle manager
     /// @return total number of assets managed by the oracle manager
-    function getAssetsLength() external view returns (uint256) {
+    function getAssetsLength() external override view returns (uint256) {
         return assets.length;
     }
 
@@ -72,6 +73,7 @@ abstract contract ProviderOracleManager {
     /// @return the current price of the asset
     function getCurrentPrice(address _asset)
         external
+        override
         view
         virtual
         returns (uint256);

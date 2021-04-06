@@ -5,17 +5,11 @@ pragma experimental ABIEncoderV2;
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "../options/QToken.sol";
+import "../interfaces/IOptionsRegistry.sol";
 
 /// @title A registry of options that can be added to by priveleged users
 /// @notice An options registry which anyone can deploy a version of. This is independent from the Quant protocol.
-contract OptionsRegistry is AccessControl {
-    struct OptionDetails {
-        // address of qToken
-        address qToken;
-        // whether or not the option is shown in the frontend
-        bool isVisible;
-    }
-
+contract OptionsRegistry is AccessControl, IOptionsRegistry {
     bytes32 public constant OPTION_MANAGER_ROLE =
         keccak256("OPTION_MANAGER_ROLE");
 
@@ -40,7 +34,7 @@ contract OptionsRegistry is AccessControl {
         _setupRole(OPTION_MANAGER_ROLE, _admin);
     }
 
-    function addOption(address _qToken) external {
+    function addOption(address _qToken) external override {
         require(
             hasRole(OPTION_MANAGER_ROLE, msg.sender),
             "OptionsRegistry: Only an option manager can add an option"
@@ -62,7 +56,7 @@ contract OptionsRegistry is AccessControl {
         );
     }
 
-    function makeOptionVisible(address _qToken, uint256 index) external {
+    function makeOptionVisible(address _qToken, uint256 index) external override {
         require(
             hasRole(OPTION_MANAGER_ROLE, msg.sender),
             "OptionsRegistry: Only an option manager can change visibility of an option"
@@ -75,7 +69,7 @@ contract OptionsRegistry is AccessControl {
         emit OptionVisibilityChanged(underlyingAsset, _qToken, index, true);
     }
 
-    function makeOptionInvisible(address _qToken, uint256 index) external {
+    function makeOptionInvisible(address _qToken, uint256 index) external override {
         require(
             hasRole(OPTION_MANAGER_ROLE, msg.sender),
             "OptionsRegistry: Only an option manager can change visibility of an option"
@@ -90,6 +84,7 @@ contract OptionsRegistry is AccessControl {
 
     function getOptionDetails(address _underlyingAsset, uint256 _index)
         external
+        override
         view
         returns (OptionDetails memory)
     {
@@ -101,12 +96,13 @@ contract OptionsRegistry is AccessControl {
         return optionsArray[_index];
     }
 
-    function numberOfUnderlyingAssets() external view returns (uint256) {
+    function numberOfUnderlyingAssets() external override view returns (uint256) {
         return underlyingAssets.length;
     }
 
     function numberOfOptionsForUnderlying(address _underlying)
         external
+        override
         view
         returns (uint256)
     {

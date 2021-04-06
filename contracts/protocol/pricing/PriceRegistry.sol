@@ -3,9 +3,10 @@ pragma solidity ^0.7.0;
 
 import "../QuantConfig.sol";
 import "./OracleRegistry.sol";
+import "../interfaces/IPriceRegistry.sol";
 
 /// @title For centrally managing a log of settlement prices, for each option.
-contract PriceRegistry {
+contract PriceRegistry is IPriceRegistry {
     /// @notice quant central configuration
     QuantConfig public config;
 
@@ -26,7 +27,7 @@ contract PriceRegistry {
         address _asset,
         uint256 _expiryTimestamp,
         uint256 _settlementPrice
-    ) external {
+    ) external override {
         require(
             config.hasRole(config.PRICE_SUBMITTER_ROLE(), msg.sender),
             "PriceRegistry: Price submitter is not an oracle"
@@ -59,7 +60,7 @@ contract PriceRegistry {
         address _oracle,
         address _asset,
         uint256 _expiryTimestamp
-    ) external view returns (uint256) {
+    ) external override view returns (uint256) {
         uint256 settlementPrice =
             _settlementPrices[_oracle][_asset][_expiryTimestamp];
         require(
@@ -79,7 +80,7 @@ contract PriceRegistry {
         address _oracle,
         address _asset,
         uint256 _expiryTimestamp
-    ) public view returns (bool) {
+    ) public override view returns (bool) {
         return _settlementPrices[_oracle][_asset][_expiryTimestamp] != 0;
     }
 }
