@@ -14,12 +14,12 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         uint80 answeredInRound;
     }
 
-    mapping(uint256 => uint256) roundTimestamps;
-    mapping(uint256 => int256) roundIdAnswers;
-    LatestRoundData latestRoundDataValue;
-    int256 latestAnswerValue;
-    uint256 latestTimestampValue;
-    uint256 latestRoundValue;
+    mapping(uint256 => uint256) public roundTimestamps;
+    mapping(uint256 => int256) public roundIdAnswers;
+    LatestRoundData public latestRoundDataValue;
+    int256 public latestAnswerValue;
+    uint256 public latestTimestampValue;
+    uint256 public latestRoundValue;
 
     function setTimestamp(uint256 _round, uint256 _timestamp) external {
         roundTimestamps[_round] = _timestamp;
@@ -47,22 +47,27 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         latestRoundValue = _latestRound;
     }
 
+    // solhint-disable-next-line no-empty-blocks
     function acceptOwnership() external override {
         //noop
     }
 
+    // solhint-disable-next-line no-empty-blocks
     function confirmAggregator(address _aggregator) external override {
         //noop
     }
 
+    // solhint-disable-next-line no-empty-blocks
     function proposeAggregator(address _aggregator) external override {
         //noop
     }
 
+    // solhint-disable-next-line no-empty-blocks
     function setController(address _accessController) external override {
         //noop
     }
 
+    // solhint-disable-next-line no-empty-blocks
     function transferOwnership(address _to) external override {
         //noop
     }
@@ -92,7 +97,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         return roundIdAnswers[_roundId];
     }
 
-    function getRoundData(uint80 _roundId)
+    function getRoundData(uint80)
         external
         view
         override
@@ -165,7 +170,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         return address(0);
     }
 
-    function proposedGetRoundData(uint80 _roundId)
+    function proposedGetRoundData(uint80)
         external
         view
         override

@@ -13,10 +13,12 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
     QuantConfig public config;
 
     // asset address => oracle address
-    mapping(address => address) assetOracles;
+    mapping(address => address) public assetOracles;
 
     /// @notice exhaustive list of asset addresses in map
     address[] public assets;
+
+    event OracleAdded(address asset, address oracle);
 
     constructor(address _config) {
         config = QuantConfig(_config);
@@ -40,18 +42,7 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
 
         emit OracleAdded(_asset, _oracle);
     }
-
-    /// @notice Get the current price of the asset from the oracle
-    /// @param _asset asset to get price of
-    function getAssetOracle(address _asset) public override view returns (address) {
-        address assetOracle = assetOracles[_asset];
-        require(
-            assetOracles[_asset] != address(0),
-            "ProviderOracleManager: Oracle doesn't exist for that asset"
-        );
-        return assetOracle;
-    }
-
+    
     /// @notice Get the expiry price from oracle and store it in the price registry so we have a copy
     /// @param _asset asset to set price of
     /// @param _expiryTimestamp timestamp of price
@@ -77,4 +68,15 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
         view
         virtual
         returns (uint256);
+
+    /// @notice Get the current price of the asset from the oracle
+    /// @param _asset asset to get price of
+    function getAssetOracle(address _asset) public view returns (address) {
+        address assetOracle = assetOracles[_asset];
+        require(
+            assetOracles[_asset] != address(0),
+            "ProviderOracleManager: Oracle doesn't exist for that asset"
+        );
+        return assetOracle;
+    }
 }
