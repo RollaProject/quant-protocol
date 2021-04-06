@@ -2,10 +2,13 @@
 pragma solidity ^0.7.0;
 
 import "../../QuantConfig.sol";
+import "../../interfaces/IProviderOracleManager.sol";
 
 /// @title Oracle manager for holding asset addresses and their oracle addresses for a single provider
 /// @notice Once an oracle is added for an asset it can't be changed!
-abstract contract ProviderOracleManager {
+abstract contract ProviderOracleManager is IProviderOracleManager {
+    event OracleAdded(address asset, address oracle);
+
     /// @notice quant central configuration
     QuantConfig public config;
 
@@ -15,8 +18,6 @@ abstract contract ProviderOracleManager {
     /// @notice exhaustive list of asset addresses in map
     address[] public assets;
 
-    event OracleAdded(address asset, address oracle);
-
     constructor(address _config) {
         config = QuantConfig(_config);
     }
@@ -25,7 +26,7 @@ abstract contract ProviderOracleManager {
     /// @dev Once this is set for an asset, it can't be changed or removed
     /// @param _asset the address of the asset token we are adding the oracle for
     /// @param _oracle the address of the oracle
-    function addAssetOracle(address _asset, address _oracle) external {
+    function addAssetOracle(address _asset, address _oracle) external override {
         require(
             config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
             "ProviderOracleManager: Only an oracle admin can add an oracle"
@@ -48,11 +49,11 @@ abstract contract ProviderOracleManager {
         address _asset,
         uint256 _expiryTimestamp,
         bytes memory _calldata
-    ) external virtual;
+    ) external virtual override;
 
     /// @notice Get the total number of assets managed by the oracle manager
     /// @return total number of assets managed by the oracle manager
-    function getAssetsLength() external view returns (uint256) {
+    function getAssetsLength() external view override returns (uint256) {
         return assets.length;
     }
 
@@ -63,11 +64,17 @@ abstract contract ProviderOracleManager {
         external
         view
         virtual
+        override
         returns (uint256);
 
     /// @notice Get the current price of the asset from the oracle
     /// @param _asset asset to get price of
-    function getAssetOracle(address _asset) public view returns (address) {
+    function getAssetOracle(address _asset)
+        public
+        view
+        override
+        returns (address)
+    {
         address assetOracle = assetOracles[_asset];
         require(
             assetOracles[_asset] != address(0),

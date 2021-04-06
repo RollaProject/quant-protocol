@@ -6,13 +6,14 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../QuantConfig.sol";
+import "../interfaces/ICollateralToken.sol";
 
 /// @title Tokens representing a Quant user's short positions
 /// @author Quant Finance
 /// @notice Can be used by owners to claim their collateral
 /// @dev This is a multi-token contract that implements the ERC1155 token standard:
 /// https://eips.ethereum.org/EIPS/eip-1155
-contract CollateralToken is ERC1155 {
+contract CollateralToken is ERC1155, ICollateralToken {
     using SafeMath for uint256;
 
     /// @dev stores metadata for a CollateralToken with an specific id
@@ -81,7 +82,7 @@ contract CollateralToken is ERC1155 {
     function createCollateralToken(
         address _qTokenAddress,
         address _qTokenAsCollateral
-    ) external returns (uint256 id) {
+    ) external override returns (uint256 id) {
         id = getCollateralTokenId(_qTokenAddress, _qTokenAsCollateral);
 
         require(
@@ -120,7 +121,7 @@ contract CollateralToken is ERC1155 {
         address recipient,
         uint256 collateralTokenId,
         uint256 amount
-    ) external {
+    ) external override {
         require(
             quantConfig.hasRole(
                 quantConfig.OPTIONS_CONTROLLER_ROLE(),
@@ -146,7 +147,7 @@ contract CollateralToken is ERC1155 {
         address owner,
         uint256 collateralTokenId,
         uint256 amount
-    ) external {
+    ) external override {
         require(
             quantConfig.hasRole(
                 quantConfig.OPTIONS_CONTROLLER_ROLE(),
@@ -174,7 +175,7 @@ contract CollateralToken is ERC1155 {
         address recipient,
         uint256[] calldata ids,
         uint256[] calldata amounts
-    ) external {
+    ) external override {
         require(
             quantConfig.hasRole(
                 quantConfig.OPTIONS_CONTROLLER_ROLE(),
@@ -202,7 +203,7 @@ contract CollateralToken is ERC1155 {
         address owner,
         uint256[] calldata ids,
         uint256[] calldata amounts
-    ) external {
+    ) external override {
         require(
             quantConfig.hasRole(
                 quantConfig.OPTIONS_CONTROLLER_ROLE(),
@@ -225,6 +226,7 @@ contract CollateralToken is ERC1155 {
     function getCollateralTokenId(address _qToken, address _qTokenAsCollateral)
         public
         pure
+        override
         returns (uint256 id)
     {
         id = uint256(keccak256(abi.encodePacked(_qToken, _qTokenAsCollateral)));

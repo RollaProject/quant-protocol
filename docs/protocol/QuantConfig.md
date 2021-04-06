@@ -20,9 +20,7 @@ Can only be called once, and by accounts or contracts with the admin role
 
 Set the protocol assets registry
 
-
 Only accounts or contracts with the admin role should call this contract
-
 
 ### `initialize(address _admin)` (public)
 
