@@ -8,15 +8,13 @@ import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
 import "./AssetsRegistry.sol";
 import "../QuantConfig.sol";
 import "../pricing/PriceRegistry.sol";
-
-/// @dev Current pricing status of option. Only SETTLED options can be exercised
-enum PriceStatus {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
+import "../interfaces/IQToken.sol";
 
 /// @title Token that represents a user's long position
 /// @author Quant Finance
 /// @notice Can be used by owners to exercise their options
 /// @dev Every option long position is an ERC20 token: https://eips.ethereum.org/EIPS/eip-20
-contract QToken is ERC20 {
+contract QToken is ERC20, IQToken {
     using SafeMath for uint256;
 
     /// @dev Address of system config.
@@ -101,7 +99,7 @@ contract QToken is ERC20 {
     /// @notice mint option token for an account
     /// @param account account to mint token to
     /// @param amount amount to mint
-    function mint(address account, uint256 amount) external {
+    function mint(address account, uint256 amount) external override {
         require(
             quantConfig.hasRole(
                 quantConfig.OPTIONS_CONTROLLER_ROLE(),
@@ -116,7 +114,7 @@ contract QToken is ERC20 {
     /// @notice burn option token from an account.
     /// @param account account to burn token from
     /// @param amount amount to burn
-    function burn(address account, uint256 amount) external {
+    function burn(address account, uint256 amount) external override {
         require(
             quantConfig.hasRole(
                 quantConfig.OPTIONS_CONTROLLER_ROLE(),
@@ -365,7 +363,12 @@ contract QToken is ERC20 {
 
     /// @notice Get the price status of the option.
     /// @return the price status of the option. option is either active, awaiting settlement price or settled
-    function getOptionPriceStatus() external view returns (PriceStatus) {
+    function getOptionPriceStatus()
+        external
+        view
+        override
+        returns (PriceStatus)
+    {
         if (block.timestamp > expiryTime) {
             PriceRegistry priceRegistry =
                 PriceRegistry(quantConfig.priceRegistry());

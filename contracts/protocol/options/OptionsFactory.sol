@@ -7,12 +7,13 @@ import "./CollateralToken.sol";
 import "./OptionsUtils.sol";
 import "./AssetsRegistry.sol";
 import "../QuantConfig.sol";
+import "../interfaces/IOptionsFactory.sol";
 
 /// @title Factory contract for Quant options
 /// @author Quant Finance
 /// @notice Creates tokens for long (QToken) and short (CollateralToken) positions
 /// @dev This contract follows the factory design pattern
-contract OptionsFactory {
+contract OptionsFactory is IOptionsFactory {
     using SafeMath for uint256;
 
     /// @notice array of all the created QTokens
@@ -66,7 +67,7 @@ contract OptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) external view returns (address) {
+    ) external view override returns (address) {
         return
             OptionsUtils.getTargetQTokenAddress(
                 address(quantConfig),
@@ -96,7 +97,7 @@ contract OptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) external view returns (uint256) {
+    ) external view override returns (uint256) {
         return
             OptionsUtils.getTargetCollateralTokenId(
                 collateralToken,
@@ -128,7 +129,11 @@ contract OptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) external returns (address newQToken, uint256 newCollateralTokenId) {
+    )
+        external
+        override
+        returns (address newQToken, uint256 newCollateralTokenId)
+    {
         require(
             _expiryTime > block.timestamp,
             "OptionsFactory: given expiry time is in the past"
@@ -217,7 +222,7 @@ contract OptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) public view returns (uint256) {
+    ) public view override returns (uint256) {
         address qToken =
             getQToken(
                 _underlyingAsset,
@@ -251,7 +256,7 @@ contract OptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) public view returns (address) {
+    ) public view override returns (address) {
         uint256 collateralTokenId =
             OptionsUtils.getTargetCollateralTokenId(
                 collateralToken,
@@ -270,7 +275,7 @@ contract OptionsFactory {
 
     /// @notice get the total number of options created by the factory
     /// @return length of the options array
-    function getOptionsLength() external view returns (uint256) {
+    function getOptionsLength() external view override returns (uint256) {
         return qTokens.length;
     }
 }
