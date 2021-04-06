@@ -2,6 +2,15 @@
 pragma solidity ^0.7.0;
 
 interface IOptionsFactory {
+    function createOption(
+        address _underlyingAsset,
+        address _strikeAsset,
+        address _oracle,
+        uint256 _strikePrice,
+        uint256 _expiryTime,
+        bool _isCall
+    ) external returns (address newQToken, uint256 newCollateralTokenId);
+
     function getTargetQTokenAddress(
         address _underlyingAsset,
         address _strikeAsset,
@@ -20,15 +29,6 @@ interface IOptionsFactory {
         uint256 _expiryTime,
         bool _isCall
     ) external view returns (uint256);
-
-    function createOption(
-        address _underlyingAsset,
-        address _strikeAsset,
-        address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
-    ) external returns (address newQToken, uint256 newCollateralTokenId);
 
     function getCollateralToken(
         address _underlyingAsset,

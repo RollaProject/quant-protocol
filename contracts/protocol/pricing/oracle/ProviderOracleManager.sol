@@ -7,8 +7,6 @@ import "../../interfaces/IProviderOracleManager.sol";
 /// @title Oracle manager for holding asset addresses and their oracle addresses for a single provider
 /// @notice Once an oracle is added for an asset it can't be changed!
 abstract contract ProviderOracleManager is IProviderOracleManager {
-    event OracleAdded(address asset, address oracle);
-
     /// @notice quant central configuration
     QuantConfig public config;
 
@@ -17,6 +15,8 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
 
     /// @notice exhaustive list of asset addresses in map
     address[] public assets;
+
+    event OracleAdded(address asset, address oracle);
 
     constructor(address _config) {
         config = QuantConfig(_config);
