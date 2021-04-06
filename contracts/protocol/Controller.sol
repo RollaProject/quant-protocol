@@ -98,6 +98,9 @@ contract Controller {
                 _qToken,
                 address(0)
             );
+
+        // There's no need to check if the collateralTokenId exists before minting because if the QToken is valid,
+        // then it's guaranteed that the respective CollateralToken has already also been created by the OptionsFactory
         optionsFactory.collateralToken().mintCollateralToken(
             msg.sender,
             collateralTokenId,
