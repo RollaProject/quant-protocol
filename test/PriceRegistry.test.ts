@@ -1,9 +1,9 @@
 import { ContractFactory, Signer } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
+import PriceRegistryJSON from "../artifacts/contracts/protocol/pricing/PriceRegistry.sol/PriceRegistry.json";
 import { PriceRegistry, QuantConfig } from "../typechain";
 import { expect, provider } from "./setup";
-import PriceRegistryJSON from "../artifacts/contracts/protocol/pricing/PriceRegistry.sol/PriceRegistry.json";
 
 const { deployContract } = waffle;
 
@@ -66,7 +66,11 @@ describe("PriceRegistry", () => {
     await expect(
       priceRegistry
         .connect(admin)
-        .setSettlementPrice(assetOne, Math.round(Date.now() / 1000) + 1000, 40)
+        .setSettlementPrice(
+          assetOne,
+          Math.round(Date.now() / 1000) + 100000,
+          40
+        )
     ).to.be.revertedWith(
       "PriceRegistry: Can't set a price for a time in the future"
     );
