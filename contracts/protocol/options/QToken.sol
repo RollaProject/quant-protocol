@@ -369,6 +369,7 @@ contract QToken is ERC20 {
         if (block.timestamp > expiryTime) {
             PriceRegistry priceRegistry =
                 PriceRegistry(quantConfig.priceRegistry());
+
             if (
                 priceRegistry.hasSettlementPrice(
                     oracle,
