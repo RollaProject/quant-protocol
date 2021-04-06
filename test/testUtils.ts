@@ -10,9 +10,8 @@ import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
-import { provider } from "./setup";
 
-const { deployContract, deployMockContract } = waffle;
+const { deployContract } = waffle;
 
 const mockERC20 = async (
   deployer: Signer,
@@ -43,27 +42,19 @@ const deployQToken = async (
   underlyingAsset: string,
   strikeAsset: string,
   oracle: string = ethers.constants.AddressZero,
-  strikePrice = "1400",
+  strikePrice = ethers.BigNumber.from("1400000000"),
   expiryTime: BigNumber = ethers.BigNumber.from(
     Math.floor(Date.now() / 1000) + 30 * 24 * 3600
   ), // a month from the current time
   isCall = false
 ): Promise<QToken> => {
-  const ERC20ABI = (await ethers.getContractFactory("ERC20")).interface;
-  const strike = <MockERC20>(
-    new ethers.Contract(strikeAsset, ERC20ABI, provider)
-  );
-  const strikePriceBN = ethers.utils.parseUnits(
-    strikePrice,
-    await strike.decimals()
-  );
   const qToken = <QToken>(
     await deployContract(deployer, QTokenJSON, [
       quantConfig.address,
       underlyingAsset,
       strikeAsset,
       oracle,
-      strikePriceBN,
+      strikePrice,
       expiryTime,
       isCall,
     ])

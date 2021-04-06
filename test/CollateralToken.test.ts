@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish, Signer } from "ethers";
+import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import { CollateralToken } from "../typechain/CollateralToken";
@@ -27,15 +27,15 @@ describe("CollateralToken", () => {
   const createCollateralToken = async (
     account: Signer,
     qToken: QToken,
-    collateralizedFrom: BigNumberish
+    qTokenAsCollateral: string
   ) => {
     await collateralToken
       .connect(account)
-      .createCollateralToken(qToken.address, collateralizedFrom);
+      .createCollateralToken(qToken.address, qTokenAsCollateral);
   };
 
   const createTwoCollateralTokens = async (): Promise<Array<BigNumber>> => {
-    await createCollateralToken(admin, qToken, "0");
+    await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
     const firstCollateralTokenId = await collateralToken.collateralTokensIds(
       ethers.BigNumber.from("0")
     );
@@ -46,11 +46,15 @@ describe("CollateralToken", () => {
       WETH.address,
       USDC.address,
       ethers.constants.AddressZero,
-      "2000",
+      ethers.utils.parseUnits("2000", await USDC.decimals()),
       ethers.BigNumber.from("1618592400"),
       true
     );
-    await createCollateralToken(admin, secondQToken, "0");
+    await createCollateralToken(
+      admin,
+      secondQToken,
+      ethers.constants.AddressZero
+    );
     const secondCollateralTokenId = await collateralToken.collateralTokensIds(
       ethers.BigNumber.from("1")
     );
@@ -86,7 +90,7 @@ describe("CollateralToken", () => {
         .reverted;
 
       // Create a new CollateralToken
-      await createCollateralToken(admin, qToken, "0");
+      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         firstIndex
@@ -101,24 +105,28 @@ describe("CollateralToken", () => {
       );
 
       expect(collateralTokenInfo.qTokenAddress).to.equal(qToken.address);
-      expect(collateralTokenInfo.collateralizedFrom).to.equal(
-        ethers.BigNumber.from("0")
+      expect(collateralTokenInfo.qTokenAsCollateral).to.equal(
+        ethers.constants.AddressZero
       );
     });
 
     it("Should revert when an unauthorized account tries to create a new CollateralToken", async () => {
       await expect(
-        createCollateralToken(secondAccount, qToken, "0")
+        createCollateralToken(
+          secondAccount,
+          qToken,
+          ethers.constants.AddressZero
+        )
       ).to.be.revertedWith(
         "CollateralToken: Only the OptionsFactory can create new CollateralTokens"
       );
     });
 
     it("Should revert when trying to create a duplicate CollateralToken", async () => {
-      await createCollateralToken(admin, qToken, "0");
+      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
 
       await expect(
-        createCollateralToken(admin, qToken, "0")
+        createCollateralToken(admin, qToken, ethers.constants.AddressZero)
       ).to.be.revertedWith(
         "CollateralToken: this token has already been created"
       );
@@ -128,12 +136,12 @@ describe("CollateralToken", () => {
       await expect(
         await collateralToken
           .connect(admin)
-          .createCollateralToken(qToken.address, "0")
+          .createCollateralToken(qToken.address, ethers.constants.AddressZero)
       )
         .to.emit(collateralToken, "CollateralTokenCreated")
         .withArgs(
           qToken.address,
-          "0",
+          ethers.constants.AddressZero,
           await collateralToken.collateralTokensIds(ethers.BigNumber.from("0")),
           "1"
         );
@@ -142,7 +150,7 @@ describe("CollateralToken", () => {
 
   describe("mintCollateralToken", () => {
     it("Admin should be able to mint CollateralTokens", async () => {
-      await createCollateralToken(admin, qToken, "0");
+      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         ethers.BigNumber.from("0")
@@ -169,7 +177,7 @@ describe("CollateralToken", () => {
     });
 
     it("Should revert when an unauthorized account tries to mint CollateralTokens", async () => {
-      await createCollateralToken(admin, qToken, "0");
+      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         ethers.BigNumber.from("0")
@@ -189,7 +197,7 @@ describe("CollateralToken", () => {
     });
 
     it("Should emit the CollateralTokenMinted event", async () => {
-      await createCollateralToken(admin, qToken, "0");
+      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         ethers.BigNumber.from("0")
@@ -211,7 +219,7 @@ describe("CollateralToken", () => {
 
   describe("burnCollateralToken", () => {
     it("Admin should be able to burn CollateralTokens", async () => {
-      await createCollateralToken(admin, qToken, "0");
+      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         ethers.BigNumber.from("0")
@@ -259,7 +267,7 @@ describe("CollateralToken", () => {
     });
 
     it("Should revert when an unauthorized account tries to burn CollateralTokens", async () => {
-      await createCollateralToken(admin, qToken, "0");
+      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         ethers.BigNumber.from("0")
@@ -287,7 +295,7 @@ describe("CollateralToken", () => {
     });
 
     it("Should emit the CollateralTokenBurned event", async () => {
-      await createCollateralToken(admin, qToken, "0");
+      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         ethers.BigNumber.from("0")
