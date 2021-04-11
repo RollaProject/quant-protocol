@@ -3,6 +3,7 @@ import { BigNumber, ContractInterface, Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import ControllerJSON from "../artifacts/contracts/protocol/Controller.sol/Controller.json";
+import ORACLE_MANAGER from "../artifacts/contracts/protocol/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
 import PriceRegistry from "../artifacts/contracts/protocol/pricing/PriceRegistry.sol/PriceRegistry.json";
 import { AssetsRegistry, OptionsFactory, OracleRegistry } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
@@ -17,9 +18,8 @@ import {
   deployOptionsFactory,
   deployOracleRegistry,
   deployQuantConfig,
-  mockERC20,
+  mockERC20
 } from "./testUtils";
-import ORACLE_MANAGER from "../artifacts/contracts/protocol/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
 
 const { deployContract, deployMockContract } = waffle;
 
@@ -789,7 +789,7 @@ describe("Controller", () => {
         controller
           .connect(secondAccount)
           .mintOptionsPosition(
-            await secondAccount.getAddress(),
+            await timelockController.getAddress(),
             ethers.constants.AddressZero,
             ethers.BigNumber.from("10")
           )
@@ -809,7 +809,11 @@ describe("Controller", () => {
         controller
           .connect(secondAccount)
           .mintOptionsPosition(
+<<<<<<< HEAD
             await secondAccount.getAddress(),
+=======
+            await admin.getAddress(),
+>>>>>>> f498e99 (Fix interfaces and add a way to mint options to a different address)
             qTokenPut1400.address,
             ethers.BigNumber.from("10")
           )

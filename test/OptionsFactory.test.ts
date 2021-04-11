@@ -164,6 +164,12 @@ describe("OptionsFactory", () => {
     ];
   });
 
+  it("Users should be able to mint options to a different address", async () => {
+    return optionsFactory
+      .connect(admin)
+      .createOption(...samplePutOptionParameters);
+  });
+
   describe("createOption", () => {
     it("Anyone should be able to create new options", async () => {
       await expect(optionsFactory.qTokens(ethers.BigNumber.from("0"))).to.be
