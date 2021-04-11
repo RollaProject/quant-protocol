@@ -50,4 +50,6 @@ interface IOptionsFactory {
     ) external view returns (address);
 
     function getOptionsLength() external view returns (uint256);
+
+    function isQToken(address) external view returns (bool);
 }

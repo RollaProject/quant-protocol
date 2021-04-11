@@ -164,10 +164,15 @@ describe("Controller", () => {
       await expect(
         controller
           .connect(secondAccount)
-          .mintOptionsPosition(qTokenToMintAddress, optionsAmount)
+          .mintOptionsPosition(
+            await secondAccount.getAddress(),
+            qTokenToMintAddress,
+            optionsAmount
+          )
       )
         .to.emit(controller, "OptionsPositionMinted")
         .withArgs(
+          await secondAccount.getAddress(),
           await secondAccount.getAddress(),
           qTokenToMintAddress,
           optionsAmount
@@ -285,7 +290,11 @@ describe("Controller", () => {
 
       await controller
         .connect(secondAccount)
-        .mintOptionsPosition(qTokenShort.address, amountToClaim);
+        .mintOptionsPosition(
+          await secondAccount.getAddress(),
+          qTokenShort.address,
+          amountToClaim
+        );
     } else {
       qTokenAsCollateral = qTokenLong.address;
 
@@ -306,7 +315,11 @@ describe("Controller", () => {
 
       await controller
         .connect(secondAccount)
-        .mintOptionsPosition(qTokenLong.address, amountToClaim);
+        .mintOptionsPosition(
+          await secondAccount.getAddress(),
+          qTokenLong.address,
+          amountToClaim
+        );
 
       await controller
         .connect(secondAccount)
@@ -628,6 +641,7 @@ describe("Controller", () => {
         controller
           .connect(admin)
           .mintOptionsPosition(
+            await admin.getAddress(),
             ethers.constants.AddressZero,
             ethers.BigNumber.from("10")
           )
@@ -647,6 +661,7 @@ describe("Controller", () => {
         controller
           .connect(admin)
           .mintOptionsPosition(
+            await admin.getAddress(),
             qTokenPut1400.address,
             ethers.BigNumber.from("10")
           )
@@ -668,6 +683,10 @@ describe("Controller", () => {
         ethers.utils.parseEther("2")
       );
     });
+
+    // TODO:
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    // it("Users should be able to mint options to a different address", async () => {});
   });
 
   describe("mintSpread", () => {
@@ -726,6 +745,9 @@ describe("Controller", () => {
         "Controller: Can't create spreads from options with different underlying assets"
       );
     });
+
+    // TODO: Test the following case
+    // it("Should revert when trying to create spreads from options with different underlying assets", async () => {});
 
     it("Users should be able to create a PUT Credit spread", async () => {
       await testMintingOptions(
@@ -1378,7 +1400,11 @@ describe("Controller", () => {
 
       await controller
         .connect(secondAccount)
-        .mintOptionsPosition(qTokenPut1400.address, optionsAmount);
+        .mintOptionsPosition(
+          await secondAccount.getAddress(),
+          qTokenPut1400.address,
+          optionsAmount
+        );
 
       const collateralTokenId = await collateralToken.getCollateralTokenId(
         qTokenPut1400.address,
@@ -1429,7 +1455,11 @@ describe("Controller", () => {
 
       await controller
         .connect(secondAccount)
-        .mintOptionsPosition(qTokenPut400.address, optionsAmount);
+        .mintOptionsPosition(
+          await secondAccount.getAddress(),
+          qTokenPut400.address,
+          optionsAmount
+        );
 
       await controller
         .connect(secondAccount)

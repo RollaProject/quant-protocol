@@ -3,7 +3,7 @@ pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../QuantConfig.sol";
-import "../interfaces/IAssetRegistry.sol";
+import "../interfaces/IAssetsRegistry.sol";
 
 contract AssetsRegistry is IAssetsRegistry {
     struct AssetProperties {

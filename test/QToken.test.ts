@@ -205,4 +205,7 @@ describe("QToken", async () => {
       .to.emit(qToken, "QTokenBurned")
       .withArgs(userAddress, 3);
   });
+
+  // TODO: Test the ACTIVE status
+  // it("Should return an ACTIVE status for options that haven't expired yet", async () => {});
 });
