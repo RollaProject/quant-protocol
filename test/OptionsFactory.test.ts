@@ -17,8 +17,9 @@ import {
 describe("OptionsFactory", () => {
   let quantConfig: QuantConfig;
   let collateralToken: CollateralToken;
-  let admin: Signer;
+  let timelockController: Signer;
   let secondAccount: Signer;
+  let assetsRegistryManager: Signer;
   let WETH: MockERC20;
   let USDC: MockERC20;
   let optionsFactory: OptionsFactory;
@@ -43,21 +44,38 @@ describe("OptionsFactory", () => {
   ];
 
   beforeEach(async () => {
-    [admin, secondAccount] = await provider.getWallets();
+    [
+      timelockController,
+      secondAccount,
+      assetsRegistryManager,
+    ] = await provider.getWallets();
 
-    quantConfig = await deployQuantConfig(admin);
+    quantConfig = await deployQuantConfig(timelockController, [
+      {
+        addresses: [await assetsRegistryManager.getAddress()],
+        role: ethers.utils.id("ASSET_REGISTRY_MANAGER_ROLE"),
+      },
+    ]);
 
-    WETH = await mockERC20(admin, "WETH", "Wrapped Ether");
-    USDC = await mockERC20(admin, "USDC", "USD Coin", 6);
+    WETH = await mockERC20(timelockController, "WETH", "Wrapped Ether");
+    USDC = await mockERC20(timelockController, "USDC", "USD Coin", 6);
 
-    collateralToken = await deployCollateralToken(admin, quantConfig);
+    collateralToken = await deployCollateralToken(
+      timelockController,
+      quantConfig
+    );
 
-    assetsRegistry = await deployAssetsRegistry(admin, quantConfig);
+    assetsRegistry = await deployAssetsRegistry(
+      timelockController,
+      quantConfig
+    );
 
-    await quantConfig.connect(admin).setAssetsRegistry(assetsRegistry.address);
+    await quantConfig
+      .connect(timelockController)
+      .setAssetsRegistry(assetsRegistry.address);
 
     await assetsRegistry
-      .connect(admin)
+      .connect(assetsRegistryManager)
       .addAsset(
         WETH.address,
         await WETH.name(),
@@ -66,13 +84,13 @@ describe("OptionsFactory", () => {
       );
 
     optionsFactory = await deployOptionsFactory(
-      admin,
+      timelockController,
       quantConfig,
       collateralToken
     );
 
     await quantConfig.grantRole(
-      await quantConfig.OPTIONS_CONTROLLER_ROLE(),
+      await quantConfig.COLLATERAL_CREATOR_ROLE(),
       optionsFactory.address
     );
 
@@ -97,12 +115,6 @@ describe("OptionsFactory", () => {
       ethers.BigNumber.from(futureTimestamp),
       false,
     ];
-  });
-
-  it("Users should be able to mint options to a different address", async () => {
-    return optionsFactory
-      .connect(admin)
-      .createOption(...samplePutOptionParameters);
   });
 
   describe("createOption", () => {
@@ -158,7 +170,7 @@ describe("OptionsFactory", () => {
 
     it("Should revert when trying to create a duplicate option", async () => {
       await optionsFactory
-        .connect(admin)
+        .connect(secondAccount)
         .createOption(...samplePutOptionParameters);
 
       await expect(
@@ -208,7 +220,7 @@ describe("OptionsFactory", () => {
       );
 
       await optionsFactory
-        .connect(admin)
+        .connect(secondAccount)
         .createOption(...samplePutOptionParameters);
 
       expect(
@@ -226,7 +238,7 @@ describe("OptionsFactory", () => {
       );
 
       await optionsFactory
-        .connect(admin)
+        .connect(secondAccount)
         .createOption(...samplePutOptionParameters);
 
       expect(
@@ -242,7 +254,7 @@ describe("OptionsFactory", () => {
       );
 
       await optionsFactory
-        .connect(admin)
+        .connect(secondAccount)
         .createOption(...samplePutOptionParameters);
 
       expect(await optionsFactory.getOptionsLength()).to.equal(

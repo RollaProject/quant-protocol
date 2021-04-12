@@ -1,33 +1,53 @@
 import { Signer } from "ethers";
-import { ethers, upgrades, waffle } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
+import OracleProviderRegistryJSON from "../artifacts/contracts/protocol/pricing/OracleRegistry.sol/OracleRegistry.json";
 import { OracleRegistry, QuantConfig } from "../typechain";
 import { expect, provider } from "./setup";
-import OracleProviderRegistryJSON from "../artifacts/contracts/protocol/pricing/OracleRegistry.sol/OracleRegistry.json";
+import { deployQuantConfig } from "./testUtils";
 
 const { deployContract } = waffle;
 
 describe("OracleRegistry", () => {
   let quantConfig: QuantConfig;
   let oracleProviderRegistry: OracleRegistry;
-  let admin: Signer;
+  let timelockController: Signer;
   let secondAccount: Signer;
+  let oracleManager: Signer;
   let userAddress: string;
   const oracleOne = "0x000000000000000000000000000000000000000A";
   const oracleTwo = "0x000000000000000000000000000000000000000B";
 
   beforeEach(async () => {
-    [admin, secondAccount] = provider.getWallets();
+    [timelockController, secondAccount, oracleManager] = provider.getWallets();
     userAddress = await secondAccount.getAddress();
-    const QuantConfig = await ethers.getContractFactory("QuantConfig");
-    quantConfig = <QuantConfig>(
-      await upgrades.deployProxy(QuantConfig, [await admin.getAddress()])
-    );
+
+    quantConfig = await deployQuantConfig(timelockController, [
+      {
+        addresses: [await oracleManager.getAddress()],
+        role: ethers.utils.id("ORACLE_MANAGER_ROLE"),
+      },
+    ]);
+
     oracleProviderRegistry = <OracleRegistry>(
-      await deployContract(admin, OracleProviderRegistryJSON, [
+      await deployContract(timelockController, OracleProviderRegistryJSON, [
         quantConfig.address,
       ])
     );
+
+    await quantConfig
+      .connect(timelockController)
+      .setRoleAdmin(
+        ethers.utils.id("PRICE_SUBMITTER_ROLE"),
+        ethers.utils.id("PRICE_SUBMITTER_ROLE_ADMIN")
+      );
+
+    await quantConfig
+      .connect(timelockController)
+      .grantRole(
+        ethers.utils.id("PRICE_SUBMITTER_ROLE_ADMIN"),
+        await oracleProviderRegistry.address
+      );
   });
 
   it("Should allow multiple oracles to be added to the registry", async () => {
@@ -45,8 +65,9 @@ describe("OracleRegistry", () => {
     expect(await oracleProviderRegistry.isOracleRegistered(oracleTwo)).to.equal(
       false
     );
-    await oracleProviderRegistry.connect(admin).addOracle(oracleOne);
-    await oracleProviderRegistry.connect(admin).addOracle(oracleTwo);
+
+    await oracleProviderRegistry.connect(oracleManager).addOracle(oracleOne);
+    await oracleProviderRegistry.connect(oracleManager).addOracle(oracleTwo);
     expect(await oracleProviderRegistry.getOraclesLength()).to.equal(2);
     expect(await oracleProviderRegistry.getOracleId(oracleOne)).to.equal(1);
     expect(await oracleProviderRegistry.getOracleId(oracleTwo)).to.equal(2);
@@ -67,14 +88,14 @@ describe("OracleRegistry", () => {
       false
     );
 
-    await oracleProviderRegistry.connect(admin).addOracle(oracleOne);
+    await oracleProviderRegistry.connect(oracleManager).addOracle(oracleOne);
 
     expect(await oracleProviderRegistry.isOracleActive(oracleOne)).to.equal(
       false
     );
 
     await expect(
-      oracleProviderRegistry.connect(admin).activateOracle(oracleOne)
+      oracleProviderRegistry.connect(oracleManager).activateOracle(oracleOne)
     )
       .to.emit(oracleProviderRegistry, "ActivatedOracle")
       .withArgs(oracleOne);
@@ -84,7 +105,9 @@ describe("OracleRegistry", () => {
     );
 
     await expect(
-      await oracleProviderRegistry.connect(admin).deactivateOracle(oracleOne)
+      await oracleProviderRegistry
+        .connect(oracleManager)
+        .deactivateOracle(oracleOne)
     )
       .to.emit(oracleProviderRegistry, "DeactivatedOracle")
       .withArgs(oracleOne);
@@ -96,32 +119,38 @@ describe("OracleRegistry", () => {
 
   it("Should not allow the same oracle to be added twice", async () => {
     await expect(
-      await oracleProviderRegistry.connect(admin).addOracle(oracleOne)
+      await oracleProviderRegistry.connect(oracleManager).addOracle(oracleOne)
     )
       .to.emit(oracleProviderRegistry, "AddedOracle")
       .withArgs(oracleOne, 1);
 
     await expect(
-      oracleProviderRegistry.connect(admin).addOracle(oracleOne)
+      oracleProviderRegistry.connect(oracleManager).addOracle(oracleOne)
     ).to.be.revertedWith("OracleRegistry: Oracle already exists in registry");
   });
 
   it("Should not allow the same oracle to be activated or deactivated twice", async () => {
-    await oracleProviderRegistry.connect(admin).addOracle(oracleOne);
+    await oracleProviderRegistry.connect(oracleManager).addOracle(oracleOne);
     expect(
-      await oracleProviderRegistry.connect(admin).isOracleActive(oracleOne)
+      await oracleProviderRegistry
+        .connect(oracleManager)
+        .isOracleActive(oracleOne)
     ).to.equal(false);
     await expect(
-      oracleProviderRegistry.connect(admin).deactivateOracle(oracleOne)
+      oracleProviderRegistry.connect(oracleManager).deactivateOracle(oracleOne)
     ).to.be.revertedWith("OracleRegistry: Oracle is already deactivated");
 
-    await oracleProviderRegistry.connect(admin).activateOracle(oracleOne);
+    await oracleProviderRegistry
+      .connect(oracleManager)
+      .activateOracle(oracleOne);
 
     expect(
-      await oracleProviderRegistry.connect(admin).isOracleActive(oracleOne)
+      await oracleProviderRegistry
+        .connect(oracleManager)
+        .isOracleActive(oracleOne)
     ).to.equal(true);
     await expect(
-      oracleProviderRegistry.connect(admin).activateOracle(oracleOne)
+      oracleProviderRegistry.connect(oracleManager).activateOracle(oracleOne)
     ).to.be.revertedWith("OracleRegistry: Oracle is already activated");
   });
 

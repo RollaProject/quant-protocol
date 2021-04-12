@@ -87,10 +87,10 @@ contract CollateralToken is ERC1155, ICollateralToken {
 
         require(
             quantConfig.hasRole(
-                quantConfig.OPTIONS_CONTROLLER_ROLE(),
+                quantConfig.COLLATERAL_CREATOR_ROLE(),
                 msg.sender
             ),
-            "CollateralToken: Only the OptionsFactory can create new CollateralTokens"
+            "CollateralToken: Only a collateral creator can create new CollateralTokens"
         );
 
         require(
@@ -124,10 +124,10 @@ contract CollateralToken is ERC1155, ICollateralToken {
     ) external override {
         require(
             quantConfig.hasRole(
-                quantConfig.OPTIONS_CONTROLLER_ROLE(),
+                quantConfig.COLLATERAL_MINTER_ROLE(),
                 msg.sender
             ),
-            "CollateralToken: Only the OptionsFactory can mint CollateralTokens"
+            "CollateralToken: Only a collateral minter can mint CollateralTokens"
         );
 
         tokenSupplies[collateralTokenId] = tokenSupplies[collateralTokenId].add(
@@ -150,10 +150,10 @@ contract CollateralToken is ERC1155, ICollateralToken {
     ) external override {
         require(
             quantConfig.hasRole(
-                quantConfig.OPTIONS_CONTROLLER_ROLE(),
+                quantConfig.COLLATERAL_BURNER_ROLE(),
                 msg.sender
             ),
-            "CollateralToken: Only the OptionsFactory can burn CollateralTokens"
+            "CollateralToken: Only a collateral burner can burn CollateralTokens"
         );
         _burn(owner, collateralTokenId, amount);
 
@@ -178,10 +178,10 @@ contract CollateralToken is ERC1155, ICollateralToken {
     ) external override {
         require(
             quantConfig.hasRole(
-                quantConfig.OPTIONS_CONTROLLER_ROLE(),
+                quantConfig.COLLATERAL_MINTER_ROLE(),
                 msg.sender
             ),
-            "CollateralToken: Only the OptionsFactory can mint CollateralTokens"
+            "CollateralToken: Only a collateral minter can mint CollateralTokens"
         );
 
         for (uint256 i = 0; i < ids.length; i++) {
@@ -206,10 +206,10 @@ contract CollateralToken is ERC1155, ICollateralToken {
     ) external override {
         require(
             quantConfig.hasRole(
-                quantConfig.OPTIONS_CONTROLLER_ROLE(),
+                quantConfig.COLLATERAL_BURNER_ROLE(),
                 msg.sender
             ),
-            "CollateralToken: Only the OptionsFactory can burn CollateralTokens"
+            "CollateralToken: Only a collateral burner can burn CollateralTokens"
         );
         _burnBatch(owner, ids, amounts);
 

@@ -18,8 +18,12 @@ describe("CollateralToken", () => {
   let quantConfig: QuantConfig;
   let collateralToken: CollateralToken;
   let qToken: QToken;
-  let admin: Signer;
+  let timelockController: Signer;
   let secondAccount: Signer;
+  let assetRegistryManager: Signer;
+  let collateralCreator: Signer;
+  let collateralMinter: Signer;
+  let collateralBurner: Signer;
   let userAddress: string;
   let WETH: MockERC20;
   let USDC: MockERC20;
@@ -35,13 +39,17 @@ describe("CollateralToken", () => {
   };
 
   const createTwoCollateralTokens = async (): Promise<Array<BigNumber>> => {
-    await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
+    await createCollateralToken(
+      collateralCreator,
+      qToken,
+      ethers.constants.AddressZero
+    );
     const firstCollateralTokenId = await collateralToken.collateralTokensIds(
       ethers.BigNumber.from("0")
     );
 
     const secondQToken = await deployQToken(
-      admin,
+      timelockController,
       quantConfig,
       WETH.address,
       USDC.address,
@@ -51,7 +59,7 @@ describe("CollateralToken", () => {
       true
     );
     await createCollateralToken(
-      admin,
+      collateralCreator,
       secondQToken,
       ethers.constants.AddressZero
     );
@@ -63,22 +71,61 @@ describe("CollateralToken", () => {
   };
 
   beforeEach(async () => {
-    [admin, secondAccount] = await provider.getWallets();
+    [
+      timelockController,
+      secondAccount,
+      assetRegistryManager,
+      collateralCreator,
+      collateralMinter,
+      collateralBurner,
+    ] = await provider.getWallets();
     userAddress = await secondAccount.getAddress();
 
-    quantConfig = await deployQuantConfig(admin);
+    quantConfig = await deployQuantConfig(timelockController, [
+      {
+        addresses: [await assetRegistryManager.getAddress()],
+        role: ethers.utils.id("ASSET_REGISTRY_MANAGER_ROLE"),
+      },
+      {
+        addresses: [await collateralCreator.getAddress()],
+        role: ethers.utils.id("COLLATERAL_CREATOR_ROLE"),
+      },
+      {
+        addresses: [await collateralMinter.getAddress()],
+        role: ethers.utils.id("COLLATERAL_MINTER_ROLE"),
+      },
+      {
+        addresses: [await collateralBurner.getAddress()],
+        role: ethers.utils.id("COLLATERAL_BURNER_ROLE"),
+      },
+    ]);
 
-    WETH = await mockERC20(admin, "WETH");
-    USDC = await mockERC20(admin, "USDC");
+    WETH = await mockERC20(timelockController, "WETH");
+    USDC = await mockERC20(timelockController, "USDC");
 
-    const assetsRegistry = await deployAssetsRegistry(admin, quantConfig);
+    const assetsRegistry = await deployAssetsRegistry(
+      timelockController,
+      quantConfig
+    );
 
-    await assetsRegistry.connect(admin).addAsset(WETH.address, "", "", 0);
-    await assetsRegistry.connect(admin).addAsset(USDC.address, "", "", 0);
+    await assetsRegistry
+      .connect(assetRegistryManager)
+      .addAsset(WETH.address, "", "", 0);
+    await assetsRegistry
+      .connect(assetRegistryManager)
+      .addAsset(USDC.address, "", "", 0);
 
-    qToken = await deployQToken(admin, quantConfig, WETH.address, USDC.address);
+    qToken = await deployQToken(
+      timelockController,
+      quantConfig,
+      WETH.address,
+      USDC.address
+    );
 
-    collateralToken = await deployCollateralToken(admin, quantConfig);
+    collateralToken = await deployCollateralToken(
+      timelockController,
+      quantConfig
+    );
   });
 
   describe("createCollateralToken", () => {
@@ -90,7 +137,11 @@ describe("CollateralToken", () => {
         .reverted;
 
       // Create a new CollateralToken
-      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
+      await createCollateralToken(
+        collateralCreator,
+        qToken,
+        ethers.constants.AddressZero
+      );
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         firstIndex
@@ -118,15 +169,23 @@ describe("CollateralToken", () => {
           ethers.constants.AddressZero
         )
       ).to.be.revertedWith(
-        "CollateralToken: Only the OptionsFactory can create new CollateralTokens"
+        "CollateralToken: Only a collateral creator can create new CollateralTokens"
       );
     });
 
     it("Should revert when trying to create a duplicate CollateralToken", async () => {
-      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
+      await createCollateralToken(
+        collateralCreator,
+        qToken,
+        ethers.constants.AddressZero
+      );
 
       await expect(
-        createCollateralToken(admin, qToken, ethers.constants.AddressZero)
+        createCollateralToken(
+          collateralCreator,
+          qToken,
+          ethers.constants.AddressZero
+        )
       ).to.be.revertedWith(
         "CollateralToken: this token has already been created"
       );
@@ -135,7 +194,7 @@ describe("CollateralToken", () => {
     it("Should emit the CollateralTokenCreated event", async () => {
       await expect(
         await collateralToken
-          .connect(admin)
+          .connect(collateralCreator)
           .createCollateralToken(qToken.address, ethers.constants.AddressZero)
       )
         .to.emit(collateralToken, "CollateralTokenCreated")
@@ -150,7 +209,11 @@ describe("CollateralToken", () => {
 
   describe("mintCollateralToken", () => {
     it("Admin should be able to mint CollateralTokens", async () => {
-      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
+      await createCollateralToken(
+        collateralCreator,
+        qToken,
+        ethers.constants.AddressZero
+      );
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         ethers.BigNumber.from("0")
@@ -163,7 +226,7 @@ describe("CollateralToken", () => {
 
       // Mint some of the CollateralToken
       await collateralToken
-        .connect(admin)
+        .connect(collateralMinter)
         .mintCollateralToken(
           userAddress,
           collateralTokenId,
@@ -177,7 +240,11 @@ describe("CollateralToken", () => {
     });
 
     it("Should revert when an unauthorized account tries to mint CollateralTokens", async () => {
-      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
+      await createCollateralToken(
+        collateralCreator,
+        qToken,
+        ethers.constants.AddressZero
+      );
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         ethers.BigNumber.from("0")
@@ -192,12 +259,16 @@ describe("CollateralToken", () => {
             ethers.BigNumber.from("1000")
           )
       ).to.be.revertedWith(
-        "CollateralToken: Only the OptionsFactory can mint CollateralTokens"
+        "CollateralToken: Only a collateral minter can mint CollateralTokens"
       );
     });
 
     it("Should emit the CollateralTokenMinted event", async () => {
-      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
+      await createCollateralToken(
+        collateralCreator,
+        qToken,
+        ethers.constants.AddressZero
+      );
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         ethers.BigNumber.from("0")
@@ -205,7 +276,7 @@ describe("CollateralToken", () => {
 
       await expect(
         await collateralToken
-          .connect(admin)
+          .connect(collateralMinter)
           .mintCollateralToken(
             userAddress,
             collateralTokenId,
@@ -219,14 +290,18 @@ describe("CollateralToken", () => {
 
   describe("burnCollateralToken", () => {
     it("Admin should be able to burn CollateralTokens", async () => {
-      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
+      await createCollateralToken(
+        collateralCreator,
+        qToken,
+        ethers.constants.AddressZero
+      );
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         ethers.BigNumber.from("0")
       );
 
       await collateralToken
-        .connect(admin)
+        .connect(collateralMinter)
         .mintCollateralToken(
           userAddress,
           collateralTokenId,
@@ -244,7 +319,7 @@ describe("CollateralToken", () => {
 
       // Burn some of the CollateralToken from the user
       await collateralToken
-        .connect(admin)
+        .connect(collateralBurner)
         .burnCollateralToken(
           userAddress,
           collateralTokenId,
@@ -267,16 +342,20 @@ describe("CollateralToken", () => {
     });
 
     it("Should revert when an unauthorized account tries to burn CollateralTokens", async () => {
-      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
+      await createCollateralToken(
+        collateralCreator,
+        qToken,
+        ethers.constants.AddressZero
+      );
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         ethers.BigNumber.from("0")
       );
 
       await collateralToken
-        .connect(admin)
+        .connect(collateralMinter)
         .mintCollateralToken(
-          await admin.getAddress(),
+          await secondAccount.getAddress(),
           collateralTokenId,
           ethers.BigNumber.from("10")
         );
@@ -285,24 +364,28 @@ describe("CollateralToken", () => {
         collateralToken
           .connect(secondAccount)
           .burnCollateralToken(
-            await admin.getAddress(),
+            await secondAccount.getAddress(),
             collateralTokenId,
             ethers.BigNumber.from("10")
           )
       ).to.be.revertedWith(
-        "CollateralToken: Only the OptionsFactory can burn CollateralTokens"
+        "CollateralToken: Only a collateral burner can burn CollateralTokens"
       );
     });
 
     it("Should emit the CollateralTokenBurned event", async () => {
-      await createCollateralToken(admin, qToken, ethers.constants.AddressZero);
+      await createCollateralToken(
+        collateralCreator,
+        qToken,
+        ethers.constants.AddressZero
+      );
 
       const collateralTokenId = await collateralToken.collateralTokensIds(
         ethers.BigNumber.from("0")
       );
 
       await collateralToken
-        .connect(admin)
+        .connect(collateralMinter)
         .mintCollateralToken(
           userAddress,
           collateralTokenId,
@@ -311,7 +394,7 @@ describe("CollateralToken", () => {
 
       await expect(
         collateralToken
-          .connect(admin)
+          .connect(collateralBurner)
           .burnCollateralToken(
             userAddress,
             collateralTokenId,
@@ -336,7 +419,7 @@ describe("CollateralToken", () => {
       const secondCollateralTokenAmount = ethers.BigNumber.from("20");
 
       await collateralToken
-        .connect(admin)
+        .connect(collateralMinter)
         .mintCollateralTokenBatch(
           userAddress,
           [firstCollateralTokenId, secondCollateralTokenId],
@@ -374,7 +457,7 @@ describe("CollateralToken", () => {
             [ethers.BigNumber.from("1000"), ethers.BigNumber.from("2000")]
           )
       ).to.be.revertedWith(
-        "CollateralToken: Only the OptionsFactory can mint CollateralTokens"
+        "CollateralToken: Only a collateral minter can mint CollateralTokens"
       );
     });
 
@@ -389,7 +472,7 @@ describe("CollateralToken", () => {
 
       await expect(
         collateralToken
-          .connect(admin)
+          .connect(collateralMinter)
           .mintCollateralTokenBatch(
             userAddress,
             [firstCollateralTokenId, secondCollateralTokenId],
@@ -416,7 +499,7 @@ describe("CollateralToken", () => {
       const secondCollateralTokenAmount = ethers.BigNumber.from("20");
 
       await collateralToken
-        .connect(admin)
+        .connect(collateralMinter)
         .mintCollateralTokenBatch(
           userAddress,
           [firstCollateralTokenId, secondCollateralTokenId],
@@ -439,7 +522,7 @@ describe("CollateralToken", () => {
       );
 
       await collateralToken
-        .connect(admin)
+        .connect(collateralBurner)
         .burnCollateralTokenBatch(
           userAddress,
           [firstCollateralTokenId, secondCollateralTokenId],
@@ -485,12 +568,10 @@ describe("CollateralToken", () => {
       const firstCollateralTokenAmount = ethers.BigNumber.from("10");
       const secondCollateralTokenAmount = ethers.BigNumber.from("20");
 
-      const adminAddress = await admin.getAddress();
-
       await collateralToken
-        .connect(admin)
+        .connect(collateralMinter)
         .mintCollateralTokenBatch(
-          adminAddress,
+          userAddress,
           [firstCollateralTokenId, secondCollateralTokenId],
           [firstCollateralTokenAmount, secondCollateralTokenAmount]
         );
@@ -499,12 +580,12 @@ describe("CollateralToken", () => {
         collateralToken
           .connect(secondAccount)
           .burnCollateralTokenBatch(
-            adminAddress,
+            userAddress,
             [firstCollateralTokenId, secondCollateralTokenId],
             [firstCollateralTokenAmount, secondCollateralTokenAmount]
           )
       ).to.be.revertedWith(
-        "CollateralToken: Only the OptionsFactory can burn CollateralTokens"
+        "CollateralToken: Only a collateral burner can burn CollateralTokens"
       );
     });
 
@@ -518,7 +599,7 @@ describe("CollateralToken", () => {
       const secondCollateralTokenAmount = ethers.BigNumber.from("20");
 
       await collateralToken
-        .connect(admin)
+        .connect(collateralMinter)
         .mintCollateralTokenBatch(
           userAddress,
           [firstCollateralTokenId, secondCollateralTokenId],
@@ -527,7 +608,7 @@ describe("CollateralToken", () => {
 
       await expect(
         collateralToken
-          .connect(admin)
+          .connect(collateralBurner)
           .burnCollateralTokenBatch(
             userAddress,
             [firstCollateralTokenId, secondCollateralTokenId],

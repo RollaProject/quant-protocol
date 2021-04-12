@@ -18,8 +18,11 @@ const { deployContract } = waffle;
 describe("QToken", async () => {
   let quantConfig: QuantConfig;
   let qToken: QToken;
-  let admin: Signer;
+  let timelockController: Signer;
   let secondAccount: Signer;
+  let assetsRegistryManager: Signer;
+  let optionsMinter: Signer;
+  let optionsBurner: Signer;
   let USDC: MockERC20;
   let WETH: MockERC20;
   let userAddress: string;
@@ -30,28 +33,54 @@ describe("QToken", async () => {
 
   const mintOptionsToAccount = async (account: string, amount: number) => {
     await qToken
-      .connect(admin)
+      .connect(optionsMinter)
       .mint(account, ethers.utils.parseEther(amount.toString()));
   };
 
   beforeEach(async () => {
-    [admin, secondAccount] = provider.getWallets();
+    [
+      timelockController,
+      secondAccount,
+      assetsRegistryManager,
+      optionsMinter,
+      optionsBurner,
+    ] = provider.getWallets();
     userAddress = await secondAccount.getAddress();
 
-    quantConfig = await deployQuantConfig(admin);
+    quantConfig = await deployQuantConfig(timelockController, [
+      {
+        addresses: [await assetsRegistryManager.getAddress()],
+        role: ethers.utils.id("ASSET_REGISTRY_MANAGER_ROLE"),
+      },
+      {
+        addresses: [await optionsMinter.getAddress()],
+        role: ethers.utils.id("OPTIONS_MINTER_ROLE"),
+      },
+      {
+        addresses: [await optionsBurner.getAddress()],
+        role: ethers.utils.id("OPTIONS_BURNER_ROLE"),
+      },
+    ]);
 
-    WETH = await mockERC20(admin, "WETH", "Wrapped Ether");
-    USDC = await mockERC20(admin, "USDC", "USD Coin", 6);
+    WETH = await mockERC20(timelockController, "WETH", "Wrapped Ether");
+    USDC = await mockERC20(timelockController, "USDC", "USD Coin", 6);
 
-    const assetsRegistry = await deployAssetsRegistry(admin, quantConfig);
+    const assetsRegistry = await deployAssetsRegistry(
+      timelockController,
+      quantConfig
+    );
 
-    await assetsRegistry.connect(admin).addAsset(WETH.address, "", "", 0);
-    await assetsRegistry.connect(admin).addAsset(USDC.address, "", "", 0);
+    await assetsRegistry
+      .connect(assetsRegistryManager)
+      .addAsset(WETH.address, "", "", 0);
+    await assetsRegistry
+      .connect(assetsRegistryManager)
+      .addAsset(USDC.address, "", "", 0);
 
     scaledStrikePrice = ethers.utils.parseUnits("1400", await USDC.decimals());
 
     qToken = await deployQToken(
-      admin,
+      timelockController,
       quantConfig,
       WETH.address,
       USDC.address,
@@ -76,7 +105,7 @@ describe("QToken", async () => {
     expect(await qToken.isCall()).to.be.false;
   });
 
-  it("Admin should be able to mint options", async () => {
+  it("Options minter should be able to mint options", async () => {
     // User balance should be zero before minting the options
     expect(await qToken.balanceOf(userAddress)).to.equal(
       ethers.BigNumber.from("0")
@@ -91,12 +120,14 @@ describe("QToken", async () => {
     );
   });
 
-  it("Admin should be able to burn options", async () => {
+  it("Opitons burner should be able to burn options", async () => {
     await mintOptionsToAccount(userAddress, 4);
     const previousBalance = await qToken.balanceOf(userAddress);
 
     // Burn options from the user address
-    await qToken.connect(admin).burn(userAddress, ethers.utils.parseEther("2"));
+    await qToken
+      .connect(optionsBurner)
+      .burn(userAddress, ethers.utils.parseEther("2"));
 
     const newBalance = await qToken.balanceOf(userAddress);
 
@@ -110,19 +141,19 @@ describe("QToken", async () => {
       qToken
         .connect(secondAccount)
         .mint(userAddress, ethers.utils.parseEther("2"))
-    ).to.be.revertedWith("QToken: Only the Controller can mint QTokens");
+    ).to.be.revertedWith("QToken: Only an options minter can mint QTokens");
   });
 
   it("Should revert when an unauthorized account tries to burn options", async () => {
     await expect(
       qToken
         .connect(secondAccount)
-        .burn(await admin.getAddress(), ethers.BigNumber.from("4"))
-    ).to.be.revertedWith("QToken: Only the OptionsFactory can burn QTokens");
+        .burn(await timelockController.getAddress(), ethers.BigNumber.from("4"))
+    ).to.be.revertedWith("QToken: Only an options burner can burn QTokens");
   });
 
   it("Should create CALL options with different parameters", async () => {
-    qToken = <QToken>await deployContract(admin, QTokenJSON, [
+    qToken = <QToken>await deployContract(timelockController, QTokenJSON, [
       quantConfig.address,
       WETH.address,
       USDC.address,
@@ -170,7 +201,7 @@ describe("QToken", async () => {
     const aMonthInSeconds = 2629746;
     for (const month in months) {
       qToken = <QToken>(
-        await deployContract(admin, QTokenJSON, [
+        await deployContract(timelockController, QTokenJSON, [
           quantConfig.address,
           WETH.address,
           USDC.address,
@@ -194,14 +225,14 @@ describe("QToken", async () => {
   });
 
   it("Should emit the QTokenMinted event", async () => {
-    await expect(qToken.connect(admin).mint(userAddress, 4))
+    await expect(qToken.connect(optionsMinter).mint(userAddress, 4))
       .to.emit(qToken, "QTokenMinted")
       .withArgs(userAddress, 4);
   });
 
   it("Should emit the QTokenBurned event", async () => {
     await mintOptionsToAccount(userAddress, 6);
-    await expect(qToken.connect(admin).burn(userAddress, 3))
+    await expect(qToken.connect(optionsBurner).burn(userAddress, 3))
       .to.emit(qToken, "QTokenBurned")
       .withArgs(userAddress, 3);
   });

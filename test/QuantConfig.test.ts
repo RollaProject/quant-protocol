@@ -6,19 +6,23 @@ import { expect } from "./setup";
 
 describe("QuantConfig", () => {
   let quantConfig: QuantConfig;
-  let admin: Signer;
+  let timelockController: Signer;
   let secondAccount: Signer;
 
   beforeEach(async () => {
-    [admin, secondAccount] = await ethers.getSigners();
+    [timelockController, secondAccount] = await ethers.getSigners();
     const QuantConfig = await ethers.getContractFactory("QuantConfig");
     quantConfig = <QuantConfig>(
-      await upgrades.deployProxy(QuantConfig, [await admin.getAddress()])
+      await upgrades.deployProxy(QuantConfig, [
+        await timelockController.getAddress(),
+      ])
     );
   });
 
-  it("Should return the set admin", async () => {
-    expect(await quantConfig.admin()).to.equal(await admin.getAddress());
+  it("Should return the set TimelockController", async () => {
+    expect(await quantConfig.timelockController()).to.equal(
+      await timelockController.getAddress()
+    );
   });
 
   it("Protocol fee should start as 0", async () => {
@@ -26,7 +30,9 @@ describe("QuantConfig", () => {
   });
 
   it("Admin should be able to set the protocol fee", async () => {
-    await quantConfig.connect(admin).setFee(ethers.BigNumber.from("300"));
+    await quantConfig
+      .connect(timelockController)
+      .setFee(ethers.BigNumber.from("300"));
     expect(await quantConfig.fee()).to.equal(ethers.BigNumber.from("300"));
   });
 
@@ -37,7 +43,9 @@ describe("QuantConfig", () => {
   });
 
   it("Should maintain state across upgrades", async () => {
-    await quantConfig.connect(admin).setFee(ethers.BigNumber.from("200"));
+    await quantConfig
+      .connect(timelockController)
+      .setFee(ethers.BigNumber.from("200"));
     const QuantConfigV2 = await ethers.getContractFactory("QuantConfigV2");
     quantConfig = <QuantConfig>(
       await upgrades.upgradeProxy(quantConfig.address, QuantConfigV2)
@@ -59,7 +67,9 @@ describe("QuantConfig", () => {
     quantConfig = <QuantConfig>(
       await upgrades.upgradeProxy(quantConfig.address, QuantConfigV2)
     );
-    await quantConfig.connect(admin).setFee(ethers.BigNumber.from("400"));
+    await quantConfig
+      .connect(timelockController)
+      .setFee(ethers.BigNumber.from("400"));
     expect(await quantConfig.fee()).to.equal(ethers.BigNumber.from("400"));
   });
 });
