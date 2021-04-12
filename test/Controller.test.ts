@@ -18,7 +18,7 @@ import {
   deployOptionsFactory,
   deployOracleRegistry,
   deployQuantConfig,
-  mockERC20
+  mockERC20,
 } from "./testUtils";
 
 const { deployContract, deployMockContract } = waffle;
@@ -809,11 +809,7 @@ describe("Controller", () => {
         controller
           .connect(secondAccount)
           .mintOptionsPosition(
-<<<<<<< HEAD
             await secondAccount.getAddress(),
-=======
-            await admin.getAddress(),
->>>>>>> f498e99 (Fix interfaces and add a way to mint options to a different address)
             qTokenPut1400.address,
             ethers.BigNumber.from("10")
           )
