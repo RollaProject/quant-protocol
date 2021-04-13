@@ -1,6 +1,6 @@
 import { deployContract } from "ethereum-waffle";
 import { Signer } from "ethers";
-import { waffle } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import BasicTokenJSON from "../artifacts/contracts/protocol/test/BasicERC20.sol/BasicERC20.json";
 import { AssetsRegistry, MockERC20, QuantConfig } from "../typechain";
@@ -18,18 +18,23 @@ type AssetProperties = [string, string, string, number];
 describe("AssetsRegistry", () => {
   let quantConfig: QuantConfig;
   let assetsRegistry: AssetsRegistry;
-  let admin: Signer;
+  let assetRegistryManager: Signer;
   let secondAccount: Signer;
+  let timelockController: Signer;
   let WETH: MockERC20;
   let USDC: MockERC20;
   let WETHProperties: AssetProperties;
   let USDCProperties: AssetProperties;
 
   beforeEach(async () => {
-    [admin, secondAccount] = await provider.getWallets();
+    [
+      assetRegistryManager,
+      secondAccount,
+      timelockController,
+    ] = await provider.getWallets();
 
-    WETH = await mockERC20(admin, "WETH", "Wrapped Ether");
-    USDC = await mockERC20(admin, "USDC", "USD Coin", 6);
+    WETH = await mockERC20(assetRegistryManager, "WETH", "Wrapped Ether");
+    USDC = await mockERC20(assetRegistryManager, "USDC", "USD Coin", 6);
 
     WETHProperties = [
       WETH.address,
@@ -45,14 +50,24 @@ describe("AssetsRegistry", () => {
       await USDC.decimals(),
     ];
 
-    quantConfig = await deployQuantConfig(admin);
+    quantConfig = await deployQuantConfig(timelockController, [
+      {
+        addresses: [await assetRegistryManager.getAddress()],
+        role: ethers.utils.id("ASSET_REGISTRY_MANAGER_ROLE"),
+      },
+    ]);
 
-    assetsRegistry = await deployAssetsRegistry(admin, quantConfig);
+    assetsRegistry = await deployAssetsRegistry(
+      timelockController,
+      quantConfig
+    );
   });
 
   describe("addAsset", () => {
     it("Admin should be able to add assets to the registry", async () => {
-      await assetsRegistry.connect(admin).addAsset(...WETHProperties);
+      await assetsRegistry
+        .connect(assetRegistryManager)
+        .addAsset(...WETHProperties);
 
       expect(await assetsRegistry.assetProperties(WETH.address)).to.eql(
         WETHProperties.slice(1)
@@ -62,21 +77,28 @@ describe("AssetsRegistry", () => {
     it("Should revert when an unauthorized account tries to add an asset", async () => {
       await expect(
         assetsRegistry.connect(secondAccount).addAsset(...USDCProperties)
-      ).to.be.revertedWith("AssetsRegistry: only admins can add assets");
+      ).to.be.revertedWith(
+        "AssetsRegistry: only asset registry managers can add assets"
+      );
     });
 
     it("Should revert when trying to add a duplicate asset", async () => {
-      await assetsRegistry.connect(admin).addAsset(...WETHProperties);
+      await assetsRegistry
+        .connect(assetRegistryManager)
+        .addAsset(...WETHProperties);
 
       await expect(
-        assetsRegistry.connect(admin).addAsset(...WETHProperties)
+        assetsRegistry.connect(assetRegistryManager).addAsset(...WETHProperties)
       ).to.be.revertedWith("AssetsRegistry: asset already added");
     });
 
     it("Should use passed parameters when tokens don't implement optional ERC20 methods", async () => {
-      const basicToken = await deployContract(admin, BasicTokenJSON);
+      const basicToken = await deployContract(
+        assetRegistryManager,
+        BasicTokenJSON
+      );
       await assetsRegistry
-        .connect(admin)
+        .connect(assetRegistryManager)
         .addAsset(basicToken.address, "Basic Token", "BASIC", 14);
 
       expect(await assetsRegistry.assetProperties(basicToken.address)).to.eql([
@@ -87,7 +109,9 @@ describe("AssetsRegistry", () => {
     });
 
     it("Should emit the AssetAdded event", async () => {
-      await expect(assetsRegistry.connect(admin).addAsset(...USDCProperties))
+      await expect(
+        assetsRegistry.connect(assetRegistryManager).addAsset(...USDCProperties)
+      )
         .to.emit(assetsRegistry, "AssetAdded")
         .withArgs(...USDCProperties);
     });

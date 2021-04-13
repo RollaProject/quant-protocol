@@ -9,8 +9,9 @@ import "./options/OptionsFactory.sol";
 import "./options/QToken.sol";
 import "./options/CollateralToken.sol";
 import "./options/AssetsRegistry.sol";
+import "./interfaces/IController.sol";
 
-contract Controller {
+contract Controller is IController {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -19,7 +20,8 @@ contract Controller {
     uint8 public constant OPTIONS_DECIMALS = 18;
 
     event OptionsPositionMinted(
-        address indexed account,
+        address indexed mintedTo,
+        address indexed minter,
         address indexed qToken,
         uint256 optionsAmount
     );
@@ -62,7 +64,7 @@ contract Controller {
 
     modifier validQToken(address _qToken) {
         require(
-            optionsFactory.qTokenAddressToCollateralTokenId(_qToken) != 0,
+            optionsFactory.isQToken(_qToken),
             "Controller: Option needs to be created by the factory first"
         );
 
@@ -76,10 +78,11 @@ contract Controller {
         _;
     }
 
-    function mintOptionsPosition(address _qToken, uint256 _optionsAmount)
-        external
-        validQToken(_qToken)
-    {
+    function mintOptionsPosition(
+        address _to,
+        address _qToken,
+        uint256 _optionsAmount
+    ) external override validQToken(_qToken) {
         QToken qToken = QToken(_qToken);
 
         (address collateral, uint256 collateralAmount) =
@@ -92,7 +95,7 @@ contract Controller {
         );
 
         // Mint the options to the sender's address
-        qToken.mint(msg.sender, _optionsAmount);
+        qToken.mint(_to, _optionsAmount);
         uint256 collateralTokenId =
             optionsFactory.collateralToken().getCollateralTokenId(
                 _qToken,
@@ -102,19 +105,24 @@ contract Controller {
         // There's no need to check if the collateralTokenId exists before minting because if the QToken is valid,
         // then it's guaranteed that the respective CollateralToken has already also been created by the OptionsFactory
         optionsFactory.collateralToken().mintCollateralToken(
-            msg.sender,
+            _to,
             collateralTokenId,
             _optionsAmount
         );
 
-        emit OptionsPositionMinted(msg.sender, _qToken, _optionsAmount);
+        emit OptionsPositionMinted(_to, msg.sender, _qToken, _optionsAmount);
     }
 
     function mintSpread(
         address _qTokenToMint,
         address _qTokenForCollateral,
         uint256 _optionsAmount
-    ) external validQToken(_qTokenToMint) validQToken(_qTokenForCollateral) {
+    )
+        external
+        override
+        validQToken(_qTokenToMint)
+        validQToken(_qTokenForCollateral)
+    {
         QToken qTokenToMint = QToken(_qTokenToMint);
         QToken qTokenForCollateral = QToken(_qTokenForCollateral);
 
@@ -167,7 +175,7 @@ contract Controller {
         );
     }
 
-    function exercise(address _qToken, uint256 _amount) external {
+    function exercise(address _qToken, uint256 _amount) external override {
         QToken qToken = QToken(_qToken);
         require(
             block.timestamp > qToken.expiryTime(),
@@ -202,6 +210,7 @@ contract Controller {
 
     function claimCollateral(uint256 _collateralTokenId, uint256 _amount)
         external
+        override
     {
         (address _qTokenShort, address qTokenAsCollateral) =
             optionsFactory.collateralToken().idToInfo(_collateralTokenId);
@@ -273,6 +282,7 @@ contract Controller {
 
     function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
         external
+        override
     {
         CollateralToken collateralToken = optionsFactory.collateralToken();
         (address qTokenShort, address qTokenAsCollateral) =
@@ -339,7 +349,12 @@ contract Controller {
         address _qTokenToMint,
         address _qTokenForCollateral,
         uint256 _optionsAmount
-    ) public view returns (address collateral, uint256 collateralAmount) {
+    )
+        public
+        view
+        override
+        returns (address collateral, uint256 collateralAmount)
+    {
         QToken qTokenToMint = QToken(_qTokenToMint);
         uint256 qTokenToMintStrikePrice = qTokenToMint.strikePrice();
 
@@ -424,6 +439,7 @@ contract Controller {
     function getPayout(address _qToken, uint256 _amount)
         public
         view
+        override
         returns (
             bool isSettled,
             address payoutToken,

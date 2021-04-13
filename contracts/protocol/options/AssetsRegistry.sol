@@ -3,7 +3,7 @@ pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../QuantConfig.sol";
-import "../interfaces/IAssetRegistry.sol";
+import "../interfaces/IAssetsRegistry.sol";
 
 contract AssetsRegistry is IAssetsRegistry {
     struct AssetProperties {
@@ -35,10 +35,10 @@ contract AssetsRegistry is IAssetsRegistry {
     ) external override {
         require(
             _quantConfig.hasRole(
-                _quantConfig.OPTIONS_CONTROLLER_ROLE(),
+                _quantConfig.ASSET_REGISTRY_MANAGER_ROLE(),
                 msg.sender
             ),
-            "AssetsRegistry: only admins can add assets"
+            "AssetsRegistry: only asset registry managers can add assets"
         );
 
         require(

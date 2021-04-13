@@ -28,12 +28,31 @@ const mockERC20 = async (
   );
 };
 
-const deployQuantConfig = async (admin: Signer): Promise<QuantConfig> => {
+interface RoleToAssign {
+  addresses: Array<string>;
+  role: string;
+}
+
+const deployQuantConfig = async (
+  timelockController: Signer,
+  rolesToAssign: Array<RoleToAssign> = [{ addresses: [], role: "" }]
+): Promise<QuantConfig> => {
   const QuantConfig = await ethers.getContractFactory("QuantConfig");
 
-  return <QuantConfig>(
-    await upgrades.deployProxy(QuantConfig, [await admin.getAddress()])
+  const quantConfig = <QuantConfig>(
+    await upgrades.deployProxy(QuantConfig, [
+      await timelockController.getAddress(),
+    ])
   );
+
+  for (const roleToAssign of rolesToAssign) {
+    const { addresses, role } = roleToAssign;
+    for (const address of addresses) {
+      await quantConfig.connect(timelockController).setupRole(role, address);
+    }
+  }
+
+  return quantConfig;
 };
 
 const deployQToken = async (
