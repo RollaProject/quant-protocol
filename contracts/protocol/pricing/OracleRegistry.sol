@@ -50,6 +50,9 @@ contract OracleRegistry is IOracleRegistry {
 
         emit AddedOracle(_oracle, _currentId);
 
+        // TODO: Test this
+        config.grantRole(config.PRICE_SUBMITTER_ROLE(), _oracle);
+
         oracleInfo[_oracle] = OracleInfo(false, _currentId);
         return oracles.length;
     }

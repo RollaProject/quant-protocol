@@ -27,8 +27,12 @@ describe("Controller", () => {
   let controller: Controller;
   let quantConfig: QuantConfig;
   let collateralToken: CollateralToken;
-  let admin: Signer;
+  let timelockController: Signer;
   let secondAccount: Signer;
+  let assetsRegistryManager: Signer;
+  let collateralMinter: Signer;
+  let optionsMinter: Signer;
+  let collateralCreator: Signer;
   let WETH: MockERC20;
   let USDC: MockERC20;
   let optionsFactory: OptionsFactory;
@@ -147,7 +151,7 @@ describe("Controller", () => {
     ).to.equal(0);
 
     await collateral
-      .connect(admin)
+      .connect(assetsRegistryManager)
       .mint(await secondAccount.getAddress(), collateralAmount);
 
     expect(
@@ -164,10 +168,15 @@ describe("Controller", () => {
       await expect(
         controller
           .connect(secondAccount)
-          .mintOptionsPosition(qTokenToMintAddress, optionsAmount)
+          .mintOptionsPosition(
+            await secondAccount.getAddress(),
+            qTokenToMintAddress,
+            optionsAmount
+          )
       )
         .to.emit(controller, "OptionsPositionMinted")
         .withArgs(
+          await secondAccount.getAddress(),
           await secondAccount.getAddress(),
           qTokenToMintAddress,
           optionsAmount
@@ -191,7 +200,7 @@ describe("Controller", () => {
       ).to.equal(ethers.BigNumber.from("0"));
 
       await qTokenForCollateral
-        .connect(admin)
+        .connect(optionsMinter)
         .mint(await secondAccount.getAddress(), optionsAmount);
 
       expect(
@@ -270,7 +279,7 @@ describe("Controller", () => {
     const collateral = collateralAddress === WETH.address ? WETH : USDC;
 
     await collateral
-      .connect(admin)
+      .connect(assetsRegistryManager)
       .mint(await secondAccount.getAddress(), collateralRequirement);
 
     let qTokenAsCollateral;
@@ -285,7 +294,11 @@ describe("Controller", () => {
 
       await controller
         .connect(secondAccount)
-        .mintOptionsPosition(qTokenShort.address, amountToClaim);
+        .mintOptionsPosition(
+          await secondAccount.getAddress(),
+          qTokenShort.address,
+          amountToClaim
+        );
     } else {
       qTokenAsCollateral = qTokenLong.address;
 
@@ -294,7 +307,7 @@ describe("Controller", () => {
       )[1];
 
       await collateral
-        .connect(admin)
+        .connect(assetsRegistryManager)
         .mint(await secondAccount.getAddress(), collateralRequiredForLong);
 
       await collateral
@@ -306,7 +319,11 @@ describe("Controller", () => {
 
       await controller
         .connect(secondAccount)
-        .mintOptionsPosition(qTokenLong.address, amountToClaim);
+        .mintOptionsPosition(
+          await secondAccount.getAddress(),
+          qTokenLong.address,
+          amountToClaim
+        );
 
       await controller
         .connect(secondAccount)
@@ -441,18 +458,51 @@ describe("Controller", () => {
   };
 
   beforeEach(async () => {
-    [admin, secondAccount] = await provider.getWallets();
+    [
+      timelockController,
+      secondAccount,
+      assetsRegistryManager,
+      collateralMinter,
+      optionsMinter,
+      collateralCreator,
+    ] = await provider.getWallets();
 
-    quantConfig = await deployQuantConfig(admin);
+    quantConfig = await deployQuantConfig(timelockController, [
+      {
+        addresses: [await assetsRegistryManager.getAddress()],
+        role: ethers.utils.id("ASSET_REGISTRY_MANAGER_ROLE"),
+      },
+      {
+        addresses: [
+          await collateralMinter.getAddress(),
+          await assetsRegistryManager.getAddress(),
+        ],
+        role: ethers.utils.id("COLLATERAL_MINTER_ROLE"),
+      },
+      {
+        addresses: [await optionsMinter.getAddress()],
+        role: ethers.utils.id("OPTIONS_MINTER_ROLE"),
+      },
+      {
+        addresses: [await collateralCreator.getAddress()],
+        role: ethers.utils.id("COLLATERAL_CREATOR_ROLE"),
+      },
+    ]);
 
-    WETH = await mockERC20(admin, "WETH", "Wrapped Ether");
-    USDC = await mockERC20(admin, "USDC", "USD Coin", 6);
-    collateralToken = await deployCollateralToken(admin, quantConfig);
+    WETH = await mockERC20(assetsRegistryManager, "WETH", "Wrapped Ether");
+    USDC = await mockERC20(assetsRegistryManager, "USDC", "USD Coin", 6);
+    collateralToken = await deployCollateralToken(
+      timelockController,
+      quantConfig
+    );
 
-    assetsRegistry = await deployAssetsRegistry(admin, quantConfig);
+    assetsRegistry = await deployAssetsRegistry(
+      timelockController,
+      quantConfig
+    );
 
     await assetsRegistry
-      .connect(admin)
+      .connect(assetsRegistryManager)
       .addAsset(
         WETH.address,
         await WETH.name(),
@@ -461,7 +511,7 @@ describe("Controller", () => {
       );
 
     await assetsRegistry
-      .connect(admin)
+      .connect(assetsRegistryManager)
       .addAsset(
         USDC.address,
         await USDC.name(),
@@ -475,14 +525,9 @@ describe("Controller", () => {
       .interface;
 
     optionsFactory = await deployOptionsFactory(
-      admin,
+      timelockController,
       quantConfig,
       collateralToken
-    );
-
-    await quantConfig.grantRole(
-      await quantConfig.OPTIONS_CONTROLLER_ROLE(),
-      optionsFactory.address
     );
 
     // 30 days from now
@@ -499,6 +544,13 @@ describe("Controller", () => {
     const qTokenPut1400Address = await optionsFactory.getTargetQTokenAddress(
       ...samplePutOptionParameters
     );
+
+    await quantConfig
+      .connect(timelockController)
+      .grantRole(
+        ethers.utils.id("COLLATERAL_CREATOR_ROLE"),
+        optionsFactory.address
+      );
 
     await optionsFactory
       .connect(secondAccount)
@@ -605,20 +657,45 @@ describe("Controller", () => {
     );
 
     controller = <Controller>(
-      await deployContract(admin, ControllerJSON, [optionsFactory.address])
+      await deployContract(timelockController, ControllerJSON, [
+        optionsFactory.address,
+      ])
     );
-
-    await quantConfig.grantRole(
-      await quantConfig.OPTIONS_CONTROLLER_ROLE(),
-      controller.address
-    );
-
-    await quantConfig.connect(admin).setAssetsRegistry(assetsRegistry.address);
-
-    mockPriceRegistry = await deployMockContract(admin, PriceRegistry.abi);
 
     await quantConfig
-      .connect(admin)
+      .connect(timelockController)
+      .grantRole(ethers.utils.id("OPTIONS_MINTER_ROLE"), controller.address);
+
+    await quantConfig
+      .connect(timelockController)
+      .grantRole(ethers.utils.id("OPTIONS_BURNER_ROLE"), controller.address);
+
+    await quantConfig
+      .connect(timelockController)
+      .grantRole(
+        ethers.utils.id("COLLATERAL_CREATOR_ROLE"),
+        controller.address
+      );
+
+    await quantConfig
+      .connect(timelockController)
+      .grantRole(ethers.utils.id("COLLATERAL_MINTER_ROLE"), controller.address);
+
+    await quantConfig
+      .connect(timelockController)
+      .grantRole(ethers.utils.id("COLLATERAL_BURNER_ROLE"), controller.address);
+
+    await quantConfig
+      .connect(timelockController)
+      .setAssetsRegistry(assetsRegistry.address);
+
+    mockPriceRegistry = await deployMockContract(
+      timelockController,
+      PriceRegistry.abi
+    );
+
+    await quantConfig
+      .connect(timelockController)
       .setPriceRegistry(mockPriceRegistry.address);
   });
 
@@ -626,8 +703,9 @@ describe("Controller", () => {
     it("Should revert when trying to mint a non-existent option", async () => {
       await expect(
         controller
-          .connect(admin)
+          .connect(secondAccount)
           .mintOptionsPosition(
+            await secondAccount.getAddress(),
             ethers.constants.AddressZero,
             ethers.BigNumber.from("10")
           )
@@ -645,8 +723,9 @@ describe("Controller", () => {
 
       await expect(
         controller
-          .connect(admin)
+          .connect(secondAccount)
           .mintOptionsPosition(
+            await secondAccount.getAddress(),
             qTokenPut1400.address,
             ethers.BigNumber.from("10")
           )
@@ -668,6 +747,10 @@ describe("Controller", () => {
         ethers.utils.parseEther("2")
       );
     });
+
+    // TODO:
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    // it("Users should be able to mint options to a different address", async () => {});
   });
 
   describe("mintSpread", () => {
@@ -727,6 +810,9 @@ describe("Controller", () => {
       );
     });
 
+    // TODO: Test the following case
+    // it("Should revert when trying to create spreads from options with different underlying assets", async () => {});
+
     it("Users should be able to create a PUT Credit spread", async () => {
       await testMintingOptions(
         qTokenPut1400.address,
@@ -760,10 +846,9 @@ describe("Controller", () => {
     });
 
     it("Spreads should be created correctly when the CollateralToken had already been created before", async () => {
-      await collateralToken.createCollateralToken(
-        qTokenCall2000.address,
-        qTokenCall2880.address
-      );
+      await collateralToken
+        .connect(collateralCreator)
+        .createCollateralToken(qTokenCall2000.address, qTokenCall2880.address);
 
       await testMintingOptions(
         qTokenCall2000.address,
@@ -819,7 +904,7 @@ describe("Controller", () => {
       const optionsAmount = ethers.utils.parseEther("1");
       const qTokenToExercise = qTokenPut1400;
       await qTokenToExercise
-        .connect(admin)
+        .connect(optionsMinter)
         .mint(await secondAccount.getAddress(), optionsAmount);
 
       expect(await USDC.balanceOf(await secondAccount.getAddress())).to.equal(
@@ -835,7 +920,10 @@ describe("Controller", () => {
       ).payoutAmount;
 
       // Mint USDC to the Controller so it can pay the user
-      await USDC.connect(admin).mint(controller.address, payoutAmount);
+      await USDC.connect(timelockController).mint(
+        controller.address,
+        payoutAmount
+      );
       expect(await USDC.balanceOf(controller.address)).to.equal(payoutAmount);
 
       await expect(
@@ -882,7 +970,7 @@ describe("Controller", () => {
       const optionsAmount = ethers.utils.parseEther("2");
       const qTokenToExercise = qTokenCall2000;
       await qTokenToExercise
-        .connect(admin)
+        .connect(optionsMinter)
         .mint(await secondAccount.getAddress(), optionsAmount);
 
       expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
@@ -898,7 +986,10 @@ describe("Controller", () => {
       ).payoutAmount;
 
       // Mint WETH to the Controller so it can pay the user
-      await WETH.connect(admin).mint(controller.address, payoutAmount);
+      await WETH.connect(assetsRegistryManager).mint(
+        controller.address,
+        payoutAmount
+      );
       expect(await WETH.balanceOf(controller.address)).to.equal(payoutAmount);
 
       await expect(
@@ -965,7 +1056,7 @@ describe("Controller", () => {
       const optionsAmount = ethers.utils.parseEther("3");
       const qTokenToExercise = qTokenCall2000;
       await qTokenToExercise
-        .connect(admin)
+        .connect(optionsMinter)
         .mint(await secondAccount.getAddress(), optionsAmount);
 
       await controller
@@ -1366,7 +1457,7 @@ describe("Controller", () => {
         optionsAmount
       );
 
-      await USDC.connect(admin).mint(
+      await USDC.connect(assetsRegistryManager).mint(
         await secondAccount.getAddress(),
         collateralRequirement
       );
@@ -1378,7 +1469,11 @@ describe("Controller", () => {
 
       await controller
         .connect(secondAccount)
-        .mintOptionsPosition(qTokenPut1400.address, optionsAmount);
+        .mintOptionsPosition(
+          await secondAccount.getAddress(),
+          qTokenPut1400.address,
+          optionsAmount
+        );
 
       const collateralTokenId = await collateralToken.getCollateralTokenId(
         qTokenPut1400.address,
@@ -1417,7 +1512,7 @@ describe("Controller", () => {
         optionsAmount
       );
 
-      await USDC.connect(admin).mint(
+      await USDC.connect(assetsRegistryManager).mint(
         await secondAccount.getAddress(),
         spreadCollateralRequirement.add(longCollateralRequirement)
       );
@@ -1429,7 +1524,11 @@ describe("Controller", () => {
 
       await controller
         .connect(secondAccount)
-        .mintOptionsPosition(qTokenPut400.address, optionsAmount);
+        .mintOptionsPosition(
+          await secondAccount.getAddress(),
+          qTokenPut400.address,
+          optionsAmount
+        );
 
       await controller
         .connect(secondAccount)

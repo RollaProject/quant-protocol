@@ -2,7 +2,9 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-interface ICollateralToken {
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+
+interface ICollateralToken is IERC1155 {
     function createCollateralToken(
         address _qTokenAddress,
         address _qTokenAsCollateral

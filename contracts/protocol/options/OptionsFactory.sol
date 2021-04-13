@@ -278,4 +278,11 @@ contract OptionsFactory is IOptionsFactory {
     function getOptionsLength() external view override returns (uint256) {
         return qTokens.length;
     }
+
+    /// @notice checks if an address is a QToken
+    /// @return true if the given address represents a registered QToken.
+    /// false otherwise
+    function isQToken(address _qToken) external view override returns (bool) {
+        return qTokenAddressToCollateralTokenId[_qToken] != 0;
+    }
 }
