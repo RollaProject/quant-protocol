@@ -67,7 +67,7 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
         override
         returns (uint256);
 
-    /// @notice Get the current price of the asset from the oracle
+    /// @notice Get the oracle address associated with an asset
     /// @param _asset asset to get price of
     function getAssetOracle(address _asset)
         public

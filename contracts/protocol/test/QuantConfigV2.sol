@@ -70,6 +70,17 @@ contract QuantConfigV2 is AccessControl, Initializable {
         assetsRegistry = _assetsRegistry;
     }
 
+    /// @notice Set the oracle registry
+    /// @dev Only accounts or contracts with the admin role should call this contract
+    /// @param _oracleRegistry address of the OracleRegistry to be used by the protocol
+    function setOracleRegistry(address _oracleRegistry) external {
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "Caller is not admin"
+        );
+        oracleRegistry = _oracleRegistry;
+    }
+
     /// @notice Initializes the system roles and assign them to the given admin address
     function initialize(address _timelockController) public initializer {
         _setupRole(DEFAULT_ADMIN_ROLE, _timelockController);
