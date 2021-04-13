@@ -85,6 +85,13 @@ contract Controller is IController {
     ) external override validQToken(_qToken) {
         QToken qToken = QToken(_qToken);
 
+        require(
+            IOracleRegistry(optionsFactory.quantConfig().oracleRegistry()).isOracleActive(
+                qToken.oracle()
+            ),
+            "Controller: Can't mint an options position as the oracle is inactive"
+        );
+
         (address collateral, uint256 collateralAmount) =
             getCollateralRequirement(_qToken, address(0), _optionsAmount);
 
@@ -379,6 +386,12 @@ contract Controller is IController {
             require(
                 qTokenToMint.isCall() == qTokenForCollateral.isCall(),
                 "Controller: Can't create spreads from options with different types"
+            );
+
+            // Check that the options have a matching oracle
+            require(
+                qTokenToMint.oracle() == qTokenForCollateral.oracle(),
+                "Controller: Can't create spreads from options with different oracles"
             );
 
             qTokenForCollateralStrikePrice = qTokenForCollateral.strikePrice();

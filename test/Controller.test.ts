@@ -42,6 +42,7 @@ describe("Controller", () => {
   let assetsRegistry: AssetsRegistry;
   let oracleRegistry: OracleRegistry;
   let mockOracleManager: MockContract;
+  let mockOracleManagerTwo: MockContract;
   let futureTimestamp: number;
   let samplePutOptionParameters: optionParameters;
   let sampleCallOptionParameters: optionParameters;
@@ -521,6 +522,11 @@ describe("Controller", () => {
       ORACLE_MANAGER.abi
     );
 
+    mockOracleManagerTwo = await deployMockContract(
+      timelockController,
+      ORACLE_MANAGER.abi
+    );
+
     await assetsRegistry
       .connect(assetsRegistryManager)
       .addAsset(
@@ -592,11 +598,24 @@ describe("Controller", () => {
 
     await oracleRegistry
       .connect(oracleManagerAccount)
+      .addOracle(mockOracleManagerTwo.address);
+
+    await oracleRegistry
+      .connect(oracleManagerAccount)
       .activateOracle(mockOracleManager.address);
+
+    await oracleRegistry
+      .connect(oracleManagerAccount)
+      .activateOracle(mockOracleManagerTwo.address);
 
     //Note: returning any address here to show existence of the oracle
     await mockOracleManager.mock.getAssetOracle.returns(
       mockOracleManager.address
+    );
+
+    //Note: returning any address here to show existence of the oracle
+    await mockOracleManagerTwo.mock.getAssetOracle.returns(
+      mockOracleManagerTwo.address
     );
 
     await optionsFactory
@@ -747,6 +766,24 @@ describe("Controller", () => {
   });
 
   describe("mintOptionsPosition", () => {
+    it("Should revert when trying to mint an option which has an oracle which is deactivated", async () => {
+      await oracleRegistry
+        .connect(oracleManagerAccount)
+        .deactivateOracle(mockOracleManager.address);
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .mintOptionsPosition(
+            await secondAccount.getAddress(),
+            qTokenCall2000.address,
+            ethers.BigNumber.from("10")
+          )
+      ).to.be.revertedWith(
+        "Controller: Can't mint an options position as the oracle is inactive"
+      );
+    });
+
     it("Should revert when trying to mint a non-existent option", async () => {
       await expect(
         controller
@@ -801,6 +838,47 @@ describe("Controller", () => {
   });
 
   describe("mintSpread", () => {
+    it("Should revert when trying to create spreads from options with different oracles", async () => {
+      const qTokenParams: optionParameters = [
+        WETH.address,
+        USDC.address,
+        mockOracleManager.address,
+        ethers.utils.parseUnits("1400", await USDC.decimals()),
+        ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
+        false,
+      ];
+
+      const qTokenParamsDifferentOracle: optionParameters = [...qTokenParams];
+
+      qTokenParamsDifferentOracle[2] = mockOracleManagerTwo.address;
+
+      const qTokenOracleOne = await optionsFactory.getTargetQTokenAddress(
+        ...qTokenParams
+      );
+
+      const qTokenOracleTwo = await optionsFactory.getTargetQTokenAddress(
+        ...qTokenParamsDifferentOracle
+      );
+
+      await optionsFactory.connect(secondAccount).createOption(...qTokenParams);
+
+      await optionsFactory
+        .connect(secondAccount)
+        .createOption(...qTokenParamsDifferentOracle);
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .mintSpread(
+            qTokenOracleOne,
+            qTokenOracleTwo,
+            ethers.utils.parseEther("1")
+          )
+      ).to.be.revertedWith(
+        "Controller: Can't create spreads from options with different oracles"
+      );
+    });
+
     it("Should revert when trying to create spreads from options with different expiries", async () => {
       const qTokenParams: optionParameters = [
         WETH.address,

@@ -143,17 +143,22 @@ contract OptionsFactory is IOptionsFactory {
         );
 
         require(
-            IOracleRegistry(quantConfig.oracleRegistry()).isOracleRegistered(_oracle),
+            IOracleRegistry(quantConfig.oracleRegistry()).isOracleRegistered(
+                _oracle
+            ),
             "OptionsFactory: Oracle is not registered in OracleRegistry"
         );
 
         require(
-            IProviderOracleManager(_oracle).getAssetOracle(_underlyingAsset) != address(0),
+            IProviderOracleManager(_oracle).getAssetOracle(_underlyingAsset) !=
+                address(0),
             "OptionsFactory: Asset does not exist in oracle"
         );
 
         require(
-            IOracleRegistry(quantConfig.oracleRegistry()).isOracleActive(_oracle),
+            IOracleRegistry(quantConfig.oracleRegistry()).isOracleActive(
+                _oracle
+            ),
             "OptionsFactory: Oracle is not active in the OracleRegistry"
         );
 
