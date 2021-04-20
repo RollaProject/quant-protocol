@@ -1,15 +1,19 @@
+import { deployMockContract } from "@ethereum-waffle/mock-contract";
+import { MockContract } from "ethereum-waffle";
 import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe } from "mocha";
-import { AssetsRegistry, OptionsFactory } from "../typechain";
+import { AssetsRegistry, OptionsFactory, OracleRegistry } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QuantConfig } from "../typechain/QuantConfig";
+import ORACLE_MANAGER from "../artifacts/contracts/protocol/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
 import { expect, provider } from "./setup";
 import {
   deployAssetsRegistry,
   deployCollateralToken,
   deployOptionsFactory,
+  deployOracleRegistry,
   deployQuantConfig,
   mockERC20,
 } from "./testUtils";
@@ -18,12 +22,15 @@ describe("OptionsFactory", () => {
   let quantConfig: QuantConfig;
   let collateralToken: CollateralToken;
   let timelockController: Signer;
+  let oracleManagerAccount: Signer;
   let secondAccount: Signer;
   let assetsRegistryManager: Signer;
   let WETH: MockERC20;
   let USDC: MockERC20;
   let optionsFactory: OptionsFactory;
   let assetsRegistry: AssetsRegistry;
+  let oracleRegistry: OracleRegistry;
+  let mockOracleManager: MockContract;
   let futureTimestamp: number;
   let samplePutOptionParameters: [
     string,
@@ -46,6 +53,7 @@ describe("OptionsFactory", () => {
   beforeEach(async () => {
     [
       timelockController,
+      oracleManagerAccount,
       secondAccount,
       assetsRegistryManager,
     ] = await provider.getWallets();
@@ -54,6 +62,10 @@ describe("OptionsFactory", () => {
       {
         addresses: [await assetsRegistryManager.getAddress()],
         role: ethers.utils.id("ASSET_REGISTRY_MANAGER_ROLE"),
+      },
+      {
+        addresses: [await oracleManagerAccount.getAddress()],
+        role: ethers.utils.id("ORACLE_MANAGER_ROLE"),
       },
     ]);
 
@@ -65,14 +77,20 @@ describe("OptionsFactory", () => {
       quantConfig
     );
 
+    mockOracleManager = await deployMockContract(
+      timelockController,
+      ORACLE_MANAGER.abi
+    );
+
     assetsRegistry = await deployAssetsRegistry(
       timelockController,
       quantConfig
     );
 
-    await quantConfig
-      .connect(timelockController)
-      .setAssetsRegistry(assetsRegistry.address);
+    oracleRegistry = await deployOracleRegistry(
+      timelockController,
+      quantConfig
+    );
 
     await assetsRegistry
       .connect(assetsRegistryManager)
@@ -89,9 +107,38 @@ describe("OptionsFactory", () => {
       collateralToken
     );
 
-    await quantConfig.grantRole(
-      await quantConfig.COLLATERAL_CREATOR_ROLE(),
-      optionsFactory.address
+    await quantConfig
+      .connect(timelockController)
+      .grantRole(
+        await quantConfig.COLLATERAL_CREATOR_ROLE(),
+        optionsFactory.address
+      );
+
+    await quantConfig
+      .connect(timelockController)
+      .setRoleAdmin(
+        await quantConfig.PRICE_SUBMITTER_ROLE(),
+        await quantConfig.PRICE_SUBMITTER_ROLE_ADMIN()
+      );
+
+    await quantConfig
+      .connect(timelockController)
+      .grantRole(
+        await quantConfig.PRICE_SUBMITTER_ROLE_ADMIN(),
+        oracleRegistry.address
+      );
+
+    await oracleRegistry
+      .connect(oracleManagerAccount)
+      .addOracle(mockOracleManager.address);
+
+    await oracleRegistry
+      .connect(oracleManagerAccount)
+      .activateOracle(mockOracleManager.address);
+
+    //Note: returning any address here to show existence of the oracle
+    await mockOracleManager.mock.getAssetOracle.returns(
+      mockOracleManager.address
     );
 
     // 30 days from now
@@ -100,7 +147,7 @@ describe("OptionsFactory", () => {
     samplePutOptionParameters = [
       WETH.address,
       USDC.address,
-      ethers.constants.AddressZero,
+      mockOracleManager.address,
       ethers.utils.parseUnits("1400", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       false,
@@ -109,7 +156,7 @@ describe("OptionsFactory", () => {
     sampleCollateralTokenParameters = [
       WETH.address,
       USDC.address,
-      ethers.constants.AddressZero,
+      mockOracleManager.address,
       ethers.constants.AddressZero,
       ethers.utils.parseUnits("1400", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
@@ -154,6 +201,65 @@ describe("OptionsFactory", () => {
       ).to.equal(collateralTokenId);
     });
 
+    it("Should revert when trying to create an option if the oracle is not registered in the oracle registry", async () => {
+      await expect(
+        optionsFactory
+          .connect(secondAccount)
+          .createOption(
+            WETH.address,
+            USDC.address,
+            ethers.constants.AddressZero,
+            ethers.utils.parseUnits("1400", await USDC.decimals()),
+            ethers.BigNumber.from(futureTimestamp),
+            false
+          )
+      ).to.be.revertedWith(
+        "OptionsFactory: Oracle is not registered in OracleRegistry"
+      );
+    });
+
+    it("Should revert when trying to make an option for an asset not registered in the oracle", async () => {
+      //Set the oracle to the zero address, signifying the asset not being registed
+      await mockOracleManager.mock.getAssetOracle.returns(
+        ethers.constants.AddressZero
+      );
+
+      await expect(
+        optionsFactory
+          .connect(secondAccount)
+          .createOption(
+            WETH.address,
+            USDC.address,
+            mockOracleManager.address,
+            ethers.utils.parseUnits("1400", await USDC.decimals()),
+            ethers.BigNumber.from(futureTimestamp),
+            false
+          )
+      ).to.be.revertedWith("OptionsFactory: Asset does not exist in oracle");
+    });
+
+    it("Should revert when trying to create an option with a deactivated oracle", async () => {
+      //Deactivate the oracle
+      await oracleRegistry
+        .connect(oracleManagerAccount)
+        .deactivateOracle(mockOracleManager.address);
+
+      await expect(
+        optionsFactory
+          .connect(secondAccount)
+          .createOption(
+            WETH.address,
+            USDC.address,
+            mockOracleManager.address,
+            ethers.utils.parseUnits("1400", await USDC.decimals()),
+            ethers.BigNumber.from(futureTimestamp),
+            false
+          )
+      ).to.be.revertedWith(
+        "OptionsFactory: Oracle is not active in the OracleRegistry"
+      );
+    });
+
     it("Should revert when trying to create an option that would have already expired", async () => {
       const pastTimestamp = "1582602164";
       await expect(
@@ -187,7 +293,7 @@ describe("OptionsFactory", () => {
           .createOption(
             WETH.address,
             USDC.address,
-            ethers.constants.AddressZero,
+            mockOracleManager.address,
             ethers.BigNumber.from("0"),
             futureTimestamp,
             false
@@ -202,7 +308,7 @@ describe("OptionsFactory", () => {
           .createOption(
             ethers.constants.AddressZero,
             USDC.address,
-            ethers.constants.AddressZero,
+            mockOracleManager.address,
             ethers.utils.parseUnits("1400", await USDC.decimals()),
             futureTimestamp,
             false
