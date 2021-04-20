@@ -8,6 +8,9 @@ import "./OptionsUtils.sol";
 import "./AssetsRegistry.sol";
 import "../QuantConfig.sol";
 import "../interfaces/IOptionsFactory.sol";
+import "../interfaces/IProviderOracleManager.sol";
+import "../interfaces/IOracleRegistry.sol";
+import "../interfaces/IAssetsRegistry.sol";
 
 /// @title Factory contract for Quant options
 /// @author Quant Finance
@@ -137,6 +140,26 @@ contract OptionsFactory is IOptionsFactory {
         require(
             _expiryTime > block.timestamp,
             "OptionsFactory: given expiry time is in the past"
+        );
+
+        require(
+            IOracleRegistry(quantConfig.oracleRegistry()).isOracleRegistered(
+                _oracle
+            ),
+            "OptionsFactory: Oracle is not registered in OracleRegistry"
+        );
+
+        require(
+            IProviderOracleManager(_oracle).getAssetOracle(_underlyingAsset) !=
+                address(0),
+            "OptionsFactory: Asset does not exist in oracle"
+        );
+
+        require(
+            IOracleRegistry(quantConfig.oracleRegistry()).isOracleActive(
+                _oracle
+            ),
+            "OptionsFactory: Oracle is not active in the OracleRegistry"
         );
 
         newCollateralTokenId = OptionsUtils.getTargetCollateralTokenId(
