@@ -27,6 +27,8 @@ contract AssetsRegistry is IAssetsRegistry {
         _quantConfig = QuantConfig(quantConfig_);
     }
 
+    //TODO: Method in here to get a list of assets
+
     function addAsset(
         address _underlying,
         string calldata _name,
