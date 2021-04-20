@@ -4,7 +4,7 @@ import { ethers, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import ControllerJSON from "../artifacts/contracts/protocol/Controller.sol/Controller.json";
 import PriceRegistry from "../artifacts/contracts/protocol/pricing/PriceRegistry.sol/PriceRegistry.json";
-import { AssetsRegistry, OptionsFactory } from "../typechain";
+import { AssetsRegistry, OptionsFactory, OracleRegistry } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
 import { MockERC20 } from "../typechain/MockERC20";
@@ -15,9 +15,11 @@ import {
   deployAssetsRegistry,
   deployCollateralToken,
   deployOptionsFactory,
+  deployOracleRegistry,
   deployQuantConfig,
   mockERC20,
 } from "./testUtils";
+import ORACLE_MANAGER from "../artifacts/contracts/protocol/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
 
 const { deployContract, deployMockContract } = waffle;
 
@@ -33,10 +35,14 @@ describe("Controller", () => {
   let collateralMinter: Signer;
   let optionsMinter: Signer;
   let collateralCreator: Signer;
+  let oracleManagerAccount: Signer;
   let WETH: MockERC20;
   let USDC: MockERC20;
   let optionsFactory: OptionsFactory;
   let assetsRegistry: AssetsRegistry;
+  let oracleRegistry: OracleRegistry;
+  let mockOracleManager: MockContract;
+  let mockOracleManagerTwo: MockContract;
   let futureTimestamp: number;
   let samplePutOptionParameters: optionParameters;
   let sampleCallOptionParameters: optionParameters;
@@ -465,6 +471,7 @@ describe("Controller", () => {
       collateralMinter,
       optionsMinter,
       collateralCreator,
+      oracleManagerAccount,
     ] = await provider.getWallets();
 
     quantConfig = await deployQuantConfig(timelockController, [
@@ -487,6 +494,10 @@ describe("Controller", () => {
         addresses: [await collateralCreator.getAddress()],
         role: ethers.utils.id("COLLATERAL_CREATOR_ROLE"),
       },
+      {
+        addresses: [await oracleManagerAccount.getAddress()],
+        role: ethers.utils.id("ORACLE_MANAGER_ROLE"),
+      },
     ]);
 
     WETH = await mockERC20(assetsRegistryManager, "WETH", "Wrapped Ether");
@@ -499,6 +510,21 @@ describe("Controller", () => {
     assetsRegistry = await deployAssetsRegistry(
       timelockController,
       quantConfig
+    );
+
+    oracleRegistry = await deployOracleRegistry(
+      timelockController,
+      quantConfig
+    );
+
+    mockOracleManager = await deployMockContract(
+      timelockController,
+      ORACLE_MANAGER.abi
+    );
+
+    mockOracleManagerTwo = await deployMockContract(
+      timelockController,
+      ORACLE_MANAGER.abi
     );
 
     await assetsRegistry
@@ -536,7 +562,7 @@ describe("Controller", () => {
     samplePutOptionParameters = [
       WETH.address,
       USDC.address,
-      ethers.constants.AddressZero,
+      mockOracleManager.address,
       ethers.utils.parseUnits("1400", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       false,
@@ -552,6 +578,46 @@ describe("Controller", () => {
         optionsFactory.address
       );
 
+    await quantConfig
+      .connect(timelockController)
+      .setRoleAdmin(
+        await quantConfig.PRICE_SUBMITTER_ROLE(),
+        await quantConfig.PRICE_SUBMITTER_ROLE_ADMIN()
+      );
+
+    await quantConfig
+      .connect(timelockController)
+      .grantRole(
+        await quantConfig.PRICE_SUBMITTER_ROLE_ADMIN(),
+        oracleRegistry.address
+      );
+
+    await oracleRegistry
+      .connect(oracleManagerAccount)
+      .addOracle(mockOracleManager.address);
+
+    await oracleRegistry
+      .connect(oracleManagerAccount)
+      .addOracle(mockOracleManagerTwo.address);
+
+    await oracleRegistry
+      .connect(oracleManagerAccount)
+      .activateOracle(mockOracleManager.address);
+
+    await oracleRegistry
+      .connect(oracleManagerAccount)
+      .activateOracle(mockOracleManagerTwo.address);
+
+    //Note: returning any address here to show existence of the oracle
+    await mockOracleManager.mock.getAssetOracle.returns(
+      mockOracleManager.address
+    );
+
+    //Note: returning any address here to show existence of the oracle
+    await mockOracleManagerTwo.mock.getAssetOracle.returns(
+      mockOracleManagerTwo.address
+    );
+
     await optionsFactory
       .connect(secondAccount)
       .createOption(...samplePutOptionParameters);
@@ -563,7 +629,7 @@ describe("Controller", () => {
     sampleCallOptionParameters = [
       WETH.address,
       USDC.address,
-      ethers.constants.AddressZero,
+      mockOracleManager.address,
       ethers.utils.parseUnits("2000", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       true,
@@ -584,7 +650,7 @@ describe("Controller", () => {
     const qTokenCall2880Parameters: optionParameters = [
       WETH.address,
       USDC.address,
-      ethers.constants.AddressZero,
+      mockOracleManager.address,
       ethers.utils.parseUnits("2880", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       true,
@@ -607,7 +673,7 @@ describe("Controller", () => {
     const qTokenCall3520Parameters: optionParameters = [
       WETH.address,
       USDC.address,
-      ethers.constants.AddressZero,
+      mockOracleManager.address,
       ethers.utils.parseUnits("3520", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       true,
@@ -630,7 +696,7 @@ describe("Controller", () => {
     const qTokenPut400Parameters: optionParameters = [
       WETH.address,
       USDC.address,
-      ethers.constants.AddressZero,
+      mockOracleManager.address,
       ethers.utils.parseUnits("400", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       false,
@@ -700,6 +766,24 @@ describe("Controller", () => {
   });
 
   describe("mintOptionsPosition", () => {
+    it("Should revert when trying to mint an option which has an oracle which is deactivated", async () => {
+      await oracleRegistry
+        .connect(oracleManagerAccount)
+        .deactivateOracle(mockOracleManager.address);
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .mintOptionsPosition(
+            await secondAccount.getAddress(),
+            qTokenCall2000.address,
+            ethers.BigNumber.from("10")
+          )
+      ).to.be.revertedWith(
+        "Controller: Can't mint an options position as the oracle is inactive"
+      );
+    });
+
     it("Should revert when trying to mint a non-existent option", async () => {
       await expect(
         controller
@@ -754,11 +838,52 @@ describe("Controller", () => {
   });
 
   describe("mintSpread", () => {
+    it("Should revert when trying to create spreads from options with different oracles", async () => {
+      const qTokenParams: optionParameters = [
+        WETH.address,
+        USDC.address,
+        mockOracleManager.address,
+        ethers.utils.parseUnits("1400", await USDC.decimals()),
+        ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
+        false,
+      ];
+
+      const qTokenParamsDifferentOracle: optionParameters = [...qTokenParams];
+
+      qTokenParamsDifferentOracle[2] = mockOracleManagerTwo.address;
+
+      const qTokenOracleOne = await optionsFactory.getTargetQTokenAddress(
+        ...qTokenParams
+      );
+
+      const qTokenOracleTwo = await optionsFactory.getTargetQTokenAddress(
+        ...qTokenParamsDifferentOracle
+      );
+
+      await optionsFactory.connect(secondAccount).createOption(...qTokenParams);
+
+      await optionsFactory
+        .connect(secondAccount)
+        .createOption(...qTokenParamsDifferentOracle);
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .mintSpread(
+            qTokenOracleOne,
+            qTokenOracleTwo,
+            ethers.utils.parseEther("1")
+          )
+      ).to.be.revertedWith(
+        "Controller: Can't create spreads from options with different oracles"
+      );
+    });
+
     it("Should revert when trying to create spreads from options with different expiries", async () => {
       const qTokenParams: optionParameters = [
         WETH.address,
         USDC.address,
-        ethers.constants.AddressZero,
+        mockOracleManager.address,
         ethers.utils.parseUnits("1400", await USDC.decimals()),
         ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
         false,
@@ -786,7 +911,7 @@ describe("Controller", () => {
       const qTokenParams: optionParameters = [
         USDC.address,
         WETH.address,
-        ethers.constants.AddressZero,
+        mockOracleManager.address,
         ethers.utils.parseUnits("5000", await USDC.decimals()),
         ethers.BigNumber.from(futureTimestamp),
         true,

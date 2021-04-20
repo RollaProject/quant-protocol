@@ -1,11 +1,12 @@
 import { BigNumber, Signer } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
 import AssetsRegistryJSON from "../artifacts/contracts/protocol/options/AssetsRegistry.sol/AssetsRegistry.json";
+import OracleRegistryJSON from "../artifacts/contracts/protocol/pricing/OracleRegistry.sol/OracleRegistry.json";
 import CollateralTokenJSON from "../artifacts/contracts/protocol/options/CollateralToken.sol/CollateralToken.json";
 import OptionsFactoryJSON from "../artifacts/contracts/protocol/options/OptionsFactory.sol/OptionsFactory.json";
 import QTokenJSON from "../artifacts/contracts/protocol/options/QToken.sol/QToken.json";
 import MockERC20JSON from "../artifacts/contracts/protocol/test/MockERC20.sol/MockERC20.json";
-import { AssetsRegistry, OptionsFactory } from "../typechain";
+import { AssetsRegistry, OptionsFactory, OracleRegistry } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
@@ -121,11 +122,25 @@ const deployAssetsRegistry = async (
   return assetsRegistry;
 };
 
+const deployOracleRegistry = async (
+  deployer: Signer,
+  quantConfig: QuantConfig
+): Promise<OracleRegistry> => {
+  const oracleRegistry = <OracleRegistry>(
+    await deployContract(deployer, OracleRegistryJSON, [quantConfig.address])
+  );
+
+  await quantConfig.connect(deployer).setOracleRegistry(oracleRegistry.address);
+
+  return oracleRegistry;
+};
+
 export {
   deployCollateralToken,
   deployOptionsFactory,
   deployQToken,
   deployQuantConfig,
   deployAssetsRegistry,
+  deployOracleRegistry,
   mockERC20,
 };
