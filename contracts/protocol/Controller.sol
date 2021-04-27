@@ -86,9 +86,8 @@ contract Controller is IController {
         QToken qToken = QToken(_qToken);
 
         require(
-            IOracleRegistry(optionsFactory.quantConfig().oracleRegistry()).isOracleActive(
-                qToken.oracle()
-            ),
+            IOracleRegistry(optionsFactory.quantConfig().oracleRegistry())
+                .isOracleActive(qToken.oracle()),
             "Controller: Can't mint an options position as the oracle is inactive"
         );
 
