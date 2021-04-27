@@ -139,7 +139,7 @@ contract CollateralToken is ERC1155, ICollateralToken {
         _mint(recipient, collateralTokenId, amount, "");
     }
 
-    /// @notice Mint CollateralTokens for a given account
+    /// @notice Burn CollateralTokens for a given account
     /// @param owner address to burn tokens from
     /// @param amount amount of tokens to burn
     /// @param collateralTokenId id of the token to be burned
