@@ -251,7 +251,10 @@ contract ChainlinkOracleManager is
         uint256 _price
     ) external override {
         require(
-            config.hasRole(config.FALLBACK_PRICE_ROLE(), msg.sender),
+            config.hasRole(
+                config.quantRoles("FALLBACK_PRICE_ROLE"),
+                msg.sender
+            ),
             "ChainlinkOracleManager: Only the fallback price submitter can submit a fallback price"
         );
 

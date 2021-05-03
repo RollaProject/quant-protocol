@@ -87,7 +87,7 @@ contract CollateralToken is ERC1155, ICollateralToken {
 
         require(
             quantConfig.hasRole(
-                quantConfig.COLLATERAL_CREATOR_ROLE(),
+                quantConfig.quantRoles("COLLATERAL_CREATOR_ROLE"),
                 msg.sender
             ),
             "CollateralToken: Only a collateral creator can create new CollateralTokens"
@@ -124,7 +124,7 @@ contract CollateralToken is ERC1155, ICollateralToken {
     ) external override {
         require(
             quantConfig.hasRole(
-                quantConfig.COLLATERAL_MINTER_ROLE(),
+                quantConfig.quantRoles("COLLATERAL_MINTER_ROLE"),
                 msg.sender
             ),
             "CollateralToken: Only a collateral minter can mint CollateralTokens"
@@ -150,7 +150,7 @@ contract CollateralToken is ERC1155, ICollateralToken {
     ) external override {
         require(
             quantConfig.hasRole(
-                quantConfig.COLLATERAL_BURNER_ROLE(),
+                quantConfig.quantRoles("COLLATERAL_BURNER_ROLE"),
                 msg.sender
             ),
             "CollateralToken: Only a collateral burner can burn CollateralTokens"
@@ -178,7 +178,7 @@ contract CollateralToken is ERC1155, ICollateralToken {
     ) external override {
         require(
             quantConfig.hasRole(
-                quantConfig.COLLATERAL_MINTER_ROLE(),
+                quantConfig.quantRoles("COLLATERAL_MINTER_ROLE"),
                 msg.sender
             ),
             "CollateralToken: Only a collateral minter can mint CollateralTokens"
@@ -206,7 +206,7 @@ contract CollateralToken is ERC1155, ICollateralToken {
     ) external override {
         require(
             quantConfig.hasRole(
-                quantConfig.COLLATERAL_BURNER_ROLE(),
+                quantConfig.quantRoles("COLLATERAL_BURNER_ROLE"),
                 msg.sender
             ),
             "CollateralToken: Only a collateral burner can burn CollateralTokens"

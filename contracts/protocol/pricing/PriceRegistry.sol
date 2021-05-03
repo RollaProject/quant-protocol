@@ -29,7 +29,10 @@ contract PriceRegistry is IPriceRegistry {
         uint256 _settlementPrice
     ) external override {
         require(
-            config.hasRole(config.PRICE_SUBMITTER_ROLE(), msg.sender),
+            config.hasRole(
+                config.quantRoles("PRICE_SUBMITTER_ROLE"),
+                msg.sender
+            ),
             "PriceRegistry: Price submitter is not an oracle"
         );
 
