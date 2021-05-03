@@ -101,7 +101,10 @@ contract QToken is ERC20, IQToken {
     /// @param amount amount to mint
     function mint(address account, uint256 amount) external override {
         require(
-            quantConfig.hasRole(quantConfig.OPTIONS_MINTER_ROLE(), msg.sender),
+            quantConfig.hasRole(
+                quantConfig.quantRoles("OPTIONS_MINTER_ROLE"),
+                msg.sender
+            ),
             "QToken: Only an options minter can mint QTokens"
         );
         _mint(account, amount);
@@ -113,7 +116,10 @@ contract QToken is ERC20, IQToken {
     /// @param amount amount to burn
     function burn(address account, uint256 amount) external override {
         require(
-            quantConfig.hasRole(quantConfig.OPTIONS_BURNER_ROLE(), msg.sender),
+            quantConfig.hasRole(
+                quantConfig.quantRoles("OPTIONS_BURNER_ROLE"),
+                msg.sender
+            ),
             "QToken: Only an options burner can burn QTokens"
         );
         _burn(account, amount);

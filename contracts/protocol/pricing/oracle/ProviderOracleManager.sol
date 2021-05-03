@@ -28,7 +28,10 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
     /// @param _oracle the address of the oracle
     function addAssetOracle(address _asset, address _oracle) external override {
         require(
-            config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
+            config.hasRole(
+                config.quantRoles("ORACLE_MANAGER_ROLE"),
+                msg.sender
+            ),
             "ProviderOracleManager: Only an oracle admin can add an oracle"
         );
         require(
