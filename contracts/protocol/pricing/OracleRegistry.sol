@@ -37,7 +37,10 @@ contract OracleRegistry is IOracleRegistry {
     /// @return the id of the oracle
     function addOracle(address _oracle) external override returns (uint256) {
         require(
-            config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
+            config.hasRole(
+                config.quantRoles("ORACLE_MANAGER_ROLE"),
+                msg.sender
+            ),
             "OracleRegistry: Only an oracle admin can add an oracle"
         );
         require(
@@ -51,7 +54,7 @@ contract OracleRegistry is IOracleRegistry {
         emit AddedOracle(_oracle, _currentId);
 
         // TODO: Test this
-        config.grantRole(config.PRICE_SUBMITTER_ROLE(), _oracle);
+        config.grantRole(config.quantRoles("PRICE_SUBMITTER_ROLE"), _oracle);
 
         oracleInfo[_oracle] = OracleInfo(false, _currentId);
         return oracles.length;
@@ -103,7 +106,10 @@ contract OracleRegistry is IOracleRegistry {
         returns (bool)
     {
         require(
-            config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
+            config.hasRole(
+                config.quantRoles("ORACLE_MANAGER_ROLE"),
+                msg.sender
+            ),
             "OracleRegistry: Only an oracle admin can add an oracle"
         );
         require(
@@ -120,7 +126,10 @@ contract OracleRegistry is IOracleRegistry {
     /// @param _oracle the oracle to activate
     function activateOracle(address _oracle) external override returns (bool) {
         require(
-            config.hasRole(config.ORACLE_MANAGER_ROLE(), msg.sender),
+            config.hasRole(
+                config.quantRoles("ORACLE_MANAGER_ROLE"),
+                msg.sender
+            ),
             "OracleRegistry: Only an oracle admin can add an oracle"
         );
         require(
