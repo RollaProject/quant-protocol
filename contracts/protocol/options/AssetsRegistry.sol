@@ -40,7 +40,7 @@ contract AssetsRegistry is IAssetsRegistry {
     ) external override {
         require(
             _quantConfig.hasRole(
-                _quantConfig.ASSET_REGISTRY_MANAGER_ROLE(),
+                _quantConfig.quantRoles("ASSET_REGISTRY_MANAGER_ROLE"),
                 msg.sender
             ),
             "AssetsRegistry: only asset registry managers can add assets"
