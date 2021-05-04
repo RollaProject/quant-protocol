@@ -205,7 +205,7 @@ describe("ConfigTimelockController", () => {
       });
     });
 
-    describe("setProtocolUint256", () => {
+    describe("scheduleSetProtocolUint256", () => {
       it("Should revert when a non-proposer tries to schedule setting a protocol uint256", async () => {
         await expect(
           configTimelockController
@@ -256,7 +256,7 @@ describe("ConfigTimelockController", () => {
       });
     });
 
-    describe("setProtocolBoolean", () => {
+    describe("scheduleSetProtocolBoolean", () => {
       it("Should revert when a non-proposer tries to schedule setting a protocol boolean", async () => {
         await expect(
           configTimelockController
