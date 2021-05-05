@@ -1,8 +1,7 @@
 {
-  "name": "quant-protocol",
-  "version": "1.0.0",
+  "name": "@quant-finance/quant-protocol",
+  "version": "0.1.4",
   "description": "Smart-contracts for Quant. The free, instant, DeFi crypto options trading protocol.",
-  "main": "index.js",
   "scripts": {
     "build": "hardhat compile",
     "test": "yarn build && hardhat test",
@@ -20,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Quant-Finance-HQ/quant-protocol-new.git"
+    "url": "git+https://github.com/Quant-Finance-HQ/quant-protocol.git"
   },
   "keywords": [
     "options",
@@ -34,9 +33,9 @@
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Quant-Finance-HQ/quant-protocol-new/issues"
+    "url": "https://github.com/Quant-Finance-HQ/quant-protocol/issues"
   },
-  "homepage": "https://github.com/Quant-Finance-HQ/quant-protocol-new#readme",
+  "homepage": "https://github.com/Quant-Finance-HQ/quant-protocol#readme",
   "devDependencies": {
     "@commitlint/cli": "^12.1.1",
     "@commitlint/config-conventional": "^12.1.1",
@@ -79,5 +78,8 @@
     "@openzeppelin/contracts-upgradeable": "^3.4.0",
     "@quant-finance/solidity-datetime": "^2.0.0",
     "hardhat-typechain": "^0.3.4"
-  }
+  },
+  "files": [
+    "contracts"
+  ]
 }
