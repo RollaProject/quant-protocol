@@ -131,7 +131,7 @@ contract QToken is ERC20, IQToken {
         view
         returns (string memory symbol)
     {
-        (, symbol, ) = AssetsRegistry(
+        (, symbol, , ) = AssetsRegistry(
             QuantConfig(_quantConfig).assetsRegistry()
         )
             .assetProperties(_asset);

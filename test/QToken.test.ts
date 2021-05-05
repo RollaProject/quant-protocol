@@ -72,10 +72,10 @@ describe("QToken", async () => {
 
     await assetsRegistry
       .connect(assetsRegistryManager)
-      .addAsset(WETH.address, "", "", 0);
+      .addAsset(WETH.address, "", "", 0, 1000);
     await assetsRegistry
       .connect(assetsRegistryManager)
-      .addAsset(USDC.address, "", "", 0);
+      .addAsset(USDC.address, "", "", 0, 1000);
 
     scaledStrikePrice = ethers.utils.parseUnits("1400", await USDC.decimals());
 

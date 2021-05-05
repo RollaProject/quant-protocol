@@ -3,11 +3,11 @@ import { MockContract } from "ethereum-waffle";
 import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe } from "mocha";
+import ORACLE_MANAGER from "../artifacts/contracts/protocol/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
 import { AssetsRegistry, OptionsFactory, OracleRegistry } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QuantConfig } from "../typechain/QuantConfig";
-import ORACLE_MANAGER from "../artifacts/contracts/protocol/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
 import { expect, provider } from "./setup";
 import {
   deployAssetsRegistry,
@@ -98,7 +98,8 @@ describe("OptionsFactory", () => {
         WETH.address,
         await WETH.name(),
         await WETH.symbol(),
-        await WETH.decimals()
+        await WETH.decimals(),
+        ethers.BigNumber.from("1000")
       );
 
     optionsFactory = await deployOptionsFactory(
