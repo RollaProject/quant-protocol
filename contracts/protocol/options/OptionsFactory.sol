@@ -186,7 +186,7 @@ contract OptionsFactory is IOptionsFactory {
 
         {
             string memory symbol;
-            (, symbol, ) = AssetsRegistry(quantConfig.assetsRegistry())
+            (, symbol, , ) = AssetsRegistry(quantConfig.assetsRegistry())
                 .assetProperties(_underlyingAsset);
             require(
                 bytes(symbol).length != 0,

@@ -110,10 +110,10 @@ describe("CollateralToken", () => {
 
     await assetsRegistry
       .connect(assetRegistryManager)
-      .addAsset(WETH.address, "", "", 0);
+      .addAsset(WETH.address, "", "", 0, 1000);
     await assetsRegistry
       .connect(assetRegistryManager)
-      .addAsset(USDC.address, "", "", 0);
+      .addAsset(USDC.address, "", "", 0, 1000);
 
     qToken = await deployQToken(
       timelockController,

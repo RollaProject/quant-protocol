@@ -6,6 +6,7 @@ interface IAssetsRegistry {
         address _underlying,
         string calldata _name,
         string calldata _symbol,
-        uint8 _decimals
+        uint8 _decimals,
+        uint256 _quantityTickSize
     ) external;
 }
