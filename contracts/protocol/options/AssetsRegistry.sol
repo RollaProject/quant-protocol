@@ -10,6 +10,7 @@ contract AssetsRegistry is IAssetsRegistry {
         string name;
         string symbol;
         uint8 decimals;
+        uint256 quantityTickSize;
     }
 
     QuantConfig private _quantConfig;
@@ -20,7 +21,8 @@ contract AssetsRegistry is IAssetsRegistry {
         address indexed underlying,
         string name,
         string symbol,
-        uint8 decimals
+        uint8 decimals,
+        uint256 quantityTickSize
     );
 
     constructor(address quantConfig_) {
@@ -33,7 +35,8 @@ contract AssetsRegistry is IAssetsRegistry {
         address _underlying,
         string calldata _name,
         string calldata _symbol,
-        uint8 _decimals
+        uint8 _decimals,
+        uint256 _quantityTickSize
     ) external override {
         require(
             _quantConfig.hasRole(
@@ -69,8 +72,13 @@ contract AssetsRegistry is IAssetsRegistry {
             decimals = _decimals;
         }
 
-        assetProperties[_underlying] = AssetProperties(name, symbol, decimals);
+        assetProperties[_underlying] = AssetProperties(
+            name,
+            symbol,
+            decimals,
+            _quantityTickSize
+        );
 
-        emit AssetAdded(_underlying, name, symbol, decimals);
+        emit AssetAdded(_underlying, name, symbol, decimals, _quantityTickSize);
     }
 }

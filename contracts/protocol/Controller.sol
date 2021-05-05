@@ -402,7 +402,7 @@ contract Controller is IController {
             underlying = qTokenToMint.underlyingAsset();
 
             // Initially required collateral is the long strike price
-            (, , uint8 underlyingDecimals) =
+            (, , uint8 underlyingDecimals, ) =
                 AssetsRegistry(optionsFactory.quantConfig().assetsRegistry())
                     .assetProperties(underlying);
 
@@ -476,7 +476,7 @@ contract Controller is IController {
             );
 
         if (qToken.isCall()) {
-            (, , uint8 underlyingDecimals) =
+            (, , uint8 underlyingDecimals, ) =
                 AssetsRegistry(optionsFactory.quantConfig().assetsRegistry())
                     .assetProperties(qToken.underlyingAsset());
 
