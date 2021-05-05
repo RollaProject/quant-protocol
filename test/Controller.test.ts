@@ -3,6 +3,7 @@ import { BigNumber, ContractInterface, Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import ControllerJSON from "../artifacts/contracts/protocol/Controller.sol/Controller.json";
+import ORACLE_MANAGER from "../artifacts/contracts/protocol/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
 import PriceRegistry from "../artifacts/contracts/protocol/pricing/PriceRegistry.sol/PriceRegistry.json";
 import { AssetsRegistry, OptionsFactory, OracleRegistry } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
@@ -19,7 +20,6 @@ import {
   deployQuantConfig,
   mockERC20,
 } from "./testUtils";
-import ORACLE_MANAGER from "../artifacts/contracts/protocol/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
 
 const { deployContract, deployMockContract } = waffle;
 
@@ -533,7 +533,8 @@ describe("Controller", () => {
         WETH.address,
         await WETH.name(),
         await WETH.symbol(),
-        await WETH.decimals()
+        await WETH.decimals(),
+        ethers.BigNumber.from("1000")
       );
 
     await assetsRegistry
@@ -542,7 +543,8 @@ describe("Controller", () => {
         USDC.address,
         await USDC.name(),
         await USDC.symbol(),
-        await USDC.decimals()
+        await USDC.decimals(),
+        ethers.BigNumber.from("1000")
       );
 
     QTokenInterface = (await ethers.getContractFactory("QToken")).interface;

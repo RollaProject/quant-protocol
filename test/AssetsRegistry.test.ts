@@ -1,5 +1,5 @@
 import { deployContract } from "ethereum-waffle";
-import { Signer } from "ethers";
+import { BigNumber, Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import BasicTokenJSON from "../artifacts/contracts/protocol/test/BasicERC20.sol/BasicERC20.json";
@@ -13,7 +13,7 @@ import {
 
 const { deployMockContract } = waffle;
 
-type AssetProperties = [string, string, string, number];
+type AssetProperties = [string, string, string, number, BigNumber];
 
 describe("AssetsRegistry", () => {
   let quantConfig: QuantConfig;
@@ -25,6 +25,8 @@ describe("AssetsRegistry", () => {
   let USDC: MockERC20;
   let WETHProperties: AssetProperties;
   let USDCProperties: AssetProperties;
+
+  const quantityTickSize = ethers.BigNumber.from("1000");
 
   beforeEach(async () => {
     [
@@ -41,6 +43,7 @@ describe("AssetsRegistry", () => {
       await WETH.name(),
       await WETH.symbol(),
       await WETH.decimals(),
+      quantityTickSize,
     ];
 
     USDCProperties = [
@@ -48,6 +51,7 @@ describe("AssetsRegistry", () => {
       await USDC.name(),
       await USDC.symbol(),
       await USDC.decimals(),
+      quantityTickSize,
     ];
 
     quantConfig = await deployQuantConfig(timelockController, [
@@ -99,12 +103,19 @@ describe("AssetsRegistry", () => {
       );
       await assetsRegistry
         .connect(assetRegistryManager)
-        .addAsset(basicToken.address, "Basic Token", "BASIC", 14);
+        .addAsset(
+          basicToken.address,
+          "Basic Token",
+          "BASIC",
+          14,
+          quantityTickSize
+        );
 
       expect(await assetsRegistry.assetProperties(basicToken.address)).to.eql([
         "Basic Token",
         "BASIC",
         14,
+        quantityTickSize,
       ]);
     });
 
