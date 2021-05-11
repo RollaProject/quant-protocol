@@ -180,36 +180,14 @@ contract ConfigTimelockController is TimelockController {
         );
 
         uint256 length = protocolValues.length;
-        uint256 delay = minDelay;
-        uint256 protocolValueDelay;
-
-        address[] memory targets = new address[](length);
-        uint256[] memory values = new uint256[](length);
-        bytes[] memory datas = new bytes[](length);
 
         for (uint256 i = 0; i < length; i++) {
-            protocolValueDelay = _getProtocolValueDelay(protocolValues[i]);
-
-            if (protocolValueDelay > delay) {
-                delay = protocolValueDelay;
-            }
-
-            targets[i] = quantConfig;
-            values[i] = 0;
-            datas[i] = abi.encodeWithSelector(
-                QuantConfig(quantConfig).setProtocolAddress.selector,
-                newAddresses[i]
+            scheduleSetProtocolAddress(
+                protocolValues[i],
+                newAddresses[i],
+                quantConfig
             );
         }
-
-        scheduleBatch(
-            targets,
-            values,
-            datas,
-            bytes32(0),
-            bytes32(block.timestamp),
-            delay
-        );
     }
 
     function scheduleBatchSetProtocolUints(
@@ -223,41 +201,19 @@ contract ConfigTimelockController is TimelockController {
         );
 
         uint256 length = protocolValues.length;
-        uint256 delay = minDelay;
-        uint256 protocolValueDelay;
-
-        address[] memory targets = new address[](length);
-        uint256[] memory values = new uint256[](length);
-        bytes[] memory datas = new bytes[](length);
 
         for (uint256 i = 0; i < length; i++) {
-            protocolValueDelay = _getProtocolValueDelay(protocolValues[i]);
-
-            if (protocolValueDelay > delay) {
-                delay = protocolValueDelay;
-            }
-
-            targets[i] = quantConfig;
-            values[i] = 0;
-            datas[i] = abi.encodeWithSelector(
-                QuantConfig(quantConfig).setProtocolUint256.selector,
-                newUints[i]
+            scheduleSetProtocolUint256(
+                protocolValues[i],
+                newUints[i],
+                quantConfig
             );
         }
-
-        scheduleBatch(
-            targets,
-            values,
-            datas,
-            bytes32(0),
-            bytes32(block.timestamp),
-            delay
-        );
     }
 
     function scheduleBatchSetProtocolBooleans(
         bytes32[] calldata protocolValues,
-        uint256[] calldata newBooleans,
+        bool[] calldata newBooleans,
         address quantConfig
     ) public onlyRole(PROPOSER_ROLE) {
         require(
@@ -266,36 +222,14 @@ contract ConfigTimelockController is TimelockController {
         );
 
         uint256 length = protocolValues.length;
-        uint256 delay = minDelay;
-        uint256 protocolValueDelay;
-
-        address[] memory targets = new address[](length);
-        uint256[] memory values = new uint256[](length);
-        bytes[] memory datas = new bytes[](length);
 
         for (uint256 i = 0; i < length; i++) {
-            protocolValueDelay = _getProtocolValueDelay(protocolValues[i]);
-
-            if (protocolValueDelay > delay) {
-                delay = protocolValueDelay;
-            }
-
-            targets[i] = quantConfig;
-            values[i] = 0;
-            datas[i] = abi.encodeWithSelector(
-                QuantConfig(quantConfig).setProtocolBoolean.selector,
-                newBooleans[i]
+            scheduleSetProtocolBoolean(
+                protocolValues[i],
+                newBooleans[i],
+                quantConfig
             );
         }
-
-        scheduleBatch(
-            targets,
-            values,
-            datas,
-            bytes32(0),
-            bytes32(block.timestamp),
-            delay
-        );
     }
 
     function hashOperation(
