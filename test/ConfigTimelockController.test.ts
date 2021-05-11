@@ -113,375 +113,523 @@ describe("ConfigTimelockController", () => {
           .setDelay(protocolFee, ethers.BigNumber.from(24 * 3600))
       ).to.be.revertedWith("TimelockController: sender requires permission");
     });
+  });
 
-    describe("schedule", () => {
-      it("Should revert when trying to schedule function calls to protocol value setters while specifying a custom delay", async () => {
-        await expect(
-          configTimelockController
-            .connect(admin)
-            .schedule(
-              quantConfig.address,
-              value,
-              quantConfig.interface.encodeFunctionData("setProtocolAddress", [
-                ethers.utils.id("assetsRegistry"),
-                ethers.constants.AddressZero,
-              ]),
-              predecessor,
-              salt,
-              delay
-            )
-        ).to.be.revertedWith(
-          "ConfigTimelockController: Can not schedule changes to a protocol value with an arbitrary delay"
-        );
-      });
-
-      it("Should revert when a non-proposer tries to schedule a function call", async () => {
-        await expect(
-          configTimelockController
-            .connect(secondAccount)
-            .schedule(...scheduleCallData)
-        ).to.be.revertedWith("TimelockController: sender requires permission");
-      });
-
-      it("Proposers should be able to schedule function calls", async () => {
-        await expect(
-          configTimelockController.connect(admin).schedule(...scheduleCallData)
-        )
-          .to.emit(configTimelockController, "CallScheduled")
-          .withArgs(id, 0, target, value, data, predecessor, delay);
-      });
-    });
-
-    describe("scheduleSetProtocolAddress", () => {
-      it("Should revert when a non-proposer tries to schedule setting a protocol address", async () => {
-        await expect(
-          configTimelockController
-            .connect(secondAccount)
-            .scheduleSetProtocolAddress(
-              ethers.utils.id("oracleRegistry"),
+  describe("schedule", () => {
+    it("Should revert when trying to schedule function calls to protocol value setters while specifying a custom delay", async () => {
+      await expect(
+        configTimelockController
+          .connect(admin)
+          .schedule(
+            quantConfig.address,
+            value,
+            quantConfig.interface.encodeFunctionData("setProtocolAddress", [
+              ethers.utils.id("assetsRegistry"),
               ethers.constants.AddressZero,
-              quantConfig.address
-            )
-        ).to.be.revertedWith("TimelockController: sender requires permission");
-      });
-
-      it("Proposers should be able to schedule calls to setProtocolAddress in the QuantConfig", async () => {
-        const registryAddress = ethers.Wallet.createRandom().address;
-
-        const oracleRegistry = ethers.utils.id("oracleRegistry");
-
-        const callData = quantConfig.interface.encodeFunctionData(
-          "setProtocolAddress",
-          [oracleRegistry, registryAddress]
-        );
-
-        const id = await configTimelockController.hashOperation(
-          quantConfig.address,
-          0,
-          callData,
-          predecessor,
-          await getBytes32Timestamp()
-        );
-
-        await expect(
-          configTimelockController
-            .connect(admin)
-            .scheduleSetProtocolAddress(
-              ethers.utils.id("oracleRegistry"),
-              registryAddress,
-              quantConfig.address
-            )
-        )
-          .to.emit(configTimelockController, "CallScheduled")
-          .withArgs(
-            id,
-            0,
-            quantConfig.address,
-            0,
-            callData,
+            ]),
             predecessor,
+            salt,
             delay
-          );
-      });
+          )
+      ).to.be.revertedWith(
+        "ConfigTimelockController: Can not schedule changes to a protocol value with an arbitrary delay"
+      );
     });
 
-    describe("scheduleSetProtocolUint256", () => {
-      it("Should revert when a non-proposer tries to schedule setting a protocol uint256", async () => {
-        await expect(
-          configTimelockController
-            .connect(secondAccount)
-            .scheduleSetProtocolUint256(
-              protocolFee,
+    it("Should revert when a non-proposer tries to schedule a function call", async () => {
+      await expect(
+        configTimelockController
+          .connect(secondAccount)
+          .schedule(...scheduleCallData)
+      ).to.be.revertedWith("TimelockController: sender requires permission");
+    });
+
+    it("Proposers should be able to schedule function calls", async () => {
+      await expect(
+        configTimelockController.connect(admin).schedule(...scheduleCallData)
+      )
+        .to.emit(configTimelockController, "CallScheduled")
+        .withArgs(id, 0, target, value, data, predecessor, delay);
+    });
+  });
+
+  describe("scheduleSetProtocolAddress", () => {
+    it("Should revert when a non-proposer tries to schedule setting a protocol address", async () => {
+      await expect(
+        configTimelockController
+          .connect(secondAccount)
+          .scheduleSetProtocolAddress(
+            ethers.utils.id("oracleRegistry"),
+            ethers.constants.AddressZero,
+            quantConfig.address
+          )
+      ).to.be.revertedWith("TimelockController: sender requires permission");
+    });
+
+    it("Proposers should be able to schedule calls to setProtocolAddress in the QuantConfig", async () => {
+      const registryAddress = ethers.Wallet.createRandom().address;
+
+      const oracleRegistry = ethers.utils.id("oracleRegistry");
+
+      const callData = quantConfig.interface.encodeFunctionData(
+        "setProtocolAddress",
+        [oracleRegistry, registryAddress]
+      );
+
+      const id = await configTimelockController.hashOperation(
+        quantConfig.address,
+        0,
+        callData,
+        predecessor,
+        await getBytes32Timestamp()
+      );
+
+      await expect(
+        configTimelockController
+          .connect(admin)
+          .scheduleSetProtocolAddress(
+            ethers.utils.id("oracleRegistry"),
+            registryAddress,
+            quantConfig.address
+          )
+      )
+        .to.emit(configTimelockController, "CallScheduled")
+        .withArgs(id, 0, quantConfig.address, 0, callData, predecessor, delay);
+    });
+  });
+
+  describe("scheduleSetProtocolUint256", () => {
+    it("Should revert when a non-proposer tries to schedule setting a protocol uint256", async () => {
+      await expect(
+        configTimelockController
+          .connect(secondAccount)
+          .scheduleSetProtocolUint256(
+            protocolFee,
+            ethers.BigNumber.from("0"),
+            quantConfig.address
+          )
+      ).to.be.revertedWith("TimelockController: sender requires permission");
+    });
+
+    it("Proposers should be able to schedule calls to setProtocolUint256 in the QuantConfig", async () => {
+      const newProtocoFee = ethers.BigNumber.from("1000");
+
+      const callData = quantConfig.interface.encodeFunctionData(
+        "setProtocolUint256",
+        [protocolFee, newProtocoFee]
+      );
+
+      const id = await configTimelockController.hashOperation(
+        quantConfig.address,
+        0,
+        callData,
+        predecessor,
+        await getBytes32Timestamp()
+      );
+
+      await expect(
+        configTimelockController
+          .connect(admin)
+          .scheduleSetProtocolUint256(
+            protocolFee,
+            newProtocoFee,
+            quantConfig.address
+          )
+      )
+        .to.emit(configTimelockController, "CallScheduled")
+        .withArgs(id, 0, quantConfig.address, 0, callData, predecessor, delay);
+    });
+  });
+
+  describe("scheduleSetProtocolBoolean", () => {
+    it("Should revert when a non-proposer tries to schedule setting a protocol boolean", async () => {
+      await expect(
+        configTimelockController
+          .connect(secondAccount)
+          .scheduleSetProtocolBoolean(
+            ethers.utils.id("oracleRegistry"),
+            false,
+            quantConfig.address
+          )
+      ).to.be.revertedWith("TimelockController: sender requires permission");
+    });
+
+    it("Proposers should be able to schedule calls to setProtocolBoolean in the QuantConfig", async () => {
+      const isPriceRegistrySet = ethers.utils.id("isPriceRegistrySet");
+
+      const callData = quantConfig.interface.encodeFunctionData(
+        "setProtocolBoolean",
+        [isPriceRegistrySet, true]
+      );
+
+      const id = await configTimelockController.hashOperation(
+        quantConfig.address,
+        0,
+        callData,
+        predecessor,
+        await getBytes32Timestamp()
+      );
+
+      await expect(
+        configTimelockController
+          .connect(admin)
+          .scheduleSetProtocolBoolean(
+            isPriceRegistrySet,
+            true,
+            quantConfig.address
+          )
+      )
+        .to.emit(configTimelockController, "CallScheduled")
+        .withArgs(id, 0, quantConfig.address, 0, callData, predecessor, delay);
+    });
+  });
+
+  describe("scheduleBatch", () => {
+    it("Should revert when a non-proposer tries to schedule a batch of function calls", async () => {
+      await expect(
+        configTimelockController
+          .connect(secondAccount)
+          .scheduleBatch(
+            [ethers.constants.AddressZero],
+            [ethers.utils.parseEther("10")],
+            ["0x00"],
+            predecessor,
+            salt,
+            delay
+          )
+      ).to.be.revertedWith("TimelockController: sender requires permission");
+    });
+
+    it("Should revert when trying to schedule a batch with less values than targets", async () => {
+      await expect(
+        configTimelockController
+          .connect(admin)
+          .scheduleBatch(
+            [ethers.constants.AddressZero, quantConfig.address],
+            [ethers.utils.parseEther("2")],
+            ["0x00", "0x00"],
+            predecessor,
+            salt,
+            delay
+          )
+      ).to.be.revertedWith("TimelockController: length mismatch");
+    });
+
+    it("Should revert when trying to schedule a batch with less data values than targets", async () => {
+      await expect(
+        configTimelockController
+          .connect(admin)
+          .scheduleBatch(
+            [ethers.constants.AddressZero, quantConfig.address],
+            [ethers.utils.parseEther("5"), ethers.utils.parseEther("1")],
+            ["0x00"],
+            predecessor,
+            salt,
+            delay
+          )
+      ).to.be.revertedWith("TimelockController: length mismatch");
+    });
+
+    it("Should revert when trying to schedule a batch of calls containing changes to a protocol value while specifying a custom delay", async () => {
+      const newProtocoFee = ethers.BigNumber.from("1000");
+
+      const callData = quantConfig.interface.encodeFunctionData(
+        "setProtocolUint256",
+        [protocolFee, newProtocoFee]
+      );
+
+      await expect(
+        configTimelockController
+          .connect(admin)
+          .scheduleBatch(
+            [
+              ethers.constants.AddressZero,
+              quantConfig.address,
+              ethers.Wallet.createRandom().address,
+            ],
+            [
+              ethers.utils.parseEther("1"),
               ethers.BigNumber.from("0"),
-              quantConfig.address
-            )
-        ).to.be.revertedWith("TimelockController: sender requires permission");
-      });
-
-      it("Proposers should be able to schedule calls to setProtocolUint256 in the QuantConfig", async () => {
-        const newProtocoFee = ethers.BigNumber.from("1000");
-
-        const callData = quantConfig.interface.encodeFunctionData(
-          "setProtocolUint256",
-          [protocolFee, newProtocoFee]
-        );
-
-        const id = await configTimelockController.hashOperation(
-          quantConfig.address,
-          0,
-          callData,
-          predecessor,
-          await getBytes32Timestamp()
-        );
-
-        await expect(
-          configTimelockController
-            .connect(admin)
-            .scheduleSetProtocolUint256(
-              protocolFee,
-              newProtocoFee,
-              quantConfig.address
-            )
-        )
-          .to.emit(configTimelockController, "CallScheduled")
-          .withArgs(
-            id,
-            0,
-            quantConfig.address,
-            0,
-            callData,
+              ethers.utils.parseEther("4"),
+            ],
+            ["0x00", callData, "0x00"],
             predecessor,
+            salt,
             delay
-          );
-      });
+          )
+      ).to.be.revertedWith(
+        "ConfigTimelockController: Can not schedule changes to a protocol value with an arbitrary delay"
+      );
+    });
+  });
+
+  describe("scheduleBatchSetProtocolAddress", () => {
+    it("Should revert when a non-proposer tries to schedule a batch of setProtocolAddress calls", async () => {
+      await expect(
+        configTimelockController
+          .connect(secondAccount)
+          .scheduleBatchSetProtocolAddress(
+            [protocolFee, ethers.utils.id("oracleRegistry")],
+            [ethers.constants.AddressZero, ethers.constants.AddressZero],
+            quantConfig.address
+          )
+      ).to.be.revertedWith("TimelockController: sender requires permission");
     });
 
-    describe("scheduleSetProtocolBoolean", () => {
-      it("Should revert when a non-proposer tries to schedule setting a protocol boolean", async () => {
-        await expect(
-          configTimelockController
-            .connect(secondAccount)
-            .scheduleSetProtocolBoolean(
-              ethers.utils.id("oracleRegistry"),
-              false,
-              quantConfig.address
-            )
-        ).to.be.revertedWith("TimelockController: sender requires permission");
-      });
-
-      it("Proposers should be able to schedule calls to setProtocolBoolean in the QuantConfig", async () => {
-        const isPriceRegistrySet = ethers.utils.id("isPriceRegistrySet");
-
-        const callData = quantConfig.interface.encodeFunctionData(
-          "setProtocolBoolean",
-          [isPriceRegistrySet, true]
-        );
-
-        const id = await configTimelockController.hashOperation(
-          quantConfig.address,
-          0,
-          callData,
-          predecessor,
-          await getBytes32Timestamp()
-        );
-
-        await expect(
-          configTimelockController
-            .connect(admin)
-            .scheduleSetProtocolBoolean(
-              isPriceRegistrySet,
-              true,
-              quantConfig.address
-            )
-        )
-          .to.emit(configTimelockController, "CallScheduled")
-          .withArgs(
-            id,
-            0,
-            quantConfig.address,
-            0,
-            callData,
-            predecessor,
-            delay
-          );
-      });
+    it("Should revert when a different number of addresses and protocol values is passed", async () => {
+      await expect(
+        configTimelockController
+          .connect(admin)
+          .scheduleBatchSetProtocolAddress(
+            [protocolFee],
+            [
+              ethers.constants.AddressZero,
+              ethers.Wallet.createRandom().address,
+            ],
+            quantConfig.address
+          )
+      ).to.be.revertedWith("ConfigTimelockController: length mismatch");
     });
 
-    //   describe("scheduleBatch", () => {
-    //     it("Should revert when trying to schedule a batch of functions while specifying a custom delay", async () => {
-    //       await expect(
-    //         configTimelockController.scheduleBatch(
-    //           [ethers.constants.AddressZero],
-    //           [0],
-    //           ["0x00"],
-    //           someBytes32,
-    //           someBytes32,
-    //           delay
-    //         )
-    //       ).to.be.revertedWith(
-    //         "ConfigTimelockController: Can not schedule a batch with arbitrary delays"
-    //       );
-    //     });
-    //   });
+    it("Proposers should be able to schedule batches of setProtocolAddress calls", async () => {
+      const registryAddress = ethers.Wallet.createRandom().address;
+      const feeCollectorAddress = ethers.Wallet.createRandom().address;
 
-    //   describe("scheduleWithDelay", () => {
-    //     it("Should be able to schedule calls that don't have a delay stored, i.e., calls that are not changing a protocol value", async () => {
-    //       const target = ethers.constants.AddressZero;
-    //       const value = 0;
-    //       const data = "0x00";
-    //       const predecessor = someBytes32;
+      const oracleRegistry = ethers.utils.id("oracleRegistry");
+      const feeCollector = ethers.utils.id("feeCollector");
 
-    //       const callData: scheduleWithDelayParams = [
-    //         target,
-    //         value,
-    //         data,
-    //         predecessor,
-    //         someBytes32,
-    //         someBytes32,
-    //       ];
+      const registryCallData = quantConfig.interface.encodeFunctionData(
+        "setProtocolAddress",
+        [oracleRegistry, registryAddress]
+      );
 
-    //       const minDelay = ethers.BigNumber.from(4 * 24 * 3600); // 4 days in seconds
-    //       configTimelockController = await deployConfigTimelockController(
-    //         admin,
-    //         minDelay
-    //       );
+      const feeCollectorCallData = quantConfig.interface.encodeFunctionData(
+        "setProtocolAddress",
+        [feeCollector, feeCollectorAddress]
+      );
 
-    //       const id = await configTimelockController.hashOperation(
-    //         target,
-    //         value,
-    //         data,
-    //         predecessor,
-    //         someBytes32
-    //       );
+      const registryId = await configTimelockController.hashOperation(
+        quantConfig.address,
+        0,
+        registryCallData,
+        predecessor,
+        await getBytes32Timestamp()
+      );
 
-    //       await expect(
-    //         configTimelockController.connect(admin).scheduleWithDelay(...callData)
-    //       )
-    //         .to.emit(configTimelockController, "CallScheduled")
-    //         .withArgs(id, 0, target, value, data, predecessor, minDelay);
-    //     });
+      const feeCollectorId = await configTimelockController.hashOperation(
+        quantConfig.address,
+        0,
+        feeCollectorCallData,
+        predecessor,
+        await getBytes32Timestamp()
+      );
 
-    //     it("Should be able to schedule calls that have a stored delay related to a protocol value", async () => {
-    //       const protocolFeeDelay = ethers.BigNumber.from(3 * 24 * 3600); // 3 days in seconds
-    //       await configTimelockController
-    //         .connect(admin)
-    //         .setDelay(protocolFee, protocolFeeDelay);
+      await expect(
+        configTimelockController
+          .connect(admin)
+          .scheduleBatchSetProtocolAddress(
+            [oracleRegistry, feeCollector],
+            [registryAddress, feeCollectorAddress],
+            quantConfig.address
+          )
+      )
+        .to.emit(configTimelockController, "CallScheduled")
+        .withArgs(
+          registryId,
+          0,
+          quantConfig.address,
+          0,
+          registryCallData,
+          predecessor,
+          delay
+        )
+        .emit(configTimelockController, "CallScheduled")
+        .withArgs(
+          feeCollectorId,
+          0,
+          quantConfig.address,
+          0,
+          feeCollectorCallData,
+          predecessor,
+          delay
+        );
+    });
+  });
 
-    //       const target = ethers.constants.AddressZero;
-    //       const value = 0;
-    //       const data = "0x00";
-    //       const predecessor = someBytes32;
+  describe("scheduleBatchSetProtocolUints", () => {
+    it("Should revert when a non-proposer tries to schedule a batch of setProtocolUint256 calls", async () => {
+      await expect(
+        configTimelockController
+          .connect(secondAccount)
+          .scheduleBatchSetProtocolUints(
+            [protocolFee, ethers.utils.id("maxOptionsDuration")],
+            [ethers.BigNumber.from("0"), ethers.BigNumber.from(28 * 24 * 3600)],
+            quantConfig.address
+          )
+      ).to.be.revertedWith("TimelockController: sender requires permission");
+    });
 
-    //       const callData: scheduleWithDelayParams = [
-    //         target,
-    //         value,
-    //         data,
-    //         predecessor,
-    //         someBytes32,
-    //         protocolFee,
-    //       ];
+    it("Should revert when a different number of addresses and protocol values is passed", async () => {
+      await expect(
+        configTimelockController
+          .connect(admin)
+          .scheduleBatchSetProtocolUints(
+            [protocolFee],
+            [ethers.BigNumber.from(0), ethers.utils.parseEther("10")],
+            quantConfig.address
+          )
+      ).to.be.revertedWith("ConfigTimelockController: length mismatch");
+    });
 
-    //       const id = await configTimelockController.hashOperation(
-    //         target,
-    //         value,
-    //         data,
-    //         predecessor,
-    //         someBytes32
-    //       );
+    it("Proposers should be able to schedule batches of setProtocolUint256 calls", async () => {
+      const protocolFeeValue = ethers.BigNumber.from("10");
+      const maxOptionsDurationValue = ethers.BigNumber.from(28 * 24 * 3600);
 
-    //       await expect(
-    //         configTimelockController.connect(admin).scheduleWithDelay(...callData)
-    //       )
-    //         .to.emit(configTimelockController, "CallScheduled")
-    //         .withArgs(id, 0, target, value, data, predecessor, protocolFeeDelay);
-    //     });
+      const protocolFeeCalldata = quantConfig.interface.encodeFunctionData(
+        "setProtocolUint256",
+        [protocolFee, protocolFeeValue]
+      );
 
-    //     it("Should revert when a non-proposer tries to schedule a function call", async () => {
-    //       await expect(
-    //         configTimelockController
-    //           .connect(secondAccount)
-    //           .scheduleWithDelay(
-    //             ethers.constants.AddressZero,
-    //             0,
-    //             "0x00",
-    //             someBytes32,
-    //             someBytes32,
-    //             someBytes32
-    //           )
-    //       ).to.be.revertedWith("TimelockController: sender requires permission");
-    //     });
-    //   });
+      const maxOptionsDurationCallData = quantConfig.interface.encodeFunctionData(
+        "setProtocolUint256",
+        [ethers.utils.id("maxOptionsDuration"), maxOptionsDurationValue]
+      );
 
-    //   describe("scheduleBatchWithDelay", () => {
-    //     it("Should revert when the targets and values arrays have different lengths", async () => {
-    //       const targets = [ethers.constants.AddressZero];
-    //       const values = [
-    //         ethers.BigNumber.from("10"),
-    //         ethers.BigNumber.from("2"),
-    //       ];
+      const protocolFeeId = await configTimelockController.hashOperation(
+        quantConfig.address,
+        0,
+        protocolFeeCalldata,
+        predecessor,
+        await getBytes32Timestamp()
+      );
 
-    //       assert(targets.length !== values.length);
+      const maxOptionsDurationId = await configTimelockController.hashOperation(
+        quantConfig.address,
+        0,
+        maxOptionsDurationCallData,
+        predecessor,
+        await getBytes32Timestamp()
+      );
 
-    //       await expect(
-    //         configTimelockController
-    //           .connect(admin)
-    //           .scheduleBatchWithDelay(
-    //             targets,
-    //             values,
-    //             ["0x00"],
-    //             someBytes32,
-    //             someBytes32,
-    //             delay,
-    //             [someBytes32]
-    //           )
-    //       ).to.be.revertedWith("ConfigTimelockController: length mismatch");
-    //     });
+      await expect(
+        configTimelockController
+          .connect(admin)
+          .scheduleBatchSetProtocolUints(
+            [protocolFee, ethers.utils.id("maxOptionsDuration")],
+            [protocolFeeValue, maxOptionsDurationValue],
+            quantConfig.address
+          )
+      )
+        .to.emit(configTimelockController, "CallScheduled")
+        .withArgs(
+          protocolFeeId,
+          0,
+          quantConfig.address,
+          0,
+          protocolFeeCalldata,
+          predecessor,
+          delay
+        )
+        .emit(configTimelockController, "CallScheduled")
+        .withArgs(
+          maxOptionsDurationId,
+          0,
+          quantConfig.address,
+          0,
+          maxOptionsDurationCallData,
+          predecessor,
+          delay
+        );
+    });
+  });
 
-    //     it("Should revert when the targets and datas arrays have different lengths", async () => {
-    //       const targets = [ethers.constants.AddressZero];
-    //       const datas = ["0x00", "0x01"];
+  describe("scheduleBatchSetProtocolBooleans", () => {
+    const isPaused = ethers.utils.id("isPaused");
+    const isDeprecated = ethers.utils.id("isDeprecated");
 
-    //       assert(targets.length !== datas.length);
+    it("Should revert when a non-proposer tries to schedule a batch of setProtocolBoolean calls", async () => {
+      await expect(
+        configTimelockController
+          .connect(secondAccount)
+          .scheduleBatchSetProtocolBooleans(
+            [isPaused, isDeprecated],
+            [true, false],
+            quantConfig.address
+          )
+      ).to.be.revertedWith("TimelockController: sender requires permission");
+    });
 
-    //       await expect(
-    //         configTimelockController
-    //           .connect(admin)
-    //           .scheduleBatchWithDelay(
-    //             targets,
-    //             [ethers.BigNumber.from("10")],
-    //             datas,
-    //             someBytes32,
-    //             someBytes32,
-    //             delay,
-    //             [someBytes32]
-    //           )
-    //       ).to.be.revertedWith("ConfigTimelockController: length mismatch");
-    //     });
+    it("Should revert when a different number of booleans and protocol values is passed", async () => {
+      await expect(
+        configTimelockController
+          .connect(admin)
+          .scheduleBatchSetProtocolBooleans(
+            [isPaused],
+            [false, false],
+            quantConfig.address
+          )
+      ).to.be.revertedWith("ConfigTimelockController: length mismatch");
+    });
 
-    //     it("Should revert when the targets and protocolValues arrays have different lengths", async () => {
-    //       const targets = [ethers.constants.AddressZero];
-    //       const protocolValues = [ethers.utils.id("assetsRegistry"), protocolFee];
+    it("Proposers should be able to schedule batches of setProtocolBoolean calls", async () => {
+      const isPausedValue = false;
+      const isDeprecatedValue = true;
 
-    //       assert(targets.length !== protocolValues.length);
+      const isPausedCallData = quantConfig.interface.encodeFunctionData(
+        "setProtocolBoolean",
+        [isPaused, isPausedValue]
+      );
 
-    //       await expect(
-    //         configTimelockController
-    //           .connect(admin)
-    //           .scheduleBatchWithDelay(
-    //             targets,
-    //             [ethers.BigNumber.from("10")],
-    //             ["0x00"],
-    //             someBytes32,
-    //             someBytes32,
-    //             delay,
-    //             protocolValues
-    //           )
-    //       ).to.be.revertedWith("ConfigTimelockController: length mismatch");
-    //     });
+      const isDeprecatedCallData = quantConfig.interface.encodeFunctionData(
+        "setProtocolBoolean",
+        [isDeprecated, isDeprecatedValue]
+      );
 
-    //     it(
-    //       "Should revert when trying to schedule a batch of function calls with a delay lower than the minimum"
-    //     );
-    //   });
+      const isPausedId = await configTimelockController.hashOperation(
+        quantConfig.address,
+        0,
+        isPausedCallData,
+        predecessor,
+        await getBytes32Timestamp()
+      );
+
+      const isDeprecatedId = await configTimelockController.hashOperation(
+        quantConfig.address,
+        0,
+        isDeprecatedCallData,
+        predecessor,
+        await getBytes32Timestamp()
+      );
+
+      await expect(
+        configTimelockController
+          .connect(admin)
+          .scheduleBatchSetProtocolBooleans(
+            [isPaused, isDeprecated],
+            [isPausedValue, isDeprecatedValue],
+            quantConfig.address
+          )
+      )
+        .to.emit(configTimelockController, "CallScheduled")
+        .withArgs(
+          isPausedId,
+          0,
+          quantConfig.address,
+          0,
+          isPausedCallData,
+          predecessor,
+          delay
+        )
+        .emit(configTimelockController, "CallScheduled")
+        .withArgs(
+          isDeprecatedId,
+          0,
+          quantConfig.address,
+          0,
+          isDeprecatedCallData,
+          predecessor,
+          delay
+        );
+    });
   });
 });
