@@ -1,6 +1,6 @@
 {
   "name": "@quant-finance/quant-protocol",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Smart-contracts for Quant. The free, instant, DeFi crypto options trading protocol.",
   "scripts": {
     "build": "hardhat compile",
