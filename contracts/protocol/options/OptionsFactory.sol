@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
+pragma abicoder v2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./QToken.sol";
 import "./CollateralToken.sol";
 import "./OptionsUtils.sol";
-import "./AssetsRegistry.sol";
-import "../QuantConfig.sol";
+import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IOptionsFactory.sol";
 import "../interfaces/IProviderOracleManager.sol";
 import "../interfaces/IOracleRegistry.sol";
@@ -22,7 +22,7 @@ contract OptionsFactory is IOptionsFactory {
     /// @notice array of all the created QTokens
     address[] public qTokens;
 
-    QuantConfig public quantConfig;
+    IQuantConfig public quantConfig;
 
     CollateralToken public collateralToken;
 
@@ -49,7 +49,7 @@ contract OptionsFactory is IOptionsFactory {
     /// @param _quantConfig the address of the Quant system configuration contract
     /// @param _collateralToken address of the CollateralToken contract
     constructor(address _quantConfig, address _collateralToken) {
-        quantConfig = QuantConfig(_quantConfig);
+        quantConfig = IQuantConfig(_quantConfig);
         collateralToken = CollateralToken(_collateralToken);
     }
 
@@ -142,10 +142,15 @@ contract OptionsFactory is IOptionsFactory {
             "OptionsFactory: given expiry time is in the past"
         );
 
+        IOracleRegistry oracleRegistry =
+            IOracleRegistry(
+                quantConfig.protocolAddresses(
+                    ProtocolValue.encode("oracleRegistry")
+                )
+            );
+
         require(
-            IOracleRegistry(quantConfig.oracleRegistry()).isOracleRegistered(
-                _oracle
-            ),
+            oracleRegistry.isOracleRegistered(_oracle),
             "OptionsFactory: Oracle is not registered in OracleRegistry"
         );
 
@@ -156,9 +161,7 @@ contract OptionsFactory is IOptionsFactory {
         );
 
         require(
-            IOracleRegistry(quantConfig.oracleRegistry()).isOracleActive(
-                _oracle
-            ),
+            oracleRegistry.isOracleActive(_oracle),
             "OptionsFactory: Oracle is not active in the OracleRegistry"
         );
 
@@ -186,7 +189,11 @@ contract OptionsFactory is IOptionsFactory {
 
         {
             string memory symbol;
-            (, symbol, , ) = AssetsRegistry(quantConfig.assetsRegistry())
+            (, symbol, , ) = IAssetsRegistry(
+                quantConfig.protocolAddresses(
+                    ProtocolValue.encode("assetsRegistry")
+                )
+            )
                 .assetProperties(_underlyingAsset);
             require(
                 bytes(symbol).length != 0,

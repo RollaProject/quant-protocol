@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
+pragma abicoder v2;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../QuantConfig.sol";
+import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IAssetsRegistry.sol";
 
 contract AssetsRegistry is IAssetsRegistry {
@@ -13,9 +14,9 @@ contract AssetsRegistry is IAssetsRegistry {
         uint256 quantityTickSize;
     }
 
-    QuantConfig private _quantConfig;
+    IQuantConfig private _quantConfig;
 
-    mapping(address => AssetProperties) public assetProperties;
+    mapping(address => AssetProperties) public override assetProperties;
 
     event AssetAdded(
         address indexed underlying,
@@ -26,7 +27,7 @@ contract AssetsRegistry is IAssetsRegistry {
     );
 
     constructor(address quantConfig_) {
-        _quantConfig = QuantConfig(quantConfig_);
+        _quantConfig = IQuantConfig(quantConfig_);
     }
 
     //TODO: Method in here to get a list of assets

@@ -72,19 +72,19 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         //noop
     }
 
-    function accessController() external view override returns (address) {
+    function accessController() external pure override returns (address) {
         return address(0);
     }
 
-    function aggregator() external view override returns (address) {
+    function aggregator() external pure override returns (address) {
         return address(0);
     }
 
-    function decimals() external view override returns (uint8) {
+    function decimals() external pure override returns (uint8) {
         return 0;
     }
 
-    function description() external view override returns (string memory) {
+    function description() external pure override returns (string memory) {
         return "...";
     }
 
@@ -99,7 +99,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
 
     function getRoundData(uint80)
         external
-        view
+        pure
         override
         returns (
             uint80 roundId,
@@ -154,25 +154,25 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         return latestTimestampValue;
     }
 
-    function owner() external view override returns (address) {
+    function owner() external pure override returns (address) {
         return address(0);
     }
 
-    function phaseAggregators(uint16) external view override returns (address) {
+    function phaseAggregators(uint16) external pure override returns (address) {
         return address(0);
     }
 
-    function phaseId() external view override returns (uint16) {
+    function phaseId() external pure override returns (uint16) {
         return 0;
     }
 
-    function proposedAggregator() external view override returns (address) {
+    function proposedAggregator() external pure override returns (address) {
         return address(0);
     }
 
     function proposedGetRoundData(uint80)
         external
-        view
+        pure
         override
         returns (
             uint80 roundId,
@@ -187,7 +187,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
 
     function proposedLatestRoundData()
         external
-        view
+        pure
         override
         returns (
             uint80 roundId,
@@ -200,7 +200,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         return (0, 0, 0, 0, 0);
     }
 
-    function version() external view override returns (uint256) {
+    function version() external pure override returns (uint256) {
         return 0;
     }
 }

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-import "../../QuantConfig.sol";
+import "../../interfaces/IQuantConfig.sol";
 import "../../interfaces/IProviderOracleManager.sol";
 
 /// @title Oracle manager for holding asset addresses and their oracle addresses for a single provider
 /// @notice Once an oracle is added for an asset it can't be changed!
 abstract contract ProviderOracleManager is IProviderOracleManager {
     /// @notice quant central configuration
-    QuantConfig public config;
+    IQuantConfig public config;
 
     // asset address => oracle address
     mapping(address => address) public assetOracles;
@@ -19,7 +19,7 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
     event OracleAdded(address asset, address oracle);
 
     constructor(address _config) {
-        config = QuantConfig(_config);
+        config = IQuantConfig(_config);
     }
 
     /// @notice Add an asset to the oracle manager with its corresponding oracle address
