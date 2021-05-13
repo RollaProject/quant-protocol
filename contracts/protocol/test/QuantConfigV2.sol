@@ -9,12 +9,16 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 /// @dev This should be used as a central access control manager which other contracts use to check permissions
 contract QuantConfigV2 is AccessControl, Initializable {
     //this should be some admin/governance address
-    address public timelockController;
+    address payable public timelockController;
     address public priceRegistry;
     address public oracleRegistry;
     address public assetsRegistry;
-    uint256 public fee;
+    uint256 public maxOptionsDuration;
     bool private _priceRegistrySetted;
+
+    mapping(bytes32 => address) public protocolAddresses;
+    mapping(bytes32 => uint256) public protocolUints256;
+    mapping(bytes32 => bool) public protocolBooleans;
 
     bytes32 public constant OPTIONS_CONTROLLER_ROLE =
         keccak256("OPTIONS_CONTROLLER_ROLE");
@@ -22,32 +26,8 @@ contract QuantConfigV2 is AccessControl, Initializable {
         keccak256("ORACLE_MANAGER_ROLE");
     bytes32 public constant PRICE_SUBMITTER_ROLE =
         keccak256("PRICE_SUBMITTER_ROLE");
-    bytes32 public constant PRICE_SUBMITTER_ROLE_ADMIN =
-        keccak256("PRICE_SUBMITTER_ROLE_ADMIN");
-    bytes32 public constant FALLBACK_PRICE_ROLE =
-        keccak256("FALLBACK_PRICE_ROLE");
-    bytes32 public constant OPTIONS_MINTER_ROLE =
-        keccak256("OPTIONS_MINTER_ROLE");
-    bytes32 public constant OPTIONS_BURNER_ROLE =
-        keccak256("OPTIONS_BURNER_ROLE");
-    bytes32 public constant COLLATERAL_MINTER_ROLE =
-        keccak256("COLLATERAL_MINTER_ROLE");
-    bytes32 public constant COLLATERAL_BURNER_ROLE =
-        keccak256("COLLATERAL_BURNER_ROLE");
-    bytes32 public constant ASSET_REGISTRY_MANAGER_ROLE =
-        keccak256("ASSET_REGISTRY_MANAGER_ROLE");
-    bytes32 public constant COLLATERAL_CREATOR_ROLE =
-        keccak256("COLLATERAL_CREATOR_ROLE");
 
     uint256 public newV2StateVariable;
-
-    /// @notice Set the protocol fee
-    /// @dev Only accounts or contracts with the admin role should call this function
-    /// @param _fee The new amount to set as the protocol fee
-    function setFee(uint256 _fee) external {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
-        fee = _fee;
-    }
 
     /// @notice Set the protocol's price registry
     /// @dev Can only be called once, and by accounts or contracts with the admin role
@@ -70,20 +50,17 @@ contract QuantConfigV2 is AccessControl, Initializable {
         assetsRegistry = _assetsRegistry;
     }
 
-    /// @notice Set the oracle registry
-    /// @dev Only accounts or contracts with the admin role should call this contract
-    /// @param _oracleRegistry address of the OracleRegistry to be used by the protocol
-    function setOracleRegistry(address _oracleRegistry) external {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
-        oracleRegistry = _oracleRegistry;
-    }
-
-    /// @notice Initializes the system roles and assign them to the given admin address
-    function initialize(address _timelockController) public initializer {
+    /// @notice Initializes the system roles and assign them to the given TimelockController address
+    /// @param _timelockController Address of the TimelockController to receive the system roles
+    /// @dev The TimelockController should have a Quant multisig as its sole proposer
+    function initialize(address payable _timelockController)
+        public
+        initializer
+    {
         _setupRole(DEFAULT_ADMIN_ROLE, _timelockController);
         // On deployment, this role should be transferd to the OptionsFactory as its only admin
-        // _setupRole(OPTIONS_CONTROLLER_ROLE, _admin);
-        // _setupRole(ORACLE_MANAGER_ROLE, _admin);
+        _setupRole(OPTIONS_CONTROLLER_ROLE, _timelockController);
+        _setupRole(ORACLE_MANAGER_ROLE, _timelockController);
         timelockController = _timelockController;
     }
 }

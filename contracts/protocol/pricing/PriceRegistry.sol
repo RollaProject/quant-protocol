@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-import "../QuantConfig.sol";
-import "./OracleRegistry.sol";
+import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IPriceRegistry.sol";
 
 /// @title For centrally managing a log of settlement prices, for each option.
 contract PriceRegistry is IPriceRegistry {
     /// @notice quant central configuration
-    QuantConfig public config;
+    IQuantConfig public config;
 
     /// @dev oracle => asset => expiry => price
     mapping(address => mapping(address => mapping(uint256 => uint256)))
@@ -16,7 +15,7 @@ contract PriceRegistry is IPriceRegistry {
 
     /// @param _config address of quant central configuration
     constructor(address _config) {
-        config = QuantConfig(_config);
+        config = IQuantConfig(_config);
     }
 
     /// @notice Set the price at settlement for a particular asset, expiry

@@ -8,8 +8,9 @@ import "./QuantConfig.sol";
 import "./options/OptionsFactory.sol";
 import "./options/QToken.sol";
 import "./options/CollateralToken.sol";
-import "./options/AssetsRegistry.sol";
+import "./interfaces/IAssetsRegistry.sol";
 import "./interfaces/IController.sol";
+import "./ProtocolValue.sol";
 
 contract Controller is IController {
     using SafeMath for uint256;
@@ -86,7 +87,11 @@ contract Controller is IController {
         QToken qToken = QToken(_qToken);
 
         require(
-            IOracleRegistry(optionsFactory.quantConfig().oracleRegistry())
+            IOracleRegistry(
+                optionsFactory.quantConfig().protocolAddresses(
+                    ProtocolValue.encode("oracleRegistry")
+                )
+            )
                 .isOracleActive(qToken.oracle()),
             "Controller: Can't mint an options position as the oracle is inactive"
         );
@@ -403,7 +408,11 @@ contract Controller is IController {
 
             // Initially required collateral is the long strike price
             (, , uint8 underlyingDecimals, ) =
-                AssetsRegistry(optionsFactory.quantConfig().assetsRegistry())
+                IAssetsRegistry(
+                    optionsFactory.quantConfig().protocolAddresses(
+                        ProtocolValue.encode("assetsRegistry")
+                    )
+                )
                     .assetProperties(underlying);
 
             collateralPerOption = 10**underlyingDecimals;
@@ -465,7 +474,11 @@ contract Controller is IController {
         }
 
         PriceRegistry priceRegistry =
-            PriceRegistry(optionsFactory.quantConfig().priceRegistry());
+            PriceRegistry(
+                optionsFactory.quantConfig().protocolAddresses(
+                    ProtocolValue.encode("priceRegistry")
+                )
+            );
 
         uint256 strikePrice = qToken.strikePrice();
         uint256 expiryPrice =
@@ -477,7 +490,11 @@ contract Controller is IController {
 
         if (qToken.isCall()) {
             (, , uint8 underlyingDecimals, ) =
-                AssetsRegistry(optionsFactory.quantConfig().assetsRegistry())
+                IAssetsRegistry(
+                    optionsFactory.quantConfig().protocolAddresses(
+                        ProtocolValue.encode("assetsRegistry")
+                    )
+                )
                     .assetProperties(qToken.underlyingAsset());
 
             payoutAmount = expiryPrice > strikePrice

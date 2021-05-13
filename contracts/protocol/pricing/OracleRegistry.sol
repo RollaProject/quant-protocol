@@ -2,7 +2,7 @@
 pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "../QuantConfig.sol";
+import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IOracleRegistry.sol";
 
 /// @title For centrally managing a list of oracle providers
@@ -25,11 +25,11 @@ contract OracleRegistry is IOracleRegistry {
     uint256 private _currentId;
 
     /// @notice quant central configuration
-    QuantConfig public config;
+    IQuantConfig public config;
 
     /// @param _config address of quant central configuration
     constructor(address _config) {
-        config = QuantConfig(_config);
+        config = IQuantConfig(_config);
     }
 
     /// @notice Add an oracle to the oracle registry which will generate an id. By default oracles are deactivated
