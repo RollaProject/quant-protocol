@@ -5,10 +5,11 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
-import "./AssetsRegistry.sol";
-import "../QuantConfig.sol";
 import "../pricing/PriceRegistry.sol";
+import "../interfaces/IAssetsRegistry.sol";
+import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IQToken.sol";
+import "../ProtocolValue.sol";
 
 /// @title Token that represents a user's long position
 /// @author Quant Finance
@@ -18,7 +19,7 @@ contract QToken is ERC20, IQToken {
     using SafeMath for uint256;
 
     /// @dev Address of system config.
-    QuantConfig public quantConfig;
+    IQuantConfig public quantConfig;
 
     /// @dev Address of the underlying asset. WETH for ethereum options.
     address public underlyingAsset;
@@ -87,7 +88,7 @@ contract QToken is ERC20, IQToken {
             )
         )
     {
-        quantConfig = QuantConfig(_quantConfig);
+        quantConfig = IQuantConfig(_quantConfig);
         underlyingAsset = _underlyingAsset;
         strikeAsset = _strikeAsset;
         oracle = _oracle;
@@ -137,8 +138,10 @@ contract QToken is ERC20, IQToken {
         view
         returns (string memory symbol)
     {
-        (, symbol, , ) = AssetsRegistry(
-            QuantConfig(_quantConfig).assetsRegistry()
+        (, symbol, , ) = IAssetsRegistry(
+            IQuantConfig(_quantConfig).protocolAddresses(
+                ProtocolValue.encode("assetsRegistry")
+            )
         )
             .assetProperties(_asset);
     }
@@ -371,7 +374,11 @@ contract QToken is ERC20, IQToken {
     {
         if (block.timestamp > expiryTime) {
             PriceRegistry priceRegistry =
-                PriceRegistry(quantConfig.priceRegistry());
+                PriceRegistry(
+                    quantConfig.protocolAddresses(
+                        ProtocolValue.encode("priceRegistry")
+                    )
+                );
 
             if (
                 priceRegistry.hasSettlementPrice(

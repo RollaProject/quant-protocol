@@ -3,7 +3,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/TimelockController.sol";
-import "./QuantConfig.sol";
+import "./interfaces/IQuantConfig.sol";
 
 contract ConfigTimelockController is TimelockController {
     mapping(bytes32 => uint256) public delays;
@@ -55,7 +55,7 @@ contract ConfigTimelockController is TimelockController {
     ) public onlyRole(PROPOSER_ROLE) {
         bytes memory data =
             abi.encodeWithSelector(
-                QuantConfig(quantConfig).setProtocolAddress.selector,
+                IQuantConfig(quantConfig).setProtocolAddress.selector,
                 protocolAddress,
                 newAddress
             );
@@ -83,7 +83,7 @@ contract ConfigTimelockController is TimelockController {
     ) public onlyRole(PROPOSER_ROLE) {
         bytes memory data =
             abi.encodeWithSelector(
-                QuantConfig(quantConfig).setProtocolUint256.selector,
+                IQuantConfig(quantConfig).setProtocolUint256.selector,
                 protocolUint256,
                 newUint256
             );
@@ -111,7 +111,7 @@ contract ConfigTimelockController is TimelockController {
     ) public onlyRole(PROPOSER_ROLE) {
         bytes memory data =
             abi.encodeWithSelector(
-                QuantConfig(quantConfig).setProtocolBoolean.selector,
+                IQuantConfig(quantConfig).setProtocolBoolean.selector,
                 protocolBoolean,
                 newBoolean
             );
@@ -264,9 +264,9 @@ contract ConfigTimelockController is TimelockController {
         }
 
         return
-            selector == QuantConfig(address(0)).setProtocolAddress.selector ||
-            selector == QuantConfig(address(0)).setProtocolUint256.selector ||
-            selector == QuantConfig(address(0)).setProtocolBoolean.selector;
+            selector == IQuantConfig(address(0)).setProtocolAddress.selector ||
+            selector == IQuantConfig(address(0)).setProtocolUint256.selector ||
+            selector == IQuantConfig(address(0)).setProtocolBoolean.selector;
     }
 
     function _getProtocolValueDelay(bytes32 protocolValue)

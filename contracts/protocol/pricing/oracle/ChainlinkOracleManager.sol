@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../external/chainlink/IEACAggregatorProxy.sol";
 import "../PriceRegistry.sol";
 import "./ProviderOracleManager.sol";
 import "./IOracleFallbackMechanism.sol";
+import "../../ProtocolValue.sol";
 
 /// @title For managing chainlink oracles for assets and submitting chainlink prices to the registry
 /// @notice Once an oracle is added for an asset it can't be changed!
@@ -98,11 +100,10 @@ contract ChainlinkOracleManager is
             false
         );
 
-        PriceRegistry(config.priceRegistry()).setSettlementPrice(
-            _asset,
-            _expiryTimestamp,
-            price
-        );
+        PriceRegistry(
+            config.protocolAddresses(ProtocolValue.encode("priceRegistry"))
+        )
+            .setSettlementPrice(_asset, _expiryTimestamp, price);
     }
 
     /// @notice Searches for the correct price from chainlink and publishes it to the price registry
@@ -272,11 +273,10 @@ contract ChainlinkOracleManager is
             true
         );
 
-        PriceRegistry(config.priceRegistry()).setSettlementPrice(
-            _asset,
-            _expiryTimestamp,
-            _price
-        );
+        PriceRegistry(
+            config.protocolAddresses(ProtocolValue.encode("priceRegistry"))
+        )
+            .setSettlementPrice(_asset, _expiryTimestamp, _price);
     }
 
     /**

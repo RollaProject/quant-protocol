@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "../QuantConfig.sol";
+import "../interfaces/IQuantConfig.sol";
 import "../interfaces/ICollateralToken.sol";
 
 /// @title Tokens representing a Quant user's short positions
@@ -25,7 +25,7 @@ contract CollateralToken is ERC1155, ICollateralToken {
     }
 
     /// @notice The Quant system config
-    QuantConfig public quantConfig;
+    IQuantConfig public quantConfig;
 
     /// @notice mapping of CollateralToken ids to their respective info struct
     mapping(uint256 => CollateralTokenInfo) public idToInfo;
@@ -72,7 +72,7 @@ contract CollateralToken is ERC1155, ICollateralToken {
     /// users' short positions
     /// @param _quantConfig the address of the Quant system configuration contract
     constructor(address _quantConfig) ERC1155("URI") {
-        quantConfig = QuantConfig(_quantConfig);
+        quantConfig = IQuantConfig(_quantConfig);
     }
 
     /// @notice Create new CollateralTokens

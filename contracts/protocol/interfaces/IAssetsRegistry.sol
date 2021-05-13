@@ -9,4 +9,14 @@ interface IAssetsRegistry {
         uint8 _decimals,
         uint256 _quantityTickSize
     ) external;
+
+    function assetProperties(address)
+        external
+        view
+        returns (
+            string memory,
+            string memory,
+            uint8,
+            uint256
+        );
 }
