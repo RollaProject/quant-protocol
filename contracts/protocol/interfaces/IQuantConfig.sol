@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0;
+
+import "./ITimelockedConfig.sol";
+import "./openzeppelin/IAccessControl.sol";
+
+// solhint-disable-next-line no-empty-blocks
+interface IQuantConfig is ITimelockedConfig, IAccessControl {
+
+}
