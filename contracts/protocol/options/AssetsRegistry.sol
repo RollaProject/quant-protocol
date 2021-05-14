@@ -18,14 +18,6 @@ contract AssetsRegistry is IAssetsRegistry {
 
     mapping(address => AssetProperties) public override assetProperties;
 
-    event AssetAdded(
-        address indexed underlying,
-        string name,
-        string symbol,
-        uint8 decimals,
-        uint256 quantityTickSize
-    );
-
     constructor(address quantConfig_) {
         _quantConfig = IQuantConfig(quantConfig_);
     }
