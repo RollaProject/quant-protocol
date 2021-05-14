@@ -2,6 +2,14 @@
 pragma solidity ^0.7.0;
 
 interface IAssetsRegistry {
+    event AssetAdded(
+        address indexed underlying,
+        string name,
+        string symbol,
+        uint8 decimals,
+        uint256 quantityTickSize
+    );
+
     function addAsset(
         address _underlying,
         string calldata _name,

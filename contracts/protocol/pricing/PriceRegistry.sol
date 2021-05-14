@@ -6,8 +6,8 @@ import "../interfaces/IPriceRegistry.sol";
 
 /// @title For centrally managing a log of settlement prices, for each option.
 contract PriceRegistry is IPriceRegistry {
-    /// @notice quant central configuration
-    IQuantConfig public config;
+    /// @inheritdoc IPriceRegistry
+    IQuantConfig public override config;
 
     /// @dev oracle => asset => expiry => price
     mapping(address => mapping(address => mapping(uint256 => uint256)))
@@ -18,10 +18,7 @@ contract PriceRegistry is IPriceRegistry {
         config = IQuantConfig(_config);
     }
 
-    /// @notice Set the price at settlement for a particular asset, expiry
-    /// @param _asset asset to set price for
-    /// @param _settlementPrice price at settlement
-    /// @param _expiryTimestamp timestamp of price to set
+    /// @inheritdoc IPriceRegistry
     function setSettlementPrice(
         address _asset,
         uint256 _expiryTimestamp,
@@ -53,11 +50,7 @@ contract PriceRegistry is IPriceRegistry {
         ] = _settlementPrice;
     }
 
-    /// @notice Fetch the settlement price from an oracle for an asset at a particular timestamp.
-    /// @param _oracle oracle which price should come from
-    /// @param _asset asset to fetch price for
-    /// @param _expiryTimestamp timestamp we want the price for
-    /// @return the price which has been submitted for the asset at the timestamp by that oracle
+    /// @inheritdoc IPriceRegistry
     function getSettlementPrice(
         address _oracle,
         address _asset,
@@ -73,11 +66,7 @@ contract PriceRegistry is IPriceRegistry {
         return settlementPrice;
     }
 
-    /// @notice Check if the settlement price for an asset exists from an oracle at a particular timestamp
-    /// @param _oracle oracle from which price comes from
-    /// @param _asset asset to check price for
-    /// @param _expiryTimestamp timestamp of price
-    /// @return whether or not a price has been submitted for the asset at the timestamp by that oracle
+    /// @inheritdoc IPriceRegistry
     function hasSettlementPrice(
         address _oracle,
         address _asset,
