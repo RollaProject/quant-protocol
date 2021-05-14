@@ -2,7 +2,7 @@
 pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/utils/Create2.sol";
-import "./QToken.sol";
+import "../options/QToken.sol";
 import "../interfaces/ICollateralToken.sol";
 
 /// @title Options utilities for Quant's QToken and CollateralToken

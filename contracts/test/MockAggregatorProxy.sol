@@ -2,7 +2,7 @@
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
-import "../../external/chainlink/IEACAggregatorProxy.sol";
+import "../external/chainlink/IEACAggregatorProxy.sol";
 
 /// @title Mock chainlink proxy
 contract MockAggregatorProxy is IEACAggregatorProxy {
