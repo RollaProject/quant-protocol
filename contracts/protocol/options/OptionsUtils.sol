@@ -3,7 +3,7 @@ pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "./QToken.sol";
-import "./CollateralToken.sol";
+import "../interfaces/ICollateralToken.sol";
 
 /// @title Options utilities for Quant's QToken and CollateralToken
 /// @author Quant Finance
@@ -60,7 +60,7 @@ library OptionsUtils {
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return the id that a CollateralToken would have
     function getTargetCollateralTokenId(
-        CollateralToken _collateralToken,
+        ICollateralToken _collateralToken,
         address _quantConfig,
         address _underlyingAsset,
         address _strikeAsset,
