@@ -3,7 +3,7 @@ pragma solidity ^0.7.0;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./OptionsUtils.sol";
+import "../libraries/OptionsUtils.sol";
 import "../interfaces/IOptionsFactory.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IProviderOracleManager.sol";
