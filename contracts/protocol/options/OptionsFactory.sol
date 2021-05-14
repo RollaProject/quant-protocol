@@ -3,14 +3,13 @@ pragma solidity ^0.7.0;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./QToken.sol";
-import "./CollateralToken.sol";
 import "./OptionsUtils.sol";
-import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IOptionsFactory.sol";
+import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IProviderOracleManager.sol";
 import "../interfaces/IOracleRegistry.sol";
 import "../interfaces/IAssetsRegistry.sol";
+import "../interfaces/ICollateralToken.sol";
 
 /// @title Factory contract for Quant options
 /// @author Quant Finance
@@ -19,50 +18,29 @@ import "../interfaces/IAssetsRegistry.sol";
 contract OptionsFactory is IOptionsFactory {
     using SafeMath for uint256;
 
-    /// @notice array of all the created QTokens
-    address[] public qTokens;
+    /// @inheritdoc IOptionsFactory
+    address[] public override qTokens;
 
-    IQuantConfig public quantConfig;
+    IQuantConfig public override quantConfig;
 
-    CollateralToken public collateralToken;
+    ICollateralToken public override collateralToken;
 
     mapping(uint256 => address) private _collateralTokenIdToQTokenAddress;
 
-    /// @notice mapping that can be used to check if a QToken at a given address has already been created
-    mapping(address => uint256) public qTokenAddressToCollateralTokenId;
-
-    /// @notice emitted when the factory creates a new option
-    event OptionCreated(
-        address qTokenAddress,
-        address creator,
-        address indexed underlying,
-        address indexed strike,
-        address oracle,
-        uint256 strikePrice,
-        uint256 expiry,
-        uint256 collateralTokenId,
-        uint256 allOptionsLength,
-        bool isCall
-    );
+    /// @inheritdoc IOptionsFactory
+    mapping(address => uint256)
+        public
+        override qTokenAddressToCollateralTokenId;
 
     /// @notice Initializes a new options factory
     /// @param _quantConfig the address of the Quant system configuration contract
     /// @param _collateralToken address of the CollateralToken contract
     constructor(address _quantConfig, address _collateralToken) {
         quantConfig = IQuantConfig(_quantConfig);
-        collateralToken = CollateralToken(_collateralToken);
+        collateralToken = ICollateralToken(_collateralToken);
     }
 
-    /// @notice get the address at which a new QToken with the given parameters would be deployed
-    /// @notice return the exact address the QToken will be deployed at with OpenZeppelin's Create2
-    /// library computeAddress function
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @return the address where a QToken would be deployed
+    /// @inheritdoc IOptionsFactory
     function getTargetQTokenAddress(
         address _underlyingAsset,
         address _strikeAsset,
@@ -83,15 +61,7 @@ contract OptionsFactory is IOptionsFactory {
             );
     }
 
-    /// @notice get the id that a CollateralToken with the given parameters would have
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _qTokenAsCollateral initial spread collateral
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @return the id that a CollateralToken would have
+    /// @inheritdoc IOptionsFactory
     function getTargetCollateralTokenId(
         address _underlyingAsset,
         address _strikeAsset,
@@ -115,16 +85,7 @@ contract OptionsFactory is IOptionsFactory {
             );
     }
 
-    /// @notice Creates new options (QToken + CollateralToken)
-    /// @dev The CREATE2 opcode is used to deterministically deploy new QTokens
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @return newQToken address of the created QToken
-    /// @return newCollateralTokenId id of the created CollateralToken
+    /// @inheritdoc IOptionsFactory
     function createOption(
         address _underlyingAsset,
         address _strikeAsset,
@@ -234,16 +195,7 @@ contract OptionsFactory is IOptionsFactory {
         collateralToken.createCollateralToken(newQToken, address(0));
     }
 
-    /// @notice get the CollateralToken id for an already created CollateralToken,
-    /// if no QToken has been created with these parameters, it will return 0
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _qTokenAsCollateral initial spread collateral
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @return id of the requested CollateralToken
+    /// @inheritdoc IOptionsFactory
     function getCollateralToken(
         address _underlyingAsset,
         address _strikeAsset,
@@ -270,15 +222,7 @@ contract OptionsFactory is IOptionsFactory {
         return storedQToken != address(0) ? id : 0;
     }
 
-    /// @notice get the QToken address for an already created QToken, if no QToken has been created
-    /// with these parameters, it will return the zero address
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _oracle price oracle for the option underlying
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @return address of the requested QToken
+    /// @inheritdoc IOptionsFactory
     function getQToken(
         address _underlyingAsset,
         address _strikeAsset,
@@ -303,15 +247,12 @@ contract OptionsFactory is IOptionsFactory {
         return _collateralTokenIdToQTokenAddress[collateralTokenId];
     }
 
-    /// @notice get the total number of options created by the factory
-    /// @return length of the options array
+    /// @inheritdoc IOptionsFactory
     function getOptionsLength() external view override returns (uint256) {
         return qTokens.length;
     }
 
-    /// @notice checks if an address is a QToken
-    /// @return true if the given address represents a registered QToken.
-    /// false otherwise
+    /// @inheritdoc IOptionsFactory
     function isQToken(address _qToken) external view override returns (bool) {
         return qTokenAddressToCollateralTokenId[_qToken] != 0;
     }

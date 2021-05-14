@@ -15,26 +15,24 @@ contract OracleRegistry is IOracleRegistry {
         uint256 oracleId;
     }
 
-    /// @notice oracle address => OracleInfo
-    mapping(address => OracleInfo) public oracleInfo;
+    /// @inheritdoc IOracleRegistry
+    mapping(address => OracleInfo) public override oracleInfo;
 
-    /// @notice exhaustive list of oracles in map
-    address[] public oracles;
+    /// @inheritdoc IOracleRegistry
+    address[] public override oracles;
 
     /// @dev the oracle id of the last added oracle, if there is one. oracles start at id of 1
     uint256 private _currentId;
 
-    /// @notice quant central configuration
-    IQuantConfig public config;
+    /// @inheritdoc IOracleRegistry
+    IQuantConfig public override config;
 
     /// @param _config address of quant central configuration
     constructor(address _config) {
         config = IQuantConfig(_config);
     }
 
-    /// @notice Add an oracle to the oracle registry which will generate an id. By default oracles are deactivated
-    /// @param _oracle the address of the oracle
-    /// @return the id of the oracle
+    /// @inheritdoc IOracleRegistry
     function addOracle(address _oracle) external override returns (uint256) {
         require(
             config.hasRole(
@@ -60,8 +58,7 @@ contract OracleRegistry is IOracleRegistry {
         return oracles.length;
     }
 
-    /// @notice Check if an oracle is registered in the registry
-    /// @param _oracle the oracle to check
+    /// @inheritdoc IOracleRegistry
     function isOracleRegistered(address _oracle)
         external
         view
@@ -71,8 +68,7 @@ contract OracleRegistry is IOracleRegistry {
         return oracleInfo[_oracle].oracleId != 0;
     }
 
-    /// @notice Check if an oracle is active i.e. are we allowed to create options with this oracle
-    /// @param _oracle the oracle to check
+    /// @inheritdoc IOracleRegistry
     function isOracleActive(address _oracle)
         external
         view
@@ -82,8 +78,7 @@ contract OracleRegistry is IOracleRegistry {
         return oracleInfo[_oracle].isActive;
     }
 
-    /// @notice Get the numeric id of an oracle
-    /// @param _oracle the oracle to get the id of
+    /// @inheritdoc IOracleRegistry
     function getOracleId(address _oracle)
         external
         view
@@ -98,8 +93,7 @@ contract OracleRegistry is IOracleRegistry {
         return oracleId;
     }
 
-    /// @notice Deactivate an oracle so no new options can be created with this oracle address.
-    /// @param _oracle the oracle to deactivate
+    /// @inheritdoc IOracleRegistry
     function deactivateOracle(address _oracle)
         external
         override
@@ -122,8 +116,7 @@ contract OracleRegistry is IOracleRegistry {
         return oracleInfo[_oracle].isActive = false;
     }
 
-    /// @notice Activate an oracle so options can be created with this oracle address.
-    /// @param _oracle the oracle to activate
+    /// @inheritdoc IOracleRegistry
     function activateOracle(address _oracle) external override returns (bool) {
         require(
             config.hasRole(
@@ -142,15 +135,8 @@ contract OracleRegistry is IOracleRegistry {
         return oracleInfo[_oracle].isActive = true;
     }
 
-    /// @notice Get total number of oracles in registry
-    /// @return the number of oracles in the registry
+    /// @inheritdoc IOracleRegistry
     function getOraclesLength() external view override returns (uint256) {
         return oracles.length;
     }
-
-    event AddedOracle(address oracle, uint256 oracleId);
-
-    event ActivatedOracle(address oracle);
-
-    event DeactivatedOracle(address oracle);
 }

@@ -5,9 +5,10 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./QuantConfig.sol";
-import "./options/OptionsFactory.sol";
+import "./interfaces/IOptionsFactory.sol";
+import "./interfaces/IOracleRegistry.sol";
 import "./options/QToken.sol";
-import "./options/CollateralToken.sol";
+import "./interfaces/ICollateralToken.sol";
 import "./interfaces/IAssetsRegistry.sol";
 import "./interfaces/IController.sol";
 import "./ProtocolValue.sol";
@@ -16,51 +17,12 @@ contract Controller is IController {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    OptionsFactory public immutable optionsFactory;
+    IOptionsFactory public immutable override optionsFactory;
 
-    uint8 public constant OPTIONS_DECIMALS = 18;
-
-    event OptionsPositionMinted(
-        address indexed mintedTo,
-        address indexed minter,
-        address indexed qToken,
-        uint256 optionsAmount
-    );
-
-    event SpreadMinted(
-        address indexed account,
-        address indexed qTokenToMint,
-        address indexed qTokenForCollateral,
-        uint256 optionsAmount
-    );
-
-    event OptionsExercised(
-        address indexed account,
-        address indexed qToken,
-        uint256 amountExercised,
-        uint256 payout,
-        address payoutAsset
-    );
-
-    event NeutralizePosition(
-        address indexed account,
-        address qToken,
-        uint256 amountNeutralized,
-        uint256 collateralReclaimed,
-        address collateralAsset,
-        address longTokenReturned
-    );
-
-    event CollateralClaimed(
-        address indexed account,
-        uint256 indexed collateralTokenId,
-        uint256 amountClaimed,
-        uint256 collateralReturned,
-        address collateralAsset
-    );
+    uint8 public constant override OPTIONS_DECIMALS = 18;
 
     constructor(address _optionsFactory) {
-        optionsFactory = OptionsFactory(_optionsFactory);
+        optionsFactory = IOptionsFactory(_optionsFactory);
     }
 
     modifier validQToken(address _qToken) {
@@ -295,7 +257,7 @@ contract Controller is IController {
         external
         override
     {
-        CollateralToken collateralToken = optionsFactory.collateralToken();
+        ICollateralToken collateralToken = optionsFactory.collateralToken();
         (address qTokenShort, address qTokenAsCollateral) =
             collateralToken.idToInfo(_collateralTokenId);
 

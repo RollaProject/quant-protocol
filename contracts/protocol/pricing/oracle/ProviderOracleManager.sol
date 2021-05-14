@@ -7,25 +7,20 @@ import "../../interfaces/IProviderOracleManager.sol";
 /// @title Oracle manager for holding asset addresses and their oracle addresses for a single provider
 /// @notice Once an oracle is added for an asset it can't be changed!
 abstract contract ProviderOracleManager is IProviderOracleManager {
-    /// @notice quant central configuration
-    IQuantConfig public config;
+    /// @inheritdoc IProviderOracleManager
+    IQuantConfig public override config;
 
-    // asset address => oracle address
-    mapping(address => address) public assetOracles;
+    /// @inheritdoc IProviderOracleManager
+    mapping(address => address) public override assetOracles;
 
-    /// @notice exhaustive list of asset addresses in map
-    address[] public assets;
-
-    event OracleAdded(address asset, address oracle);
+    /// @inheritdoc IProviderOracleManager
+    address[] public override assets;
 
     constructor(address _config) {
         config = IQuantConfig(_config);
     }
 
-    /// @notice Add an asset to the oracle manager with its corresponding oracle address
-    /// @dev Once this is set for an asset, it can't be changed or removed
-    /// @param _asset the address of the asset token we are adding the oracle for
-    /// @param _oracle the address of the oracle
+    /// @inheritdoc IProviderOracleManager
     function addAssetOracle(address _asset, address _oracle) external override {
         require(
             config.hasRole(
@@ -44,25 +39,19 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
         emit OracleAdded(_asset, _oracle);
     }
 
-    /// @notice Get the expiry price from oracle and store it in the price registry so we have a copy
-    /// @param _asset asset to set price of
-    /// @param _expiryTimestamp timestamp of price
-    /// @param _calldata additional parameter that the method may need to execute
+    /// @inheritdoc IProviderOracleManager
     function setExpiryPriceInRegistry(
         address _asset,
         uint256 _expiryTimestamp,
         bytes memory _calldata
     ) external virtual override;
 
-    /// @notice Get the total number of assets managed by the oracle manager
-    /// @return total number of assets managed by the oracle manager
+    /// @inheritdoc IProviderOracleManager
     function getAssetsLength() external view override returns (uint256) {
         return assets.length;
     }
 
-    /// @notice Function that should be overridden which should return the current price of an asset from the provider
-    /// @param _asset the address of the asset token we want the price for
-    /// @return the current price of the asset
+    /// @inheritdoc IProviderOracleManager
     function getCurrentPrice(address _asset)
         external
         view
@@ -70,8 +59,7 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
         override
         returns (uint256);
 
-    /// @notice Get the oracle address associated with an asset
-    /// @param _asset asset to get price of
+    /// @inheritdoc IProviderOracleManager
     function getAssetOracle(address _asset)
         public
         view
