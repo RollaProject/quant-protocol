@@ -18,39 +18,29 @@ import "../ProtocolValue.sol";
 contract QToken is ERC20, IQToken {
     using SafeMath for uint256;
 
-    /// @dev Address of system config.
-    IQuantConfig public quantConfig;
+    /// @inheritdoc IQToken
+    IQuantConfig public override quantConfig;
 
-    /// @dev Address of the underlying asset. WETH for ethereum options.
-    address public underlyingAsset;
+    /// @inheritdoc IQToken
+    address public override underlyingAsset;
 
-    /// @dev Address of the strike asset. Quant Web options always use USDC.
-    address public strikeAsset;
+    /// @inheritdoc IQToken
+    address public override strikeAsset;
 
-    /// @dev Address of the oracle to be used with this option
-    address public oracle;
+    /// @inheritdoc IQToken
+    address public override oracle;
 
-    /// @dev The strike price for the token with the strike asset precision.
-    uint256 public strikePrice;
+    /// @inheritdoc IQToken
+    uint256 public override strikePrice;
 
-    /// @dev UNIX time for the expiry of the option
-    uint256 public expiryTime;
+    /// @inheritdoc IQToken
+    uint256 public override expiryTime;
 
-    /// @dev True if the option is a CALL. False if the option is a PUT.
-    bool public isCall;
+    /// @inheritdoc IQToken
+    bool public override isCall;
 
     uint256 private constant _STRIKE_PRICE_SCALE = 1e6;
     uint256 private constant _STRIKE_PRICE_DIGITS = 6;
-
-    /// @notice event emitted when QTokens are minted
-    /// @param account account the QToken was minted to
-    /// @param amount the amount of QToken minted
-    event QTokenMinted(address indexed account, uint256 amount);
-
-    /// @notice event emitted when QTokens are burned
-    /// @param account account the QToken was burned from
-    /// @param amount the amount of QToken burned
-    event QTokenBurned(address indexed account, uint256 amount);
 
     /// @notice Configures the parameters of a new option token
     /// @param _quantConfig the address of the Quant system configuration contract
@@ -97,9 +87,7 @@ contract QToken is ERC20, IQToken {
         isCall = _isCall;
     }
 
-    /// @notice mint option token for an account
-    /// @param account account to mint token to
-    /// @param amount amount to mint
+    /// @inheritdoc IQToken
     function mint(address account, uint256 amount) external override {
         require(
             quantConfig.hasRole(
@@ -112,9 +100,7 @@ contract QToken is ERC20, IQToken {
         emit QTokenMinted(account, amount);
     }
 
-    /// @notice burn option token from an account.
-    /// @param account account to burn token from
-    /// @param amount amount to burn
+    /// @inheritdoc IQToken
     function burn(address account, uint256 amount) external override {
         require(
             quantConfig.hasRole(
@@ -364,8 +350,7 @@ contract QToken is ERC20, IQToken {
         }
     }
 
-    /// @notice Get the price status of the option.
-    /// @return the price status of the option. option is either active, awaiting settlement price or settled
+    /// @inheritdoc IQToken
     function getOptionPriceStatus()
         external
         view
