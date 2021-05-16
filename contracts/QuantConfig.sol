@@ -2,16 +2,19 @@
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
-import "@openzeppelin/contracts/access/TimelockController.sol";
-import "./ProtocolValue.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "./libraries/ProtocolValue.sol";
 import "./interfaces/ITimelockedConfig.sol";
 
 /// @title A central config for the quant system. Also acts as a central access control manager.
 /// @notice For storing constants, variables and allowing them to be changed by the admin (governance)
 /// @dev This should be used as a central access control manager which other contracts use to check permissions
-contract QuantConfig is AccessControl, Initializable, ITimelockedConfig {
+contract QuantConfig is
+    AccessControlUpgradeable,
+    OwnableUpgradeable,
+    ITimelockedConfig
+{
     //this should be some admin/governance address
     address payable public override timelockController;
 
@@ -27,21 +30,10 @@ contract QuantConfig is AccessControl, Initializable, ITimelockedConfig {
     mapping(string => bytes32) public override quantRoles;
     bytes32[] public override configuredQuantRoles;
 
-    modifier onlyTimelockExecutor() {
-        require(
-            hasRole(
-                TimelockController(timelockController).EXECUTOR_ROLE(),
-                _msgSender()
-            ),
-            "TimelockController: sender requires permission"
-        );
-        _;
-    }
-
     function setProtocolAddress(bytes32 _protocolAddress, address _newValue)
         external
         override
-        onlyTimelockExecutor()
+        onlyOwner()
     {
         require(
             _protocolAddress != ProtocolValue.encode("priceRegistry") ||
@@ -56,7 +48,7 @@ contract QuantConfig is AccessControl, Initializable, ITimelockedConfig {
     function setProtocolUint256(bytes32 _protocolUint256, uint256 _newValue)
         external
         override
-        onlyTimelockExecutor()
+        onlyOwner()
     {
         protocolUints256[_protocolUint256] = _newValue;
         configuredProtocolUints256.push(_protocolUint256);
@@ -65,7 +57,7 @@ contract QuantConfig is AccessControl, Initializable, ITimelockedConfig {
     function setProtocolBoolean(bytes32 _protocolBoolean, bool _newValue)
         external
         override
-        onlyTimelockExecutor()
+        onlyOwner()
     {
         require(
             _protocolBoolean != ProtocolValue.encode("isPriceRegistrySet") ||
@@ -77,13 +69,16 @@ contract QuantConfig is AccessControl, Initializable, ITimelockedConfig {
         configuredProtocolBooleans.push(_protocolBoolean);
     }
 
-    // function setProtocolRole(bytes32 _protocolRole, address _roleAdmin)
-    //     external
-    //     onlyTimelockExecutor()
-    // {
-    //     grantRole(role, account);
-    //     quantRoles.push(role);
-    // }
+    function setProtocolRole(string calldata _protocolRole, address _roleAdmin)
+        external
+        override
+        onlyOwner()
+    {
+        bytes32 role = keccak256(abi.encodePacked(_protocolRole));
+        grantRole(role, _roleAdmin);
+        quantRoles[_protocolRole] = role;
+        configuredQuantRoles.push(role);
+    }
 
     /// @notice Initializes the system roles and assign them to the given TimelockController address
     /// @param _timelockController Address of the TimelockController to receive the system roles
