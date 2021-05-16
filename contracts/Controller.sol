@@ -11,7 +11,7 @@ import "./options/QToken.sol";
 import "./interfaces/ICollateralToken.sol";
 import "./interfaces/IAssetsRegistry.sol";
 import "./interfaces/IController.sol";
-import "./ProtocolValue.sol";
+import "./libraries/ProtocolValue.sol";
 
 contract Controller is IController {
     using SafeMath for uint256;
