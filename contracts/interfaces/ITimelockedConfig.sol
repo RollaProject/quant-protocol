@@ -8,6 +8,8 @@ interface ITimelockedConfig {
 
     function setProtocolBoolean(bytes32, bool) external;
 
+    function setProtocolRole(string calldata, address) external;
+
     function initialize(address payable) external;
 
     function timelockController() external view returns (address payable);
