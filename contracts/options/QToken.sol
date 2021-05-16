@@ -9,7 +9,7 @@ import "../pricing/PriceRegistry.sol";
 import "../interfaces/IAssetsRegistry.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IQToken.sol";
-import "../ProtocolValue.sol";
+import "../libraries/ProtocolValue.sol";
 
 /// @title Token that represents a user's long position
 /// @author Quant Finance
