@@ -6,7 +6,7 @@ import "../../external/chainlink/IEACAggregatorProxy.sol";
 import "../PriceRegistry.sol";
 import "./ProviderOracleManager.sol";
 import "./IOracleFallbackMechanism.sol";
-import "../../ProtocolValue.sol";
+import "../../libraries/ProtocolValue.sol";
 
 /// @title For managing chainlink oracles for assets and submitting chainlink prices to the registry
 /// @notice Once an oracle is added for an asset it can't be changed!
