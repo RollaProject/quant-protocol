@@ -1,7 +1,7 @@
 import { BigNumber, Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
-import QTokenJSON from "../artifacts/contracts/protocol/options/QToken.sol/QToken.json";
+import QTokenJSON from "../artifacts/contracts/options/QToken.sol/QToken.json";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
@@ -50,7 +50,7 @@ describe("QToken", async () => {
     quantConfig = await deployQuantConfig(timelockController, [
       {
         addresses: [await assetsRegistryManager.getAddress()],
-        role: ethers.utils.id("ASSET_REGISTRY_MANAGER_ROLE"),
+        role: ethers.utils.id("ASSETS_REGISTRY_MANAGER_ROLE"),
       },
       {
         addresses: [await optionsMinter.getAddress()],

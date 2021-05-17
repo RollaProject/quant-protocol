@@ -3,7 +3,7 @@ import { MockContract } from "ethereum-waffle";
 import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe } from "mocha";
-import ORACLE_MANAGER from "../artifacts/contracts/protocol/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
+import ORACLE_MANAGER from "../artifacts/contracts/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
 import { AssetsRegistry, OptionsFactory, OracleRegistry } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
@@ -61,7 +61,7 @@ describe("OptionsFactory", () => {
     quantConfig = await deployQuantConfig(timelockController, [
       {
         addresses: [await assetsRegistryManager.getAddress()],
-        role: ethers.utils.id("ASSET_REGISTRY_MANAGER_ROLE"),
+        role: ethers.utils.id("ASSETS_REGISTRY_MANAGER_ROLE"),
       },
       {
         addresses: [await oracleManagerAccount.getAddress()],
