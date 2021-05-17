@@ -1,0 +1,9 @@
+@startuml
+actor       User
+User -> Controller : exercise(qToken, amount)
+Controller -> Controller : getPayout (and ensure settled)
+Controller -> QToken : burn options
+"Payout Token" -> User : Payout user entitled amount
+database    blockchain
+Controller -> blockchain: emit OptionsExercised
+@enduml

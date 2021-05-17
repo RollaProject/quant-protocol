@@ -1,7 +1,26 @@
 ## `AssetsRegistry`
 
+
+
+
+
+
 ### `constructor(address quantConfig_)` (public)
 
-### `addAsset(address _underlying, string _name, string _symbol, uint8 _decimals)` (external)
 
-### `AssetAdded(address underlying, string name, string symbol, uint8 decimals)`
+
+
+
+### `addAsset(address _underlying, string _name, string _symbol, uint8 _decimals, uint256 _quantityTickSize)` (external)
+
+
+
+
+
+
+### `AssetAdded(address underlying, string name, string symbol, uint8 decimals, uint256 quantityTickSize)`
+
+
+
+
+
