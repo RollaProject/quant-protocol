@@ -1,12 +1,18 @@
 import { BigNumber, Signer } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
-import AssetsRegistryJSON from "../artifacts/contracts/protocol/options/AssetsRegistry.sol/AssetsRegistry.json";
-import OracleRegistryJSON from "../artifacts/contracts/protocol/pricing/OracleRegistry.sol/OracleRegistry.json";
-import CollateralTokenJSON from "../artifacts/contracts/protocol/options/CollateralToken.sol/CollateralToken.json";
-import OptionsFactoryJSON from "../artifacts/contracts/protocol/options/OptionsFactory.sol/OptionsFactory.json";
-import QTokenJSON from "../artifacts/contracts/protocol/options/QToken.sol/QToken.json";
-import MockERC20JSON from "../artifacts/contracts/protocol/test/MockERC20.sol/MockERC20.json";
-import { AssetsRegistry, OptionsFactory, OracleRegistry } from "../typechain";
+import AssetsRegistryJSON from "../artifacts/contracts/options/AssetsRegistry.sol/AssetsRegistry.json";
+import CollateralTokenJSON from "../artifacts/contracts/options/CollateralToken.sol/CollateralToken.json";
+import OptionsFactoryJSON from "../artifacts/contracts/options/OptionsFactory.sol/OptionsFactory.json";
+import QTokenJSON from "../artifacts/contracts/options/QToken.sol/QToken.json";
+import OracleRegistryJSON from "../artifacts/contracts/pricing/OracleRegistry.sol/OracleRegistry.json";
+import MockERC20JSON from "../artifacts/contracts/test/MockERC20.sol/MockERC20.json";
+import ConfigTimelockControllerJSON from "../artifacts/contracts/timelock/ConfigTimelockController.sol/ConfigTimelockController.json";
+import {
+  AssetsRegistry,
+  ConfigTimelockController,
+  OptionsFactory,
+  OracleRegistry,
+} from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
@@ -35,21 +41,26 @@ interface RoleToAssign {
 }
 
 const deployQuantConfig = async (
-  timelockController: Signer,
-  rolesToAssign: Array<RoleToAssign> = [{ addresses: [], role: "" }]
+  deployer: Signer,
+  rolesToAssign: Array<RoleToAssign> = [{ addresses: [], role: "" }],
+  configTimelockController?: ConfigTimelockController | undefined
 ): Promise<QuantConfig> => {
   const QuantConfig = await ethers.getContractFactory("QuantConfig");
 
+  if (typeof configTimelockController === "undefined") {
+    configTimelockController = <ConfigTimelockController>(
+      await deployConfigTimelockController(deployer, ethers.BigNumber.from("0"))
+    );
+  }
+
   const quantConfig = <QuantConfig>(
-    await upgrades.deployProxy(QuantConfig, [
-      await timelockController.getAddress(),
-    ])
+    await upgrades.deployProxy(QuantConfig, [configTimelockController.address])
   );
 
   for (const roleToAssign of rolesToAssign) {
     const { addresses, role } = roleToAssign;
     for (const address of addresses) {
-      await quantConfig.connect(timelockController).setupRole(role, address);
+      await quantConfig.connect(deployer).setProtocolRole(role, address);
     }
   }
 
@@ -117,7 +128,12 @@ const deployAssetsRegistry = async (
     await deployContract(deployer, AssetsRegistryJSON, [quantConfig.address])
   );
 
-  await quantConfig.connect(deployer).setAssetsRegistry(assetsRegistry.address);
+  await quantConfig
+    .connect(deployer)
+    .setProtocolAddress(
+      ethers.utils.id("assetsRegistry"),
+      assetsRegistry.address
+    );
 
   return assetsRegistry;
 };
@@ -130,9 +146,29 @@ const deployOracleRegistry = async (
     await deployContract(deployer, OracleRegistryJSON, [quantConfig.address])
   );
 
-  await quantConfig.connect(deployer).setOracleRegistry(oracleRegistry.address);
+  await quantConfig
+    .connect(deployer)
+    .setProtocolAddress(
+      ethers.utils.id("oracleRegistry"),
+      oracleRegistry.address
+    );
 
   return oracleRegistry;
+};
+
+const deployConfigTimelockController = async (
+  deployer: Signer,
+  delay: BigNumber
+): Promise<ConfigTimelockController> => {
+  const configTimelockController = <ConfigTimelockController>(
+    await deployContract(deployer, ConfigTimelockControllerJSON, [
+      delay,
+      [await deployer.getAddress()],
+      [await deployer.getAddress()],
+    ])
+  );
+
+  return configTimelockController;
 };
 
 export {
@@ -142,5 +178,6 @@ export {
   deployQuantConfig,
   deployAssetsRegistry,
   deployOracleRegistry,
+  deployConfigTimelockController,
   mockERC20,
 };
