@@ -1,0 +1,15 @@
+@startuml
+actor User
+User -> Controller : mintOptionsPosition(to, qToken, amount)
+Controller -> OracleRegistry : isOracleActive(qToken.oracle()) = true
+Controller -> Controller : getCollateralRequirement
+Controller -> "Collateral Required": transfer(user, requiredCollateral)
+"Collateral Required" -> Controller : send funds
+Controller -> OptionsFactory : tokenID = get collateral token ID
+Controller -> CollateralToken : mint(user, tokenID, amount)
+CollateralToken -> User : minted collateral tokens
+Controller -> QToken : mint(user, amount)
+QToken -> User : minted qTokens
+database blockchain
+Controller -> blockchain: emit OptionsPositionMinted
+@enduml
