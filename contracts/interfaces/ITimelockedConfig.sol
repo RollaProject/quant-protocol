@@ -10,6 +10,8 @@ interface ITimelockedConfig {
 
     function setProtocolRole(string calldata, address) external;
 
+    function setRoleAdmin(bytes32, bytes32) external;
+
     function initialize(address payable) external;
 
     function timelockController() external view returns (address payable);

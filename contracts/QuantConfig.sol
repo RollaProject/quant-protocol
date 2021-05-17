@@ -15,7 +15,6 @@ contract QuantConfig is
     OwnableUpgradeable,
     ITimelockedConfig
 {
-    //this should be some admin/governance address
     address payable public override timelockController;
 
     mapping(bytes32 => address) public override protocolAddresses;
@@ -80,6 +79,15 @@ contract QuantConfig is
         configuredQuantRoles.push(role);
     }
 
+    function setRoleAdmin(bytes32 role, bytes32 adminRole)
+        external
+        override
+        onlyOwner()
+    {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
+        _setRoleAdmin(role, adminRole);
+    }
+
     /// @notice Initializes the system roles and assign them to the given TimelockController address
     /// @param _timelockController Address of the TimelockController to receive the system roles
     /// @dev The TimelockController should have a Quant multisig as its sole proposer
@@ -88,15 +96,20 @@ contract QuantConfig is
         override
         initializer
     {
+        __AccessControl_init();
+        __Ownable_init_unchained();
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(DEFAULT_ADMIN_ROLE, _timelockController);
-        // On deployment, this role should be transferd to the OptionsFactory as its only admin
+        // // On deployment, this role should be transferd to the OptionsFactory as its only admin
         bytes32 optionsControllerRole = keccak256("OPTIONS_CONTROLLER_ROLE");
         // quantRoles["OPTIONS_CONTROLLER_ROLE"] = optionsControllerRole;
         _setupRole(optionsControllerRole, _timelockController);
+        _setupRole(optionsControllerRole, _msgSender());
         // quantRoles.push(optionsControllerRole);
         bytes32 oracleManagerRole = keccak256("ORACLE_MANAGER_ROLE");
         // quantRoles["ORACLE_MANAGER_ROLE"] = oracleManagerRole;
         _setupRole(oracleManagerRole, _timelockController);
+        _setupRole(oracleManagerRole, _msgSender());
         timelockController = _timelockController;
     }
 }
