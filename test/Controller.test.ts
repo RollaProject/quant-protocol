@@ -2,9 +2,9 @@ import { MockContract } from "ethereum-waffle";
 import { BigNumber, ContractInterface, Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
-import ControllerJSON from "../artifacts/contracts/protocol/Controller.sol/Controller.json";
-import ORACLE_MANAGER from "../artifacts/contracts/protocol/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
-import PriceRegistry from "../artifacts/contracts/protocol/pricing/PriceRegistry.sol/PriceRegistry.json";
+import ControllerJSON from "../artifacts/contracts/Controller.sol/Controller.json";
+import ORACLE_MANAGER from "../artifacts/contracts/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
+import PriceRegistry from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
 import { AssetsRegistry, OptionsFactory, OracleRegistry } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
@@ -29,7 +29,7 @@ describe("Controller", () => {
   let controller: Controller;
   let quantConfig: QuantConfig;
   let collateralToken: CollateralToken;
-  let timelockController: Signer;
+  let deployer: Signer;
   let secondAccount: Signer;
   let assetsRegistryManager: Signer;
   let collateralMinter: Signer;
@@ -465,7 +465,7 @@ describe("Controller", () => {
 
   beforeEach(async () => {
     [
-      timelockController,
+      deployer,
       secondAccount,
       assetsRegistryManager,
       collateralMinter,
@@ -474,56 +474,44 @@ describe("Controller", () => {
       oracleManagerAccount,
     ] = await provider.getWallets();
 
-    quantConfig = await deployQuantConfig(timelockController, [
+    quantConfig = await deployQuantConfig(deployer, [
       {
         addresses: [await assetsRegistryManager.getAddress()],
-        role: ethers.utils.id("ASSET_REGISTRY_MANAGER_ROLE"),
+        role: "ASSETS_REGISTRY_MANAGER_ROLE",
       },
       {
         addresses: [
           await collateralMinter.getAddress(),
           await assetsRegistryManager.getAddress(),
         ],
-        role: ethers.utils.id("COLLATERAL_MINTER_ROLE"),
+        role: "COLLATERAL_MINTER_ROLE",
       },
       {
         addresses: [await optionsMinter.getAddress()],
-        role: ethers.utils.id("OPTIONS_MINTER_ROLE"),
+        role: "OPTIONS_MINTER_ROLE",
       },
       {
         addresses: [await collateralCreator.getAddress()],
-        role: ethers.utils.id("COLLATERAL_CREATOR_ROLE"),
+        role: "COLLATERAL_CREATOR_ROLE",
       },
       {
         addresses: [await oracleManagerAccount.getAddress()],
-        role: ethers.utils.id("ORACLE_MANAGER_ROLE"),
+        role: "ORACLE_MANAGER_ROLE",
       },
     ]);
 
     WETH = await mockERC20(assetsRegistryManager, "WETH", "Wrapped Ether");
     USDC = await mockERC20(assetsRegistryManager, "USDC", "USD Coin", 6);
-    collateralToken = await deployCollateralToken(
-      timelockController,
-      quantConfig
-    );
+    collateralToken = await deployCollateralToken(deployer, quantConfig);
 
-    assetsRegistry = await deployAssetsRegistry(
-      timelockController,
-      quantConfig
-    );
+    assetsRegistry = await deployAssetsRegistry(deployer, quantConfig);
 
-    oracleRegistry = await deployOracleRegistry(
-      timelockController,
-      quantConfig
-    );
+    oracleRegistry = await deployOracleRegistry(deployer, quantConfig);
 
-    mockOracleManager = await deployMockContract(
-      timelockController,
-      ORACLE_MANAGER.abi
-    );
+    mockOracleManager = await deployMockContract(deployer, ORACLE_MANAGER.abi);
 
     mockOracleManagerTwo = await deployMockContract(
-      timelockController,
+      deployer,
       ORACLE_MANAGER.abi
     );
 
@@ -553,7 +541,7 @@ describe("Controller", () => {
       .interface;
 
     optionsFactory = await deployOptionsFactory(
-      timelockController,
+      deployer,
       quantConfig,
       collateralToken
     );
@@ -574,24 +562,22 @@ describe("Controller", () => {
     );
 
     await quantConfig
-      .connect(timelockController)
-      .grantRole(
-        ethers.utils.id("COLLATERAL_CREATOR_ROLE"),
-        optionsFactory.address
-      );
+      .connect(deployer)
+      .setProtocolRole("COLLATERAL_CREATOR_ROLE", optionsFactory.address);
 
     await quantConfig
-      .connect(timelockController)
+      .connect(deployer)
+      .setProtocolRole("PRICE_SUBMITTER_ROLE", oracleRegistry.address);
+
+    await quantConfig
+      .connect(deployer)
+      .setProtocolRole("PRICE_SUBMITTER_ROLE_ADMIN", oracleRegistry.address);
+
+    await quantConfig
+      .connect(deployer)
       .setRoleAdmin(
-        await quantConfig.PRICE_SUBMITTER_ROLE(),
-        await quantConfig.PRICE_SUBMITTER_ROLE_ADMIN()
-      );
-
-    await quantConfig
-      .connect(timelockController)
-      .grantRole(
-        await quantConfig.PRICE_SUBMITTER_ROLE_ADMIN(),
-        oracleRegistry.address
+        ethers.utils.id("PRICE_SUBMITTER_ROLE"),
+        ethers.utils.id("PRICE_SUBMITTER_ROLE_ADMIN")
       );
 
     await oracleRegistry
@@ -725,46 +711,44 @@ describe("Controller", () => {
     );
 
     controller = <Controller>(
-      await deployContract(timelockController, ControllerJSON, [
-        optionsFactory.address,
-      ])
+      await deployContract(deployer, ControllerJSON, [optionsFactory.address])
     );
 
     await quantConfig
-      .connect(timelockController)
-      .grantRole(ethers.utils.id("OPTIONS_MINTER_ROLE"), controller.address);
+      .connect(deployer)
+      .setProtocolRole("OPTIONS_MINTER_ROLE", controller.address);
 
     await quantConfig
-      .connect(timelockController)
-      .grantRole(ethers.utils.id("OPTIONS_BURNER_ROLE"), controller.address);
+      .connect(deployer)
+      .setProtocolRole("OPTIONS_BURNER_ROLE", controller.address);
 
     await quantConfig
-      .connect(timelockController)
-      .grantRole(
-        ethers.utils.id("COLLATERAL_CREATOR_ROLE"),
-        controller.address
+      .connect(deployer)
+      .setProtocolRole("COLLATERAL_CREATOR_ROLE", controller.address);
+
+    await quantConfig
+      .connect(deployer)
+      .setProtocolRole("COLLATERAL_MINTER_ROLE", controller.address);
+
+    await quantConfig
+      .connect(deployer)
+      .setProtocolRole("COLLATERAL_BURNER_ROLE", controller.address);
+
+    await quantConfig
+      .connect(deployer)
+      .setProtocolAddress(
+        ethers.utils.id("assetsRegistry"),
+        assetsRegistry.address
       );
 
-    await quantConfig
-      .connect(timelockController)
-      .grantRole(ethers.utils.id("COLLATERAL_MINTER_ROLE"), controller.address);
+    mockPriceRegistry = await deployMockContract(deployer, PriceRegistry.abi);
 
     await quantConfig
-      .connect(timelockController)
-      .grantRole(ethers.utils.id("COLLATERAL_BURNER_ROLE"), controller.address);
-
-    await quantConfig
-      .connect(timelockController)
-      .setAssetsRegistry(assetsRegistry.address);
-
-    mockPriceRegistry = await deployMockContract(
-      timelockController,
-      PriceRegistry.abi
-    );
-
-    await quantConfig
-      .connect(timelockController)
-      .setPriceRegistry(mockPriceRegistry.address);
+      .connect(deployer)
+      .setProtocolAddress(
+        ethers.utils.id("priceRegistry"),
+        mockPriceRegistry.address
+      );
   });
 
   describe("mintOptionsPosition", () => {
@@ -1047,10 +1031,7 @@ describe("Controller", () => {
       ).payoutAmount;
 
       // Mint USDC to the Controller so it can pay the user
-      await USDC.connect(timelockController).mint(
-        controller.address,
-        payoutAmount
-      );
+      await USDC.connect(deployer).mint(controller.address, payoutAmount);
       expect(await USDC.balanceOf(controller.address)).to.equal(payoutAmount);
 
       await expect(

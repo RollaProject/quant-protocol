@@ -1,7 +1,7 @@
 import { ContractFactory, Signer } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
-import PriceRegistryJSON from "../artifacts/contracts/protocol/pricing/PriceRegistry.sol/PriceRegistry.json";
+import PriceRegistryJSON from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
 import { PriceRegistry, QuantConfig } from "../typechain";
 import { expect, provider } from "./setup";
 
