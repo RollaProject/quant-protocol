@@ -27,8 +27,6 @@ interface IOptionsFactory {
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
-    /// @return newQToken address of the created QToken
-    /// @return newCollateralTokenId id of the created CollateralToken
     function createOption(
         address _underlyingAsset,
         address _strikeAsset,
@@ -36,7 +34,7 @@ interface IOptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) external returns (address newQToken, uint256 newCollateralTokenId);
+    ) external;
 
     /// @notice array of all the created QTokens
     function qTokens(uint256) external view returns (address);
