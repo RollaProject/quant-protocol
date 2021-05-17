@@ -84,19 +84,19 @@ describe("CollateralToken", () => {
     quantConfig = await deployQuantConfig(timelockController, [
       {
         addresses: [await assetRegistryManager.getAddress()],
-        role: ethers.utils.id("ASSET_REGISTRY_MANAGER_ROLE"),
+        role: "ASSETS_REGISTRY_MANAGER_ROLE",
       },
       {
         addresses: [await collateralCreator.getAddress()],
-        role: ethers.utils.id("COLLATERAL_CREATOR_ROLE"),
+        role: "COLLATERAL_CREATOR_ROLE",
       },
       {
         addresses: [await collateralMinter.getAddress()],
-        role: ethers.utils.id("COLLATERAL_MINTER_ROLE"),
+        role: "COLLATERAL_MINTER_ROLE",
       },
       {
         addresses: [await collateralBurner.getAddress()],
-        role: ethers.utils.id("COLLATERAL_BURNER_ROLE"),
+        role: "COLLATERAL_BURNER_ROLE",
       },
     ]);
 
