@@ -93,86 +93,54 @@ contract OptionsFactory is IOptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    )
-        external
-        override
-        returns (address newQToken, uint256 newCollateralTokenId)
-    {
-        require(
-            _expiryTime > block.timestamp,
-            "OptionsFactory: given expiry time is in the past"
-        );
-
-        IOracleRegistry oracleRegistry =
-            IOracleRegistry(
-                quantConfig.protocolAddresses(
-                    ProtocolValue.encode("oracleRegistry")
-                )
-            );
-
-        require(
-            oracleRegistry.isOracleRegistered(_oracle),
-            "OptionsFactory: Oracle is not registered in OracleRegistry"
-        );
-
-        require(
-            IProviderOracleManager(_oracle).getAssetOracle(_underlyingAsset) !=
-                address(0),
-            "OptionsFactory: Asset does not exist in oracle"
-        );
-
-        require(
-            oracleRegistry.isOracleActive(_oracle),
-            "OptionsFactory: Oracle is not active in the OracleRegistry"
-        );
-
-        newCollateralTokenId = OptionsUtils.getTargetCollateralTokenId(
-            collateralToken,
-            address(quantConfig),
+    ) external override {
+        OptionsUtils.validateOptionParameters(
             _underlyingAsset,
-            _strikeAsset,
             _oracle,
-            address(0),
-            _strikePrice,
             _expiryTime,
-            _isCall
+            address(quantConfig)
         );
 
-        require(
-            _collateralTokenIdToQTokenAddress[newCollateralTokenId] ==
-                address(0),
-            "OptionsFactory: option already created"
-        );
-        require(
-            _isCall || _strikePrice > 0,
-            "OptionsFactory: strike for put can't be 0"
-        );
-
-        {
-            string memory symbol;
-            (, symbol, , ) = IAssetsRegistry(
-                quantConfig.protocolAddresses(
-                    ProtocolValue.encode("assetsRegistry")
-                )
-            )
-                .assetProperties(_underlyingAsset);
-            require(
-                bytes(symbol).length != 0,
-                "OptionsFactory: underlying is not in the assets registry"
-            );
-        }
-
-        newQToken = address(
-            new QToken{salt: OptionsUtils.SALT}(
+        uint256 newCollateralTokenId =
+            OptionsUtils.getTargetCollateralTokenId(
+                collateralToken,
                 address(quantConfig),
                 _underlyingAsset,
                 _strikeAsset,
                 _oracle,
+                address(0),
                 _strikePrice,
                 _expiryTime,
                 _isCall
-            )
+            );
+
+        require(
+            _collateralTokenIdToQTokenAddress[newCollateralTokenId] ==
+                address(0),
+            "option already created"
         );
+        require(_isCall || _strikePrice > 0, "strike for put can't be 0");
+
+        require(
+            OptionsUtils.isInAssetsRegistry(
+                _underlyingAsset,
+                address(quantConfig)
+            ),
+            "underlying not in the registry"
+        );
+
+        address newQToken =
+            address(
+                new QToken{salt: OptionsUtils.SALT}(
+                    address(quantConfig),
+                    _underlyingAsset,
+                    _strikeAsset,
+                    _oracle,
+                    _strikePrice,
+                    _expiryTime,
+                    _isCall
+                )
+            );
 
         _collateralTokenIdToQTokenAddress[newCollateralTokenId] = newQToken;
         qTokens.push(newQToken);

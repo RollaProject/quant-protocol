@@ -4,6 +4,9 @@ pragma solidity ^0.7.0;
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "../options/QToken.sol";
 import "../interfaces/ICollateralToken.sol";
+import "../interfaces/IOracleRegistry.sol";
+import "../interfaces/IProviderOracleManager.sol";
+import "../interfaces/IQuantConfig.sol";
 
 /// @title Options utilities for Quant's QToken and CollateralToken
 /// @author Quant Finance
@@ -82,5 +85,56 @@ library OptionsUtils {
             );
         return
             _collateralToken.getCollateralTokenId(qToken, _qTokenAsCollateral);
+    }
+
+    function validateOptionParameters(
+        address _underlyingAsset,
+        address _oracle,
+        uint256 _expiryTime,
+        address _quantConfig
+    ) internal view {
+        require(
+            _expiryTime > block.timestamp,
+            "OptionsFactory: given expiry time is in the past"
+        );
+
+        IOracleRegistry oracleRegistry =
+            IOracleRegistry(
+                IQuantConfig(_quantConfig).protocolAddresses(
+                    ProtocolValue.encode("oracleRegistry")
+                )
+            );
+
+        require(
+            oracleRegistry.isOracleRegistered(_oracle),
+            "OptionsFactory: Oracle is not registered in OracleRegistry"
+        );
+
+        require(
+            IProviderOracleManager(_oracle).getAssetOracle(_underlyingAsset) !=
+                address(0),
+            "OptionsFactory: Asset does not exist in oracle"
+        );
+
+        require(
+            oracleRegistry.isOracleActive(_oracle),
+            "OptionsFactory: Oracle is not active in the OracleRegistry"
+        );
+    }
+
+    function isInAssetsRegistry(address _asset, address _quantConfig)
+        internal
+        view
+        returns (bool)
+    {
+        string memory symbol;
+        (, symbol, , ) = IAssetsRegistry(
+            IQuantConfig(_quantConfig).protocolAddresses(
+                ProtocolValue.encode("assetsRegistry")
+            )
+        )
+            .assetProperties(_asset);
+
+        return bytes(symbol).length != 0;
     }
 }
