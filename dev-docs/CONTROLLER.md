@@ -1,4 +1,4 @@
-![Controller](../docs/uml/contracts/protocol/controller.png)
+![Controller](../docs/uml/contracts/protocol/Controller.png)
 
 ### getCollateralRequirement:
 
