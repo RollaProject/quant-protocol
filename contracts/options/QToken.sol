@@ -113,6 +113,36 @@ contract QToken is ERC20, IQToken {
         emit QTokenBurned(account, amount);
     }
 
+    /// @inheritdoc IQToken
+    function getOptionPriceStatus()
+        external
+        view
+        override
+        returns (PriceStatus)
+    {
+        if (block.timestamp > expiryTime) {
+            PriceRegistry priceRegistry =
+                PriceRegistry(
+                    quantConfig.protocolAddresses(
+                        ProtocolValue.encode("priceRegistry")
+                    )
+                );
+
+            if (
+                priceRegistry.hasSettlementPrice(
+                    oracle,
+                    underlyingAsset,
+                    expiryTime
+                )
+            ) {
+                return PriceStatus.SETTLED;
+            }
+            return PriceStatus.AWAITING_SETTLEMENT_PRICE;
+        } else {
+            return PriceStatus.ACTIVE;
+        }
+    }
+
     /// @notice get the ERC20 token symbol from the AssetsRegistry
     /// @dev the asset is assumed to be in the AssetsRegistry since QTokens
     /// must be created through the OptionsFactory, which performs that check
@@ -347,36 +377,6 @@ contract QToken is ERC20, IQToken {
             return ("NOV", "November");
         } else {
             return ("DEC", "December");
-        }
-    }
-
-    /// @inheritdoc IQToken
-    function getOptionPriceStatus()
-        external
-        view
-        override
-        returns (PriceStatus)
-    {
-        if (block.timestamp > expiryTime) {
-            PriceRegistry priceRegistry =
-                PriceRegistry(
-                    quantConfig.protocolAddresses(
-                        ProtocolValue.encode("priceRegistry")
-                    )
-                );
-
-            if (
-                priceRegistry.hasSettlementPrice(
-                    oracle,
-                    underlyingAsset,
-                    expiryTime
-                )
-            ) {
-                return PriceStatus.SETTLED;
-            }
-            return PriceStatus.AWAITING_SETTLEMENT_PRICE;
-        } else {
-            return PriceStatus.ACTIVE;
         }
     }
 }

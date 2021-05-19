@@ -59,41 +59,6 @@ contract OracleRegistry is IOracleRegistry {
     }
 
     /// @inheritdoc IOracleRegistry
-    function isOracleRegistered(address _oracle)
-        external
-        view
-        override
-        returns (bool)
-    {
-        return oracleInfo[_oracle].oracleId != 0;
-    }
-
-    /// @inheritdoc IOracleRegistry
-    function isOracleActive(address _oracle)
-        external
-        view
-        override
-        returns (bool)
-    {
-        return oracleInfo[_oracle].isActive;
-    }
-
-    /// @inheritdoc IOracleRegistry
-    function getOracleId(address _oracle)
-        external
-        view
-        override
-        returns (uint256)
-    {
-        uint256 oracleId = oracleInfo[_oracle].oracleId;
-        require(
-            oracleId != 0,
-            "OracleRegistry: Oracle doesn't exist in registry"
-        );
-        return oracleId;
-    }
-
-    /// @inheritdoc IOracleRegistry
     function deactivateOracle(address _oracle)
         external
         override
@@ -133,6 +98,41 @@ contract OracleRegistry is IOracleRegistry {
         emit ActivatedOracle(_oracle);
 
         return oracleInfo[_oracle].isActive = true;
+    }
+
+    /// @inheritdoc IOracleRegistry
+    function isOracleRegistered(address _oracle)
+        external
+        view
+        override
+        returns (bool)
+    {
+        return oracleInfo[_oracle].oracleId != 0;
+    }
+
+    /// @inheritdoc IOracleRegistry
+    function isOracleActive(address _oracle)
+        external
+        view
+        override
+        returns (bool)
+    {
+        return oracleInfo[_oracle].isActive;
+    }
+
+    /// @inheritdoc IOracleRegistry
+    function getOracleId(address _oracle)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        uint256 oracleId = oracleInfo[_oracle].oracleId;
+        require(
+            oracleId != 0,
+            "OracleRegistry: Oracle doesn't exist in registry"
+        );
+        return oracleId;
     }
 
     /// @inheritdoc IOracleRegistry
