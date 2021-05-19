@@ -1,53 +1,93 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
+pragma abicoder v2;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "../libraries/ProtocolValue.sol";
+import "../interfaces/ITimelockedConfig.sol";
 
 /// @title A central config for the quant system. Also acts as a central access control manager.
 /// @notice For storing constants, variables and allowing them to be changed by the admin (governance)
 /// @dev This should be used as a central access control manager which other contracts use to check permissions
-contract QuantConfigV2 is AccessControl, Initializable {
-    //this should be some admin/governance address
-    address payable public timelockController;
-    address public priceRegistry;
-    address public oracleRegistry;
-    address public assetsRegistry;
-    uint256 public maxOptionsDuration;
-    bool private _priceRegistrySetted;
+contract QuantConfigV2 is
+    AccessControlUpgradeable,
+    OwnableUpgradeable,
+    ITimelockedConfig
+{
+    address payable public override timelockController;
 
-    mapping(bytes32 => address) public protocolAddresses;
-    mapping(bytes32 => uint256) public protocolUints256;
-    mapping(bytes32 => bool) public protocolBooleans;
+    mapping(bytes32 => address) public override protocolAddresses;
+    bytes32[] public override configuredProtocolAddresses;
 
-    bytes32 public constant OPTIONS_CONTROLLER_ROLE =
-        keccak256("OPTIONS_CONTROLLER_ROLE");
-    bytes32 public constant ORACLE_MANAGER_ROLE =
-        keccak256("ORACLE_MANAGER_ROLE");
-    bytes32 public constant PRICE_SUBMITTER_ROLE =
-        keccak256("PRICE_SUBMITTER_ROLE");
+    mapping(bytes32 => uint256) public override protocolUints256;
+    bytes32[] public override configuredProtocolUints256;
+
+    mapping(bytes32 => bool) public override protocolBooleans;
+    bytes32[] public override configuredProtocolBooleans;
+
+    mapping(string => bytes32) public override quantRoles;
+    bytes32[] public override configuredQuantRoles;
 
     uint256 public newV2StateVariable;
 
-    /// @notice Set the protocol's price registry
-    /// @dev Can only be called once, and by accounts or contracts with the admin role
-    /// @param _priceRegistry address of the PriceRegistry to be used by the protocol
-    function setPriceRegistry(address _priceRegistry) external {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
-        require(!_priceRegistrySetted, "Can only set the price registry once");
-        priceRegistry = _priceRegistry;
-        _priceRegistrySetted = true;
+    function setProtocolAddress(bytes32 _protocolAddress, address _newValue)
+        external
+        override
+        onlyOwner()
+    {
+        require(
+            _protocolAddress != ProtocolValue.encode("priceRegistry") ||
+                !protocolBooleans[ProtocolValue.encode("isPriceRegistrySet")],
+            "QuantConfig: priceRegistry can only be set once"
+        );
+
+        protocolAddresses[_protocolAddress] = _newValue;
+        configuredProtocolAddresses.push(_protocolAddress);
     }
 
-    /// @notice Set the protocol assets registry
-    /// @dev Only accounts or contracts with the admin role should call this contract
-    /// @param _assetsRegistry address of the AssetsRegistry to be used by the protocol
-    function setAssetsRegistry(address _assetsRegistry) external {
+    function setProtocolUint256(bytes32 _protocolUint256, uint256 _newValue)
+        external
+        override
+        onlyOwner()
+    {
+        protocolUints256[_protocolUint256] = _newValue;
+        configuredProtocolUints256.push(_protocolUint256);
+    }
+
+    function setProtocolBoolean(bytes32 _protocolBoolean, bool _newValue)
+        external
+        override
+        onlyOwner()
+    {
         require(
-            hasRole(OPTIONS_CONTROLLER_ROLE, msg.sender),
-            "Caller is not admin"
+            _protocolBoolean != ProtocolValue.encode("isPriceRegistrySet") ||
+                !protocolBooleans[ProtocolValue.encode("isPriceRegistrySet")],
+            "QuantConfig: can only change isPriceRegistrySet once"
         );
-        assetsRegistry = _assetsRegistry;
+
+        protocolBooleans[_protocolBoolean] = _newValue;
+        configuredProtocolBooleans.push(_protocolBoolean);
+    }
+
+    function setProtocolRole(string calldata _protocolRole, address _roleAdmin)
+        external
+        override
+        onlyOwner()
+    {
+        bytes32 role = keccak256(abi.encodePacked(_protocolRole));
+        grantRole(role, _roleAdmin);
+        quantRoles[_protocolRole] = role;
+        configuredQuantRoles.push(role);
+    }
+
+    function setRoleAdmin(bytes32 role, bytes32 adminRole)
+        external
+        override
+        onlyOwner()
+    {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
+        _setRoleAdmin(role, adminRole);
     }
 
     /// @notice Initializes the system roles and assign them to the given TimelockController address
@@ -55,12 +95,23 @@ contract QuantConfigV2 is AccessControl, Initializable {
     /// @dev The TimelockController should have a Quant multisig as its sole proposer
     function initialize(address payable _timelockController)
         public
+        override
         initializer
     {
+        __AccessControl_init();
+        __Ownable_init_unchained();
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(DEFAULT_ADMIN_ROLE, _timelockController);
-        // On deployment, this role should be transferd to the OptionsFactory as its only admin
-        _setupRole(OPTIONS_CONTROLLER_ROLE, _timelockController);
-        _setupRole(ORACLE_MANAGER_ROLE, _timelockController);
+        // // On deployment, this role should be transferd to the OptionsFactory as its only admin
+        bytes32 optionsControllerRole = keccak256("OPTIONS_CONTROLLER_ROLE");
+        // quantRoles["OPTIONS_CONTROLLER_ROLE"] = optionsControllerRole;
+        _setupRole(optionsControllerRole, _timelockController);
+        _setupRole(optionsControllerRole, _msgSender());
+        // quantRoles.push(optionsControllerRole);
+        bytes32 oracleManagerRole = keccak256("ORACLE_MANAGER_ROLE");
+        // quantRoles["ORACLE_MANAGER_ROLE"] = oracleManagerRole;
+        _setupRole(oracleManagerRole, _timelockController);
+        _setupRole(oracleManagerRole, _msgSender());
         timelockController = _timelockController;
     }
 }

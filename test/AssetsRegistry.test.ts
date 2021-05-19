@@ -1,6 +1,6 @@
 import { deployContract } from "ethereum-waffle";
 import { BigNumber, Signer } from "ethers";
-import { ethers, waffle } from "hardhat";
+import { ethers } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import BasicTokenJSON from "../artifacts/contracts/test/BasicERC20.sol/BasicERC20.json";
 import { AssetsRegistry, MockERC20, QuantConfig } from "../typechain";
@@ -10,8 +10,6 @@ import {
   deployQuantConfig,
   mockERC20,
 } from "./testUtils";
-
-const { deployMockContract } = waffle;
 
 type AssetProperties = [string, string, string, number, BigNumber];
 

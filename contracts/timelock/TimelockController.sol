@@ -255,11 +255,7 @@ contract TimelockController is AccessControl {
         uint256 delay
     ) public virtual onlyRole(PROPOSER_ROLE) {
         require(
-            targets.length == values.length,
-            "TimelockController: length mismatch"
-        );
-        require(
-            targets.length == datas.length,
+            targets.length == values.length && datas.length == targets.length,
             "TimelockController: length mismatch"
         );
 
