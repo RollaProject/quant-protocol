@@ -41,51 +41,6 @@ contract OptionsFactory is IOptionsFactory {
     }
 
     /// @inheritdoc IOptionsFactory
-    function getTargetQTokenAddress(
-        address _underlyingAsset,
-        address _strikeAsset,
-        address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
-    ) external view override returns (address) {
-        return
-            OptionsUtils.getTargetQTokenAddress(
-                address(quantConfig),
-                _underlyingAsset,
-                _strikeAsset,
-                _oracle,
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            );
-    }
-
-    /// @inheritdoc IOptionsFactory
-    function getTargetCollateralTokenId(
-        address _underlyingAsset,
-        address _strikeAsset,
-        address _oracle,
-        address _qTokenAsCollateral,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
-    ) external view override returns (uint256) {
-        return
-            OptionsUtils.getTargetCollateralTokenId(
-                collateralToken,
-                address(quantConfig),
-                _underlyingAsset,
-                _strikeAsset,
-                _oracle,
-                _qTokenAsCollateral,
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            );
-    }
-
-    /// @inheritdoc IOptionsFactory
     function createOption(
         address _underlyingAsset,
         address _strikeAsset,
@@ -164,6 +119,51 @@ contract OptionsFactory is IOptionsFactory {
     }
 
     /// @inheritdoc IOptionsFactory
+    function getTargetCollateralTokenId(
+        address _underlyingAsset,
+        address _strikeAsset,
+        address _oracle,
+        address _qTokenAsCollateral,
+        uint256 _strikePrice,
+        uint256 _expiryTime,
+        bool _isCall
+    ) external view override returns (uint256) {
+        return
+            OptionsUtils.getTargetCollateralTokenId(
+                collateralToken,
+                address(quantConfig),
+                _underlyingAsset,
+                _strikeAsset,
+                _oracle,
+                _qTokenAsCollateral,
+                _strikePrice,
+                _expiryTime,
+                _isCall
+            );
+    }
+
+    /// @inheritdoc IOptionsFactory
+    function getTargetQTokenAddress(
+        address _underlyingAsset,
+        address _strikeAsset,
+        address _oracle,
+        uint256 _strikePrice,
+        uint256 _expiryTime,
+        bool _isCall
+    ) external view override returns (address) {
+        return
+            OptionsUtils.getTargetQTokenAddress(
+                address(quantConfig),
+                _underlyingAsset,
+                _strikeAsset,
+                _oracle,
+                _strikePrice,
+                _expiryTime,
+                _isCall
+            );
+    }
+
+    /// @inheritdoc IOptionsFactory
     function getCollateralToken(
         address _underlyingAsset,
         address _strikeAsset,
@@ -172,7 +172,7 @@ contract OptionsFactory is IOptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) public view override returns (uint256) {
+    ) external view override returns (uint256) {
         address qToken =
             getQToken(
                 _underlyingAsset,
@@ -188,6 +188,16 @@ contract OptionsFactory is IOptionsFactory {
 
         (address storedQToken, ) = collateralToken.idToInfo(id);
         return storedQToken != address(0) ? id : 0;
+    }
+
+    /// @inheritdoc IOptionsFactory
+    function getOptionsLength() external view override returns (uint256) {
+        return qTokens.length;
+    }
+
+    /// @inheritdoc IOptionsFactory
+    function isQToken(address _qToken) external view override returns (bool) {
+        return qTokenAddressToCollateralTokenId[_qToken] != 0;
     }
 
     /// @inheritdoc IOptionsFactory
@@ -213,15 +223,5 @@ contract OptionsFactory is IOptionsFactory {
             );
 
         return _collateralTokenIdToQTokenAddress[collateralTokenId];
-    }
-
-    /// @inheritdoc IOptionsFactory
-    function getOptionsLength() external view override returns (uint256) {
-        return qTokens.length;
-    }
-
-    /// @inheritdoc IOptionsFactory
-    function isQToken(address _qToken) external view override returns (bool) {
-        return qTokenAddressToCollateralTokenId[_qToken] != 0;
     }
 }

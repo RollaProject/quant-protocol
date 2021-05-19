@@ -2,7 +2,7 @@
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
-import "../external/chainlink/IEACAggregatorProxy.sol";
+import "../interfaces/external/chainlink/IEACAggregatorProxy.sol";
 
 /// @title Mock chainlink proxy
 contract MockAggregatorProxy is IEACAggregatorProxy {
@@ -72,22 +72,6 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         //noop
     }
 
-    function accessController() external pure override returns (address) {
-        return address(0);
-    }
-
-    function aggregator() external pure override returns (address) {
-        return address(0);
-    }
-
-    function decimals() external pure override returns (uint8) {
-        return 0;
-    }
-
-    function description() external pure override returns (string memory) {
-        return "...";
-    }
-
     function getAnswer(uint256 _roundId)
         external
         view
@@ -95,21 +79,6 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         returns (int256)
     {
         return roundIdAnswers[_roundId];
-    }
-
-    function getRoundData(uint80)
-        external
-        pure
-        override
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
-    {
-        return (0, 0, 0, 0, 0);
     }
 
     function getTimestamp(uint256 _roundId)
@@ -152,6 +121,37 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
 
     function latestTimestamp() external view override returns (uint256) {
         return latestTimestampValue;
+    }
+
+    function accessController() external pure override returns (address) {
+        return address(0);
+    }
+
+    function aggregator() external pure override returns (address) {
+        return address(0);
+    }
+
+    function decimals() external pure override returns (uint8) {
+        return 0;
+    }
+
+    function description() external pure override returns (string memory) {
+        return "...";
+    }
+
+    function getRoundData(uint80)
+        external
+        pure
+        override
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
+    {
+        return (0, 0, 0, 0, 0);
     }
 
     function owner() external pure override returns (address) {

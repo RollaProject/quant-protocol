@@ -407,6 +407,15 @@ contract ConfigTimelockController is TimelockController {
         }
     }
 
+    function _getProtocolValueDelay(bytes32 protocolValue)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 storedDelay = delays[protocolValue];
+        return storedDelay != 0 ? storedDelay : minDelay;
+    }
+
     function _isProtocoValueSetter(bytes memory data)
         internal
         pure
@@ -422,15 +431,6 @@ contract ConfigTimelockController is TimelockController {
             selector == IQuantConfig(address(0)).setProtocolAddress.selector ||
             selector == IQuantConfig(address(0)).setProtocolUint256.selector ||
             selector == IQuantConfig(address(0)).setProtocolBoolean.selector;
-    }
-
-    function _getProtocolValueDelay(bytes32 protocolValue)
-        internal
-        view
-        returns (uint256)
-    {
-        uint256 storedDelay = delays[protocolValue];
-        return storedDelay != 0 ? storedDelay : minDelay;
     }
 
     function _encodeSetProtocolAddress(
