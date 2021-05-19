@@ -96,15 +96,6 @@ interface ICollateralToken is IERC1155 {
         uint256[] calldata amounts
     ) external;
 
-    /// @notice Returns a unique CollateralToken id based on its parameters
-    /// @param _qToken the address of the corresponding QToken
-    /// @param _qTokenAsCollateral QToken address of an option used as collateral in a spread
-    /// @return id the id for the CollateralToken with the given arguments
-    function getCollateralTokenId(address _qToken, address _qTokenAsCollateral)
-        external
-        pure
-        returns (uint256 id);
-
     /// @notice The Quant system config
     function quantConfig() external view returns (IQuantConfig);
 
@@ -116,4 +107,13 @@ interface ICollateralToken is IERC1155 {
 
     /// @notice mapping from token ids to their supplies
     function tokenSupplies(uint256) external view returns (uint256);
+
+    /// @notice Returns a unique CollateralToken id based on its parameters
+    /// @param _qToken the address of the corresponding QToken
+    /// @param _qTokenAsCollateral QToken address of an option used as collateral in a spread
+    /// @return id the id for the CollateralToken with the given arguments
+    function getCollateralTokenId(address _qToken, address _qTokenAsCollateral)
+        external
+        pure
+        returns (uint256 id);
 }
