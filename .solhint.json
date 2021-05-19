@@ -32,7 +32,7 @@
     "avoid-throw": "error",
     "avoid-tx-origin": "off",
     "check-send-result": "error",
-    "compiler-version": ["error", "^0.7.0"],
+    "compiler-version": ["off"],
     "mark-callable-contracts": "off",
     "func-visibility": ["error", { "ignoreConstructors": true }],
     "multiple-sends": "error",

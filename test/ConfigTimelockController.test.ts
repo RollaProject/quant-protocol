@@ -495,10 +495,11 @@ describe("ConfigTimelockController", () => {
         [protocolFee, protocolFeeValue]
       );
 
-      const maxOptionsDurationCallData = quantConfig.interface.encodeFunctionData(
-        "setProtocolUint256",
-        [ethers.utils.id("maxOptionsDuration"), maxOptionsDurationValue]
-      );
+      const maxOptionsDurationCallData =
+        quantConfig.interface.encodeFunctionData("setProtocolUint256", [
+          ethers.utils.id("maxOptionsDuration"),
+          maxOptionsDurationValue,
+        ]);
 
       const protocolFeeId = await configTimelockController.hashOperation(
         quantConfig.address,
