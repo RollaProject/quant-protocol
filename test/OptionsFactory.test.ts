@@ -61,11 +61,11 @@ describe("OptionsFactory", () => {
     quantConfig = await deployQuantConfig(timelockController, [
       {
         addresses: [await assetsRegistryManager.getAddress()],
-        role: ethers.utils.id("ASSETS_REGISTRY_MANAGER_ROLE"),
+        role: "ASSETS_REGISTRY_MANAGER_ROLE",
       },
       {
         addresses: [await oracleManagerAccount.getAddress()],
-        role: ethers.utils.id("ORACLE_MANAGER_ROLE"),
+        role: "ORACLE_MANAGER_ROLE",
       },
     ]);
 
@@ -110,23 +110,21 @@ describe("OptionsFactory", () => {
 
     await quantConfig
       .connect(timelockController)
-      .grantRole(
-        await quantConfig.COLLATERAL_CREATOR_ROLE(),
-        optionsFactory.address
-      );
+      .setProtocolRole("COLLATERAL_CREATOR_ROLE", optionsFactory.address);
+
+    await quantConfig
+      .connect(timelockController)
+      .setProtocolRole("PRICE_SUBMITTER_ROLE", oracleRegistry.address);
+
+    await quantConfig
+      .connect(timelockController)
+      .setProtocolRole("PRICE_SUBMITTER_ROLE_ADMIN", oracleRegistry.address);
 
     await quantConfig
       .connect(timelockController)
       .setRoleAdmin(
-        await quantConfig.PRICE_SUBMITTER_ROLE(),
-        await quantConfig.PRICE_SUBMITTER_ROLE_ADMIN()
-      );
-
-    await quantConfig
-      .connect(timelockController)
-      .grantRole(
-        await quantConfig.PRICE_SUBMITTER_ROLE_ADMIN(),
-        oracleRegistry.address
+        ethers.utils.id("PRICE_SUBMITTER_ROLE"),
+        ethers.utils.id("PRICE_SUBMITTER_ROLE_ADMIN")
       );
 
     await oracleRegistry
@@ -284,7 +282,7 @@ describe("OptionsFactory", () => {
         optionsFactory
           .connect(secondAccount)
           .createOption(...samplePutOptionParameters)
-      ).to.be.revertedWith("OptionsFactory: option already created");
+      ).to.be.revertedWith("option already created");
     });
 
     it("Should revert when trying to create a PUT option with a strike price of 0", async () => {
@@ -299,7 +297,7 @@ describe("OptionsFactory", () => {
             futureTimestamp,
             false
           )
-      ).to.be.revertedWith("OptionsFactory: strike for put can't be 0");
+      ).to.be.revertedWith("strike for put can't be 0");
     });
 
     it("Should revert when trying to create an option with an underlying that's not in the assets registry", async () => {
@@ -314,9 +312,7 @@ describe("OptionsFactory", () => {
             futureTimestamp,
             false
           )
-      ).to.be.revertedWith(
-        "OptionsFactory: underlying is not in the assets registry"
-      );
+      ).to.be.revertedWith("underlying not in the registry");
     });
   });
 

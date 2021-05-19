@@ -50,15 +50,15 @@ describe("QToken", async () => {
     quantConfig = await deployQuantConfig(timelockController, [
       {
         addresses: [await assetsRegistryManager.getAddress()],
-        role: ethers.utils.id("ASSETS_REGISTRY_MANAGER_ROLE"),
+        role: "ASSETS_REGISTRY_MANAGER_ROLE",
       },
       {
         addresses: [await optionsMinter.getAddress()],
-        role: ethers.utils.id("OPTIONS_MINTER_ROLE"),
+        role: "OPTIONS_MINTER_ROLE",
       },
       {
         addresses: [await optionsBurner.getAddress()],
-        role: ethers.utils.id("OPTIONS_BURNER_ROLE"),
+        role: "OPTIONS_BURNER_ROLE",
       },
     ]);
 
