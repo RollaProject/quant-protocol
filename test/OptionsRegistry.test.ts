@@ -77,7 +77,9 @@ describe("OptionsRegistry", () => {
     ).to.equal(1);
 
     expect(
-      await (await optionsRegistry.getOptionDetails(mockUnderlyingAsset, 0))[1]
+      await (
+        await optionsRegistry.getOptionDetails(mockUnderlyingAsset, 0)
+      )[1]
     ).to.equal(false);
 
     await optionsRegistry
@@ -85,7 +87,9 @@ describe("OptionsRegistry", () => {
       .makeOptionVisible(qToken.address, 0);
 
     expect(
-      await (await optionsRegistry.getOptionDetails(mockUnderlyingAsset, 0))[1]
+      await (
+        await optionsRegistry.getOptionDetails(mockUnderlyingAsset, 0)
+      )[1]
     ).to.equal(true);
 
     await optionsRegistry
@@ -93,7 +97,9 @@ describe("OptionsRegistry", () => {
       .makeOptionInvisible(qToken.address, 0);
 
     expect(
-      await (await optionsRegistry.getOptionDetails(mockUnderlyingAsset, 0))[1]
+      await (
+        await optionsRegistry.getOptionDetails(mockUnderlyingAsset, 0)
+      )[1]
     ).to.equal(false);
   });
 
