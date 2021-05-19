@@ -132,14 +132,12 @@ describe("Controller", () => {
       new ethers.Contract(qTokenForCollateralAddress, QTokenInterface, provider)
     );
 
-    const [
-      collateralAddress,
-      collateralAmount,
-    ] = await getCollateralRequirement(
-      qTokenToMint,
-      qTokenForCollateral,
-      optionsAmount
-    );
+    const [collateralAddress, collateralAmount] =
+      await getCollateralRequirement(
+        qTokenToMint,
+        qTokenForCollateral,
+        optionsAmount
+      );
 
     expect(
       await controller.getCollateralRequirement(
@@ -189,9 +187,10 @@ describe("Controller", () => {
         );
 
       // Check that the user received the CollateralToken
-      const collateralTokenId = await optionsFactory.qTokenAddressToCollateralTokenId(
-        qTokenToMintAddress
-      );
+      const collateralTokenId =
+        await optionsFactory.qTokenAddressToCollateralTokenId(
+          qTokenToMintAddress
+        );
 
       expect(
         await collateralToken.balanceOf(
@@ -277,10 +276,8 @@ describe("Controller", () => {
 
     await mockPriceRegistry.mock.getSettlementPrice.returns(expiryPrice);
 
-    const [
-      collateralAddress,
-      collateralRequirement,
-    ] = await getCollateralRequirement(qTokenShort, qTokenLong, amountToClaim);
+    const [collateralAddress, collateralRequirement] =
+      await getCollateralRequirement(qTokenShort, qTokenLong, amountToClaim);
 
     const collateral = collateralAddress === WETH.address ? WETH : USDC;
 
@@ -874,9 +871,8 @@ describe("Controller", () => {
         ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
         false,
       ];
-      const qTokenPutDifferentExpiry = await optionsFactory.getTargetQTokenAddress(
-        ...qTokenParams
-      );
+      const qTokenPutDifferentExpiry =
+        await optionsFactory.getTargetQTokenAddress(...qTokenParams);
 
       await optionsFactory.connect(secondAccount).createOption(...qTokenParams);
 
@@ -902,9 +898,8 @@ describe("Controller", () => {
         ethers.BigNumber.from(futureTimestamp),
         true,
       ];
-      const qTokenCallDifferentUnderlying = await optionsFactory.getTargetQTokenAddress(
-        ...qTokenParams
-      );
+      const qTokenCallDifferentUnderlying =
+        await optionsFactory.getTargetQTokenAddress(...qTokenParams);
 
       await optionsFactory.createOption(...qTokenParams);
 

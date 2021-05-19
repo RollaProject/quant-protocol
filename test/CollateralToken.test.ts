@@ -408,10 +408,8 @@ describe("CollateralToken", () => {
 
   describe("mintCollateralTokenBatch", () => {
     it("Admin should be able to mint batches of CollateralTokens", async () => {
-      const [
-        firstCollateralTokenId,
-        secondCollateralTokenId,
-      ] = await createTwoCollateralTokens();
+      const [firstCollateralTokenId, secondCollateralTokenId] =
+        await createTwoCollateralTokens();
 
       expect(firstCollateralTokenId).to.not.be.equal(secondCollateralTokenId);
 
@@ -443,10 +441,8 @@ describe("CollateralToken", () => {
     });
 
     it("Should revert when an unauthorized account tries to mint a batch of CollateralTokens", async () => {
-      const [
-        firstCollateralTokenId,
-        secondCollateralTokenId,
-      ] = await createTwoCollateralTokens();
+      const [firstCollateralTokenId, secondCollateralTokenId] =
+        await createTwoCollateralTokens();
 
       await expect(
         collateralToken
@@ -462,10 +458,8 @@ describe("CollateralToken", () => {
     });
 
     it("Should emit the CollateralTokenMinted event", async () => {
-      const [
-        firstCollateralTokenId,
-        secondCollateralTokenId,
-      ] = await createTwoCollateralTokens();
+      const [firstCollateralTokenId, secondCollateralTokenId] =
+        await createTwoCollateralTokens();
 
       const firstCollateralTokenAmount = ethers.BigNumber.from("10");
       const secondCollateralTokenAmount = ethers.BigNumber.from("20");
@@ -490,10 +484,8 @@ describe("CollateralToken", () => {
 
   describe("burnCollateralTokenBatch", () => {
     it("Admin should be able to burn batches of CollateralTokens", async () => {
-      const [
-        firstCollateralTokenId,
-        secondCollateralTokenId,
-      ] = await createTwoCollateralTokens();
+      const [firstCollateralTokenId, secondCollateralTokenId] =
+        await createTwoCollateralTokens();
 
       const firstCollateralTokenAmount = ethers.BigNumber.from("10");
       const secondCollateralTokenAmount = ethers.BigNumber.from("20");
@@ -506,13 +498,11 @@ describe("CollateralToken", () => {
           [firstCollateralTokenAmount, secondCollateralTokenAmount]
         );
 
-      const [
-        firstPrevBalance,
-        secondPrevBalance,
-      ] = await collateralToken.balanceOfBatch(
-        [userAddress, userAddress],
-        [firstCollateralTokenId, secondCollateralTokenId]
-      );
+      const [firstPrevBalance, secondPrevBalance] =
+        await collateralToken.balanceOfBatch(
+          [userAddress, userAddress],
+          [firstCollateralTokenId, secondCollateralTokenId]
+        );
 
       const firstPrevSupply = await collateralToken.tokenSupplies(
         firstCollateralTokenId
@@ -529,13 +519,11 @@ describe("CollateralToken", () => {
           [ethers.BigNumber.from("5"), ethers.BigNumber.from("10")]
         );
 
-      const [
-        firstNewBalance,
-        secondNewBalance,
-      ] = await collateralToken.balanceOfBatch(
-        [userAddress, userAddress],
-        [firstCollateralTokenId, secondCollateralTokenId]
-      );
+      const [firstNewBalance, secondNewBalance] =
+        await collateralToken.balanceOfBatch(
+          [userAddress, userAddress],
+          [firstCollateralTokenId, secondCollateralTokenId]
+        );
 
       const firstNewSupply = await collateralToken.tokenSupplies(
         firstCollateralTokenId
@@ -560,10 +548,8 @@ describe("CollateralToken", () => {
     });
 
     it("Should revert when an unauthorized account tries to burn a batch of CollateralTokens", async () => {
-      const [
-        firstCollateralTokenId,
-        secondCollateralTokenId,
-      ] = await createTwoCollateralTokens();
+      const [firstCollateralTokenId, secondCollateralTokenId] =
+        await createTwoCollateralTokens();
 
       const firstCollateralTokenAmount = ethers.BigNumber.from("10");
       const secondCollateralTokenAmount = ethers.BigNumber.from("20");
@@ -590,10 +576,8 @@ describe("CollateralToken", () => {
     });
 
     it("Should emit the CollateralTokenBurned event", async () => {
-      const [
-        firstCollateralTokenId,
-        secondCollateralTokenId,
-      ] = await createTwoCollateralTokens();
+      const [firstCollateralTokenId, secondCollateralTokenId] =
+        await createTwoCollateralTokens();
 
       const firstCollateralTokenAmount = ethers.BigNumber.from("10");
       const secondCollateralTokenAmount = ethers.BigNumber.from("20");

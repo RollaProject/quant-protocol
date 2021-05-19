@@ -39,12 +39,8 @@ describe("ChainlinkOracleManager", function () {
   const oracleThree = "0x0000000000000000000000000000000000000030";
 
   async function setUpTests() {
-    [
-      owner,
-      oracleManagerAccount,
-      normalUserAccount,
-      fallbackPriceAccount,
-    ] = provider.getWallets();
+    [owner, oracleManagerAccount, normalUserAccount, fallbackPriceAccount] =
+      provider.getWallets();
 
     mockConfig = await deployMockContract(owner, CONFIG.abi);
     mockAggregator = await deployMockContract(owner, AGGREGATOR.abi);
