@@ -28,8 +28,8 @@ describe("PriceRegistry", () => {
     );
     oracle = await admin.getAddress(); //this is the oracle since its the price submitter
 
-    await quantConfig.grantRole(
-      await quantConfig.PRICE_SUBMITTER_ROLE(),
+    await quantConfig.setProtocolRole(
+      "PRICE_SUBMITTER_ROLE",
       await admin.getAddress()
     );
   });

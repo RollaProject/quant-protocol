@@ -1,31 +1,25 @@
 import { MockContract } from "ethereum-waffle";
 import { Signer } from "ethers";
-import { ethers, upgrades, waffle } from "hardhat";
+import { waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import QTokenJSON from "../artifacts/contracts/options/QToken.sol/QToken.json";
 import OptionsRegistryJSON from "../artifacts/contracts/periphery/OptionsRegistry.sol/OptionsRegistry.json";
-import { OptionsRegistry, QuantConfig } from "../typechain";
+import { OptionsRegistry } from "../typechain";
 import { expect, provider } from "./setup";
 
 const { deployContract, deployMockContract } = waffle;
 
 describe("OptionsRegistry", () => {
-  let quantConfig: QuantConfig;
   let optionsRegistry: OptionsRegistry;
   let qToken: MockContract;
   let qTokenTwo: MockContract;
   let admin: Signer;
   let secondAccount: Signer;
-  let userAddress: string;
   const mockUnderlyingAsset = "0x000000000000000000000000000000000000000A";
 
   beforeEach(async () => {
     [admin, secondAccount] = provider.getWallets();
-    userAddress = await secondAccount.getAddress();
-    const QuantConfig = await ethers.getContractFactory("QuantConfig");
-    quantConfig = <QuantConfig>(
-      await upgrades.deployProxy(QuantConfig, [await admin.getAddress()])
-    );
+
     optionsRegistry = <OptionsRegistry>(
       await deployContract(admin, OptionsRegistryJSON, [admin.getAddress()])
     );

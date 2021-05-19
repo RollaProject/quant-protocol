@@ -37,15 +37,6 @@ describe("ChainlinkOracleManager", function () {
   const oracleOne = "0x0000000000000000000000000000000000000010";
   const oracleTwo = "0x0000000000000000000000000000000000000020";
   const oracleThree = "0x0000000000000000000000000000000000000030";
-  const oracleManagerRole = ethers.utils
-    .keccak256(ethers.utils.toUtf8Bytes("ORACLE_MANAGER_ROLE"))
-    .toString();
-  const fallbackPriceRole = ethers.utils
-    .keccak256(ethers.utils.toUtf8Bytes("FALLBACK_PRICE_ROLE"))
-    .toString();
-  const priceSubmitterRole = ethers.utils
-    .keccak256(ethers.utils.toUtf8Bytes("PRICE_SUBMITTER_ROLE"))
-    .toString();
 
   async function setUpTests() {
     [
@@ -60,10 +51,20 @@ describe("ChainlinkOracleManager", function () {
     mockAggregatorTwo = await deployMockContract(owner, AGGREGATOR.abi);
     mockPriceRegistry = await deployMockContract(owner, PRICE_REGISTRY.abi);
 
-    await mockConfig.mock.ORACLE_MANAGER_ROLE.returns(oracleManagerRole);
-    await mockConfig.mock.FALLBACK_PRICE_ROLE.returns(fallbackPriceRole);
-    await mockConfig.mock.PRICE_SUBMITTER_ROLE.returns(priceSubmitterRole);
-    await mockConfig.mock.priceRegistry.returns(mockPriceRegistry.address);
+    // await mockConfig.mock.protocolAddresses.withArgs("ora")
+    await mockConfig.mock.quantRoles
+      .withArgs("ORACLE_MANAGER_ROLE")
+      .returns(ethers.utils.id("ORACLE_MANAGER_ROLE"));
+    await mockConfig.mock.quantRoles
+      .withArgs("FALLBACK_PRICE_ROLE")
+      .returns(ethers.utils.id("FALLBACK_PRICE_ROLE"));
+    await mockConfig.mock.quantRoles
+      .withArgs("PRICE_SUBMITTER_ROLE")
+      .returns(ethers.utils.id("PRICE_SUBMITTER_ROLE"));
+
+    await mockConfig.mock.protocolAddresses
+      .withArgs(ethers.utils.id("priceRegistry"))
+      .returns(mockPriceRegistry.address);
 
     normalUserAccountAddress = await normalUserAccount.getAddress();
     fallbackPriceAccountAddress = await fallbackPriceAccount.getAddress();
@@ -203,7 +204,10 @@ describe("ChainlinkOracleManager", function () {
         .to.emit(chainlinkOracleManager, "OracleAdded")
         .withArgs(assetOne, oracleOne);
 
-      await mockConfig.mock.priceRegistry.returns(mockPriceRegistry.address);
+      await mockConfig.mock.protocolAddresses
+        .withArgs(ethers.utils.id("priceRegistry"))
+        .returns(mockPriceRegistry.address);
+      // await mockConfig.mock.priceRegistry.returns(mockPriceRegistry.address);
       await mockPriceRegistry.mock.setSettlementPrice.returns();
 
       await expect(
@@ -399,7 +403,9 @@ describe("ChainlinkOracleManager", function () {
 
     it("Integration Test: Should submit the correct price to the price registry", async function () {
       //use the real price registry instead of the mock
-      await mockConfig.mock.priceRegistry.returns(priceRegistry.address);
+      await mockConfig.mock.protocolAddresses
+        .withArgs(ethers.utils.id("priceRegistry"))
+        .returns(priceRegistry.address);
 
       await setUpTestWithMockAggregator();
 
@@ -432,7 +438,9 @@ describe("ChainlinkOracleManager", function () {
 
     it("Integration Test: Should submit the correct price to the price registry when submitting a round directly", async function () {
       //use the real price registry instead of the mock
-      await mockConfig.mock.priceRegistry.returns(priceRegistry.address);
+      await mockConfig.mock.protocolAddresses
+        .withArgs(ethers.utils.id("priceRegistry"))
+        .returns(priceRegistry.address);
 
       await setUpTestWithMockAggregator();
 
@@ -481,7 +489,9 @@ describe("ChainlinkOracleManager", function () {
 
     it("Integration Test: Should fail to submit a round for an asset that doesn't exist in the oracle", async function () {
       //use the real price registry instead of the mock
-      await mockConfig.mock.priceRegistry.returns(priceRegistry.address);
+      await mockConfig.mock.protocolAddresses
+        .withArgs(ethers.utils.id("priceRegistry"))
+        .returns(priceRegistry.address);
 
       await setUpTestWithMockAggregator();
 

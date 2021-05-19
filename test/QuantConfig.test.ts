@@ -9,6 +9,8 @@ describe("QuantConfig", () => {
   let timelockController: Signer;
   let secondAccount: Signer;
 
+  const protocolFee = ethers.utils.id("fee");
+
   beforeEach(async () => {
     [timelockController, secondAccount] = await ethers.getSigners();
     const QuantConfig = await ethers.getContractFactory("QuantConfig");
@@ -26,31 +28,39 @@ describe("QuantConfig", () => {
   });
 
   it("Protocol fee should start as 0", async () => {
-    expect(await quantConfig.fee()).to.equal(ethers.BigNumber.from("0"));
+    expect(await quantConfig.protocolUints256(protocolFee)).to.equal(
+      ethers.BigNumber.from("0")
+    );
   });
 
   it("Admin should be able to set the protocol fee", async () => {
     await quantConfig
       .connect(timelockController)
-      .setFee(ethers.BigNumber.from("300"));
-    expect(await quantConfig.fee()).to.equal(ethers.BigNumber.from("300"));
+      .setProtocolUint256(protocolFee, ethers.BigNumber.from("300"));
+    expect(await quantConfig.protocolUints256(protocolFee)).to.equal(
+      ethers.BigNumber.from("300")
+    );
   });
 
   it("Should revert when a non-admin account tries to change the protocol fee", async () => {
     await expect(
-      quantConfig.connect(secondAccount).setFee(ethers.BigNumber.from("100"))
-    ).to.be.revertedWith("Caller is not admin");
+      quantConfig
+        .connect(secondAccount)
+        .setProtocolUint256(protocolFee, ethers.BigNumber.from("100"))
+    ).to.be.revertedWith("Ownable: caller is not the owner");
   });
 
   it("Should maintain state across upgrades", async () => {
     await quantConfig
       .connect(timelockController)
-      .setFee(ethers.BigNumber.from("200"));
+      .setProtocolUint256(protocolFee, ethers.BigNumber.from("200"));
     const QuantConfigV2 = await ethers.getContractFactory("QuantConfigV2");
     quantConfig = <QuantConfig>(
       await upgrades.upgradeProxy(quantConfig.address, QuantConfigV2)
     );
-    expect(await quantConfig.fee()).to.equal(ethers.BigNumber.from("200"));
+    expect(await quantConfig.protocolUints256(protocolFee)).to.equal(
+      ethers.BigNumber.from("200")
+    );
   });
 
   it("Should be able to add new state variables through upgrades", async () => {
@@ -69,7 +79,9 @@ describe("QuantConfig", () => {
     );
     await quantConfig
       .connect(timelockController)
-      .setFee(ethers.BigNumber.from("400"));
-    expect(await quantConfig.fee()).to.equal(ethers.BigNumber.from("400"));
+      .setProtocolUint256(protocolFee, ethers.BigNumber.from("400"));
+    expect(await quantConfig.protocolUints256(protocolFee)).to.equal(
+      ethers.BigNumber.from("400")
+    );
   });
 });
