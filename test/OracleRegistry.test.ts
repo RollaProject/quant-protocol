@@ -14,18 +14,16 @@ describe("OracleRegistry", () => {
   let timelockController: Signer;
   let secondAccount: Signer;
   let oracleManager: Signer;
-  let userAddress: string;
   const oracleOne = "0x000000000000000000000000000000000000000A";
   const oracleTwo = "0x000000000000000000000000000000000000000B";
 
   beforeEach(async () => {
     [timelockController, secondAccount, oracleManager] = provider.getWallets();
-    userAddress = await secondAccount.getAddress();
 
     quantConfig = await deployQuantConfig(timelockController, [
       {
         addresses: [await oracleManager.getAddress()],
-        role: ethers.utils.id("ORACLE_MANAGER_ROLE"),
+        role: "ORACLE_MANAGER_ROLE",
       },
     ]);
 
@@ -37,16 +35,20 @@ describe("OracleRegistry", () => {
 
     await quantConfig
       .connect(timelockController)
-      .setRoleAdmin(
-        ethers.utils.id("PRICE_SUBMITTER_ROLE"),
-        ethers.utils.id("PRICE_SUBMITTER_ROLE_ADMIN")
+      .setProtocolRole("PRICE_SUBMITTER_ROLE", oracleProviderRegistry.address);
+
+    await quantConfig
+      .connect(timelockController)
+      .setProtocolRole(
+        "PRICE_SUBMITTER_ROLE_ADMIN",
+        oracleProviderRegistry.address
       );
 
     await quantConfig
       .connect(timelockController)
-      .grantRole(
-        ethers.utils.id("PRICE_SUBMITTER_ROLE_ADMIN"),
-        await oracleProviderRegistry.address
+      .setRoleAdmin(
+        ethers.utils.id("PRICE_SUBMITTER_ROLE"),
+        ethers.utils.id("PRICE_SUBMITTER_ROLE_ADMIN")
       );
   });
 

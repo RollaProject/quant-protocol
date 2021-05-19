@@ -2,7 +2,7 @@ import { BigNumber, BigNumberish, BytesLike, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import { ConfigTimelockController, QuantConfig } from "../typechain";
-import { expect, provider } from "./setup";
+import { expect } from "./setup";
 import { deployConfigTimelockController, deployQuantConfig } from "./testUtils";
 
 type scheduleParams = [
@@ -25,18 +25,16 @@ describe("ConfigTimelockController", () => {
   let scheduleCallData: scheduleParams;
   let id: string;
 
+  const futureETA = 4774204800; // Wed Apr 16 2121 00:00:00 GMT+0000
+
   const target = ethers.constants.AddressZero;
   const value = 0;
   const data = "0x00";
   const protocolFee = ethers.utils.id("PROTOCOL_FEE");
 
-  const getBytes32Timestamp = async (): Promise<string> => {
-    const timestamp = (
-      (await provider.getBlock(await provider.getBlockNumber())).timestamp + 1
-    ).toString();
-
+  const uintToBytes32 = (value: number): string => {
     return ethers.utils.hexZeroPad(
-      ethers.BigNumber.from(timestamp).toHexString(),
+      ethers.BigNumber.from(value).toHexString(),
       32
     );
   };
@@ -55,11 +53,7 @@ describe("ConfigTimelockController", () => {
 
     predecessor = ethers.utils.formatBytes32String("");
 
-    salt = ethers.utils.formatBytes32String(
-      (
-        await provider.getBlock(await provider.getBlockNumber())
-      ).timestamp.toString()
-    );
+    salt = uintToBytes32(futureETA);
 
     scheduleCallData = [target, value, data, predecessor, salt, delay];
 
@@ -161,7 +155,8 @@ describe("ConfigTimelockController", () => {
           .scheduleSetProtocolAddress(
             ethers.utils.id("oracleRegistry"),
             ethers.constants.AddressZero,
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       ).to.be.revertedWith("TimelockController: sender requires permission");
     });
@@ -181,7 +176,7 @@ describe("ConfigTimelockController", () => {
         0,
         callData,
         predecessor,
-        await getBytes32Timestamp()
+        uintToBytes32(futureETA)
       );
 
       await expect(
@@ -190,7 +185,8 @@ describe("ConfigTimelockController", () => {
           .scheduleSetProtocolAddress(
             ethers.utils.id("oracleRegistry"),
             registryAddress,
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       )
         .to.emit(configTimelockController, "CallScheduled")
@@ -206,7 +202,8 @@ describe("ConfigTimelockController", () => {
           .scheduleSetProtocolUint256(
             protocolFee,
             ethers.BigNumber.from("0"),
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       ).to.be.revertedWith("TimelockController: sender requires permission");
     });
@@ -224,7 +221,7 @@ describe("ConfigTimelockController", () => {
         0,
         callData,
         predecessor,
-        await getBytes32Timestamp()
+        uintToBytes32(futureETA)
       );
 
       await expect(
@@ -233,7 +230,8 @@ describe("ConfigTimelockController", () => {
           .scheduleSetProtocolUint256(
             protocolFee,
             newProtocoFee,
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       )
         .to.emit(configTimelockController, "CallScheduled")
@@ -249,7 +247,8 @@ describe("ConfigTimelockController", () => {
           .scheduleSetProtocolBoolean(
             ethers.utils.id("oracleRegistry"),
             false,
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       ).to.be.revertedWith("TimelockController: sender requires permission");
     });
@@ -267,7 +266,7 @@ describe("ConfigTimelockController", () => {
         0,
         callData,
         predecessor,
-        await getBytes32Timestamp()
+        uintToBytes32(futureETA)
       );
 
       await expect(
@@ -276,7 +275,8 @@ describe("ConfigTimelockController", () => {
           .scheduleSetProtocolBoolean(
             isPriceRegistrySet,
             true,
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       )
         .to.emit(configTimelockController, "CallScheduled")
@@ -322,7 +322,7 @@ describe("ConfigTimelockController", () => {
           .scheduleBatch(
             [ethers.constants.AddressZero, quantConfig.address],
             [ethers.utils.parseEther("5"), ethers.utils.parseEther("1")],
-            ["0x00"],
+            ["0x", "0x", "0x"],
             predecessor,
             salt,
             delay
@@ -371,7 +371,8 @@ describe("ConfigTimelockController", () => {
           .scheduleBatchSetProtocolAddress(
             [protocolFee, ethers.utils.id("oracleRegistry")],
             [ethers.constants.AddressZero, ethers.constants.AddressZero],
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       ).to.be.revertedWith("TimelockController: sender requires permission");
     });
@@ -386,7 +387,8 @@ describe("ConfigTimelockController", () => {
               ethers.constants.AddressZero,
               ethers.Wallet.createRandom().address,
             ],
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       ).to.be.revertedWith("ConfigTimelockController: length mismatch");
     });
@@ -413,7 +415,7 @@ describe("ConfigTimelockController", () => {
         0,
         registryCallData,
         predecessor,
-        await getBytes32Timestamp()
+        uintToBytes32(futureETA)
       );
 
       const feeCollectorId = await configTimelockController.hashOperation(
@@ -421,7 +423,7 @@ describe("ConfigTimelockController", () => {
         0,
         feeCollectorCallData,
         predecessor,
-        await getBytes32Timestamp()
+        uintToBytes32(futureETA)
       );
 
       await expect(
@@ -430,7 +432,8 @@ describe("ConfigTimelockController", () => {
           .scheduleBatchSetProtocolAddress(
             [oracleRegistry, feeCollector],
             [registryAddress, feeCollectorAddress],
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       )
         .to.emit(configTimelockController, "CallScheduled")
@@ -464,7 +467,8 @@ describe("ConfigTimelockController", () => {
           .scheduleBatchSetProtocolUints(
             [protocolFee, ethers.utils.id("maxOptionsDuration")],
             [ethers.BigNumber.from("0"), ethers.BigNumber.from(28 * 24 * 3600)],
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       ).to.be.revertedWith("TimelockController: sender requires permission");
     });
@@ -476,7 +480,8 @@ describe("ConfigTimelockController", () => {
           .scheduleBatchSetProtocolUints(
             [protocolFee],
             [ethers.BigNumber.from(0), ethers.utils.parseEther("10")],
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       ).to.be.revertedWith("ConfigTimelockController: length mismatch");
     });
@@ -500,7 +505,7 @@ describe("ConfigTimelockController", () => {
         0,
         protocolFeeCalldata,
         predecessor,
-        await getBytes32Timestamp()
+        uintToBytes32(futureETA)
       );
 
       const maxOptionsDurationId = await configTimelockController.hashOperation(
@@ -508,7 +513,7 @@ describe("ConfigTimelockController", () => {
         0,
         maxOptionsDurationCallData,
         predecessor,
-        await getBytes32Timestamp()
+        uintToBytes32(futureETA)
       );
 
       await expect(
@@ -517,7 +522,8 @@ describe("ConfigTimelockController", () => {
           .scheduleBatchSetProtocolUints(
             [protocolFee, ethers.utils.id("maxOptionsDuration")],
             [protocolFeeValue, maxOptionsDurationValue],
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       )
         .to.emit(configTimelockController, "CallScheduled")
@@ -554,7 +560,8 @@ describe("ConfigTimelockController", () => {
           .scheduleBatchSetProtocolBooleans(
             [isPaused, isDeprecated],
             [true, false],
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       ).to.be.revertedWith("TimelockController: sender requires permission");
     });
@@ -566,7 +573,8 @@ describe("ConfigTimelockController", () => {
           .scheduleBatchSetProtocolBooleans(
             [isPaused],
             [false, false],
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       ).to.be.revertedWith("ConfigTimelockController: length mismatch");
     });
@@ -590,7 +598,7 @@ describe("ConfigTimelockController", () => {
         0,
         isPausedCallData,
         predecessor,
-        await getBytes32Timestamp()
+        uintToBytes32(futureETA)
       );
 
       const isDeprecatedId = await configTimelockController.hashOperation(
@@ -598,7 +606,7 @@ describe("ConfigTimelockController", () => {
         0,
         isDeprecatedCallData,
         predecessor,
-        await getBytes32Timestamp()
+        uintToBytes32(futureETA)
       );
 
       await expect(
@@ -607,7 +615,8 @@ describe("ConfigTimelockController", () => {
           .scheduleBatchSetProtocolBooleans(
             [isPaused, isDeprecated],
             [isPausedValue, isDeprecatedValue],
-            quantConfig.address
+            quantConfig.address,
+            futureETA
           )
       )
         .to.emit(configTimelockController, "CallScheduled")
