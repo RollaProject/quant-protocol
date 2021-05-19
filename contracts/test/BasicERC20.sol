@@ -15,26 +15,6 @@ contract BasicERC20 is Context, IERC20 {
     uint256 private _totalSupply;
 
     /**
-     * @dev See {IERC20-totalSupply}.
-     */
-    function totalSupply() public view virtual override returns (uint256) {
-        return _totalSupply;
-    }
-
-    /**
-     * @dev See {IERC20-balanceOf}.
-     */
-    function balanceOf(address account)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
-        return _balances[account];
-    }
-
-    /**
      * @dev See {IERC20-transfer}.
      *
      * Requirements:
@@ -50,19 +30,6 @@ contract BasicERC20 is Context, IERC20 {
     {
         _transfer(_msgSender(), recipient, amount);
         return true;
-    }
-
-    /**
-     * @dev See {IERC20-allowance}.
-     */
-    function allowance(address owner, address spender)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
-        return _allowances[owner][spender];
     }
 
     /**
@@ -165,6 +132,39 @@ contract BasicERC20 is Context, IERC20 {
             )
         );
         return true;
+    }
+
+    /**
+     * @dev See {IERC20-totalSupply}.
+     */
+    function totalSupply() public view virtual override returns (uint256) {
+        return _totalSupply;
+    }
+
+    /**
+     * @dev See {IERC20-balanceOf}.
+     */
+    function balanceOf(address account)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
+        return _balances[account];
+    }
+
+    /**
+     * @dev See {IERC20-allowance}.
+     */
+    function allowance(address owner, address spender)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
+        return _allowances[owner][spender];
     }
 
     /**

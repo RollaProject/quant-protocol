@@ -4,7 +4,7 @@ import { ContractFactory, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { Address } from "hardhat-deploy/dist/types";
 import { beforeEach, describe, it } from "mocha";
-import AGGREGATOR from "../artifacts/contracts/external/chainlink/IEACAggregatorProxy.sol/IEACAggregatorProxy.json";
+import AGGREGATOR from "../artifacts/contracts/interfaces/external/chainlink/IEACAggregatorProxy.sol/IEACAggregatorProxy.json";
 import PRICE_REGISTRY from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
 import CONFIG from "../artifacts/contracts/QuantConfig.sol/QuantConfig.json";
 import {

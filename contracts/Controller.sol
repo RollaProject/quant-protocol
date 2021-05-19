@@ -21,10 +21,6 @@ contract Controller is IController {
 
     uint8 public constant override OPTIONS_DECIMALS = 18;
 
-    constructor(address _optionsFactory) {
-        optionsFactory = IOptionsFactory(_optionsFactory);
-    }
-
     modifier validQToken(address _qToken) {
         require(
             optionsFactory.isQToken(_qToken),
@@ -39,6 +35,10 @@ contract Controller is IController {
         );
 
         _;
+    }
+
+    constructor(address _optionsFactory) {
+        optionsFactory = IOptionsFactory(_optionsFactory);
     }
 
     function mintOptionsPosition(
@@ -414,10 +414,6 @@ contract Controller is IController {
         );
     }
 
-    function _absSub(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b ? a.sub(b) : b.sub(a);
-    }
-
     //todo: ensure the oracle price is normalized to the amount of decimals in the strikeAsset (e.g., USDC)
     function getPayout(address _qToken, uint256 _amount)
         public
@@ -476,5 +472,9 @@ contract Controller is IController {
                 : 0;
             payoutToken = qToken.strikeAsset();
         }
+    }
+
+    function _absSub(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? a.sub(b) : b.sub(a);
     }
 }
