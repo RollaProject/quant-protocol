@@ -55,9 +55,20 @@ describe("Controller", () => {
   let qTokenCall3520: QToken;
   let mockPriceRegistry: MockContract;
   let nullQToken: QToken;
-  let snapshotCounter = 1; // Snapshots start at 1
 
   const aMonth = 30 * 24 * 3600; // in seconds
+
+  const takeSnapshot = async (): Promise<string> => {
+    const id: string = await provider.send("evm_snapshot", [
+      new Date().getTime(),
+    ]);
+
+    return id;
+  };
+
+  const revertToSnapshot = async (id: string) => {
+    await provider.send("evm_revert", [id]);
+  };
 
   const getCollateralRequirement = async (
     qTokenToMint: QToken,
@@ -271,7 +282,7 @@ describe("Controller", () => {
         provider
       )
     )
-  ) => {
+  ): Promise<string> => {
     await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
 
     await mockPriceRegistry.mock.getSettlementPrice.returns(expiryPrice);
@@ -339,7 +350,7 @@ describe("Controller", () => {
     );
 
     // Take a snapshot of the Hardhat Network
-    await provider.send("evm_snapshot", []);
+    const snapshotId = await takeSnapshot();
 
     // Increase time to one hour past the expiry
     await provider.send("evm_mine", [futureTimestamp + 3600]);
@@ -414,6 +425,8 @@ describe("Controller", () => {
         payoutAsset.address === USDC.address ? "USDC" : "WETH"
       } so the user is entitled to ${claimableCollateralString}`
     );
+
+    return snapshotId;
   };
 
   const getPayout = async (
@@ -451,13 +464,6 @@ describe("Controller", () => {
     }
 
     return [payoutAmount, payoutToken];
-  };
-
-  const revertFromSnapshot = async () => {
-    // Reset the Hardhat Network
-    await provider.send("evm_revert", [
-      `0x${(snapshotCounter++).toString(16)}`,
-    ]);
   };
 
   beforeEach(async () => {
@@ -783,7 +789,7 @@ describe("Controller", () => {
 
     it("Should revert when trying to mint an already expired option", async () => {
       // Take a snapshot of the Hardhat Network
-      await provider.send("evm_snapshot", []);
+      const snapshotId = await takeSnapshot();
 
       // Increase time to one hour past the expiry
       await provider.send("evm_mine", [futureTimestamp + 3600]);
@@ -798,7 +804,7 @@ describe("Controller", () => {
           )
       ).to.be.revertedWith("Controller: Cannot mint expired options");
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to mint CALL options positions", async () => {
@@ -977,7 +983,7 @@ describe("Controller", () => {
 
     it("Should revert when trying to exercise unsettled options", async () => {
       // Take a snapshot of the Hardhat Network
-      await provider.send("evm_snapshot", []);
+      const snapshotId = await takeSnapshot();
 
       // Increase time to one hour past the expiry
       await provider.send("evm_mine", [futureTimestamp + 3600]);
@@ -990,12 +996,12 @@ describe("Controller", () => {
           .exercise(qTokenPut1400.address, ethers.utils.parseEther("1"))
       ).to.be.revertedWith("Controller: Cannot exercise unsettled options");
 
-      await revertFromSnapshot();
+      await revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to exercise PUT options", async () => {
       // Take a snapshot of the Hardhat Network
-      await provider.send("evm_snapshot", []);
+      const snapshotId = await takeSnapshot();
 
       // Increase time to one hour past the expiry
       await provider.send("evm_mine", [futureTimestamp + 3600]);
@@ -1053,12 +1059,12 @@ describe("Controller", () => {
         await qTokenToExercise.balanceOf(await secondAccount.getAddress())
       ).to.equal(ethers.BigNumber.from("0"));
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to exercise CALL options", async () => {
       // Take a snapshot of the Hardhat Network
-      await provider.send("evm_snapshot", []);
+      const snapshotId = await takeSnapshot();
 
       // Increase time to one hour past the expiry
       await provider.send("evm_mine", [futureTimestamp + 3600]);
@@ -1117,12 +1123,12 @@ describe("Controller", () => {
         await qTokenToExercise.balanceOf(await secondAccount.getAddress())
       ).to.equal(ethers.BigNumber.from("0"));
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Should revert when a user tries to exercise an amount of options that exceeds his balance", async () => {
       // Take a snapshot of the Hardhat Network
-      await provider.send("evm_snapshot", []);
+      const snapshotId = await takeSnapshot();
 
       // Increase time to one hour past the expiry
       await provider.send("evm_mine", [futureTimestamp + 3600]);
@@ -1139,12 +1145,12 @@ describe("Controller", () => {
           .exercise(qTokenPut1400.address, ethers.utils.parseEther("1"))
       ).to.be.revertedWith("ERC20: burn amount exceeds balance");
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Burns the QTokens but don't transfer anything when options expire OTM", async () => {
       // Take a snapshot of the Hardhat Network
-      await provider.send("evm_snapshot", []);
+      const snapshotId = await takeSnapshot();
 
       // Increase time to one hour past the expiry
       await provider.send("evm_mine", [futureTimestamp + 3600]);
@@ -1174,7 +1180,7 @@ describe("Controller", () => {
         ethers.BigNumber.from("0")
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
   });
 
@@ -1210,7 +1216,7 @@ describe("Controller", () => {
 
     it("Should revert when trying to claim collateral from options before their expiry price is settled", async () => {
       // Take a snapshot of the Hardhat Network
-      await provider.send("evm_snapshot", []);
+      const snapshotId = await takeSnapshot();
 
       // Increase time to one hour past the expiry
       await provider.send("evm_mine", [futureTimestamp + 3600]);
@@ -1231,43 +1237,43 @@ describe("Controller", () => {
         "Controller: Can not claim collateral before option is settled"
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from PUT options that expired ITM", async () => {
       const expiryPrice = ethers.utils.parseUnits("300", await USDC.decimals());
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenPut400,
         ethers.utils.parseEther("1"),
         expiryPrice
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from PUT options that expired OTM", async () => {
       const expiryPrice = ethers.utils.parseUnits("500", await USDC.decimals());
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenPut400,
         ethers.utils.parseEther("1"),
         expiryPrice
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from PUT options that expired ATM", async () => {
       const expiryPrice = ethers.utils.parseUnits("400", await USDC.decimals());
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenPut400,
         ethers.utils.parseEther("1"),
         expiryPrice
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from CALL options that expired ITM", async () => {
@@ -1276,13 +1282,13 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenCall2000,
         ethers.utils.parseEther("1"),
         expiryPrice
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from CALL options that expired OTM", async () => {
@@ -1291,13 +1297,13 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenCall2000,
         ethers.utils.parseEther("1"),
         expiryPrice
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from CALL options that expired ATM", async () => {
@@ -1306,13 +1312,13 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenCall2000,
         ethers.utils.parseEther("1"),
         expiryPrice
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from PUT Credit Spreads that expired ITM", async () => {
@@ -1321,20 +1327,20 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenPut1400,
         ethers.utils.parseEther("1"),
         expiryPrice,
         qTokenPut400
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("PUT Credit Spreads that expired ITM and below the coverage of the spread CollateralToken", async () => {
       const expiryPrice = ethers.utils.parseUnits("300", await USDC.decimals());
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenPut1400,
         ethers.utils.parseEther("1"),
         expiryPrice,
@@ -1345,7 +1351,7 @@ describe("Controller", () => {
         ethers.BigNumber.from("0")
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from PUT Credit Spreads that expired OTM", async () => {
@@ -1354,14 +1360,14 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenPut1400,
         ethers.utils.parseEther("1"),
         expiryPrice,
         qTokenPut400
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from PUT Credit Spreads that expired ATM", async () => {
@@ -1370,53 +1376,53 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenPut1400,
         ethers.utils.parseEther("1"),
         expiryPrice,
         qTokenPut400
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from PUT Debit Spreads that expired ITM", async () => {
       const expiryPrice = ethers.utils.parseUnits("200", await USDC.decimals());
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenPut400,
         ethers.utils.parseEther("1"),
         expiryPrice,
         qTokenPut1400
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from PUT Debit Spreads that expired OTM", async () => {
       const expiryPrice = ethers.utils.parseUnits("600", await USDC.decimals());
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenPut400,
         ethers.utils.parseEther("1"),
         expiryPrice,
         qTokenPut1400
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from PUT Debit Spreads that expired ATM", async () => {
       const expiryPrice = ethers.utils.parseUnits("400", await USDC.decimals());
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenPut400,
         ethers.utils.parseEther("1"),
         expiryPrice,
         qTokenPut1400
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from CALL Credit Spreads that expired ITM", async () => {
@@ -1425,14 +1431,14 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenCall3520,
         ethers.utils.parseEther("1"),
         expiryPrice,
         qTokenCall3520
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from CALL Credit Spreads that expired OTM", async () => {
@@ -1441,14 +1447,14 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenCall2880,
         ethers.utils.parseEther("1"),
         expiryPrice,
         qTokenCall3520
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from CALL Credit Spreads that expired ATM", async () => {
@@ -1457,14 +1463,14 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenCall2880,
         ethers.utils.parseEther("1"),
         expiryPrice,
         qTokenCall3520
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("CALL Credit Spreads that expired ITM, at the strike price of the long option", async () => {
@@ -1473,7 +1479,7 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenCall2880,
         ethers.utils.parseEther("1"),
         expiryPrice,
@@ -1484,7 +1490,7 @@ describe("Controller", () => {
         ethers.BigNumber.from("0")
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from CALL Debit Spreads that expired ITM", async () => {
@@ -1493,14 +1499,14 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenCall3520,
         ethers.utils.parseEther("1"),
         expiryPrice,
         qTokenCall2880
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from CALL Debit Spreads that expired OTM", async () => {
@@ -1509,14 +1515,14 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenCall3520,
         ethers.utils.parseEther("1"),
         expiryPrice,
         qTokenCall2880
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
 
     it("Users should be able to claim collateral from CALL Debit Spreads that expired ATM", async () => {
@@ -1525,14 +1531,14 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
-      await testClaimCollateral(
+      const snapshotId = await testClaimCollateral(
         qTokenCall3520,
         ethers.utils.parseEther("1"),
         expiryPrice,
         qTokenCall2880
       );
 
-      await revertFromSnapshot();
+      revertToSnapshot(snapshotId);
     });
   });
 
