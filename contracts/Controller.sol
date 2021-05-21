@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
+pragma abicoder v2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -12,10 +13,17 @@ import "./interfaces/ICollateralToken.sol";
 import "./interfaces/IAssetsRegistry.sol";
 import "./interfaces/IController.sol";
 import "./libraries/ProtocolValue.sol";
+import "./libraries/QuantMath.sol";
+import "./libraries/FundsCalculator.sol";
+import "hardhat/console.sol";
 
 contract Controller is IController {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+
+    using QuantMath for uint256;
+    using QuantMath for int256;
+    using QuantMath for QuantMath.FixedPointInt;
 
     IOptionsFactory public immutable override optionsFactory;
 
@@ -328,90 +336,26 @@ contract Controller is IController {
         override
         returns (address collateral, uint256 collateralAmount)
     {
-        QToken qTokenToMint = QToken(_qTokenToMint);
-        uint256 qTokenToMintStrikePrice = qTokenToMint.strikePrice();
-
-        uint256 qTokenForCollateralStrikePrice;
-        if (_qTokenForCollateral != address(0)) {
-            QToken qTokenForCollateral = QToken(_qTokenForCollateral);
-
-            // Check that expiries match
-            require(
-                qTokenToMint.expiryTime() == qTokenForCollateral.expiryTime(),
-                "Controller: Can't create spreads from options with different expiries"
-            );
-
-            // Check that the underlyings match
-            require(
-                qTokenToMint.underlyingAsset() ==
-                    qTokenForCollateral.underlyingAsset(),
-                "Controller: Can't create spreads from options with different underlying assets"
-            );
-
-            // Check that the option types match
-            require(
-                qTokenToMint.isCall() == qTokenForCollateral.isCall(),
-                "Controller: Can't create spreads from options with different types"
-            );
-
-            // Check that the options have a matching oracle
-            require(
-                qTokenToMint.oracle() == qTokenForCollateral.oracle(),
-                "Controller: Can't create spreads from options with different oracles"
-            );
-
-            qTokenForCollateralStrikePrice = qTokenForCollateral.strikePrice();
-        }
-
-        uint256 collateralPerOption;
-        address underlying;
-        if (qTokenToMint.isCall()) {
-            underlying = qTokenToMint.underlyingAsset();
-
-            // Initially required collateral is the long strike price
-            (, , uint8 underlyingDecimals, ) =
-                IAssetsRegistry(
-                    optionsFactory.quantConfig().protocolAddresses(
-                        ProtocolValue.encode("assetsRegistry")
-                    )
+        IAssetsRegistry assetsRegistry =
+            IAssetsRegistry(
+                optionsFactory.quantConfig().protocolAddresses(
+                    ProtocolValue.encode("assetsRegistry")
                 )
-                    .assetProperties(underlying);
+            );
 
-            collateralPerOption = 10**underlyingDecimals;
+        QuantMath.FixedPointInt memory collateralAmountFP;
+        uint8 decimals;
 
-            if (_qTokenForCollateral != address(0)) {
-                collateralPerOption = qTokenToMintStrikePrice >
-                    qTokenForCollateralStrikePrice
-                    ? 0 // Call Debit Spread
-                    : _absSub(
-                        qTokenForCollateralStrikePrice,
-                        qTokenToMintStrikePrice
-                    )
-                        .mul(10**18)
-                        .div(qTokenForCollateralStrikePrice); // Call Credit Spread
-            }
-        } else {
-            // Initially required collateral is the long strike price
-            collateralPerOption = qTokenToMintStrikePrice;
-
-            if (_qTokenForCollateral != address(0)) {
-                collateralPerOption = qTokenToMintStrikePrice >
-                    qTokenForCollateralStrikePrice
-                    ? qTokenToMintStrikePrice.sub(
-                        qTokenForCollateralStrikePrice
-                    ) // Put Credit Spread
-                    : 0; // Put Debit Spread
-            }
-        }
-
-        collateralAmount = _optionsAmount.mul(collateralPerOption).div(
-            10**OPTIONS_DECIMALS
+        (collateral, collateralAmountFP, decimals) = FundsCalculator
+            .getCollateralRequirement(
+            _qTokenToMint,
+            _qTokenForCollateral,
+            _optionsAmount,
+            OPTIONS_DECIMALS,
+            assetsRegistry
         );
 
-        return (
-            qTokenToMint.isCall() ? underlying : qTokenToMint.strikeAsset(),
-            collateralAmount
-        );
+        collateralAmount = collateralAmountFP.toScaledUint(decimals, false);
     }
 
     //todo: ensure the oracle price is normalized to the amount of decimals in the strikeAsset (e.g., USDC)
@@ -425,11 +369,8 @@ contract Controller is IController {
             uint256 payoutAmount
         )
     {
-        QToken qToken = QToken(_qToken);
-        isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
-        if (!isSettled) {
-            return (false, address(0), 0);
-        }
+        QuantMath.FixedPointInt memory payout;
+        uint8 payoutDecimals;
 
         PriceRegistry priceRegistry =
             PriceRegistry(
@@ -438,43 +379,22 @@ contract Controller is IController {
                 )
             );
 
-        uint256 strikePrice = qToken.strikePrice();
-        uint256 expiryPrice =
-            priceRegistry.getSettlementPrice(
-                qToken.oracle(),
-                qToken.underlyingAsset(),
-                qToken.expiryTime()
+        IAssetsRegistry assetsRegistry =
+            IAssetsRegistry(
+                optionsFactory.quantConfig().protocolAddresses(
+                    ProtocolValue.encode("assetsRegistry")
+                )
             );
 
-        if (qToken.isCall()) {
-            (, , uint8 underlyingDecimals, ) =
-                IAssetsRegistry(
-                    optionsFactory.quantConfig().protocolAddresses(
-                        ProtocolValue.encode("assetsRegistry")
-                    )
-                )
-                    .assetProperties(qToken.underlyingAsset());
+        (isSettled, payoutToken, payout, payoutDecimals) = FundsCalculator
+            .getPayout(
+            _qToken,
+            _amount,
+            OPTIONS_DECIMALS,
+            priceRegistry,
+            assetsRegistry
+        );
 
-            payoutAmount = expiryPrice > strikePrice
-                ? expiryPrice
-                    .sub(strikePrice)
-                    .mul(_amount)
-                    .mul(10**underlyingDecimals)
-                    .div(expiryPrice)
-                    .div(10**OPTIONS_DECIMALS)
-                : 0;
-            payoutToken = qToken.underlyingAsset();
-        } else {
-            payoutAmount = strikePrice > expiryPrice
-                ? (strikePrice.sub(expiryPrice)).mul(_amount).div(
-                    10**OPTIONS_DECIMALS
-                )
-                : 0;
-            payoutToken = qToken.strikeAsset();
-        }
-    }
-
-    function _absSub(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b ? a.sub(b) : b.sub(a);
+        payoutAmount = payout.toScaledUint(payoutDecimals, true);
     }
 }

@@ -1,3 +1,4 @@
+import BN from "bignumber.js";
 import { MockContract } from "ethereum-waffle";
 import { BigNumber, ContractInterface, Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
@@ -118,15 +119,19 @@ describe("Controller", () => {
           : ethers.BigNumber.from("0"); // Put Debit Spread
       }
     }
-    const collateralAmount = optionsAmount
-      .mul(collateralPerOption)
-      .div(ethers.BigNumber.from("10").pow(18));
+
+    const collateralAmount = new BN(
+      optionsAmount
+        .mul(collateralPerOption)
+        .div(ethers.BigNumber.from("10").pow(18))
+        .toString()
+    );
 
     return [
       (await qTokenToMint.isCall())
         ? underlying.address
         : await qTokenToMint.strikeAsset(),
-      collateralAmount,
+      ethers.BigNumber.from(collateralAmount.toString()),
     ];
   };
 
