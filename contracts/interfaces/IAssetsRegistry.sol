@@ -10,7 +10,7 @@ interface IAssetsRegistry {
         uint256 quantityTickSize
     );
 
-    event QuantityTickSizeSet(
+    event QuantityTickSizeUpdated(
         address indexed underlying,
         uint256 previousQuantityTickSize,
         uint256 newQuantityTickSize
