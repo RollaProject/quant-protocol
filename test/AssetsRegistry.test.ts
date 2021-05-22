@@ -107,6 +107,26 @@ describe("AssetsRegistry", () => {
         .to.emit(assetsRegistry, "AssetAdded")
         .withArgs(...USDCProperties);
     });
+
+    it("Should add assets to the registeredAssets array", async () => {
+      expect(await assetsRegistry.getAssetsLength()).to.equal(
+        ethers.BigNumber.from("0")
+      );
+
+      await assetsRegistry.connect(deployer).addAsset(...WETHProperties);
+
+      expect(await assetsRegistry.getAssetsLength()).to.equal(
+        ethers.BigNumber.from("1")
+      );
+
+      expect(await assetsRegistry.registeredAssets(0)).to.equal(WETH.address);
+    });
+
+    it("Should emit the QuantityTickSizeUpdated event when adding assets to the registry", async () => {
+      await expect(assetsRegistry.connect(deployer).addAsset(...USDCProperties))
+        .to.emit(assetsRegistry, "QuantityTickSizeUpdated")
+        .withArgs(USDC.address, ethers.BigNumber.from("0"), quantityTickSize);
+    });
   });
 
   describe("setQuantityTickSize", () => {
