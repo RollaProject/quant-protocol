@@ -220,24 +220,90 @@ contract Controller is IController {
                 )
                 : _amount;
 
+        console.log("Amount to claim", amountToClaim);
+
         address qTokenLong;
-        uint256 payoutFromLong;
+        QuantMath.FixedPointInt memory payoutFromLong;
+
+        PriceRegistry priceRegistry =
+            PriceRegistry(
+                optionsFactory.quantConfig().protocolAddresses(
+                    ProtocolValue.encode("priceRegistry")
+                )
+            );
+
+        IAssetsRegistry assetsRegistry =
+            IAssetsRegistry(
+                optionsFactory.quantConfig().protocolAddresses(
+                    ProtocolValue.encode("assetsRegistry")
+                )
+            );
+
         if (qTokenAsCollateral != address(0)) {
             qTokenLong = qTokenAsCollateral;
 
-            (, , payoutFromLong) = getPayout(qTokenLong, amountToClaim);
+            (, , payoutFromLong, ) = FundsCalculator.getPayout(
+                qTokenLong,
+                amountToClaim,
+                OPTIONS_DECIMALS,
+                priceRegistry,
+                assetsRegistry
+            );
         } else {
             qTokenLong = address(0);
-            payoutFromLong = 0;
+            payoutFromLong = int256(0).fromUnscaledInt();
         }
 
-        (address collateralAsset, uint256 collateralRequirement) =
-            getCollateralRequirement(_qTokenShort, qTokenLong, amountToClaim);
+        uint256 returnableCollateral;
+        address collateralAsset;
+        uint8 payoutDecimals;
+        {
+            QuantMath.FixedPointInt memory collateralRequirement;
+            (
+                collateralAsset,
+                collateralRequirement,
+                payoutDecimals
+            ) = FundsCalculator.getCollateralRequirement(
+                _qTokenShort,
+                qTokenLong,
+                amountToClaim,
+                OPTIONS_DECIMALS,
+                assetsRegistry
+            );
 
-        (, , uint256 payoutFromShort) = getPayout(_qTokenShort, amountToClaim);
+            (, , QuantMath.FixedPointInt memory payoutFromShort, ) =
+                FundsCalculator.getPayout(
+                    _qTokenShort,
+                    amountToClaim,
+                    OPTIONS_DECIMALS,
+                    priceRegistry,
+                    assetsRegistry
+                );
 
-        uint256 returnableCollateral =
-            payoutFromLong.add(collateralRequirement).sub(payoutFromShort);
+            returnableCollateral = payoutFromLong
+                .add(collateralRequirement)
+                .sub(payoutFromShort)
+                .toScaledUint(payoutDecimals, true);
+
+            // console.log("Payout decimals", payoutDecimals);
+
+            // console.log(
+            //     "Collateral Requirement scaled",
+            //     collateralRequirement.toScaledUint(payoutDecimals, true)
+            // );
+
+            // console.log("Collateral Requirement");
+            // console.logInt(collateralRequirement.value);
+
+            // console.log("payout form short");
+            // console.logInt(payoutFromShort.value);
+
+            // console.log("payout form long");
+            // console.logInt(payoutFromLong.value);
+
+            // console.log("returnable collateral");
+            // console.log("ret collat", returnableCollateral);
+        }
 
         optionsFactory.collateralToken().burnCollateralToken(
             msg.sender,

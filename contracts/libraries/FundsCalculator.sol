@@ -19,6 +19,8 @@ library FundsCalculator {
         QToken qToken;
     }
 
+    //TODO: Convert uint8 to int8
+
     function getPayout(
         address _qToken,
         uint256 _amount,
