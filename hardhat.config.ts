@@ -10,6 +10,12 @@ import "solidity-coverage";
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [{ version: "0.7.6" }],
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 100,
+      },
+    },
   },
 
   mocha: {
