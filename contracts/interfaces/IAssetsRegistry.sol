@@ -37,4 +37,6 @@ interface IAssetsRegistry {
         );
 
     function registeredAssets(uint256) external view returns (address);
+
+    function getAssetsLength() external view returns (uint256);
 }
