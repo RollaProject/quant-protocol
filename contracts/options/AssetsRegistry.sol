@@ -107,4 +107,8 @@ contract AssetsRegistry is IAssetsRegistry {
 
         underlyingProperties.quantityTickSize = _quantityTickSize;
     }
+
+    function getAssetsLength() external view override returns (uint256) {
+        return registeredAssets.length;
+    }
 }
