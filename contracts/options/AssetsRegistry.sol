@@ -18,11 +18,11 @@ contract AssetsRegistry is IAssetsRegistry {
 
     mapping(address => AssetProperties) public override assetProperties;
 
+    address[] public override registeredAssets;
+
     constructor(address quantConfig_) {
         _quantConfig = IQuantConfig(quantConfig_);
     }
-
-    //TODO: Method in here to get a list of assets
 
     function addAsset(
         address _underlying,
@@ -72,6 +72,37 @@ contract AssetsRegistry is IAssetsRegistry {
             _quantityTickSize
         );
 
+        registeredAssets.push(_underlying);
+
         emit AssetAdded(_underlying, name, symbol, decimals, _quantityTickSize);
+    }
+
+    function setQuantityTickSize(address _underlying, uint256 _quantityTickSize)
+        external
+        override
+    {
+        require(
+            _quantConfig.hasRole(
+                _quantConfig.quantRoles("ASSETS_REGISTRY_MANAGER_ROLE"),
+                msg.sender
+            ),
+            "AssetsRegistry: only asset registry managers can change assets' quantity tick sizes"
+        );
+
+        require(
+            bytes(assetProperties[_underlying].symbol).length != 0,
+            "AssetsRegistry: asset not in the registry yet"
+        );
+
+        AssetProperties storage underlyingProperties =
+            assetProperties[_underlying];
+
+        emit QuantityTickSizeSet(
+            _underlying,
+            underlyingProperties.quantityTickSize,
+            _quantityTickSize
+        );
+
+        underlyingProperties.quantityTickSize = _quantityTickSize;
     }
 }
