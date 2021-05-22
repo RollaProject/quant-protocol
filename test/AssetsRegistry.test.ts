@@ -108,4 +108,54 @@ describe("AssetsRegistry", () => {
         .withArgs(...USDCProperties);
     });
   });
+
+  describe("setQuantityTickSize", () => {
+    const newQuantityTickSize = ethers.BigNumber.from("100000");
+
+    it("Should revert when an unauthorized account tries to change the quantity tick size of a registered asset", async () => {
+      await expect(
+        assetsRegistry
+          .connect(secondAccount)
+          .setQuantityTickSize(WETH.address, ethers.BigNumber.from("0"))
+      ).to.be.revertedWith(
+        "AssetsRegistry: only asset registry managers can change assets' quantity tick sizes"
+      );
+    });
+
+    it("Should revert when trying to set the quantity tick size for an unregistered asset", async () => {
+      await expect(
+        assetsRegistry
+          .connect(deployer)
+          .setQuantityTickSize(WETH.address, quantityTickSize)
+      ).to.be.revertedWith("AssetsRegistry: asset not in the registry yet");
+    });
+
+    it("AssetsRegistry managers should be able to change the quantity tick size of assets in the registry", async () => {
+      await assetsRegistry.connect(deployer).addAsset(...WETHProperties);
+
+      expect((await assetsRegistry.assetProperties(WETH.address))[3]).to.equal(
+        quantityTickSize
+      );
+
+      await assetsRegistry
+        .connect(deployer)
+        .setQuantityTickSize(WETH.address, newQuantityTickSize);
+
+      expect((await assetsRegistry.assetProperties(WETH.address))[3]).to.equal(
+        newQuantityTickSize
+      );
+    });
+
+    it("Should emit the QuantityTickSizeSet event", async () => {
+      await assetsRegistry.connect(deployer).addAsset(...WETHProperties);
+
+      await expect(
+        assetsRegistry
+          .connect(deployer)
+          .setQuantityTickSize(WETH.address, newQuantityTickSize)
+      )
+        .to.emit(assetsRegistry, "QuantityTickSizeSet")
+        .withArgs(WETH.address, quantityTickSize, newQuantityTickSize);
+    });
+  });
 });
