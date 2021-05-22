@@ -75,6 +75,8 @@ contract AssetsRegistry is IAssetsRegistry {
         registeredAssets.push(_underlying);
 
         emit AssetAdded(_underlying, name, symbol, decimals, _quantityTickSize);
+
+        emit QuantityTickSizeUpdated(_underlying, 0, _quantityTickSize);
     }
 
     function setQuantityTickSize(address _underlying, uint256 _quantityTickSize)
