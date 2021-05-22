@@ -1,4 +1,3 @@
-import BN from "bignumber.js";
 import { MockContract } from "ethereum-waffle";
 import { BigNumber, ContractInterface, Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
@@ -92,10 +91,12 @@ describe("Controller", () => {
       )
     );
 
+    let collateralDecimals: number;
+
     if (await qTokenToMint.isCall()) {
-      collateralPerOption = ethers.BigNumber.from("10").pow(
-        await underlying.decimals()
-      );
+      collateralDecimals = await underlying.decimals();
+
+      collateralPerOption = ethers.BigNumber.from("10").pow(collateralDecimals);
 
       if (qTokenForCollateral.address !== ethers.constants.AddressZero) {
         collateralPerOption = qTokenToMintStrikePrice.gt(
@@ -109,6 +110,8 @@ describe("Controller", () => {
               .div(qTokenForCollateralStrikePrice);
       }
     } else {
+      collateralDecimals = await USDC.decimals();
+
       collateralPerOption = qTokenToMintStrikePrice;
 
       if (qTokenForCollateral.address !== ethers.constants.AddressZero) {
@@ -119,19 +122,22 @@ describe("Controller", () => {
           : ethers.BigNumber.from("0"); // Put Debit Spread
       }
     }
+    let collateralAmount = optionsAmount
+      .mul(collateralPerOption)
+      .div(ethers.BigNumber.from("10").pow(18));
 
-    const collateralAmount = new BN(
-      optionsAmount
-        .mul(collateralPerOption)
-        .div(ethers.BigNumber.from("10").pow(18))
-        .toString()
-    );
+    if (
+      (parseInt(collateralAmount.toString()) / 10 ** collateralDecimals) % 1 !=
+      0
+    ) {
+      collateralAmount = collateralAmount.add(1);
+    }
 
     return [
       (await qTokenToMint.isCall())
         ? underlying.address
         : await qTokenToMint.strikeAsset(),
-      ethers.BigNumber.from(collateralAmount.toString()),
+      collateralAmount,
     ];
   };
 
@@ -1484,6 +1490,10 @@ describe("Controller", () => {
         await USDC.decimals()
       );
 
+      const initialWETHBalance = await WETH.balanceOf(
+        await secondAccount.getAddress()
+      );
+
       const snapshotId = await testClaimCollateral(
         qTokenCall2880,
         ethers.utils.parseEther("1"),
@@ -1491,8 +1501,16 @@ describe("Controller", () => {
         qTokenCall3520
       );
 
+      // const collateralRequired = (
+      //   await getCollateralRequirement(
+      //     qTokenCall2880,
+      //     qTokenCall3520,
+      //     ethers.utils.parseEther("1")
+      //   )
+      // )[1];
+
       expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
-        ethers.BigNumber.from("0")
+        initialWETHBalance
       );
 
       revertToSnapshot(snapshotId);
