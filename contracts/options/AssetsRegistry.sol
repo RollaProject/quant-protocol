@@ -97,7 +97,7 @@ contract AssetsRegistry is IAssetsRegistry {
         AssetProperties storage underlyingProperties =
             assetProperties[_underlying];
 
-        emit QuantityTickSizeSet(
+        emit QuantityTickSizeUpdated(
             _underlying,
             underlyingProperties.quantityTickSize,
             _quantityTickSize
