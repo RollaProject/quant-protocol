@@ -146,7 +146,7 @@ describe("AssetsRegistry", () => {
       );
     });
 
-    it("Should emit the QuantityTickSizeSet event", async () => {
+    it("Should emit the QuantityTickSizeUpdated event", async () => {
       await assetsRegistry.connect(deployer).addAsset(...WETHProperties);
 
       await expect(
@@ -154,7 +154,7 @@ describe("AssetsRegistry", () => {
           .connect(deployer)
           .setQuantityTickSize(WETH.address, newQuantityTickSize)
       )
-        .to.emit(assetsRegistry, "QuantityTickSizeSet")
+        .to.emit(assetsRegistry, "QuantityTickSizeUpdated")
         .withArgs(WETH.address, quantityTickSize, newQuantityTickSize);
     });
   });
