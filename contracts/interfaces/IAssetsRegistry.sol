@@ -10,13 +10,21 @@ interface IAssetsRegistry {
         uint256 quantityTickSize
     );
 
+    event QuantityTickSizeSet(
+        address indexed underlying,
+        uint256 previousQuantityTickSize,
+        uint256 newQuantityTickSize
+    );
+
     function addAsset(
-        address _underlying,
-        string calldata _name,
-        string calldata _symbol,
-        uint8 _decimals,
-        uint256 _quantityTickSize
+        address,
+        string calldata,
+        string calldata,
+        uint8,
+        uint256
     ) external;
+
+    function setQuantityTickSize(address, uint256) external;
 
     function assetProperties(address)
         external
@@ -27,4 +35,6 @@ interface IAssetsRegistry {
             uint8,
             uint256
         );
+
+    function registeredAssets(uint256) external view returns (address);
 }
