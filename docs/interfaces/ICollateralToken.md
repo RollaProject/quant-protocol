@@ -46,6 +46,10 @@ array of all the created CollateralToken ids
 
 mapping from token ids to their supplies
 
+### `getCollateralTokensLength() → uint256` (external)
+
+get the total amount of collateral tokens created
+
 ### `getCollateralTokenId(address _qToken, address _qTokenAsCollateral) → uint256 id` (external)
 
 Returns a unique CollateralToken id based on its parameters

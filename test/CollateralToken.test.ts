@@ -133,8 +133,9 @@ describe("CollateralToken", () => {
       const firstIndex = ethers.BigNumber.from("0");
 
       // No CollateralToken has been created yet
-      await expect(collateralToken.collateralTokenIds(firstIndex)).to.be
-        .reverted;
+      expect(await collateralToken.getCollateralTokensLength()).to.equal(
+        ethers.BigNumber.from(0)
+      );
 
       // Create a new CollateralToken
       await createCollateralToken(
@@ -605,6 +606,51 @@ describe("CollateralToken", () => {
           secondCollateralTokenId,
           ethers.BigNumber.from("10")
         );
+    });
+  });
+
+  describe("getCollateralTokenIdsLength", async () => {
+    it("Should return the correct amount when there are no CollateralTokens created yet", async () => {
+      expect(await collateralToken.getCollateralTokensLength()).to.equal(
+        ethers.BigNumber.from("0")
+      );
+    });
+
+    it("Should return the right amount when a single CollateralToken is created", async () => {
+      await createCollateralToken(
+        collateralCreator,
+        qToken,
+        ethers.constants.AddressZero
+      );
+
+      expect(await collateralToken.getCollateralTokensLength()).to.equal(
+        ethers.BigNumber.from("1")
+      );
+    });
+
+    it("Should return the correct amount when multiple CollateralTokens are created", async () => {
+      await createTwoCollateralTokens();
+
+      const otherQToken = await deployQToken(
+        timelockController,
+        quantConfig,
+        WETH.address,
+        USDC.address,
+        ethers.constants.AddressZero,
+        ethers.utils.parseUnits("10000", await USDC.decimals()),
+        ethers.BigNumber.from("1653285356"),
+        false
+      );
+
+      await createCollateralToken(
+        collateralCreator,
+        otherQToken,
+        ethers.constants.AddressZero
+      );
+
+      expect(await collateralToken.getCollateralTokensLength()).to.equal(
+        ethers.BigNumber.from("3")
+      );
     });
   });
 });
