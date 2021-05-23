@@ -166,6 +166,15 @@ contract CollateralToken is ERC1155, ICollateralToken {
         }
     }
 
+    function getCollateralTokensLength()
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return collateralTokenIds.length;
+    }
+
     /// @inheritdoc ICollateralToken
     function getCollateralTokenId(address _qToken, address _qTokenAsCollateral)
         public
