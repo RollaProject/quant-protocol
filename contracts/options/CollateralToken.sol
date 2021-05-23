@@ -31,7 +31,7 @@ contract CollateralToken is ERC1155, ICollateralToken {
     mapping(uint256 => CollateralTokenInfo) public override idToInfo;
 
     /// @inheritdoc ICollateralToken
-    uint256[] public override collateralTokensIds;
+    uint256[] public override collateralTokenIds;
 
     /// @inheritdoc ICollateralToken
     mapping(uint256 => uint256) public override tokenSupplies;
@@ -68,13 +68,13 @@ contract CollateralToken is ERC1155, ICollateralToken {
             qTokenAsCollateral: _qTokenAsCollateral
         });
 
-        collateralTokensIds.push(id);
+        collateralTokenIds.push(id);
 
         emit CollateralTokenCreated(
             _qTokenAddress,
             _qTokenAsCollateral,
             id,
-            collateralTokensIds.length
+            collateralTokenIds.length
         );
     }
 

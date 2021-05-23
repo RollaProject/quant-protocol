@@ -44,7 +44,7 @@ describe("CollateralToken", () => {
       qToken,
       ethers.constants.AddressZero
     );
-    const firstCollateralTokenId = await collateralToken.collateralTokensIds(
+    const firstCollateralTokenId = await collateralToken.collateralTokenIds(
       ethers.BigNumber.from("0")
     );
 
@@ -63,7 +63,7 @@ describe("CollateralToken", () => {
       secondQToken,
       ethers.constants.AddressZero
     );
-    const secondCollateralTokenId = await collateralToken.collateralTokensIds(
+    const secondCollateralTokenId = await collateralToken.collateralTokenIds(
       ethers.BigNumber.from("1")
     );
 
@@ -133,7 +133,7 @@ describe("CollateralToken", () => {
       const firstIndex = ethers.BigNumber.from("0");
 
       // No CollateralToken has been created yet
-      await expect(collateralToken.collateralTokensIds(firstIndex)).to.be
+      await expect(collateralToken.collateralTokenIds(firstIndex)).to.be
         .reverted;
 
       // Create a new CollateralToken
@@ -143,7 +143,7 @@ describe("CollateralToken", () => {
         ethers.constants.AddressZero
       );
 
-      const collateralTokenId = await collateralToken.collateralTokensIds(
+      const collateralTokenId = await collateralToken.collateralTokenIds(
         firstIndex
       );
 
@@ -201,7 +201,7 @@ describe("CollateralToken", () => {
         .withArgs(
           qToken.address,
           ethers.constants.AddressZero,
-          await collateralToken.collateralTokensIds(ethers.BigNumber.from("0")),
+          await collateralToken.collateralTokenIds(ethers.BigNumber.from("0")),
           "1"
         );
     });
@@ -215,7 +215,7 @@ describe("CollateralToken", () => {
         ethers.constants.AddressZero
       );
 
-      const collateralTokenId = await collateralToken.collateralTokensIds(
+      const collateralTokenId = await collateralToken.collateralTokenIds(
         ethers.BigNumber.from("0")
       );
 
@@ -246,7 +246,7 @@ describe("CollateralToken", () => {
         ethers.constants.AddressZero
       );
 
-      const collateralTokenId = await collateralToken.collateralTokensIds(
+      const collateralTokenId = await collateralToken.collateralTokenIds(
         ethers.BigNumber.from("0")
       );
 
@@ -270,7 +270,7 @@ describe("CollateralToken", () => {
         ethers.constants.AddressZero
       );
 
-      const collateralTokenId = await collateralToken.collateralTokensIds(
+      const collateralTokenId = await collateralToken.collateralTokenIds(
         ethers.BigNumber.from("0")
       );
 
@@ -296,7 +296,7 @@ describe("CollateralToken", () => {
         ethers.constants.AddressZero
       );
 
-      const collateralTokenId = await collateralToken.collateralTokensIds(
+      const collateralTokenId = await collateralToken.collateralTokenIds(
         ethers.BigNumber.from("0")
       );
 
@@ -348,7 +348,7 @@ describe("CollateralToken", () => {
         ethers.constants.AddressZero
       );
 
-      const collateralTokenId = await collateralToken.collateralTokensIds(
+      const collateralTokenId = await collateralToken.collateralTokenIds(
         ethers.BigNumber.from("0")
       );
 
@@ -380,7 +380,7 @@ describe("CollateralToken", () => {
         ethers.constants.AddressZero
       );
 
-      const collateralTokenId = await collateralToken.collateralTokensIds(
+      const collateralTokenId = await collateralToken.collateralTokenIds(
         ethers.BigNumber.from("0")
       );
 
