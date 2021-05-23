@@ -108,6 +108,9 @@ interface ICollateralToken is IERC1155 {
     /// @notice mapping from token ids to their supplies
     function tokenSupplies(uint256) external view returns (uint256);
 
+    /// @notice get the total amount of collateral tokens created
+    function getCollateralTokensLength() external view returns (uint256);
+
     /// @notice Returns a unique CollateralToken id based on its parameters
     /// @param _qToken the address of the corresponding QToken
     /// @param _qTokenAsCollateral QToken address of an option used as collateral in a spread

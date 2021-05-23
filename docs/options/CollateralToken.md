@@ -38,6 +38,8 @@ Should be used when burning multiple CollateralTokens for a single user,
 i.e., when a user sells more than one short position through the interface
 ids and amounts shoud have the same length
 
+### `getCollateralTokensLength() → uint256` (external)
+
 ### `getCollateralTokenId(address _qToken, address _qTokenAsCollateral) → uint256 id` (public)
 
 Returns a unique CollateralToken id based on its parameters
