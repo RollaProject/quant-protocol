@@ -196,7 +196,7 @@ describe("OptionsFactory", () => {
       );
 
       expect(
-        await collateralToken.collateralTokensIds(ethers.BigNumber.from("0"))
+        await collateralToken.collateralTokenIds(ethers.BigNumber.from("0"))
       ).to.equal(collateralTokenId);
     });
 
