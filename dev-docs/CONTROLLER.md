@@ -5,10 +5,11 @@
 This is a public view function which calculates the amount of collateral required to mint an option or a spread. This method allows a relevant qToken to be used as collateral to mint another qToken to alleviate some of the collateral needed - known as a spread.
 
 1. If the user is using another option as collateral (not the 0 address) check the following:
- - Expiry of collateral qToken matches qToken to mint.
- - Underlying asset of collateral qToken matches qToken to mint.
- - Option type (Call or Put) of collateral qToken matches qToken to mint.
- - Oracle of collateral qToken matches qToken to mint.
+
+- Expiry of collateral qToken matches qToken to mint.
+- Underlying asset of collateral qToken matches qToken to mint.
+- Option type (Call or Put) of collateral qToken matches qToken to mint.
+- Oracle of collateral qToken matches qToken to mint.
 
 2. a) If the qToken being minted is a call (otherwise skip to 2b)
 
@@ -26,10 +27,12 @@ This is a public view function which calculates the payout an option (qToken) wi
 
 1. If the option isn't settled, payout is 0 and flag for settled is false.
 2. a) If the qToken to check payout for is a call (otherwise skip to 2b)
+
 - If expiry price was lower than strike price, `payout = 0`
 - Otherwise: `{payout = ((expiryPrice - strikePrice) / expiry) * optionsAmount, payoutToken = underlyingAsset}`
 
 2. b) If the qToken to check payout for is a put
+
 - If expiry price was higher than strike price `payout = 0`
 - Otherwise: `{payout = ((strikePrice - strikePrice) * optionsAmount), payoutToken = strikeAsset}`
 
