@@ -104,6 +104,11 @@ contract Controller is IController {
         validQToken(_qTokenToMint)
         validQToken(_qTokenForCollateral)
     {
+        require(
+            _qTokenToMint != _qTokenForCollateral,
+            "Controller: Can only create a spread with different tokens"
+        );
+
         QToken qTokenToMint = QToken(_qTokenToMint);
         QToken qTokenForCollateral = QToken(_qTokenForCollateral);
 
@@ -172,6 +177,7 @@ contract Controller is IController {
 
         (bool isSettled, address payoutToken, uint256 payoutAmount) =
             getPayout(_qToken, amountToExercise);
+
         require(isSettled, "Controller: Cannot exercise unsettled options");
 
         qToken.burn(msg.sender, amountToExercise);
@@ -193,117 +199,11 @@ contract Controller is IController {
         external
         override
     {
-        (address _qTokenShort, address qTokenAsCollateral) =
-            optionsFactory.collateralToken().idToInfo(_collateralTokenId);
-
-        require(
-            _qTokenShort != address(0),
-            "Controller: Can not claim collateral from non-existing option"
-        );
-
-        QToken qTokenShort = QToken(_qTokenShort);
-
-        require(
-            block.timestamp > qTokenShort.expiryTime(),
-            "Controller: Can not claim collateral from options before their expiry"
-        );
-        require(
-            qTokenShort.getOptionPriceStatus() == PriceStatus.SETTLED,
-            "Controller: Can not claim collateral before option is settled"
-        );
-
-        uint256 amountToClaim =
-            _amount == 0
-                ? optionsFactory.collateralToken().balanceOf(
-                    msg.sender,
-                    _collateralTokenId
-                )
-                : _amount;
-
-        console.log("Amount to claim", amountToClaim);
-
-        address qTokenLong;
-        QuantMath.FixedPointInt memory payoutFromLong;
-
-        PriceRegistry priceRegistry =
-            PriceRegistry(
-                optionsFactory.quantConfig().protocolAddresses(
-                    ProtocolValue.encode("priceRegistry")
-                )
-            );
-
-        IAssetsRegistry assetsRegistry =
-            IAssetsRegistry(
-                optionsFactory.quantConfig().protocolAddresses(
-                    ProtocolValue.encode("assetsRegistry")
-                )
-            );
-
-        if (qTokenAsCollateral != address(0)) {
-            qTokenLong = qTokenAsCollateral;
-
-            (, , payoutFromLong, ) = FundsCalculator.getPayout(
-                qTokenLong,
-                amountToClaim,
-                OPTIONS_DECIMALS,
-                priceRegistry,
-                assetsRegistry
-            );
-        } else {
-            qTokenLong = address(0);
-            payoutFromLong = int256(0).fromUnscaledInt();
-        }
-
-        uint256 returnableCollateral;
-        address collateralAsset;
-        uint8 payoutDecimals;
-        {
-            QuantMath.FixedPointInt memory collateralRequirement;
-            (
-                collateralAsset,
-                collateralRequirement,
-                payoutDecimals
-            ) = FundsCalculator.getCollateralRequirement(
-                _qTokenShort,
-                qTokenLong,
-                amountToClaim,
-                OPTIONS_DECIMALS,
-                assetsRegistry
-            );
-
-            (, , QuantMath.FixedPointInt memory payoutFromShort, ) =
-                FundsCalculator.getPayout(
-                    _qTokenShort,
-                    amountToClaim,
-                    OPTIONS_DECIMALS,
-                    priceRegistry,
-                    assetsRegistry
-                );
-
-            returnableCollateral = payoutFromLong
-                .add(collateralRequirement)
-                .sub(payoutFromShort)
-                .toScaledUint(payoutDecimals, true);
-
-            // console.log("Payout decimals", payoutDecimals);
-
-            // console.log(
-            //     "Collateral Requirement scaled",
-            //     collateralRequirement.toScaledUint(payoutDecimals, true)
-            // );
-
-            // console.log("Collateral Requirement");
-            // console.logInt(collateralRequirement.value);
-
-            // console.log("payout form short");
-            // console.logInt(payoutFromShort.value);
-
-            // console.log("payout form long");
-            // console.logInt(payoutFromLong.value);
-
-            // console.log("returnable collateral");
-            // console.log("ret collat", returnableCollateral);
-        }
+        (
+            uint256 returnableCollateral,
+            address collateralAsset,
+            uint256 amountToClaim
+        ) = calculateClaimableCollateral(_collateralTokenId, _amount);
 
         optionsFactory.collateralToken().burnCollateralToken(
             msg.sender,
@@ -325,6 +225,112 @@ contract Controller is IController {
             returnableCollateral,
             collateralAsset
         );
+    }
+
+    function calculateClaimableCollateral(
+        uint256 _collateralTokenId,
+        uint256 _amount
+    )
+        public
+        view
+        returns (
+            uint256 returnableCollateral,
+            address collateralAsset,
+            uint256 amountToClaim
+        )
+    {
+        (address _qTokenShort, address qTokenAsCollateral) =
+            optionsFactory.collateralToken().idToInfo(_collateralTokenId);
+
+        require(
+            _qTokenShort != address(0),
+            "Controller: Can not claim collateral from non-existing option"
+        );
+
+        QToken qTokenShort = QToken(_qTokenShort);
+
+        require(
+            block.timestamp > qTokenShort.expiryTime(),
+            "Controller: Can not claim collateral from options before their expiry"
+        );
+        require(
+            qTokenShort.getOptionPriceStatus() == PriceStatus.SETTLED,
+            "Controller: Can not claim collateral before option is settled"
+        );
+
+        amountToClaim = _amount == 0
+            ? optionsFactory.collateralToken().balanceOf(
+                msg.sender,
+                _collateralTokenId
+            )
+            : _amount;
+
+        address qTokenLong;
+        QuantMath.FixedPointInt memory payoutFromLong;
+
+        PriceRegistry priceRegistry =
+            PriceRegistry(
+                optionsFactory.quantConfig().protocolAddresses(
+                    ProtocolValue.encode("priceRegistry")
+                )
+            );
+
+        uint256 expiryPrice =
+            priceRegistry.getSettlementPrice(
+                qTokenShort.oracle(),
+                qTokenShort.underlyingAsset(),
+                qTokenShort.expiryTime()
+            );
+
+        IAssetsRegistry assetsRegistry =
+            IAssetsRegistry(
+                optionsFactory.quantConfig().protocolAddresses(
+                    ProtocolValue.encode("assetsRegistry")
+                )
+            );
+
+        if (qTokenAsCollateral != address(0)) {
+            qTokenLong = qTokenAsCollateral;
+
+            (, payoutFromLong, ) = FundsCalculator.getPayout(
+                qTokenLong,
+                amountToClaim,
+                OPTIONS_DECIMALS,
+                expiryPrice,
+                assetsRegistry
+            );
+        } else {
+            qTokenLong = address(0);
+            payoutFromLong = int256(0).fromUnscaledInt();
+        }
+
+        uint8 payoutDecimals;
+        QuantMath.FixedPointInt memory collateralRequirement;
+        (
+            collateralAsset,
+            collateralRequirement,
+            payoutDecimals
+        ) = FundsCalculator.getCollateralRequirement(
+            _qTokenShort,
+            qTokenLong,
+            amountToClaim,
+            OPTIONS_DECIMALS,
+            assetsRegistry
+        );
+
+        (, QuantMath.FixedPointInt memory payoutFromShort, ) =
+            FundsCalculator.getPayout(
+                _qTokenShort,
+                amountToClaim,
+                OPTIONS_DECIMALS,
+                expiryPrice,
+                assetsRegistry
+            );
+
+        returnableCollateral = payoutFromLong
+            .add(collateralRequirement)
+            .sub(payoutFromShort)
+            .toScaledUint(payoutDecimals, true);
     }
 
     function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
@@ -360,12 +366,37 @@ contract Controller is IController {
             amountToNeutralize = maxNeutralizable;
         }
 
-        (address collateralType, uint256 collateralOwed) =
-            getCollateralRequirement(
+        IAssetsRegistry assetsRegistry =
+            IAssetsRegistry(
+                optionsFactory.quantConfig().protocolAddresses(
+                    ProtocolValue.encode("assetsRegistry")
+                )
+            );
+
+        address collateralType;
+        uint256 collateralOwed;
+
+        {
+            QuantMath.FixedPointInt memory collateralOwedFP;
+            uint8 collateralDecimals;
+
+            (
+                collateralType,
+                collateralOwedFP,
+                collateralDecimals
+            ) = FundsCalculator.getCollateralRequirement(
                 qTokenShort,
                 address(0),
-                amountToNeutralize
+                amountToNeutralize,
+                OPTIONS_DECIMALS,
+                assetsRegistry
             );
+
+            collateralOwed = collateralOwedFP.toScaledUint(
+                collateralDecimals,
+                true
+            );
+        }
 
         QToken(qTokenShort).burn(msg.sender, amountToNeutralize);
 
@@ -435,8 +466,15 @@ contract Controller is IController {
             uint256 payoutAmount
         )
     {
+        QToken qToken = QToken(_qToken);
+        isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
+        if (!isSettled) {
+            return (false, address(0), 0);
+        } else {
+            isSettled = true;
+        }
+
         QuantMath.FixedPointInt memory payout;
-        uint8 payoutDecimals;
 
         PriceRegistry priceRegistry =
             PriceRegistry(
@@ -452,12 +490,23 @@ contract Controller is IController {
                 )
             );
 
-        (isSettled, payoutToken, payout, payoutDecimals) = FundsCalculator
+        address underlyingAsset = QToken(_qToken).underlyingAsset();
+
+        uint256 expiryPrice =
+            priceRegistry.getSettlementPrice(
+                QToken(_qToken).oracle(),
+                underlyingAsset,
+                QToken(_qToken).expiryTime()
+            );
+
+        uint8 payoutDecimals;
+
+        (payoutToken, payout, payoutDecimals) = FundsCalculator
             .getPayout(
             _qToken,
             _amount,
             OPTIONS_DECIMALS,
-            priceRegistry,
+            expiryPrice,
             assetsRegistry
         );
 
