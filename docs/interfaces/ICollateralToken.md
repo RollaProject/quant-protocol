@@ -38,7 +38,7 @@ The Quant system config
 
 mapping of CollateralToken ids to their respective info struct
 
-### `collateralTokensIds(uint256) → uint256` (external)
+### `collateralTokenIds(uint256) → uint256` (external)
 
 array of all the created CollateralToken ids
 
