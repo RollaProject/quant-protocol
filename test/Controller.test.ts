@@ -381,38 +381,13 @@ describe("Controller", () => {
         ? (await getPayout(qTokenLong, amountToClaim, expiryPrice))[0]
         : ethers.BigNumber.from("0");
 
-    console.log("Payout from long: " + payoutFromLong.toString());
-    console.log("Payout from short: " + payoutFromShort.toString());
-    console.log("Collateral requirement: " + collateralRequirement.toString());
-    console.log(
-      "Coollateral for long: " + collateralRequiredForLong.toString()
-    );
-    console.log(
-      "Balance second: " +
-        (await payoutAsset.balanceOf(await secondAccount.getAddress()))
-    );
-    console.log(
-      "Balance contr: " + (await payoutAsset.balanceOf(controller.address))
-    );
-
     const claimableCollateral = payoutFromLong
       .add(collateralRequirement)
       .sub(payoutFromShort);
 
-    console.log("Claimable collateral" + claimableCollateral.toString());
-
     await controller
       .connect(secondAccount)
       .claimCollateral(collateralTokenId, amountToClaim);
-
-    console.log(
-      "Balance second after claim: " +
-        (await payoutAsset.balanceOf(await secondAccount.getAddress()))
-    );
-    console.log(
-      "Balance contr after claim: " +
-        (await payoutAsset.balanceOf(controller.address))
-    );
 
     const secondAccountCollateralClaimed = await payoutAsset.balanceOf(
       await secondAccount.getAddress()
@@ -422,33 +397,31 @@ describe("Controller", () => {
       secondAccountCollateralClaimed
     );
 
-    //some funds may be lost rounding. check its only a few wei.
-    // expect(
-    //   parseInt(secondAccountClaimedFundsLostRounding.toString())
-    // ).to.be.greaterThanOrEqual(0);
+    //some funds may be lost rounding. check its only 1 wei.
+    expect(
+      parseInt(secondAccountClaimedFundsLostRounding.toString())
+    ).to.be.greaterThanOrEqual(0);
 
-    // expect(
-    //   parseInt(secondAccountClaimedFundsLostRounding.toString())
-    // ).to.be.lessThanOrEqual(3);
+    expect(
+      parseInt(secondAccountClaimedFundsLostRounding.toString())
+    ).to.be.lessThanOrEqual(1);
 
     const controllerBalanceAfterClaim = await payoutAsset.balanceOf(
       controller.address
     );
-    const intendedClaimedAmount = collateralRequirement
+    const intendedControllerBalanceAfterClaim = collateralRequirement
       .add(collateralRequiredForLong)
       .sub(claimableCollateral);
 
     //should ideally be 0, but can also be extra wei due to rounding
     const controllerExtraFunds = controllerBalanceAfterClaim.sub(
-      intendedClaimedAmount
+      intendedControllerBalanceAfterClaim
     );
 
-    console.log("Controller extra funds " + controllerExtraFunds.toString());
-
-    // expect(parseInt(controllerExtraFunds.toString())).to.be.greaterThanOrEqual(
-    //   0
-    // );
-    // expect(parseInt(controllerExtraFunds.toString())).to.be.lessThanOrEqual(3); //check the rounding is within a few gwei
+    expect(parseInt(controllerExtraFunds.toString())).to.be.greaterThanOrEqual(
+      0
+    );
+    expect(parseInt(controllerExtraFunds.toString())).to.be.lessThanOrEqual(1); //check the rounding is within 1 wei
 
     const strikePriceString = (await qTokenShort.strikePrice()).div(
       ethers.BigNumber.from("10").pow(await USDC.decimals())
@@ -470,7 +443,11 @@ describe("Controller", () => {
       10 ** (await payoutAsset.decimals());
 
     const claimableCollateralString = `${
-      parseInt(claimableCollateral.toString()) /
+      parseInt(
+        new BN(claimableCollateral.toString())
+          .integerValue(BN.ROUND_DOWN)
+          .toString()
+      ) /
       10 ** (await collateral.decimals())
     } ${payoutAsset.address === USDC.address ? "USDC" : "WETH"}`;
 
@@ -489,7 +466,7 @@ describe("Controller", () => {
     console.log(
       `Expired at $${expiryPriceString}. Exercised for ${payoutFromShortString} ${
         payoutAsset.address === USDC.address ? "USDC" : "WETH"
-      } so the user is entitled to ${claimableCollateralString}`
+      } so the user is entitled to ~ ${claimableCollateralString}`
     );
 
     return snapshotId;
@@ -1501,7 +1478,7 @@ describe("Controller", () => {
       );
 
       const snapshotId = await testClaimCollateral(
-        qTokenCall3520,
+        qTokenCall2880,
         ethers.utils.parseEther("1"),
         expiryPrice,
         qTokenCall3520
@@ -1756,4 +1733,8 @@ describe("Controller", () => {
       ).to.equal(optionsAmount);
     });
   });
+
+  //TODO: Neutralization rounding tests (favours protocol vs user)
+
+  //TODO: Can't create spread with the same qToken for short and long
 });

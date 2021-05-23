@@ -25,46 +25,35 @@ library FundsCalculator {
         address _qToken,
         uint256 _amount,
         uint256 _optionsDecimals,
-        IPriceRegistry _priceRegistry,
+        uint256 _expiryPrice,
         IAssetsRegistry _assetsRegistry
     )
         internal
         view
         returns (
-            bool isSettled,
             address payoutToken,
             QuantMath.FixedPointInt memory payoutAmount,
             uint8 payoutDecimals
         )
     {
         QToken qToken = QToken(_qToken);
-        isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
-        if (!isSettled) {
-            return (false, address(0), int256(0).fromUnscaledInt(), 0);
-        }
 
         uint256 strikePrice = qToken.strikePrice();
-        uint256 expiryPrice =
-            _priceRegistry.getSettlementPrice(
-                qToken.oracle(),
-                qToken.underlyingAsset(),
-                qToken.expiryTime()
-            );
 
         FundsCalculator.OptionPayoutInput memory payoutInput =
             FundsCalculator.OptionPayoutInput(
                 strikePrice.fromScaledUint(6),
-                expiryPrice.fromScaledUint(6),
+                _expiryPrice.fromScaledUint(6),
                 _amount.fromScaledUint(_optionsDecimals),
                 qToken
             );
 
         if (qToken.isCall()) {
-            (, , uint8 underlyingDecimals, ) =
-                _assetsRegistry.assetProperties(qToken.underlyingAsset());
+            (, , payoutDecimals, ) = _assetsRegistry.assetProperties(
+                qToken.underlyingAsset()
+            );
 
             (payoutToken, payoutAmount) = getPayoutForCall(payoutInput);
-            payoutDecimals = underlyingDecimals;
         } else {
             (payoutToken, payoutAmount) = getPayoutForPut(payoutInput);
             payoutDecimals = 6;
@@ -243,7 +232,7 @@ library FundsCalculator {
         return
             mintStrikePrice.isGreaterThanOrEqual(collateralStrikePrice)
                 ? int256(0).fromUnscaledInt() // Call Debit Spread
-                : (mintStrikePrice.sub(collateralStrikePrice)).div(
+                : (collateralStrikePrice.sub(mintStrikePrice)).div(
                     collateralStrikePrice
                 ); // Call Credit Spread
     }
