@@ -165,8 +165,9 @@ describe("OptionsFactory", () => {
 
   describe("createOption", () => {
     it("Anyone should be able to create new options", async () => {
-      await expect(optionsFactory.qTokens(ethers.BigNumber.from("0"))).to.be
-        .reverted;
+      expect(await optionsFactory.getOptionsLength()).to.equal(
+        ethers.BigNumber.from("0")
+      );
 
       const qTokenAddress = await optionsFactory.getTargetQTokenAddress(
         ...samplePutOptionParameters
