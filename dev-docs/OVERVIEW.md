@@ -8,9 +8,10 @@ The Quant protocol tokenises options using the ERC20 standard, and also tokenise
 
 ### Options Collateral Requirements:
 
-Options are fully collaterised meaning whatever the price of the underlying there will always be sufficient collateral to payout option buyers. 
+Options are fully collaterised meaning whatever the price of the underlying there will always be sufficient collateral to payout option buyers.
 
 #### Options:
+
 - Calls are collaterised and settled in the underlying. For example, an ETH call requires 1 ETH (underlying asset). This is the max loss of the option i.e. the value at exercise can never exceed 1 ETH.
 - Puts are collaterised and settled in USDC. For example, a $400 ETH PUT requires 400 USDC in collateral. Again, this is the max loss of the option.
 
