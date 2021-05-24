@@ -19,8 +19,6 @@ library FundsCalculator {
         QuantMath.FixedPointInt amount;
     }
 
-    //TODO: Convert uint8 to int8
-
     function getPayout(
         address _qToken,
         uint256 _amount,
@@ -37,9 +35,7 @@ library FundsCalculator {
         QToken qToken = QToken(_qToken);
         bool isCall = qToken.isCall();
 
-        payoutToken = isCall
-            ? qToken.underlyingAsset()
-            : qToken.strikeAsset();
+        payoutToken = isCall ? qToken.underlyingAsset() : qToken.strikeAsset();
 
         payoutAmount = getPayoutAmount(
             isCall,
@@ -101,7 +97,7 @@ library FundsCalculator {
         address _qTokenToMint,
         address _qTokenForCollateral,
         uint256 _optionsAmount,
-        uint256 _optionsDecimals,
+        uint8 _optionsDecimals,
         uint8 _underlyingDecimals
     )
         internal
@@ -115,8 +111,10 @@ library FundsCalculator {
         uint256 qTokenToMintStrikePrice = qTokenToMint.strikePrice();
 
         uint256 qTokenForCollateralStrikePrice;
+
         if (_qTokenForCollateral != address(0)) {
             QToken qTokenForCollateral = QToken(_qTokenForCollateral);
+            qTokenForCollateralStrikePrice = qTokenForCollateral.strikePrice();
 
             // Check that expiries match
             require(
@@ -142,33 +140,42 @@ library FundsCalculator {
                 qTokenToMint.oracle() == qTokenForCollateral.oracle(),
                 "Controller: Can't create spreads from options with different oracles"
             );
-
-            qTokenForCollateralStrikePrice = qTokenForCollateral.strikePrice();
         }
 
-        QuantMath.FixedPointInt memory collateralPerOption;
-        if (qTokenToMint.isCall()) {
-            collateral = qTokenToMint.underlyingAsset();
+        collateralAmount = getOptionCollateralRequirement(
+            qTokenToMintStrikePrice,
+            qTokenForCollateralStrikePrice,
+            _optionsAmount,
+            qTokenToMint.isCall(),
+            _optionsDecimals,
+            _underlyingDecimals
+        );
 
-            // Initially required collateral is the long strike price
-            collateralPerOption = (10**_underlyingDecimals).fromScaledUint(
+        collateral = qTokenToMint.isCall()
+            ? qTokenToMint.underlyingAsset()
+            : qTokenToMint.strikeAsset();
+    }
+
+    function getOptionCollateralRequirement(
+        uint256 _qTokenToMintStrikePrice,
+        uint256 _qTokenForCollateralStrikePrice,
+        uint256 _optionsAmount,
+        bool _qTokenToMintIsCall,
+        uint8 _optionsDecimals,
+        uint8 _underlyingDecimals
+    ) internal pure returns (QuantMath.FixedPointInt memory collateralAmount) {
+        QuantMath.FixedPointInt memory collateralPerOption;
+        if (_qTokenToMintIsCall) {
+            collateralPerOption = getCallCollateralRequirement(
+                _qTokenToMintStrikePrice,
+                _qTokenForCollateralStrikePrice,
                 _underlyingDecimals
             );
-
-            if (_qTokenForCollateral != address(0)) {
-                collateralPerOption = getCallSpreadCollateralRequirement(
-                    qTokenToMintStrikePrice,
-                    qTokenForCollateralStrikePrice
-                );
-            }
         } else {
             collateralPerOption = getPutCollateralRequirement(
-                _qTokenForCollateral,
-                qTokenToMintStrikePrice,
-                qTokenForCollateralStrikePrice
+                _qTokenToMintStrikePrice,
+                _qTokenForCollateralStrikePrice
             );
-
-            collateral = qTokenToMint.strikeAsset();
         }
 
         collateralAmount = _optionsAmount.fromScaledUint(_optionsDecimals).mul(
@@ -177,7 +184,6 @@ library FundsCalculator {
     }
 
     function getPutCollateralRequirement(
-        address _qTokenForCollateral,
         uint256 _qTokenToMintStrikePrice,
         uint256 _qTokenForCollateralStrikePrice
     )
@@ -190,41 +196,45 @@ library FundsCalculator {
         QuantMath.FixedPointInt memory collateralStrikePrice =
             _qTokenForCollateralStrikePrice.fromScaledUint(6);
 
-        // Initially required collateral is the long strike price
+        // Initially (non-spread) required collateral is the long strike price
         collateralPerOption = mintStrikePrice;
 
-        if (_qTokenForCollateral != address(0)) {
-            collateralPerOption = getPutSpreadCollateralRequirement(
-                mintStrikePrice,
+        if (_qTokenForCollateralStrikePrice > 0) {
+            collateralPerOption = mintStrikePrice.isGreaterThan(
                 collateralStrikePrice
-            );
+            )
+                ? mintStrikePrice.sub(collateralStrikePrice) // Put Credit Spread
+                : int256(0).fromUnscaledInt(); // Put Debit Spread
         }
     }
 
-    function getPutSpreadCollateralRequirement(
-        QuantMath.FixedPointInt memory mintStrikePrice,
-        QuantMath.FixedPointInt memory collateralStrikePrice
-    ) internal pure returns (QuantMath.FixedPointInt memory) {
-        return
-            mintStrikePrice.isGreaterThan(collateralStrikePrice)
-                ? mintStrikePrice.sub(collateralStrikePrice) // Put Credit Spread
-                : int256(0).fromUnscaledInt(); // Put Debit Spread
-    }
-
-    function getCallSpreadCollateralRequirement(
+    function getCallCollateralRequirement(
         uint256 _qTokenToMintStrikePrice,
-        uint256 _qTokenForCollateralStrikePrice
-    ) internal pure returns (QuantMath.FixedPointInt memory) {
+        uint256 _qTokenForCollateralStrikePrice,
+        uint8 _underlyingDecimals
+    )
+        internal
+        pure
+        returns (QuantMath.FixedPointInt memory collateralPerOption)
+    {
         QuantMath.FixedPointInt memory mintStrikePrice =
             _qTokenToMintStrikePrice.fromScaledUint(6);
         QuantMath.FixedPointInt memory collateralStrikePrice =
             _qTokenForCollateralStrikePrice.fromScaledUint(6);
 
-        return
-            mintStrikePrice.isGreaterThanOrEqual(collateralStrikePrice)
+        // Initially (non-spread) required collateral is the long strike price
+        collateralPerOption = (10**_underlyingDecimals).fromScaledUint(
+            _underlyingDecimals
+        );
+
+        if (_qTokenForCollateralStrikePrice > 0) {
+            collateralPerOption = mintStrikePrice.isGreaterThanOrEqual(
+                collateralStrikePrice
+            )
                 ? int256(0).fromUnscaledInt() // Call Debit Spread
                 : (collateralStrikePrice.sub(mintStrikePrice)).div(
                     collateralStrikePrice
                 ); // Call Credit Spread
+        }
     }
 }
