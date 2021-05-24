@@ -2,6 +2,7 @@
 pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 import "./IQuantConfig.sol";
 
 /// @dev Current pricing status of option. Only SETTLED options can be exercised
@@ -11,7 +12,7 @@ enum PriceStatus {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
 /// @author Quant Finance
 /// @notice Can be used by owners to exercise their options
 /// @dev Every option long position is an ERC20 token: https://eips.ethereum.org/EIPS/eip-20
-interface IQToken is IERC20 {
+interface IQToken is IERC20, IERC20Permit {
     /// @notice event emitted when QTokens are minted
     /// @param account account the QToken was minted to
     /// @param amount the amount of QToken minted
