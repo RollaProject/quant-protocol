@@ -27,15 +27,6 @@ contract Controller is IController {
     using QuantMath for int256;
     using QuantMath for QuantMath.FixedPointInt;
 
-    struct QTokenInfo {
-        address qToken;
-        address oracle;
-        address underlying;
-        uint256 strikePrice;
-        uint256 expiryTime;
-        bool isCall;
-    }
-
     IOptionsFactory public immutable override optionsFactory;
 
     uint8 public constant override OPTIONS_DECIMALS = 18;
