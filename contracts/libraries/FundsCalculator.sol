@@ -37,7 +37,9 @@ library FundsCalculator {
         QToken qToken = QToken(_qToken);
         bool isCall = qToken.isCall();
 
-        payoutToken = isCall ? qToken.underlyingAsset() : qToken.strikeAsset();
+        payoutToken = isCall
+            ? qToken.underlyingAsset()
+            : qToken.strikeAsset();
 
         payoutAmount = getPayoutAmount(
             isCall,
@@ -112,6 +114,7 @@ library FundsCalculator {
         QToken qTokenToMint = QToken(_qTokenToMint);
         uint256 qTokenToMintStrikePrice = qTokenToMint.strikePrice();
 
+        uint256 qTokenForCollateralStrikePrice;
         if (_qTokenForCollateral != address(0)) {
             QToken qTokenForCollateral = QToken(_qTokenForCollateral);
 
@@ -140,35 +143,13 @@ library FundsCalculator {
                 "Controller: Can't create spreads from options with different oracles"
             );
 
-            uint256 qTokenForCollateralStrikePrice = qTokenForCollateral.strikePrice();
-
-            collateralAmount = _getCollateralRequirement(
-                _qTokenForCollateral,
-                qTokenToMint.isCall(),
-                qTokenForCollateralStrikePrice,
-                qTokenToMintStrikePrice,
-                _optionsAmount,
-                _optionsDecimals,
-                _underlyingDecimals
-            );
-
-            collateral = qTokenToMint.isCall()
-                ? qTokenToMint.underlyingAsset()
-                : qTokenToMint.strikeAsset();
+            qTokenForCollateralStrikePrice = qTokenForCollateral.strikePrice();
         }
-    }
 
-    function _getCollateralRequirement(
-        address _qTokenForCollateral,
-        bool _qTokenToMintIsCall,
-        uint256 _qTokenForCollateralStrikePrice,
-        uint256 _qTokenToMintStrikePrice,
-        uint256 _optionsAmount,
-        uint256 _optionsDecimals,
-        uint8 _underlyingDecimals
-    ) private pure returns (QuantMath.FixedPointInt memory collateralAmount) {
         QuantMath.FixedPointInt memory collateralPerOption;
-        if (_qTokenToMintIsCall) {
+        if (qTokenToMint.isCall()) {
+            collateral = qTokenToMint.underlyingAsset();
+
             // Initially required collateral is the long strike price
             collateralPerOption = (10**_underlyingDecimals).fromScaledUint(
                 _underlyingDecimals
@@ -176,16 +157,18 @@ library FundsCalculator {
 
             if (_qTokenForCollateral != address(0)) {
                 collateralPerOption = getCallSpreadCollateralRequirement(
-                    _qTokenToMintStrikePrice,
-                    _qTokenForCollateralStrikePrice
+                    qTokenToMintStrikePrice,
+                    qTokenForCollateralStrikePrice
                 );
             }
         } else {
             collateralPerOption = getPutCollateralRequirement(
                 _qTokenForCollateral,
-                _qTokenToMintStrikePrice,
-                _qTokenForCollateralStrikePrice
+                qTokenToMintStrikePrice,
+                qTokenForCollateralStrikePrice
             );
+
+            collateral = qTokenToMint.strikeAsset();
         }
 
         collateralAmount = _optionsAmount.fromScaledUint(_optionsDecimals).mul(
