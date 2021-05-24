@@ -6,6 +6,7 @@ import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
 import "../PriceRegistry.sol";
 import "./ProviderOracleManager.sol";
 import "../../libraries/ProtocolValue.sol";
+import "../../libraries/QuantMath.sol";
 import "../../interfaces/IChainlinkOracleManager.sol";
 
 /// @title For managing chainlink oracles for assets and submitting chainlink prices to the registry
@@ -15,6 +16,8 @@ contract ChainlinkOracleManager is
     IChainlinkOracleManager
 {
     using SafeMath for uint256;
+    using QuantMath for uint256;
+    using QuantMath for QuantMath.FixedPointInt;
 
     struct BinarySearchResult {
         uint80 firstRound;
@@ -24,6 +27,7 @@ contract ChainlinkOracleManager is
     }
 
     uint256 public immutable override fallbackPeriodSeconds;
+    uint8 public constant CHAINLINK_ORACLE_DECIMALS = 8;
 
     /// @param _config address of quant central configuration
     /// @param _fallbackPeriodSeconds amount of seconds before fallback price submitter can submit
@@ -94,7 +98,12 @@ contract ChainlinkOracleManager is
         PriceRegistry(
             config.protocolAddresses(ProtocolValue.encode("priceRegistry"))
         )
-            .setSettlementPrice(_asset, _expiryTimestamp, _price);
+            .setSettlementPrice(
+            _asset,
+            _expiryTimestamp,
+            _price,
+            CHAINLINK_ORACLE_DECIMALS
+        );
     }
 
     /// @inheritdoc IProviderOracleManager
@@ -112,7 +121,10 @@ contract ChainlinkOracleManager is
             "ChainlinkOracleManager: No pricing data available"
         );
 
-        return uint256(answer);
+        return
+            uint256(answer)
+                .fromScaledUint(CHAINLINK_ORACLE_DECIMALS)
+                .toScaledUint(6, true);
     }
 
     /// @inheritdoc IChainlinkOracleManager
@@ -210,7 +222,12 @@ contract ChainlinkOracleManager is
         PriceRegistry(
             config.protocolAddresses(ProtocolValue.encode("priceRegistry"))
         )
-            .setSettlementPrice(_asset, _expiryTimestamp, price);
+            .setSettlementPrice(
+            _asset,
+            _expiryTimestamp,
+            price,
+            CHAINLINK_ORACLE_DECIMALS
+        );
     }
 
     /// @notice Performs a binary search step between the first and last round in the aggregator proxy
