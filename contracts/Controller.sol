@@ -16,6 +16,7 @@ import "./interfaces/IController.sol";
 import "./libraries/ProtocolValue.sol";
 import "./libraries/QuantMath.sol";
 import "./libraries/FundsCalculator.sol";
+import "./libraries/OptionsUtils.sol";
 import "hardhat/console.sol";
 
 contract Controller is IController {
@@ -55,6 +56,7 @@ contract Controller is IController {
         _;
     }
 
+    //TODO: Inject _quantConfig in here and use instead of using factory
     constructor(address _optionsFactory) {
         optionsFactory = IOptionsFactory(_optionsFactory);
     }
@@ -306,7 +308,11 @@ contract Controller is IController {
             payoutFromLong = int256(0).fromUnscaledInt();
         }
 
-        uint8 underlyingDecimals = _getUnderlyingDecimals(qTokenShort);
+        uint8 underlyingDecimals =
+            OptionsUtils.getUnderlyingDecimals(
+                qTokenShort,
+                optionsFactory.quantConfig()
+            );
 
         QuantMath.FixedPointInt memory collateralRequirement;
         (collateralAsset, collateralRequirement) = FundsCalculator
@@ -371,7 +377,10 @@ contract Controller is IController {
         {
             QuantMath.FixedPointInt memory collateralOwedFP;
             uint8 underlyingDecimals =
-                _getUnderlyingDecimals(QToken(qTokenShort));
+                OptionsUtils.getUnderlyingDecimals(
+                    QToken(qTokenShort),
+                    optionsFactory.quantConfig()
+                );
 
             (collateralType, collateralOwedFP) = FundsCalculator
                 .getCollateralRequirement(
@@ -425,7 +434,10 @@ contract Controller is IController {
     {
         QuantMath.FixedPointInt memory collateralAmountFP;
         uint8 underlyingDecimals =
-            _getUnderlyingDecimals(QToken(_qTokenToMint));
+            OptionsUtils.getUnderlyingDecimals(
+                QToken(_qTokenToMint),
+                optionsFactory.quantConfig()
+            );
 
         (collateral, collateralAmountFP) = FundsCalculator
             .getCollateralRequirement(
@@ -469,7 +481,11 @@ contract Controller is IController {
                 )
             );
 
-        uint8 payoutDecimals = _getUnderlyingDecimals(qToken);
+        uint8 payoutDecimals =
+            OptionsUtils.getUnderlyingDecimals(
+                qToken,
+                optionsFactory.quantConfig()
+            );
 
         address underlyingAsset = QToken(_qToken).underlyingAsset();
 
@@ -488,50 +504,5 @@ contract Controller is IController {
         );
 
         payoutAmount = payout.toScaledUint(payoutDecimals, true);
-    }
-
-    function _getUnderlyingDecimals(QToken qToken)
-        internal
-        view
-        returns (uint8 payoutDecimals)
-    {
-        IAssetsRegistry assetsRegistry =
-            IAssetsRegistry(
-                optionsFactory.quantConfig().protocolAddresses(
-                    ProtocolValue.encode("assetsRegistry")
-                )
-            );
-
-        if (qToken.isCall()) {
-            (, , payoutDecimals, ) = assetsRegistry.assetProperties(
-                qToken.underlyingAsset()
-            );
-        } else {
-            payoutDecimals = 6;
-        }
-    }
-
-    function _getQTokenInfo(address _qToken) internal view returns (QTokenInfo memory qTokenInfo) {
-        if(_qToken == address(0)) {
-            return QTokenInfo(
-                address(0),
-                address(0),
-                address(0),
-                0,
-                0,
-                true
-            );
-        }
-
-        QToken qToken = QToken(_qToken);
-        
-        qTokenInfo = QTokenInfo (
-            _qToken,
-            qToken.oracle(),
-            qToken.underlyingAsset(),
-            qToken.strikePrice(),
-            qToken.expiryTime(),
-            qToken.isCall()
-        );
     }
 }
