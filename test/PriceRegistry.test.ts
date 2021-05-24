@@ -36,7 +36,7 @@ describe("PriceRegistry", () => {
 
   it("Should allow a price to be set only once", async () => {
     const timestamp = 1;
-    const price = 10;
+    const price = ethers.utils.parseUnits("10", 6);
 
     expect(
       priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
@@ -47,19 +47,61 @@ describe("PriceRegistry", () => {
 
     await priceRegistry
       .connect(admin)
-      .setSettlementPrice(assetOne, timestamp, price);
+      .setSettlementPrice(assetOne, timestamp, price, 6);
 
     expect(
       await priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
-    ).to.equal(10);
+    ).to.equal(price);
     expect(
       await priceRegistry.hasSettlementPrice(oracle, assetOne, timestamp)
     ).to.equal(true);
     expect(
-      priceRegistry.connect(admin).setSettlementPrice(assetOne, timestamp, 40)
+      priceRegistry
+        .connect(admin)
+        .setSettlementPrice(assetOne, timestamp, 40, 6)
     ).to.be.revertedWith(
       "PriceRegistry: Settlement price has already been set"
     );
+  });
+
+  it("Should return the correct values when a price with less than 6 decimals is set", async () => {
+    const timestamp = 1;
+    const price = ethers.utils.parseUnits("10", 2);
+
+    expect(
+      priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
+    ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
+    expect(
+      await priceRegistry.hasSettlementPrice(oracle, assetOne, timestamp)
+    ).to.equal(false);
+
+    await priceRegistry
+      .connect(admin)
+      .setSettlementPrice(assetOne, timestamp, price, 2);
+
+    expect(
+      await priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
+    ).to.equal(ethers.utils.parseUnits("10", 6));
+  });
+
+  it("Should return the correct values when a price with more than 6 decimals is set", async () => {
+    const timestamp = 1;
+    const price = ethers.utils.parseUnits("10", 12);
+
+    expect(
+      priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
+    ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
+    expect(
+      await priceRegistry.hasSettlementPrice(oracle, assetOne, timestamp)
+    ).to.equal(false);
+
+    await priceRegistry
+      .connect(admin)
+      .setSettlementPrice(assetOne, timestamp, price, 12);
+
+    expect(
+      await priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
+    ).to.equal(ethers.utils.parseUnits("10", 6));
   });
 
   it("Should not allow a price to be set for a future timestamp", async () => {
@@ -69,7 +111,8 @@ describe("PriceRegistry", () => {
         .setSettlementPrice(
           assetOne,
           Math.round(Date.now() / 1000) + 100000,
-          40
+          40,
+          6
         )
     ).to.be.revertedWith(
       "PriceRegistry: Can't set a price for a time in the future"
@@ -78,7 +121,9 @@ describe("PriceRegistry", () => {
 
   it("Should not allow a non-admin to call restricted methods", async () => {
     await expect(
-      priceRegistry.connect(secondAccount).setSettlementPrice(assetOne, 1, 40)
+      priceRegistry
+        .connect(secondAccount)
+        .setSettlementPrice(assetOne, 1, 40, 6)
     ).to.be.revertedWith("PriceRegistry: Price submitter is not an oracle");
   });
 });
