@@ -137,4 +137,25 @@ library OptionsUtils {
 
         return bytes(symbol).length != 0;
     }
+
+    function getUnderlyingDecimals(QToken _qToken, IQuantConfig _quantConfig)
+        internal
+        view
+        returns (uint8 payoutDecimals)
+    {
+        IAssetsRegistry assetsRegistry =
+            IAssetsRegistry(
+                _quantConfig.protocolAddresses(
+                    ProtocolValue.encode("assetsRegistry")
+                )
+            );
+
+        if (_qToken.isCall()) {
+            (, , payoutDecimals, ) = assetsRegistry.assetProperties(
+                _qToken.underlyingAsset()
+            );
+        } else {
+            payoutDecimals = 6;
+        }
+    }
 }
