@@ -37,6 +37,12 @@ describe("QToken", async () => {
       .mint(account, ethers.utils.parseEther(amount.toString()));
   };
 
+  enum PriceStatus {
+    ACTIVE,
+    AWAITING_SETTLEMENT_PRICE,
+    SETTLED,
+  }
+
   beforeEach(async () => {
     [
       timelockController,
@@ -237,6 +243,21 @@ describe("QToken", async () => {
       .withArgs(userAddress, 3);
   });
 
-  // TODO: Test the ACTIVE status
-  // it("Should return an ACTIVE status for options that haven't expired yet", async () => {});
+  it("Should return an ACTIVE status for options that haven't expired yet", async () => {
+    const nonExpiredQToken = await deployQToken(
+      timelockController,
+      quantConfig,
+      WETH.address,
+      USDC.address,
+      ethers.constants.AddressZero,
+      strikePrice,
+      ethers.BigNumber.from(
+        (Math.round(Date.now() / 1000) + 30 * 24 * 3600).toString()
+      )
+    );
+
+    expect(await nonExpiredQToken.getOptionPriceStatus()).to.equal(
+      PriceStatus.ACTIVE
+    );
+  });
 });
