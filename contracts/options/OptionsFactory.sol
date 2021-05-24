@@ -53,7 +53,9 @@ contract OptionsFactory is IOptionsFactory {
             _underlyingAsset,
             _oracle,
             _expiryTime,
-            address(quantConfig)
+            address(quantConfig),
+            _strikePrice,
+            _isCall
         );
 
         uint256 newCollateralTokenId =
@@ -73,17 +75,6 @@ contract OptionsFactory is IOptionsFactory {
             _collateralTokenIdToQTokenAddress[newCollateralTokenId] ==
                 address(0),
             "option already created"
-        );
-
-        //TODO: This should be for calls as well
-        require(_isCall || _strikePrice > 0, "strike for put can't be 0");
-
-        require(
-            OptionsUtils.isInAssetsRegistry(
-                _underlyingAsset,
-                address(quantConfig)
-            ),
-            "underlying not in the registry"
         );
 
         address newQToken =

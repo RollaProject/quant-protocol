@@ -9,19 +9,19 @@ import "solidity-coverage";
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.7.6",
+    compilers: [{ version: "0.7.6" }],
     settings: {
+      metadata: {
+        // do not include the metadata hash, since this is machine dependent
+        // https://github.com/paulrberg/solidity-template/issues/31
+        bytecodeHash: "none",
+      },
+      // You should disable the optimizer when debugging
+      // https://hardhat.org/hardhat-network/#solidity-optimizer-support
       optimizer: {
         enabled: true,
         runs: 800,
       },
-    },
-  },
-
-  networks: {
-    hardhat: {
-      //TODO: Fix this hack... controller contract size too large
-      //allowUnlimitedContractSize: true,
     },
   },
 
