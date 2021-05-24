@@ -1,6 +1,6 @@
 import { deployMockContract } from "@ethereum-waffle/mock-contract";
 import { MockContract } from "ethereum-waffle";
-import { ContractFactory, Signer } from "ethers";
+import { BigNumber, ContractFactory, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { Address } from "hardhat-deploy/dist/types";
 import { beforeEach, describe, it } from "mocha";
@@ -204,6 +204,7 @@ describe("ChainlinkOracleManager", function () {
         .withArgs(ethers.utils.id("priceRegistry"))
         .returns(mockPriceRegistry.address);
       // await mockConfig.mock.priceRegistry.returns(mockPriceRegistry.address);
+      //TODO (quantizations): What is this line for?
       await mockPriceRegistry.mock.setSettlementPrice.returns();
 
       await expect(
@@ -278,7 +279,7 @@ describe("ChainlinkOracleManager", function () {
 
     it("Should fetch the current price of the asset provided correctly", async function () {
       await mockAggregator.mock.latestAnswer.returns(0);
-      await mockAggregatorTwo.mock.latestAnswer.returns(2);
+      await mockAggregatorTwo.mock.latestAnswer.returns(ethers.utils.parseUnits("2", 8));
 
       await expect(
         chainlinkOracleManager.getCurrentPrice(mockAggregator.address)
@@ -310,7 +311,7 @@ describe("ChainlinkOracleManager", function () {
 
       expect(
         await chainlinkOracleManager.getCurrentPrice(assetTwo)
-      ).to.be.equal(2);
+      ).to.be.equal(ethers.utils.parseUnits("2", 6));
     });
 
     it("Should fail to fetch the round if the latest timestamp is equal to the expiry timestamp", async function () {
@@ -375,10 +376,10 @@ describe("ChainlinkOracleManager", function () {
       await mockAggregatorProxy.setTimestamp(2, 30);
       await mockAggregatorProxy.setTimestamp(3, 40);
       await mockAggregatorProxy.setTimestamp(4, 50);
-      await mockAggregatorProxy.setLatestAnswer(420);
+      await mockAggregatorProxy.setLatestAnswer(42001);
 
       //set the price of the round that'll get picked
-      await mockAggregatorProxy.setRoundIdAnswer(2, 420);
+      await mockAggregatorProxy.setRoundIdAnswer(2, 42001);
 
       await chainlinkOracleManager
         .connect(oracleManagerAccount)
@@ -420,9 +421,9 @@ describe("ChainlinkOracleManager", function () {
           .setExpiryPriceInRegistry(assetOne, 32, ethers.utils.randomBytes(32))
       )
         .to.emit(chainlinkOracleManager, "PriceRegistrySubmission")
-        .withArgs(assetOne, 32, 420, 2, normalUserAccountAddress, false);
+        .withArgs(assetOne, 32, 42001, 2, normalUserAccountAddress, false);
 
-      //price should be set after we set it through the oracle
+      //price should be set after we set it through the oracle (with loss of precision when casting to 6 decimals)
       expect(
         await priceRegistry.getSettlementPrice(
           chainlinkOracleManager.address,
@@ -430,6 +431,17 @@ describe("ChainlinkOracleManager", function () {
           32
         )
       ).to.equal(420);
+
+      //price should be set after we set it through the oracle with full precision
+      const priceWithDecimals =
+        await priceRegistry.getSettlementPriceWithDecimals(
+          chainlinkOracleManager.address,
+          assetOne,
+          32
+        );
+
+      expect(priceWithDecimals[0]).to.equal(BigNumber.from("42001"));
+      expect(priceWithDecimals[1]).to.equal(BigNumber.from("8"));
     });
 
     it("Integration Test: Should submit the correct price to the price registry when submitting a round directly", async function () {
@@ -455,9 +467,9 @@ describe("ChainlinkOracleManager", function () {
           .setExpiryPriceInRegistryByRound(assetOne, 32, 3)
       )
         .to.emit(chainlinkOracleManager, "PriceRegistrySubmission")
-        .withArgs(assetOne, 32, 420, 2, normalUserAccountAddress, false);
+        .withArgs(assetOne, 32, 42001, 2, normalUserAccountAddress, false);
 
-      //price should be set after we set it through the oracle
+      //price should be set after we set it through the oracle (with loss of precision when casting to 6 decimals)
       expect(
         await priceRegistry.getSettlementPrice(
           chainlinkOracleManager.address,
@@ -465,6 +477,17 @@ describe("ChainlinkOracleManager", function () {
           32
         )
       ).to.equal(420);
+
+      //price should be set after we set it through the oracle with full precision
+      const priceWithDecimals =
+        await priceRegistry.getSettlementPriceWithDecimals(
+          chainlinkOracleManager.address,
+          assetOne,
+          32
+        );
+
+      expect(priceWithDecimals[0]).to.equal(BigNumber.from("42001"));
+      expect(priceWithDecimals[1]).to.equal(BigNumber.from("8"));
 
       await expect(
         chainlinkOracleManager
