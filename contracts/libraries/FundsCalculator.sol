@@ -4,6 +4,7 @@ pragma abicoder v2;
 
 import "./QuantMath.sol";
 import "../options/QToken.sol";
+import "../interfaces/IPriceRegistry.sol";
 
 //TODO: Deployment scripts should deploy and link this
 library FundsCalculator {
@@ -25,7 +26,7 @@ library FundsCalculator {
         address _qToken,
         uint256 _amount,
         uint256 _optionsDecimals,
-        uint256 _expiryPrice,
+        IPriceRegistry.PriceWithDecimals memory _expiryPrice,
         IAssetsRegistry _assetsRegistry
     )
         internal
@@ -43,7 +44,7 @@ library FundsCalculator {
         FundsCalculator.OptionPayoutInput memory payoutInput =
             FundsCalculator.OptionPayoutInput(
                 strikePrice.fromScaledUint(6),
-                _expiryPrice.fromScaledUint(6),
+                _expiryPrice.price.fromScaledUint(_expiryPrice.decimals),
                 _amount.fromScaledUint(_optionsDecimals),
                 qToken
             );
