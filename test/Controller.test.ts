@@ -289,7 +289,8 @@ describe("Controller", () => {
   ): Promise<string> => {
     await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
 
-    await mockPriceRegistry.mock.getSettlementPrice.returns(expiryPrice);
+    //Note: Converts to the chainlink 8 decimal format
+    await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([expiryPrice.mul("100"), BigNumber.from(8)]);
 
     const [collateralAddress, collateralRequirement] =
       await getCollateralRequirement(
@@ -1054,9 +1055,11 @@ describe("Controller", () => {
 
       await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
 
-      await mockPriceRegistry.mock.getSettlementPrice.returns(
-        ethers.utils.parseUnits("1200", await USDC.decimals())
-      );
+      //Note: Converts to the chainlink 8 decimal format
+      await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
+        ethers.utils.parseUnits("1200", 8),
+        BigNumber.from(8),
+      ]);
 
       // Mint options to the user
       const optionsAmount = ethers.utils.parseEther("1");
@@ -1117,9 +1120,11 @@ describe("Controller", () => {
 
       await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
 
-      await mockPriceRegistry.mock.getSettlementPrice.returns(
-        ethers.utils.parseUnits("2500", await USDC.decimals())
-      );
+      //Note: Converts to the chainlink 8 decimal format
+      await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
+        ethers.utils.parseUnits("2500", 8),
+        BigNumber.from(8),
+      ]);
 
       // Mint options to the user
       const optionsAmount = ethers.utils.parseEther("2");
@@ -1181,9 +1186,11 @@ describe("Controller", () => {
 
       await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
 
-      await mockPriceRegistry.mock.getSettlementPrice.returns(
-        ethers.utils.parseUnits("200", await USDC.decimals())
-      );
+      //Note: Converts to the chainlink 8 decimal format
+      await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
+        ethers.utils.parseUnits("200", 8),
+        8,
+      ]);
 
       await expect(
         controller
@@ -1203,9 +1210,11 @@ describe("Controller", () => {
 
       await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
 
-      await mockPriceRegistry.mock.getSettlementPrice.returns(
-        ethers.utils.parseUnits("1800", await USDC.decimals())
-      );
+      //Note: Converts to the chainlink 8 decimal format
+      await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
+        ethers.utils.parseUnits("1800", 8),
+        8,
+      ]);
 
       // Mint options to the user
       const optionsAmount = ethers.utils.parseEther("3");

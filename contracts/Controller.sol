@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./QuantConfig.sol";
 import "./interfaces/IOptionsFactory.sol";
 import "./interfaces/IOracleRegistry.sol";
+import "./interfaces/IPriceRegistry.sol";
 import "./options/QToken.sol";
 import "./interfaces/ICollateralToken.sol";
 import "./interfaces/IAssetsRegistry.sol";
@@ -275,8 +276,8 @@ contract Controller is IController {
                 )
             );
 
-        uint256 expiryPrice =
-            priceRegistry.getSettlementPrice(
+        IPriceRegistry.PriceWithDecimals memory expiryPrice =
+            priceRegistry.getSettlementPriceWithDecimals(
                 qTokenShort.oracle(),
                 qTokenShort.underlyingAsset(),
                 qTokenShort.expiryTime()
@@ -455,7 +456,6 @@ contract Controller is IController {
         collateralAmount = collateralAmountFP.toScaledUint(decimals, false);
     }
 
-    //todo: ensure the oracle price is normalized to the amount of decimals in the strikeAsset (e.g., USDC)
     function getPayout(address _qToken, uint256 _amount)
         public
         view
@@ -492,8 +492,8 @@ contract Controller is IController {
 
         address underlyingAsset = QToken(_qToken).underlyingAsset();
 
-        uint256 expiryPrice =
-            priceRegistry.getSettlementPrice(
+        IPriceRegistry.PriceWithDecimals memory expiryPrice =
+            priceRegistry.getSettlementPriceWithDecimals(
                 QToken(_qToken).oracle(),
                 underlyingAsset,
                 QToken(_qToken).expiryTime()
