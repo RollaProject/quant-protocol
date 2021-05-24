@@ -1,4 +1,5 @@
-import { BigNumber, Signer } from "ethers";
+import { ecsign } from "ethereumjs-util";
+import { BigNumber, Signer, Wallet } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import QTokenJSON from "../artifacts/contracts/options/QToken.sol/QToken.json";
@@ -10,22 +11,28 @@ import {
   deployAssetsRegistry,
   deployQToken,
   deployQuantConfig,
+  getApprovalDigest,
   mockERC20,
 } from "./testUtils";
 
 const { deployContract } = waffle;
 
+const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify } = ethers.utils;
+const TEST_AMOUNT = ethers.utils.parseEther("10");
+
 describe("QToken", async () => {
   let quantConfig: QuantConfig;
   let qToken: QToken;
   let timelockController: Signer;
-  let secondAccount: Signer;
+  let secondAccount: Wallet;
   let assetsRegistryManager: Signer;
   let optionsMinter: Signer;
   let optionsBurner: Signer;
+  let otherAccount: Signer;
   let USDC: MockERC20;
   let WETH: MockERC20;
   let userAddress: string;
+  let otherUserAddress: string;
   let scaledStrikePrice: BigNumber;
   const strikePrice = ethers.utils.parseUnits("1400", 6);
   const expiryTime = ethers.BigNumber.from("1618592400"); // April 16th, 2021
@@ -50,8 +57,10 @@ describe("QToken", async () => {
       assetsRegistryManager,
       optionsMinter,
       optionsBurner,
+      otherAccount,
     ] = provider.getWallets();
     userAddress = await secondAccount.getAddress();
+    otherUserAddress = await otherAccount.getAddress();
 
     quantConfig = await deployQuantConfig(timelockController, [
       {
@@ -109,6 +118,7 @@ describe("QToken", async () => {
     expect(await qToken.strikePrice()).to.equal(scaledStrikePrice);
     expect(await qToken.expiryTime()).to.equal(expiryTime);
     expect(await qToken.isCall()).to.be.false;
+    expect(await qToken.decimals()).to.equal(ethers.BigNumber.from("18"));
   });
 
   it("Options minter should be able to mint options", async () => {
@@ -258,6 +268,77 @@ describe("QToken", async () => {
 
     expect(await nonExpiredQToken.getOptionPriceStatus()).to.equal(
       PriceStatus.ACTIVE
+    );
+  });
+
+  it("Should be created with the right EIP-2612 (permit) configuration", async () => {
+    expect(await qToken.DOMAIN_SEPARATOR()).to.equal(
+      keccak256(
+        defaultAbiCoder.encode(
+          ["bytes32", "bytes32", "bytes32", "uint256", "address"],
+          [
+            keccak256(
+              toUtf8Bytes(
+                "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+              )
+            ),
+            keccak256(toUtf8Bytes(await qToken.name())),
+            keccak256(toUtf8Bytes("1")),
+            provider.network.chainId,
+            qToken.address,
+          ]
+        )
+      )
+    );
+  });
+
+  it("Should be able to set allowance and then transfer options through the permit functionality", async () => {
+    const nonce = await qToken.nonces(userAddress);
+    const deadline = ethers.constants.MaxUint256;
+    const digest = await getApprovalDigest(
+      qToken,
+      { owner: userAddress, spender: otherUserAddress, value: TEST_AMOUNT },
+      nonce,
+      deadline
+    );
+
+    const { v, r, s } = ecsign(
+      Buffer.from(digest.slice(2), "hex"),
+      Buffer.from(secondAccount.privateKey.slice(2), "hex")
+    );
+
+    await expect(
+      qToken.permit(
+        userAddress,
+        otherUserAddress,
+        TEST_AMOUNT,
+        deadline,
+        v,
+        hexlify(r),
+        hexlify(s)
+      )
+    )
+      .to.emit(qToken, "Approval")
+      .withArgs(userAddress, otherUserAddress, TEST_AMOUNT);
+    expect(await qToken.allowance(userAddress, otherUserAddress)).to.equal(
+      TEST_AMOUNT
+    );
+    expect(await qToken.nonces(userAddress)).to.equal(
+      ethers.BigNumber.from("1")
+    );
+
+    await qToken.connect(optionsMinter).mint(userAddress, TEST_AMOUNT);
+    expect(await qToken.balanceOf(userAddress)).to.equal(TEST_AMOUNT);
+    const recipient = await timelockController.getAddress();
+    expect(await qToken.balanceOf(recipient)).to.equal(ethers.constants.Zero);
+
+    await qToken
+      .connect(otherAccount)
+      .transferFrom(userAddress, recipient, TEST_AMOUNT);
+    expect(await qToken.balanceOf(userAddress)).to.equal(ethers.constants.Zero);
+    expect(await qToken.balanceOf(recipient)).to.equal(TEST_AMOUNT);
+    expect(await qToken.allowance(userAddress, otherUserAddress)).to.equal(
+      ethers.constants.Zero
     );
   });
 });

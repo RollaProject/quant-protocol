@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/drafts/ERC20Permit.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
@@ -15,7 +15,7 @@ import "../libraries/ProtocolValue.sol";
 /// @author Quant Finance
 /// @notice Can be used by owners to exercise their options
 /// @dev Every option long position is an ERC20 token: https://eips.ethereum.org/EIPS/eip-20
-contract QToken is ERC20, IQToken {
+contract QToken is ERC20Permit, IQToken {
     using SafeMath for uint256;
 
     /// @inheritdoc IQToken
@@ -69,6 +69,16 @@ contract QToken is ERC20, IQToken {
                 _isCall
             ),
             _qTokenSymbol(
+                _quantConfig,
+                _underlyingAsset,
+                _strikeAsset,
+                _strikePrice,
+                _expiryTime,
+                _isCall
+            )
+        )
+        ERC20Permit(
+            _qTokenName(
                 _quantConfig,
                 _underlyingAsset,
                 _strikeAsset,
