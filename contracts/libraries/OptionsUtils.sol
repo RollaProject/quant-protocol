@@ -91,7 +91,9 @@ library OptionsUtils {
         address _underlyingAsset,
         address _oracle,
         uint256 _expiryTime,
-        address _quantConfig
+        address _quantConfig,
+        uint256 _strikePrice,
+        bool _isCall
     ) internal view {
         require(
             _expiryTime > block.timestamp,
@@ -119,6 +121,13 @@ library OptionsUtils {
         require(
             oracleRegistry.isOracleActive(_oracle),
             "OptionsFactory: Oracle is not active in the OracleRegistry"
+        );
+
+        require(_isCall || _strikePrice > 0, "strike for put can't be 0");
+
+        require(
+            isInAssetsRegistry(_underlyingAsset, _quantConfig),
+            "underlying not in the registry"
         );
     }
 
