@@ -22,7 +22,7 @@ contract OracleRegistry is IOracleRegistry {
     address[] public override oracles;
 
     /// @dev the oracle id of the last added oracle, if there is one. oracles start at id of 1
-    uint256 private _currentId;
+    uint256 private _currentId; //TODO: Can just use oracles.length
 
     /// @inheritdoc IOracleRegistry
     IQuantConfig public override config;

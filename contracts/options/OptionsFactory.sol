@@ -74,6 +74,8 @@ contract OptionsFactory is IOptionsFactory {
                 address(0),
             "option already created"
         );
+
+        //TODO: This should be for calls as well
         require(_isCall || _strikePrice > 0, "strike for put can't be 0");
 
         require(
