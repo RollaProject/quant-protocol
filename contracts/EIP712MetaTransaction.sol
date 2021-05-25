@@ -63,7 +63,7 @@ contract EIP712MetaTransaction is EIP712, IEIP712MetaTransaction {
         // Append the userAddress at the end so that it can be extracted later
         // from the calling context (see _msgSender() below)
         (bool success, bytes memory returnData) =
-            address(this).delegatecall(
+            address(this).call(
                 abi.encodePacked(functionSignature, userAddress)
             );
 
