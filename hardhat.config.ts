@@ -9,7 +9,7 @@ import "solidity-coverage";
 
 const config: HardhatUserConfig = {
   solidity: {
-    compilers: [{ version: "0.7.6" }],
+    version: "0.7.6",
     settings: {
       metadata: {
         // do not include the metadata hash, since this is machine dependent
