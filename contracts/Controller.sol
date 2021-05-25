@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./QuantConfig.sol";
+import "./EIP712MetaTransaction.sol";
 import "./interfaces/IOptionsFactory.sol";
 import "./interfaces/IOracleRegistry.sol";
 import "./interfaces/IPriceRegistry.sol";
@@ -17,9 +18,8 @@ import "./libraries/ProtocolValue.sol";
 import "./libraries/QuantMath.sol";
 import "./libraries/FundsCalculator.sol";
 import "./libraries/OptionsUtils.sol";
-import "hardhat/console.sol";
 
-contract Controller is IController {
+contract Controller is IController, EIP712MetaTransaction {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -48,7 +48,9 @@ contract Controller is IController {
     }
 
     //TODO: Inject _quantConfig in here and use instead of using factory
-    constructor(address _optionsFactory) {
+    constructor(address _optionsFactory)
+        EIP712MetaTransaction("Quant Protocol", "0.2.0")
+    {
         optionsFactory = IOptionsFactory(_optionsFactory);
     }
 
