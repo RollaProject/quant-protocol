@@ -92,8 +92,7 @@ library OptionsUtils {
         address _oracle,
         uint256 _expiryTime,
         address _quantConfig,
-        uint256 _strikePrice,
-        bool _isCall
+        uint256 _strikePrice
     ) internal view {
         require(
             _expiryTime > block.timestamp,

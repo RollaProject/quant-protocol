@@ -54,8 +54,7 @@ contract OptionsFactory is IOptionsFactory {
             _oracle,
             _expiryTime,
             address(quantConfig),
-            _strikePrice,
-            _isCall
+            _strikePrice
         );
 
         uint256 newCollateralTokenId =
