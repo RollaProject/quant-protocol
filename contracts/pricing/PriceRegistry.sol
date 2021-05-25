@@ -61,9 +61,13 @@ contract PriceRegistry is IPriceRegistry {
         address _oracle,
         address _asset,
         uint256 _expiryTimestamp
-    ) external view override returns (PriceWithDecimals memory settlementPrice) {
-        settlementPrice =
-            _settlementPrices[_oracle][_asset][_expiryTimestamp];
+    )
+        external
+        view
+        override
+        returns (PriceWithDecimals memory settlementPrice)
+    {
+        settlementPrice = _settlementPrices[_oracle][_asset][_expiryTimestamp];
         require(
             settlementPrice.price != 0,
             "PriceRegistry: No settlement price has been set"
@@ -84,7 +88,11 @@ contract PriceRegistry is IPriceRegistry {
         );
 
         //convert price to the correct number of decimals
-        return settlementPrice.price.fromScaledUint(settlementPrice.decimals).toScaledUint(6, true);
+        return
+            settlementPrice
+                .price
+                .fromScaledUint(settlementPrice.decimals)
+                .toScaledUint(6, true);
     }
 
     /// @inheritdoc IPriceRegistry

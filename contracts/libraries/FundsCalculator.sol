@@ -46,53 +46,6 @@ library FundsCalculator {
         );
     }
 
-    function getPayoutAmount(
-        bool _isCall,
-        uint256 _strikePrice,
-        uint256 _amount,
-        uint256 _optionsDecimals,
-        IPriceRegistry.PriceWithDecimals memory _expiryPrice
-    ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
-        FundsCalculator.OptionPayoutInput memory payoutInput =
-            FundsCalculator.OptionPayoutInput(
-                _strikePrice.fromScaledUint(6),
-                _expiryPrice.price.fromScaledUint(_expiryPrice.decimals),
-                _amount.fromScaledUint(_optionsDecimals)
-            );
-
-        if (_isCall) {
-            payoutAmount = getPayoutForCall(payoutInput);
-        } else {
-            payoutAmount = getPayoutForPut(payoutInput);
-        }
-    }
-
-    function getPayoutForCall(
-        FundsCalculator.OptionPayoutInput memory payoutInput
-    ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
-        payoutAmount = payoutInput.expiryPrice.isGreaterThan(
-            payoutInput.strikePrice
-        )
-            ? payoutInput
-                .expiryPrice
-                .sub(payoutInput.strikePrice)
-                .mul(payoutInput.amount)
-                .div(payoutInput.expiryPrice)
-            : int256(0).fromUnscaledInt();
-    }
-
-    function getPayoutForPut(
-        FundsCalculator.OptionPayoutInput memory payoutInput
-    ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
-        payoutAmount = payoutInput.strikePrice.isGreaterThan(
-            payoutInput.expiryPrice
-        )
-            ? (payoutInput.strikePrice.sub(payoutInput.expiryPrice)).mul(
-                payoutInput.amount
-            )
-            : int256(0).fromUnscaledInt();
-    }
-
     function getCollateralRequirement(
         address _qTokenToMint,
         address _qTokenForCollateral,
@@ -154,6 +107,53 @@ library FundsCalculator {
         collateral = qTokenToMint.isCall()
             ? qTokenToMint.underlyingAsset()
             : qTokenToMint.strikeAsset();
+    }
+
+    function getPayoutAmount(
+        bool _isCall,
+        uint256 _strikePrice,
+        uint256 _amount,
+        uint256 _optionsDecimals,
+        IPriceRegistry.PriceWithDecimals memory _expiryPrice
+    ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
+        FundsCalculator.OptionPayoutInput memory payoutInput =
+            FundsCalculator.OptionPayoutInput(
+                _strikePrice.fromScaledUint(6),
+                _expiryPrice.price.fromScaledUint(_expiryPrice.decimals),
+                _amount.fromScaledUint(_optionsDecimals)
+            );
+
+        if (_isCall) {
+            payoutAmount = getPayoutForCall(payoutInput);
+        } else {
+            payoutAmount = getPayoutForPut(payoutInput);
+        }
+    }
+
+    function getPayoutForCall(
+        FundsCalculator.OptionPayoutInput memory payoutInput
+    ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
+        payoutAmount = payoutInput.expiryPrice.isGreaterThan(
+            payoutInput.strikePrice
+        )
+            ? payoutInput
+                .expiryPrice
+                .sub(payoutInput.strikePrice)
+                .mul(payoutInput.amount)
+                .div(payoutInput.expiryPrice)
+            : int256(0).fromUnscaledInt();
+    }
+
+    function getPayoutForPut(
+        FundsCalculator.OptionPayoutInput memory payoutInput
+    ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
+        payoutAmount = payoutInput.strikePrice.isGreaterThan(
+            payoutInput.expiryPrice
+        )
+            ? (payoutInput.strikePrice.sub(payoutInput.expiryPrice)).mul(
+                payoutInput.amount
+            )
+            : int256(0).fromUnscaledInt();
     }
 
     function getOptionCollateralRequirement(
