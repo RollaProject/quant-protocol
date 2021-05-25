@@ -123,7 +123,7 @@ library OptionsUtils {
             "OptionsFactory: Oracle is not active in the OracleRegistry"
         );
 
-        require(_isCall || _strikePrice > 0, "strike for put can't be 0");
+        require(_strikePrice > 0, "strike can't be 0");
 
         require(
             isInAssetsRegistry(_underlyingAsset, _quantConfig),
