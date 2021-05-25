@@ -230,6 +230,90 @@ contract Controller is IController {
         );
     }
 
+    function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
+        external
+        override
+    {
+        ICollateralToken collateralToken = optionsFactory.collateralToken();
+        (address qTokenShort, address qTokenAsCollateral) =
+            collateralToken.idToInfo(_collateralTokenId);
+
+        //get the amount of collateral tokens owned
+        uint256 collateralTokensOwned =
+            collateralToken.balanceOf(msg.sender, _collateralTokenId);
+
+        //get the amount of qTokens owned
+        uint256 qTokensOwned = QToken(qTokenShort).balanceOf(msg.sender);
+
+        //the amount of position that can be neutralized
+        uint256 maxNeutralizable =
+            qTokensOwned > collateralTokensOwned
+                ? qTokensOwned
+                : collateralTokensOwned;
+
+        uint256 amountToNeutralize;
+
+        if (_amount != 0) {
+            require(
+                _amount <= maxNeutralizable,
+                "Controller: Tried to neutralize more than balance"
+            );
+            amountToNeutralize = _amount;
+        } else {
+            amountToNeutralize = maxNeutralizable;
+        }
+
+        address collateralType;
+        uint256 collateralOwed;
+
+        {
+            QuantMath.FixedPointInt memory collateralOwedFP;
+            uint8 underlyingDecimals =
+                OptionsUtils.getUnderlyingDecimals(
+                    QToken(qTokenShort),
+                    optionsFactory.quantConfig()
+                );
+
+            (collateralType, collateralOwedFP) = FundsCalculator
+                .getCollateralRequirement(
+                qTokenShort,
+                address(0),
+                amountToNeutralize,
+                OPTIONS_DECIMALS,
+                underlyingDecimals
+            );
+
+            collateralOwed = collateralOwedFP.toScaledUint(
+                underlyingDecimals,
+                true
+            );
+        }
+
+        QToken(qTokenShort).burn(msg.sender, amountToNeutralize);
+
+        collateralToken.burnCollateralToken(
+            msg.sender,
+            _collateralTokenId,
+            amountToNeutralize
+        );
+
+        IERC20(collateralType).safeTransfer(msg.sender, collateralOwed);
+
+        //give the user their long tokens (if any)
+        if (qTokenAsCollateral != address(0)) {
+            QToken(qTokenAsCollateral).mint(msg.sender, amountToNeutralize);
+        }
+
+        emit NeutralizePosition(
+            msg.sender,
+            qTokenShort,
+            amountToNeutralize,
+            collateralOwed,
+            collateralType,
+            qTokenAsCollateral
+        );
+    }
+
     function calculateClaimableCollateral(
         uint256 _collateralTokenId,
         uint256 _amount
@@ -327,90 +411,6 @@ contract Controller is IController {
             .add(collateralRequirement)
             .sub(payoutFromShort)
             .toScaledUint(underlyingDecimals, true);
-    }
-
-    function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
-        external
-        override
-    {
-        ICollateralToken collateralToken = optionsFactory.collateralToken();
-        (address qTokenShort, address qTokenAsCollateral) =
-            collateralToken.idToInfo(_collateralTokenId);
-
-        //get the amount of collateral tokens owned
-        uint256 collateralTokensOwned =
-            collateralToken.balanceOf(msg.sender, _collateralTokenId);
-
-        //get the amount of qTokens owned
-        uint256 qTokensOwned = QToken(qTokenShort).balanceOf(msg.sender);
-
-        //the amount of position that can be neutralized
-        uint256 maxNeutralizable =
-            qTokensOwned > collateralTokensOwned
-                ? qTokensOwned
-                : collateralTokensOwned;
-
-        uint256 amountToNeutralize;
-
-        if (_amount != 0) {
-            require(
-                _amount <= maxNeutralizable,
-                "Controller: Tried to neutralize more than balance"
-            );
-            amountToNeutralize = _amount;
-        } else {
-            amountToNeutralize = maxNeutralizable;
-        }
-
-        address collateralType;
-        uint256 collateralOwed;
-
-        {
-            QuantMath.FixedPointInt memory collateralOwedFP;
-            uint8 underlyingDecimals =
-                OptionsUtils.getUnderlyingDecimals(
-                    QToken(qTokenShort),
-                    optionsFactory.quantConfig()
-                );
-
-            (collateralType, collateralOwedFP) = FundsCalculator
-                .getCollateralRequirement(
-                qTokenShort,
-                address(0),
-                amountToNeutralize,
-                OPTIONS_DECIMALS,
-                underlyingDecimals
-            );
-
-            collateralOwed = collateralOwedFP.toScaledUint(
-                underlyingDecimals,
-                true
-            );
-        }
-
-        QToken(qTokenShort).burn(msg.sender, amountToNeutralize);
-
-        collateralToken.burnCollateralToken(
-            msg.sender,
-            _collateralTokenId,
-            amountToNeutralize
-        );
-
-        IERC20(collateralType).safeTransfer(msg.sender, collateralOwed);
-
-        //give the user their long tokens (if any)
-        if (qTokenAsCollateral != address(0)) {
-            QToken(qTokenAsCollateral).mint(msg.sender, amountToNeutralize);
-        }
-
-        emit NeutralizePosition(
-            msg.sender,
-            qTokenShort,
-            amountToNeutralize,
-            collateralOwed,
-            collateralType,
-            qTokenAsCollateral
-        );
     }
 
     function getCollateralRequirement(

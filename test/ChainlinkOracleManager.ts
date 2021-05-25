@@ -279,7 +279,9 @@ describe("ChainlinkOracleManager", function () {
 
     it("Should fetch the current price of the asset provided correctly", async function () {
       await mockAggregator.mock.latestAnswer.returns(0);
-      await mockAggregatorTwo.mock.latestAnswer.returns(ethers.utils.parseUnits("2", 8));
+      await mockAggregatorTwo.mock.latestAnswer.returns(
+        ethers.utils.parseUnits("2", 8)
+      );
 
       await expect(
         chainlinkOracleManager.getCurrentPrice(mockAggregator.address)
