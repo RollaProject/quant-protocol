@@ -121,7 +121,7 @@ describe("Controller", () => {
           : new BN(0); // Put Debit Spread
       }
     }
-    let collateralAmount = new BN(optionsAmount.toString())
+    const collateralAmount = new BN(optionsAmount.toString())
       .times(collateralPerOption)
       .div(new BN(10).pow(18))
       .integerValue(roundMode);
@@ -290,7 +290,10 @@ describe("Controller", () => {
     await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
 
     //Note: Converts to the chainlink 8 decimal format
-    await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([expiryPrice.mul("100"), BigNumber.from(8)]);
+    await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
+      expiryPrice.mul("100"),
+      BigNumber.from(8),
+    ]);
 
     const [collateralAddress, collateralRequirement] =
       await getCollateralRequirement(
