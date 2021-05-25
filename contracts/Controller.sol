@@ -75,7 +75,7 @@ contract Controller is IController, EIP712MetaTransaction {
             getCollateralRequirement(_qToken, address(0), _optionsAmount);
 
         IERC20(collateral).safeTransferFrom(
-            msg.sender,
+            _msgSender(),
             address(this),
             collateralAmount
         );
@@ -96,7 +96,7 @@ contract Controller is IController, EIP712MetaTransaction {
             _optionsAmount
         );
 
-        emit OptionsPositionMinted(_to, msg.sender, _qToken, _optionsAmount);
+        emit OptionsPositionMinted(_to, _msgSender(), _qToken, _optionsAmount);
     }
 
     function mintSpread(
@@ -124,11 +124,11 @@ contract Controller is IController, EIP712MetaTransaction {
                 _optionsAmount
             );
 
-        qTokenForCollateral.burn(msg.sender, _optionsAmount);
+        qTokenForCollateral.burn(_msgSender(), _optionsAmount);
 
         if (collateralAmount > 0) {
             IERC20(collateral).safeTransferFrom(
-                msg.sender,
+                _msgSender(),
                 address(this),
                 collateralAmount
             );
@@ -151,15 +151,15 @@ contract Controller is IController, EIP712MetaTransaction {
         }
 
         optionsFactory.collateralToken().mintCollateralToken(
-            msg.sender,
+            _msgSender(),
             collateralTokenId,
             _optionsAmount
         );
 
-        qTokenToMint.mint(msg.sender, _optionsAmount);
+        qTokenToMint.mint(_msgSender(), _optionsAmount);
 
         emit SpreadMinted(
-            msg.sender,
+            _msgSender(),
             _qTokenToMint,
             _qTokenForCollateral,
             _optionsAmount
@@ -175,7 +175,7 @@ contract Controller is IController, EIP712MetaTransaction {
 
         uint256 amountToExercise;
         if (_amount == 0) {
-            amountToExercise = qToken.balanceOf(msg.sender);
+            amountToExercise = qToken.balanceOf(_msgSender());
         } else {
             amountToExercise = _amount;
         }
@@ -185,14 +185,14 @@ contract Controller is IController, EIP712MetaTransaction {
 
         require(isSettled, "Controller: Cannot exercise unsettled options");
 
-        qToken.burn(msg.sender, amountToExercise);
+        qToken.burn(_msgSender(), amountToExercise);
 
         if (payoutAmount > 0) {
-            IERC20(payoutToken).transfer(msg.sender, payoutAmount);
+            IERC20(payoutToken).transfer(_msgSender(), payoutAmount);
         }
 
         emit OptionsExercised(
-            msg.sender,
+            _msgSender(),
             _qToken,
             amountToExercise,
             payoutAmount,
@@ -211,20 +211,20 @@ contract Controller is IController, EIP712MetaTransaction {
         ) = calculateClaimableCollateral(_collateralTokenId, _amount);
 
         optionsFactory.collateralToken().burnCollateralToken(
-            msg.sender,
+            _msgSender(),
             _collateralTokenId,
             amountToClaim
         );
 
         if (returnableCollateral > 0) {
             IERC20(collateralAsset).safeTransfer(
-                msg.sender,
+                _msgSender(),
                 returnableCollateral
             );
         }
 
         emit CollateralClaimed(
-            msg.sender,
+            _msgSender(),
             _collateralTokenId,
             amountToClaim,
             returnableCollateral,
@@ -242,10 +242,10 @@ contract Controller is IController, EIP712MetaTransaction {
 
         //get the amount of collateral tokens owned
         uint256 collateralTokensOwned =
-            collateralToken.balanceOf(msg.sender, _collateralTokenId);
+            collateralToken.balanceOf(_msgSender(), _collateralTokenId);
 
         //get the amount of qTokens owned
-        uint256 qTokensOwned = QToken(qTokenShort).balanceOf(msg.sender);
+        uint256 qTokensOwned = QToken(qTokenShort).balanceOf(_msgSender());
 
         //the amount of position that can be neutralized
         uint256 maxNeutralizable =
@@ -291,23 +291,23 @@ contract Controller is IController, EIP712MetaTransaction {
             );
         }
 
-        QToken(qTokenShort).burn(msg.sender, amountToNeutralize);
+        QToken(qTokenShort).burn(_msgSender(), amountToNeutralize);
 
         collateralToken.burnCollateralToken(
-            msg.sender,
+            _msgSender(),
             _collateralTokenId,
             amountToNeutralize
         );
 
-        IERC20(collateralType).safeTransfer(msg.sender, collateralOwed);
+        IERC20(collateralType).safeTransfer(_msgSender(), collateralOwed);
 
         //give the user their long tokens (if any)
         if (qTokenAsCollateral != address(0)) {
-            QToken(qTokenAsCollateral).mint(msg.sender, amountToNeutralize);
+            QToken(qTokenAsCollateral).mint(_msgSender(), amountToNeutralize);
         }
 
         emit NeutralizePosition(
-            msg.sender,
+            _msgSender(),
             qTokenShort,
             amountToNeutralize,
             collateralOwed,
@@ -349,7 +349,7 @@ contract Controller is IController, EIP712MetaTransaction {
 
         amountToClaim = _amount == 0
             ? optionsFactory.collateralToken().balanceOf(
-                msg.sender,
+                _msgSender(),
                 _collateralTokenId
             )
             : _amount;
