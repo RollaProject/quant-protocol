@@ -1,8 +1,9 @@
 import BN from "bignumber.js";
 import { MockContract } from "ethereum-waffle";
-import { BigNumber, ContractInterface, Signer } from "ethers";
+import { BigNumber, ContractInterface, Signer, Wallet } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
+import { AbiItem } from "web3-utils";
 import ControllerJSON from "../artifacts/contracts/Controller.sol/Controller.json";
 import ORACLE_MANAGER from "../artifacts/contracts/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
 import PriceRegistry from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
@@ -19,6 +20,7 @@ import {
   deployOptionsFactory,
   deployOracleRegistry,
   deployQuantConfig,
+  getSignedTransactionData,
   mockERC20,
 } from "./testUtils";
 
@@ -26,12 +28,12 @@ const { deployContract, deployMockContract } = waffle;
 
 type optionParameters = [string, string, string, BigNumber, BigNumber, boolean];
 
-describe("Controller", () => {
+describe("Controller", async () => {
   let controller: Controller;
   let quantConfig: QuantConfig;
   let collateralToken: CollateralToken;
-  let deployer: Signer;
-  let secondAccount: Signer;
+  let deployer: Wallet;
+  let secondAccount: Wallet;
   let assetsRegistryManager: Signer;
   let collateralMinter: Signer;
   let optionsMinter: Signer;
@@ -1744,6 +1746,79 @@ describe("Controller", () => {
         await qTokenPut400.balanceOf(await secondAccount.getAddress())
       ).to.equal(optionsAmount);
     });
+  });
+
+  describe("Meta transactions", () => {
+    it("Users should be able to mint options through meta transactions", async () => {
+      const mintOptionsPositionABI: AbiItem = JSON.parse(
+        JSON.stringify(
+          ControllerJSON.abi.filter(
+            (entry) => entry.name === "mintOptionsPosition"
+          )[0]
+        )
+      );
+
+      const optionsAmount = ethers.BigNumber.from("10");
+
+      const txData = await getSignedTransactionData(
+        parseInt((await controller.getNonce(deployer.address)).toString()),
+        mintOptionsPositionABI,
+        [
+          secondAccount.address,
+          qTokenCall2000.address,
+          optionsAmount.toString(),
+        ],
+        deployer,
+        controller.address
+      );
+
+      const [collateralAddress, collateralAmount] =
+        await getCollateralRequirement(
+          qTokenCall2000,
+          nullQToken,
+          optionsAmount
+        );
+
+      // mint required collateral to the user account
+      const collateral = collateralAddress === WETH.address ? WETH : USDC;
+
+      await collateral
+        .connect(assetsRegistryManager)
+        .mint(await deployer.address, collateralAmount);
+
+      // Approve the Controller to use the user's funds
+      await collateral
+        .connect(deployer)
+        .approve(controller.address, collateralAmount);
+
+      expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
+        ethers.constants.Zero
+      );
+
+      expect(await collateral.balanceOf(deployer.address)).to.equal(
+        collateralAmount
+      );
+
+      await controller
+        .connect(secondAccount)
+        .executeMetaTransaction(
+          deployer.address,
+          txData.functionSignature,
+          txData.r,
+          txData.s,
+          txData.v
+        );
+
+      expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
+        optionsAmount
+      );
+
+      expect(await collateral.balanceOf(deployer.address)).to.equal(
+        ethers.constants.Zero
+      );
+    });
+
+    // it("Users should be able to create spreads through meta transactions", async () => {});
   });
 
   //TODO: Neutralization rounding tests (favours protocol vs user)
