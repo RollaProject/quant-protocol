@@ -59,7 +59,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         address _to,
         address _qToken,
         uint256 _optionsAmount
-    ) external override validQToken(_qToken) nonReentrant() {
+    ) external override validQToken(_qToken) nonReentrant() returns (uint256) {
         QToken qToken = QToken(_qToken);
 
         require(
@@ -98,6 +98,8 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         );
 
         emit OptionsPositionMinted(_to, _msgSender(), _qToken, _optionsAmount);
+
+        return collateralTokenId;
     }
 
     function mintSpread(
@@ -110,6 +112,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         validQToken(_qTokenToMint)
         validQToken(_qTokenForCollateral)
         nonReentrant()
+        returns (uint256)
     {
         require(
             _qTokenToMint != _qTokenForCollateral,
@@ -166,6 +169,8 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             _qTokenForCollateral,
             _optionsAmount
         );
+
+        return collateralTokenId;
     }
 
     function exercise(address _qToken, uint256 _amount)
