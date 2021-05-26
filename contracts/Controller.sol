@@ -5,6 +5,7 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./QuantConfig.sol";
 import "./EIP712MetaTransaction.sol";
 import "./interfaces/IOptionsFactory.sol";
@@ -19,7 +20,7 @@ import "./libraries/QuantMath.sol";
 import "./libraries/FundsCalculator.sol";
 import "./libraries/OptionsUtils.sol";
 
-contract Controller is IController, EIP712MetaTransaction {
+contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -58,7 +59,7 @@ contract Controller is IController, EIP712MetaTransaction {
         address _to,
         address _qToken,
         uint256 _optionsAmount
-    ) external override validQToken(_qToken) {
+    ) external override validQToken(_qToken) nonReentrant() {
         QToken qToken = QToken(_qToken);
 
         require(
@@ -108,6 +109,7 @@ contract Controller is IController, EIP712MetaTransaction {
         override
         validQToken(_qTokenToMint)
         validQToken(_qTokenForCollateral)
+        nonReentrant()
     {
         require(
             _qTokenToMint != _qTokenForCollateral,
@@ -166,7 +168,11 @@ contract Controller is IController, EIP712MetaTransaction {
         );
     }
 
-    function exercise(address _qToken, uint256 _amount) external override {
+    function exercise(address _qToken, uint256 _amount)
+        external
+        override
+        nonReentrant()
+    {
         QToken qToken = QToken(_qToken);
         require(
             block.timestamp > qToken.expiryTime(),
@@ -203,6 +209,7 @@ contract Controller is IController, EIP712MetaTransaction {
     function claimCollateral(uint256 _collateralTokenId, uint256 _amount)
         external
         override
+        nonReentrant()
     {
         (
             uint256 returnableCollateral,
@@ -235,6 +242,7 @@ contract Controller is IController, EIP712MetaTransaction {
     function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
         external
         override
+        nonReentrant()
     {
         ICollateralToken collateralToken = optionsFactory.collateralToken();
         (address qTokenShort, address qTokenAsCollateral) =
