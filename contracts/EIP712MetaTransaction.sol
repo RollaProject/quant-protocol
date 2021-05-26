@@ -109,6 +109,8 @@ contract EIP712MetaTransaction is EIP712, IEIP712MetaTransaction {
         bytes32 s,
         uint8 v
     ) internal view returns (bool) {
+        require(metaTx.nonce == _nonces[user], "invalid nonce");
+
         address signer =
             ecrecover(_hashTypedDataV4(_hashMetaTransaction(metaTx)), v, r, s);
 
