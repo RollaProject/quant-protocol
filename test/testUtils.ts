@@ -1,5 +1,8 @@
-import { BigNumber, Contract, Signer } from "ethers";
+import * as sigUtil from "eth-sig-util";
+import { BigNumber, Contract, Signer, Wallet } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
+import Web3 from "web3";
+import { AbiItem, hexToNumber } from "web3-utils";
 import AssetsRegistryJSON from "../artifacts/contracts/options/AssetsRegistry.sol/AssetsRegistry.json";
 import CollateralTokenJSON from "../artifacts/contracts/options/CollateralToken.sol/CollateralToken.json";
 import OptionsFactoryJSON from "../artifacts/contracts/options/OptionsFactory.sol/OptionsFactory.json";
@@ -17,7 +20,10 @@ import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
+import { domainType, metaTransactionType } from "./eip712Types";
 import { provider } from "./setup";
+
+const web3 = new Web3();
 
 const { deployContract } = waffle;
 
@@ -236,6 +242,70 @@ const getApprovalDigest = async (
   );
 };
 
+type SignedTransactionData = {
+  r: string;
+  s: string;
+  v: number;
+  functionSignature: string;
+};
+
+const getSignedTransactionData = async (
+  nonce: number,
+  abi: AbiItem,
+  params: string[],
+  userWallet: Wallet,
+  verifyingContract: string
+): Promise<SignedTransactionData> => {
+  const functionSignature = web3.eth.abi.encodeFunctionCall(abi, params);
+
+  const message = {
+    nonce,
+    from: userWallet.address,
+    functionSignature,
+  };
+
+  const domainData = {
+    name: "Quant Protocol",
+    version: "0.2.0",
+    verifyingContract,
+    chainId: provider.network.chainId,
+  };
+
+  type MetaTransaction = "MetaTransaction";
+  const metaTransaction: MetaTransaction = "MetaTransaction";
+
+  const data = {
+    types: {
+      EIP712Domain: domainType,
+      MetaTransaction: metaTransactionType,
+    },
+    domain: domainData,
+    primaryType: metaTransaction,
+    message,
+  };
+
+  const signature = sigUtil.signTypedData_v4(
+    Buffer.from(userWallet.privateKey.slice(2), "hex"),
+    {
+      data,
+    }
+  );
+
+  const r = signature.slice(0, 66);
+  const s = "0x".concat(signature.slice(66, 130));
+  const vString = "0x".concat(signature.slice(130, 132));
+
+  let v = hexToNumber(vString);
+  if (![27, 28].includes(v)) v += 27;
+
+  return {
+    r,
+    s,
+    v,
+    functionSignature,
+  };
+};
+
 export {
   deployCollateralToken,
   deployOptionsFactory,
@@ -246,4 +316,5 @@ export {
   deployConfigTimelockController,
   mockERC20,
   getApprovalDigest,
+  getSignedTransactionData,
 };
