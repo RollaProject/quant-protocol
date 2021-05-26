@@ -298,7 +298,22 @@ describe("OptionsFactory", () => {
             futureTimestamp,
             false
           )
-      ).to.be.revertedWith("strike for put can't be 0");
+      ).to.be.revertedWith("strike can't be 0");
+    });
+
+    it("Should revert when trying to create a CALL option with a strike price of 0", async () => {
+      await expect(
+        optionsFactory
+          .connect(secondAccount)
+          .createOption(
+            WETH.address,
+            USDC.address,
+            mockOracleManager.address,
+            ethers.BigNumber.from("0"),
+            futureTimestamp,
+            true
+          )
+      ).to.be.revertedWith("strike can't be 0");
     });
 
     it("Should revert when trying to create an option with an underlying that's not in the assets registry", async () => {
