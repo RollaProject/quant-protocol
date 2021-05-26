@@ -47,13 +47,13 @@ interface IController {
         address _to,
         address _qToken,
         uint256 _optionsAmount
-    ) external;
+    ) external returns (uint256);
 
     function mintSpread(
         address _qTokenToMint,
         address _qTokenForCollateral,
         uint256 _optionsAmount
-    ) external;
+    ) external returns (uint256);
 
     function exercise(address _qToken, uint256 _amount) external;
 
