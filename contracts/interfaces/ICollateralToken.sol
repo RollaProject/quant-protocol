@@ -4,11 +4,17 @@ pragma abicoder v2;
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "./IQuantConfig.sol";
+import "./IQToken.sol";
 
 /// @title Tokens representing a Quant user's short positions
 /// @author Quant Finance
 /// @notice Can be used by owners to claim their collateral
 interface ICollateralToken is IERC1155 {
+    struct QTokensDetails {
+        IQToken.QTokenInfo long;
+        IQToken.QTokenInfo short;
+    }
+
     /// @notice event emitted when a new CollateralToken is created
     /// @param qTokenAddress address of the corresponding QToken
     /// @param qTokenAsCollateral QToken address of an option used as collateral in a spread
@@ -110,6 +116,12 @@ interface ICollateralToken is IERC1155 {
 
     /// @notice get the total amount of collateral tokens created
     function getCollateralTokensLength() external view returns (uint256);
+
+    /// @notice get the details of the QTokens related to a given CollateralToken id
+    function getCollateralTokenInfo(uint256 id)
+        external
+        view
+        returns (QTokensDetails memory);
 
     /// @notice Returns a unique CollateralToken id based on its parameters
     /// @param _qToken the address of the corresponding QToken

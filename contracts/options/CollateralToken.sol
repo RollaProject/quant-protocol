@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../interfaces/ICollateralToken.sol";
+import "../interfaces/IQToken.sol";
 
 /// @title Tokens representing a Quant user's short positions
 /// @author Quant Finance
@@ -173,6 +174,28 @@ contract CollateralToken is ERC1155, ICollateralToken {
         returns (uint256)
     {
         return collateralTokenIds.length;
+    }
+
+    function getCollateralTokenInfo(uint256 id)
+        external
+        view
+        override
+        returns (QTokensDetails memory qTokensDetails)
+    {
+        CollateralTokenInfo memory info = idToInfo[id];
+
+        require(
+            info.qTokenAddress != address(0),
+            "CollateralToken: Invalid id"
+        );
+
+        qTokensDetails.long = IQToken(info.qTokenAddress).getQTokenInfo();
+
+        if (info.qTokenAsCollateral != address(0)) {
+            // the given id is for a CollateralToken representing a spread
+            qTokensDetails.short = IQToken(info.qTokenAsCollateral)
+                .getQTokenInfo();
+        }
     }
 
     /// @inheritdoc ICollateralToken
