@@ -34,6 +34,7 @@ describe("QToken", async () => {
   let userAddress: string;
   let otherUserAddress: string;
   let scaledStrikePrice: BigNumber;
+  let qTokenParams: [string, string, string, BigNumber, BigNumber, boolean];
   const strikePrice = ethers.utils.parseUnits("1400", 6);
   const expiryTime = ethers.BigNumber.from("1618592400"); // April 16th, 2021
   const oracle = ethers.constants.AddressZero;
@@ -94,15 +95,19 @@ describe("QToken", async () => {
 
     scaledStrikePrice = ethers.utils.parseUnits("1400", await USDC.decimals());
 
-    qToken = await deployQToken(
-      timelockController,
-      quantConfig,
+    qTokenParams = [
       WETH.address,
       USDC.address,
       oracle,
       strikePrice,
       expiryTime,
-      false
+      false,
+    ];
+
+    qToken = await deployQToken(
+      timelockController,
+      quantConfig,
+      ...qTokenParams
     );
   });
 
@@ -340,5 +345,9 @@ describe("QToken", async () => {
     expect(await qToken.allowance(userAddress, otherUserAddress)).to.equal(
       ethers.constants.Zero
     );
+  });
+
+  it("Should return the correct details of an option", async () => {
+    expect(await qToken.getQTokenInfo()).to.eql(qTokenParams);
   });
 });
