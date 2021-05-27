@@ -31,3 +31,16 @@ export const metaTransactionType = [
     type: "bytes",
   },
 ];
+
+export const actionType = [
+  { name: "actionName", type: "string" },
+  { name: "from", type: "address" },
+  { name: "to", type: "address" },
+  { name: "amount", type: "uint256" },
+];
+
+export const metaAction = [
+  { name: "nonce", type: "uint256" },
+  { name: "from", type: "address" },
+  { name: "actions", type: "Action" },
+];

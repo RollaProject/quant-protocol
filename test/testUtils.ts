@@ -2,7 +2,7 @@ import * as sigUtil from "eth-sig-util";
 import { BigNumber, Contract, Signer, Wallet } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
 import Web3 from "web3";
-import { AbiItem, hexToNumber } from "web3-utils";
+import { hexToNumber } from "web3-utils";
 import AssetsRegistryJSON from "../artifacts/contracts/options/AssetsRegistry.sol/AssetsRegistry.json";
 import CollateralTokenJSON from "../artifacts/contracts/options/CollateralToken.sol/CollateralToken.json";
 import OptionsFactoryJSON from "../artifacts/contracts/options/OptionsFactory.sol/OptionsFactory.json";
@@ -20,7 +20,7 @@ import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
-import { domainType, metaTransactionType } from "./eip712Types";
+import { actionType, domainType } from "./eip712Types";
 import { provider } from "./setup";
 
 const web3 = new Web3();
@@ -249,19 +249,23 @@ type SignedTransactionData = {
   functionSignature: string;
 };
 
-const getSignedTransactionData = async (
-  nonce: number,
-  abi: AbiItem,
-  params: string[],
-  userWallet: Wallet,
-  verifyingContract: string
-): Promise<SignedTransactionData> => {
-  const functionSignature = web3.eth.abi.encodeFunctionCall(abi, params);
+type Action = {
+  actionName: string;
+  from: string;
+  to: string;
+  amount: number;
+};
 
+const getActionsSignedData = async (
+  nonce: number,
+  userWallet: Wallet,
+  verifyingContract: string,
+  actions: Action
+): Promise<SignedTransactionData> => {
   const message = {
     nonce,
     from: userWallet.address,
-    functionSignature,
+    actions,
   };
 
   const domainData = {
@@ -271,24 +275,23 @@ const getSignedTransactionData = async (
     chainId: provider.network.chainId,
   };
 
-  type MetaTransaction = "MetaTransaction";
-  const metaTransaction: MetaTransaction = "MetaTransaction";
+  type MetaAction = "MetaAction";
+  const metaAction: MetaAction = "MetaAction";
 
   const data = {
     types: {
       EIP712Domain: domainType,
-      MetaTransaction: metaTransactionType,
+      MetaAction: metaAction,
+      Action: actionType,
     },
     domain: domainData,
-    primaryType: metaTransaction,
+    primaryType: metaAction,
     message,
   };
 
   const signature = sigUtil.signTypedData_v4(
     Buffer.from(userWallet.privateKey.slice(2), "hex"),
-    {
-      data,
-    }
+    data
   );
 
   const r = signature.slice(0, 66);
@@ -302,7 +305,7 @@ const getSignedTransactionData = async (
     r,
     s,
     v,
-    functionSignature,
+    functionSignature: "",
   };
 };
 
@@ -316,5 +319,8 @@ export {
   deployConfigTimelockController,
   mockERC20,
   getApprovalDigest,
-  getSignedTransactionData,
+  // getSignedTransactionData,
+  deployContract,
+  provider,
+  getActionsSignedData,
 };
