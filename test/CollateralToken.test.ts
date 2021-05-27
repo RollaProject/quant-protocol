@@ -18,6 +18,7 @@ describe("CollateralToken", () => {
   let quantConfig: QuantConfig;
   let collateralToken: CollateralToken;
   let qToken: QToken;
+  let secondQToken: QToken;
   let timelockController: Signer;
   let secondAccount: Signer;
   let assetRegistryManager: Signer;
@@ -48,16 +49,6 @@ describe("CollateralToken", () => {
       ethers.BigNumber.from("0")
     );
 
-    const secondQToken = await deployQToken(
-      timelockController,
-      quantConfig,
-      WETH.address,
-      USDC.address,
-      ethers.constants.AddressZero,
-      ethers.utils.parseUnits("2000", await USDC.decimals()),
-      ethers.BigNumber.from("1618592400"),
-      true
-    );
     await createCollateralToken(
       collateralCreator,
       secondQToken,
@@ -120,6 +111,17 @@ describe("CollateralToken", () => {
       quantConfig,
       WETH.address,
       USDC.address
+    );
+
+    secondQToken = await deployQToken(
+      timelockController,
+      quantConfig,
+      WETH.address,
+      USDC.address,
+      ethers.constants.AddressZero,
+      ethers.utils.parseUnits("2000", await USDC.decimals()),
+      ethers.BigNumber.from("1618592400"),
+      true
     );
 
     collateralToken = await deployCollateralToken(
@@ -651,6 +653,76 @@ describe("CollateralToken", () => {
       expect(await collateralToken.getCollateralTokensLength()).to.equal(
         ethers.BigNumber.from("3")
       );
+    });
+  });
+
+  describe("getCollateralTokenInfo", () => {
+    it("Should revert when passing an invalid id", async () => {
+      await expect(
+        collateralToken.getCollateralTokenInfo(0)
+      ).to.be.revertedWith("CollateralToken: Invalid id");
+    });
+
+    it("Should return the correct info for non-spreads", async () => {
+      await createCollateralToken(
+        collateralCreator,
+        qToken,
+        ethers.constants.AddressZero
+      );
+
+      const id = await collateralToken.collateralTokenIds(
+        ethers.constants.Zero
+      );
+
+      expect(await collateralToken.getCollateralTokenInfo(id)).to.eql([
+        [
+          await qToken.underlyingAsset(),
+          await qToken.strikeAsset(),
+          await qToken.oracle(),
+          await qToken.strikePrice(),
+          await qToken.expiryTime(),
+          await qToken.isCall(),
+        ],
+        [
+          ethers.constants.AddressZero,
+          ethers.constants.AddressZero,
+          ethers.constants.AddressZero,
+          ethers.constants.Zero,
+          ethers.constants.Zero,
+          false,
+        ],
+      ]);
+    });
+
+    it("Should return the correct info for spreads", async () => {
+      await createCollateralToken(
+        collateralCreator,
+        qToken,
+        secondQToken.address
+      );
+
+      const id = await collateralToken.collateralTokenIds(
+        ethers.constants.Zero
+      );
+
+      expect(await collateralToken.getCollateralTokenInfo(id)).to.eql([
+        [
+          await qToken.underlyingAsset(),
+          await qToken.strikeAsset(),
+          await qToken.oracle(),
+          await qToken.strikePrice(),
+          await qToken.expiryTime(),
+          await qToken.isCall(),
+        ],
+        [
+          await secondQToken.underlyingAsset(),
+          await secondQToken.strikeAsset(),
+          await secondQToken.oracle(),
+          await secondQToken.strikePrice(),
+          await secondQToken.expiryTime(),
+          await secondQToken.isCall(),
+        ],
+      ]);
     });
   });
 });
