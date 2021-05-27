@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
+pragma abicoder v2;
 
 import "@openzeppelin/contracts/drafts/ERC20Permit.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -10,6 +11,7 @@ import "../interfaces/IAssetsRegistry.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IQToken.sol";
 import "../libraries/ProtocolValue.sol";
+import "../libraries/OptionsUtils.sol";
 
 /// @title Token that represents a user's long position
 /// @author Quant Finance
@@ -151,6 +153,16 @@ contract QToken is ERC20Permit, IQToken {
         } else {
             return PriceStatus.ACTIVE;
         }
+    }
+
+    /// @inheritdoc IQToken
+    function getQTokenInfo()
+        external
+        view
+        override
+        returns (QTokenInfo memory)
+    {
+        return OptionsUtils.getQTokenInfo(address(this));
     }
 
     /// @notice get the ERC20 token symbol from the AssetsRegistry
