@@ -6,21 +6,21 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "./QuantConfig.sol";
-import "./EIP712MetaTransaction.sol";
-import "./interfaces/IOptionsFactory.sol";
-import "./interfaces/IOracleRegistry.sol";
-import "./interfaces/IPriceRegistry.sol";
-import "./options/QToken.sol";
-import "./interfaces/ICollateralToken.sol";
-import "./interfaces/IAssetsRegistry.sol";
-import "./interfaces/IController.sol";
-import "./libraries/ProtocolValue.sol";
-import "./libraries/QuantMath.sol";
-import "./libraries/FundsCalculator.sol";
-import "./libraries/OptionsUtils.sol";
+import "../QuantConfig.sol";
+import "../EIP712MetaTransaction.sol";
+import "../interfaces/IOptionsFactory.sol";
+import "../interfaces/IOracleRegistry.sol";
+import "../interfaces/IPriceRegistry.sol";
+import "../options/QToken.sol";
+import "../interfaces/ICollateralToken.sol";
+import "../interfaces/IAssetsRegistry.sol";
+import "../interfaces/IController.sol";
+import "../libraries/ProtocolValue.sol";
+import "../libraries/QuantMath.sol";
+import "../libraries/FundsCalculator.sol";
+import "../libraries/OptionsUtils.sol";
 
-contract Controller is
+contract ControllerV2 is
     IController,
     EIP712MetaTransaction,
     ReentrancyGuardUpgradeable
@@ -36,6 +36,8 @@ contract Controller is
 
     uint8 public constant override OPTIONS_DECIMALS = 18;
 
+    uint256 public newV2StateVariable;
+
     modifier validQToken(address _qToken) {
         require(
             optionsFactory.isQToken(_qToken),
@@ -50,6 +52,10 @@ contract Controller is
         );
 
         _;
+    }
+
+    function setNewV2StateVariable(uint256 _value) external {
+        newV2StateVariable = _value;
     }
 
     function mintOptionsPosition(
