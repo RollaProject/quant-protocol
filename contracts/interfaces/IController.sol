@@ -63,6 +63,12 @@ interface IController {
     function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
         external;
 
+    function initialize(
+        string memory,
+        string memory,
+        address
+    ) external;
+
     function getCollateralRequirement(
         address _qTokenToMint,
         address _qTokenForCollateral,
