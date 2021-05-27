@@ -5,7 +5,7 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./QuantConfig.sol";
 import "./EIP712MetaTransaction.sol";
 import "./interfaces/IOptionsFactory.sol";
@@ -20,11 +20,7 @@ import "./libraries/QuantMath.sol";
 import "./libraries/FundsCalculator.sol";
 import "./libraries/OptionsUtils.sol";
 
-contract Controller is
-    IController,
-    EIP712MetaTransaction,
-    ReentrancyGuardUpgradeable
-{
+contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -32,7 +28,7 @@ contract Controller is
     using QuantMath for int256;
     using QuantMath for QuantMath.FixedPointInt;
 
-    IOptionsFactory public override optionsFactory;
+    IOptionsFactory public immutable override optionsFactory;
 
     uint8 public constant override OPTIONS_DECIMALS = 18;
 
@@ -50,6 +46,13 @@ contract Controller is
         );
 
         _;
+    }
+
+    //TODO: Inject _quantConfig in here and use instead of using factory
+    constructor(address _optionsFactory)
+        EIP712MetaTransaction("Quant Protocol", "0.2.0")
+    {
+        optionsFactory = IOptionsFactory(_optionsFactory);
     }
 
     function mintOptionsPosition(
@@ -324,16 +327,6 @@ contract Controller is
             collateralType,
             qTokenAsCollateral
         );
-    }
-
-    function initialize(
-        string memory _name,
-        string memory _version,
-        address _optionsFactory
-    ) public override initializer {
-        __ReentrancyGuard_init();
-        EIP712MetaTransaction.initializeEIP712(_name, _version);
-        optionsFactory = IOptionsFactory(_optionsFactory);
     }
 
     function calculateClaimableCollateral(

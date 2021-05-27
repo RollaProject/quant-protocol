@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-import "@openzeppelin/contracts-upgradeable/drafts/EIP712Upgradeable.sol";
+import "@openzeppelin/contracts/drafts/EIP712.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/IEIP712MetaTransaction.sol";
 
-contract EIP712MetaTransaction is EIP712Upgradeable, IEIP712MetaTransaction {
+contract EIP712MetaTransaction is EIP712, IEIP712MetaTransaction {
     using SafeMath for uint256;
 
     struct MetaTransaction {
@@ -28,6 +28,13 @@ contract EIP712MetaTransaction is EIP712Upgradeable, IEIP712MetaTransaction {
         address payable indexed relayerAddress,
         bytes functionSignature
     );
+
+    constructor(string memory name, string memory version)
+        EIP712(name, version)
+    // solhint-disable-next-line no-empty-blocks
+    {
+
+    }
 
     function executeMetaTransaction(
         address userAddress,
@@ -76,14 +83,6 @@ contract EIP712MetaTransaction is EIP712Upgradeable, IEIP712MetaTransaction {
         returns (uint256 nonce)
     {
         nonce = _nonces[user];
-    }
-
-    function initializeEIP712(string memory name, string memory version)
-        public
-        override
-        initializer
-    {
-        __EIP712_init(name, version);
     }
 
     function _msgSender() internal view returns (address sender) {

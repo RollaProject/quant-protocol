@@ -1,7 +1,7 @@
 import BN from "bignumber.js";
 import { MockContract } from "ethereum-waffle";
 import { BigNumber, ContractInterface, Signer, Wallet } from "ethers";
-import { ethers, upgrades, waffle } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import { AbiItem } from "web3-utils";
 import ControllerJSON from "../artifacts/contracts/Controller.sol/Controller.json";
@@ -10,7 +10,6 @@ import PriceRegistry from "../artifacts/contracts/pricing/PriceRegistry.sol/Pric
 import { AssetsRegistry, OptionsFactory, OracleRegistry } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
-import { ControllerV2 } from "../typechain/ControllerV2";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
@@ -766,14 +765,8 @@ describe("Controller", async () => {
       )
     );
 
-    const Controller = await ethers.getContractFactory("Controller");
-
     controller = <Controller>(
-      await upgrades.deployProxy(Controller, [
-        "Quant Protocol",
-        "0.2.1",
-        optionsFactory.address,
-      ])
+      await deployContract(deployer, ControllerJSON, [optionsFactory.address])
     );
 
     await quantConfig
@@ -1826,49 +1819,6 @@ describe("Controller", async () => {
     });
 
     // it("Users should be able to create spreads through meta transactions", async () => {});
-  });
-
-  describe("Upgradeability", () => {
-    const upgradeController = async (
-      controller: Controller
-    ): Promise<ControllerV2> => {
-      const ControllerV2 = await ethers.getContractFactory("ControllerV2");
-      const controllerV2 = <ControllerV2>(
-        await upgrades.upgradeProxy(controller.address, ControllerV2)
-      );
-      return controllerV2;
-    };
-    it("Should maintain state after upgrades", async () => {
-      const configuredOptionsFactory = await controller.optionsFactory();
-
-      const controllerV2 = await upgradeController(controller);
-
-      expect(await controllerV2.optionsFactory()).to.equal(
-        configuredOptionsFactory
-      );
-    });
-
-    it("Should be able to add new state variables through upgrades", async () => {
-      const controllerV2 = await upgradeController(controller);
-
-      expect(await controllerV2.newV2StateVariable()).to.equal(
-        ethers.constants.Zero
-      );
-    });
-
-    it("Should be able to add new functions through upgrades", async () => {
-      const controllerV2 = await upgradeController(controller);
-
-      expect(await controllerV2.newV2StateVariable()).to.equal(
-        ethers.constants.Zero
-      );
-
-      await controllerV2.connect(deployer).setNewV2StateVariable(42);
-
-      expect(await controllerV2.newV2StateVariable()).to.equal(
-        ethers.BigNumber.from("42")
-      );
-    });
   });
 
   //TODO: Neutralization rounding tests (favours protocol vs user)
