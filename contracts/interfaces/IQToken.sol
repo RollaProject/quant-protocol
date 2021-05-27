@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
+pragma abicoder v2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
@@ -13,6 +14,15 @@ enum PriceStatus {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
 /// @notice Can be used by owners to exercise their options
 /// @dev Every option long position is an ERC20 token: https://eips.ethereum.org/EIPS/eip-20
 interface IQToken is IERC20, IERC20Permit {
+    struct QTokenInfo {
+        address underlyingAsset;
+        address strikeAsset;
+        address oracle;
+        uint256 strikePrice;
+        uint256 expiryTime;
+        bool isCall;
+    }
+
     /// @notice event emitted when QTokens are minted
     /// @param account account the QToken was minted to
     /// @param amount the amount of QToken minted
@@ -57,4 +67,8 @@ interface IQToken is IERC20, IERC20Permit {
     /// @notice Get the price status of the option.
     /// @return the price status of the option. option is either active, awaiting settlement price or settled
     function getOptionPriceStatus() external view returns (PriceStatus);
+
+    /// @notice Get the details of the QToken
+    /// @return a QTokenInfo with all of the QToken parameters
+    function getQTokenInfo() external view returns (QTokenInfo memory);
 }
