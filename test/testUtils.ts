@@ -1,13 +1,21 @@
 import * as sigUtil from "eth-sig-util";
-import { BigNumber, Contract, Signer, Wallet } from "ethers";
+import {
+  BigNumber,
+  BigNumberish,
+  BytesLike,
+  Contract,
+  Signer,
+  Wallet,
+} from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
 import Web3 from "web3";
-import { AbiItem, hexToNumber } from "web3-utils";
+import { hexToNumber } from "web3-utils";
 import AssetsRegistryJSON from "../artifacts/contracts/options/AssetsRegistry.sol/AssetsRegistry.json";
 import CollateralTokenJSON from "../artifacts/contracts/options/CollateralToken.sol/CollateralToken.json";
 import OptionsFactoryJSON from "../artifacts/contracts/options/OptionsFactory.sol/OptionsFactory.json";
 import QTokenJSON from "../artifacts/contracts/options/QToken.sol/QToken.json";
 import OracleRegistryJSON from "../artifacts/contracts/pricing/OracleRegistry.sol/OracleRegistry.json";
+import QuantCalculatorJSON from "../artifacts/contracts/QuantCalculator.sol/QuantCalculator.json";
 import MockERC20JSON from "../artifacts/contracts/test/MockERC20.sol/MockERC20.json";
 import ConfigTimelockControllerJSON from "../artifacts/contracts/timelock/ConfigTimelockController.sol/ConfigTimelockController.json";
 import {
@@ -15,12 +23,13 @@ import {
   ConfigTimelockController,
   OptionsFactory,
   OracleRegistry,
+  QuantCalculator,
 } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
-import { domainType, metaTransactionType } from "./eip712Types";
+import { actionType, domainType, metaActionType } from "./eip712Types";
 import { provider } from "./setup";
 
 const web3 = new Web3();
@@ -246,22 +255,18 @@ type SignedTransactionData = {
   r: string;
   s: string;
   v: number;
-  functionSignature: string;
 };
 
 const getSignedTransactionData = async (
   nonce: number,
-  abi: AbiItem,
-  params: string[],
   userWallet: Wallet,
+  actions: ActionArgs[],
   verifyingContract: string
 ): Promise<SignedTransactionData> => {
-  const functionSignature = web3.eth.abi.encodeFunctionCall(abi, params);
-
   const message = {
     nonce,
     from: userWallet.address,
-    functionSignature,
+    actions,
   };
 
   const domainData = {
@@ -271,16 +276,17 @@ const getSignedTransactionData = async (
     chainId: provider.network.chainId,
   };
 
-  type MetaTransaction = "MetaTransaction";
-  const metaTransaction: MetaTransaction = "MetaTransaction";
+  type MetaAction = "MetaAction";
+  const metaAction: MetaAction = "MetaAction";
 
   const data = {
     types: {
       EIP712Domain: domainType,
-      MetaTransaction: metaTransactionType,
+      MetaAction: metaActionType,
+      ActionArgs: actionType,
     },
     domain: domainData,
-    primaryType: metaTransaction,
+    primaryType: metaAction,
     message,
   };
 
@@ -302,8 +308,26 @@ const getSignedTransactionData = async (
     r,
     s,
     v,
-    functionSignature,
   };
+};
+
+const deployQuantCalculator = async (
+  deployer: Signer
+): Promise<QuantCalculator> => {
+  const quantCalculator = <QuantCalculator>(
+    await deployContract(deployer, QuantCalculatorJSON)
+  );
+  return quantCalculator;
+};
+
+export type ActionArgs = {
+  actionType: string;
+  qToken: string;
+  qTokenSecondary: string;
+  receiver: string;
+  amount: BigNumberish;
+  collateralTokenId: BigNumberish;
+  data: BytesLike;
 };
 
 export {
@@ -317,4 +341,5 @@ export {
   mockERC20,
   getApprovalDigest,
   getSignedTransactionData,
+  deployQuantCalculator,
 };

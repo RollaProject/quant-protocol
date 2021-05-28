@@ -150,7 +150,7 @@ library OptionsUtils {
         return bytes(symbol).length != 0;
     }
 
-    function getUnderlyingDecimals(QToken _qToken, IQuantConfig _quantConfig)
+    function getUnderlyingDecimals(IQToken _qToken, IQuantConfig _quantConfig)
         internal
         view
         returns (uint8 payoutDecimals)
