@@ -1,13 +1,24 @@
 import BN from "bignumber.js";
 import { MockContract } from "ethereum-waffle";
-import { BigNumber, ContractInterface, Signer, Wallet } from "ethers";
+import {
+  BigNumber,
+  BigNumberish,
+  BytesLike,
+  constants,
+  ContractInterface,
+  Signer,
+  Wallet,
+} from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
-import { AbiItem } from "web3-utils";
-import ControllerJSON from "../artifacts/contracts/Controller.sol/Controller.json";
 import ORACLE_MANAGER from "../artifacts/contracts/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
 import PriceRegistry from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
-import { AssetsRegistry, OptionsFactory, OracleRegistry } from "../typechain";
+import {
+  AssetsRegistry,
+  OptionsFactory,
+  OracleRegistry,
+  QuantCalculator,
+} from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
 import { ControllerV2 } from "../typechain/ControllerV2";
@@ -16,16 +27,19 @@ import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
 import {
+  ActionArgs,
   deployAssetsRegistry,
   deployCollateralToken,
   deployOptionsFactory,
   deployOracleRegistry,
+  deployQuantCalculator,
   deployQuantConfig,
   getSignedTransactionData,
   mockERC20,
 } from "./testUtils";
 
 const { deployContract, deployMockContract } = waffle;
+const { AddressZero, Zero } = constants;
 
 type optionParameters = [string, string, string, BigNumber, BigNumber, boolean];
 
@@ -59,6 +73,7 @@ describe("Controller", async () => {
   let qTokenCall3520: QToken;
   let mockPriceRegistry: MockContract;
   let nullQToken: QToken;
+  let quantCalculator: QuantCalculator;
 
   const aMonth = 30 * 24 * 3600; // in seconds
 
@@ -86,7 +101,7 @@ describe("Controller", async () => {
       await (await qTokenToMint.strikePrice()).toString()
     );
     let qTokenForCollateralStrikePrice = new BN(0);
-    if (qTokenForCollateral.address !== ethers.constants.AddressZero) {
+    if (qTokenForCollateral.address !== AddressZero) {
       qTokenForCollateralStrikePrice = new BN(
         (await qTokenForCollateral.strikePrice()).toString()
       );
@@ -103,7 +118,7 @@ describe("Controller", async () => {
     if (await qTokenToMint.isCall()) {
       collateralPerOption = new BN(10).pow(await underlying.decimals());
 
-      if (qTokenForCollateral.address !== ethers.constants.AddressZero) {
+      if (qTokenForCollateral.address !== AddressZero) {
         collateralPerOption = qTokenToMintStrikePrice.gt(
           qTokenForCollateralStrikePrice
         )
@@ -116,7 +131,7 @@ describe("Controller", async () => {
     } else {
       collateralPerOption = qTokenToMintStrikePrice;
 
-      if (qTokenForCollateral.address !== ethers.constants.AddressZero) {
+      if (qTokenForCollateral.address !== AddressZero) {
         collateralPerOption = qTokenToMintStrikePrice.gt(
           qTokenForCollateralStrikePrice
         )
@@ -140,7 +155,7 @@ describe("Controller", async () => {
   const testMintingOptions = async (
     qTokenToMintAddress: string,
     optionsAmount: BigNumber,
-    qTokenForCollateralAddress: string = ethers.constants.AddressZero
+    qTokenForCollateralAddress: string = AddressZero
   ) => {
     const qTokenToMint = <QToken>(
       new ethers.Contract(qTokenToMintAddress, QTokenInterface, provider)
@@ -158,9 +173,10 @@ describe("Controller", async () => {
       );
 
     expect(
-      await controller.getCollateralRequirement(
+      await quantCalculator.getCollateralRequirement(
         qTokenToMint.address,
         qTokenForCollateral.address,
+        await controller.optionsFactory(),
         optionsAmount
       )
     ).to.eql([collateralAddress, collateralAmount]);
@@ -168,17 +184,15 @@ describe("Controller", async () => {
     // mint required collateral to the user account
     const collateral = collateralAddress === WETH.address ? WETH : USDC;
 
-    expect(
-      await collateral.balanceOf(await secondAccount.getAddress())
-    ).to.equal(0);
+    expect(await collateral.balanceOf(secondAccount.address)).to.equal(0);
 
     await collateral
       .connect(assetsRegistryManager)
-      .mint(await secondAccount.getAddress(), collateralAmount);
+      .mint(secondAccount.address, collateralAmount);
 
-    expect(
-      await collateral.balanceOf(await secondAccount.getAddress())
-    ).to.equal(collateralAmount);
+    expect(await collateral.balanceOf(secondAccount.address)).to.equal(
+      collateralAmount
+    );
 
     // Approve the Controller to use the user's funds
     await collateral
@@ -186,20 +200,20 @@ describe("Controller", async () => {
       .approve(controller.address, collateralAmount);
 
     // Check if it's a spread or a single option
-    if (qTokenForCollateralAddress === ethers.constants.AddressZero) {
+    if (qTokenForCollateralAddress === AddressZero) {
       await expect(
-        controller
-          .connect(secondAccount)
-          .mintOptionsPosition(
-            await secondAccount.getAddress(),
-            qTokenToMintAddress,
-            optionsAmount
-          )
+        controller.connect(secondAccount).operate([
+          encodeMintOptionArgs({
+            to: secondAccount.address,
+            qToken: qTokenToMintAddress,
+            amount: optionsAmount,
+          }),
+        ])
       )
         .to.emit(controller, "OptionsPositionMinted")
         .withArgs(
-          await secondAccount.getAddress(),
-          await secondAccount.getAddress(),
+          secondAccount.address,
+          secondAccount.address,
           qTokenToMintAddress,
           optionsAmount
         );
@@ -212,43 +226,43 @@ describe("Controller", async () => {
 
       expect(
         await collateralToken.balanceOf(
-          await secondAccount.getAddress(),
+          secondAccount.address,
           collateralTokenId
         )
       ).to.equal(optionsAmount);
     } else {
       // Mint the qTokenForCollateral to the user address
       expect(
-        await qTokenForCollateral.balanceOf(await secondAccount.getAddress())
+        await qTokenForCollateral.balanceOf(secondAccount.address)
       ).to.equal(ethers.BigNumber.from("0"));
 
       await qTokenForCollateral
         .connect(optionsMinter)
-        .mint(await secondAccount.getAddress(), optionsAmount);
+        .mint(secondAccount.address, optionsAmount);
 
       expect(
-        await qTokenForCollateral.balanceOf(await secondAccount.getAddress())
+        await qTokenForCollateral.balanceOf(secondAccount.address)
       ).to.equal(optionsAmount);
 
       await expect(
-        controller
-          .connect(secondAccount)
-          .mintSpread(
-            qTokenToMintAddress,
-            qTokenForCollateralAddress,
-            optionsAmount
-          )
+        controller.connect(secondAccount).operate([
+          encodeMintSpreadArgs({
+            qTokenToMint: qTokenToMintAddress,
+            qTokenForCollateral: qTokenForCollateralAddress,
+            amount: optionsAmount,
+          }),
+        ])
       )
         .to.emit(controller, "SpreadMinted")
         .withArgs(
-          await secondAccount.getAddress(),
+          secondAccount.address,
           qTokenToMintAddress,
           qTokenForCollateralAddress,
           optionsAmount
         );
 
       expect(
-        await qTokenForCollateral.balanceOf(await secondAccount.getAddress())
+        await qTokenForCollateral.balanceOf(secondAccount.address)
       ).to.equal(ethers.BigNumber.from("0"));
 
       const collateralTokenId = await collateralToken.getCollateralTokenId(
@@ -258,24 +272,24 @@ describe("Controller", async () => {
 
       expect(
         await collateralToken.balanceOf(
-          await secondAccount.getAddress(),
+          secondAccount.address,
           collateralTokenId
         )
       ).to.equal(optionsAmount);
     }
 
-    expect(
-      await collateral.balanceOf(await secondAccount.getAddress())
-    ).to.equal(ethers.BigNumber.from("0"));
+    expect(await collateral.balanceOf(secondAccount.address)).to.equal(
+      ethers.BigNumber.from("0")
+    );
 
     expect(await collateral.balanceOf(controller.address)).to.equal(
       collateralAmount
     );
 
     // Check that the user received the QToken
-    expect(
-      await qTokenToMint.balanceOf(await secondAccount.getAddress())
-    ).to.equal(optionsAmount);
+    expect(await qTokenToMint.balanceOf(secondAccount.address)).to.equal(
+      optionsAmount
+    );
   };
 
   const testClaimCollateral = async (
@@ -283,11 +297,7 @@ describe("Controller", async () => {
     amountToClaim: BigNumber,
     expiryPrice: BigNumber,
     qTokenLong: QToken = <QToken>(
-      new ethers.Contract(
-        ethers.constants.AddressZero,
-        QTokenInterface,
-        provider
-      )
+      new ethers.Contract(AddressZero, QTokenInterface, provider)
     )
   ): Promise<string> => {
     await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
@@ -310,25 +320,25 @@ describe("Controller", async () => {
 
     await collateral
       .connect(assetsRegistryManager)
-      .mint(await secondAccount.getAddress(), collateralRequirement);
+      .mint(secondAccount.address, collateralRequirement);
 
     let qTokenAsCollateral;
     let collateralRequiredForLong = ethers.BigNumber.from("0");
 
-    if (qTokenLong.address === ethers.constants.AddressZero) {
-      qTokenAsCollateral = ethers.constants.AddressZero;
+    if (qTokenLong.address === AddressZero) {
+      qTokenAsCollateral = AddressZero;
 
       await collateral
         .connect(secondAccount)
         .approve(controller.address, collateralRequirement);
 
-      await controller
-        .connect(secondAccount)
-        .mintOptionsPosition(
-          await secondAccount.getAddress(),
-          qTokenShort.address,
-          amountToClaim
-        );
+      await controller.connect(secondAccount).operate([
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenShort.address,
+          amount: amountToClaim,
+        }),
+      ]);
     } else {
       qTokenAsCollateral = qTokenLong.address;
 
@@ -343,7 +353,7 @@ describe("Controller", async () => {
 
       await collateral
         .connect(assetsRegistryManager)
-        .mint(await secondAccount.getAddress(), collateralRequiredForLong);
+        .mint(secondAccount.address, collateralRequiredForLong);
 
       await collateral
         .connect(secondAccount)
@@ -352,17 +362,21 @@ describe("Controller", async () => {
           collateralRequirement.add(collateralRequiredForLong)
         );
 
-      await controller
-        .connect(secondAccount)
-        .mintOptionsPosition(
-          await secondAccount.getAddress(),
-          qTokenLong.address,
-          amountToClaim
-        );
+      await controller.connect(secondAccount).operate([
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenLong.address,
+          amount: amountToClaim,
+        }),
+      ]);
 
-      await controller
-        .connect(secondAccount)
-        .mintSpread(qTokenShort.address, qTokenLong.address, amountToClaim);
+      await controller.connect(secondAccount).operate([
+        encodeMintSpreadArgs({
+          qTokenToMint: qTokenShort.address,
+          qTokenForCollateral: qTokenLong.address,
+          amount: amountToClaim,
+        }),
+      ]);
     }
 
     const collateralTokenId = await collateralToken.getCollateralTokenId(
@@ -384,7 +398,7 @@ describe("Controller", async () => {
     );
 
     const payoutFromLong =
-      qTokenLong.address !== ethers.constants.AddressZero
+      qTokenLong.address !== AddressZero
         ? (await getPayout(qTokenLong, amountToClaim, expiryPrice))[0]
         : ethers.BigNumber.from("0");
 
@@ -392,12 +406,15 @@ describe("Controller", async () => {
       .add(collateralRequirement)
       .sub(payoutFromShort);
 
-    await controller
-      .connect(secondAccount)
-      .claimCollateral(collateralTokenId, amountToClaim);
+    await controller.connect(secondAccount).operate([
+      encodeClaimCollateralArgs({
+        collateralTokenId,
+        amount: amountToClaim,
+      }),
+    ]);
 
     const secondAccountCollateralClaimed = await payoutAsset.balanceOf(
-      await secondAccount.getAddress()
+      secondAccount.address
     );
 
     const secondAccountClaimedFundsLostRounding = claimableCollateral.sub(
@@ -459,7 +476,7 @@ describe("Controller", async () => {
     } ${payoutAsset.address === USDC.address ? "USDC" : "WETH"}`;
 
     const qTokenLongStrikePriceString =
-      qTokenLong.address !== ethers.constants.AddressZero
+      qTokenLong.address !== AddressZero
         ? (await qTokenLong.strikePrice())
             .div(ethers.BigNumber.from("10").pow(await USDC.decimals()))
             .toString()
@@ -517,6 +534,99 @@ describe("Controller", async () => {
     payoutAmount = payoutAmount.integerValue(roundMode);
 
     return [BigNumber.from(payoutAmount.toString()), payoutToken];
+  };
+
+  type MintOptionArgs = {
+    to: string;
+    qToken: string;
+    amount: BigNumberish;
+  };
+  type MintSpreadArgs = {
+    qTokenToMint: string;
+    qTokenForCollateral: string;
+    amount: BigNumber;
+  };
+  type ExerciseArgs = { qToken: string; amount: BigNumber };
+  type ClaimCollateralArgs = {
+    collateralTokenId: BigNumber;
+    amount: BigNumber;
+  };
+  type NeutralizeArgs = {
+    collateralTokenId: BigNumber;
+    amount: BigNumber;
+  };
+  type CallArgs = { callee: string; data: BytesLike };
+
+  const encodeMintOptionArgs = (args: MintOptionArgs): ActionArgs => {
+    return {
+      actionType: "MINT_OPTION",
+      qToken: args.qToken,
+      qTokenSecondary: AddressZero,
+      receiver: args.to,
+      amount: args.amount,
+      collateralTokenId: Zero.toString(),
+      data: "0x",
+    };
+  };
+
+  const encodeMintSpreadArgs = (args: MintSpreadArgs): ActionArgs => {
+    return {
+      actionType: "MINT_SPREAD",
+      qToken: args.qTokenToMint,
+      qTokenSecondary: args.qTokenForCollateral,
+      receiver: AddressZero,
+      amount: args.amount,
+      collateralTokenId: Zero.toString(),
+      data: "0x",
+    };
+  };
+
+  const encodeExerciseArgs = (args: ExerciseArgs): ActionArgs => {
+    return {
+      actionType: "EXERCISE",
+      qToken: args.qToken,
+      qTokenSecondary: AddressZero,
+      receiver: AddressZero,
+      amount: args.amount,
+      collateralTokenId: Zero.toString(),
+      data: "0x",
+    };
+  };
+
+  const encodeClaimCollateralArgs = (args: ClaimCollateralArgs): ActionArgs => {
+    return {
+      actionType: "CLAIM_COLLATERAL",
+      qToken: AddressZero,
+      qTokenSecondary: AddressZero,
+      receiver: AddressZero,
+      amount: args.amount,
+      collateralTokenId: args.collateralTokenId,
+      data: "0x",
+    };
+  };
+
+  const encodeNeutralizeArgs = (args: NeutralizeArgs): ActionArgs => {
+    return {
+      actionType: "NEUTRALIZE",
+      qToken: AddressZero,
+      qTokenSecondary: AddressZero,
+      receiver: AddressZero,
+      amount: args.amount,
+      collateralTokenId: args.collateralTokenId,
+      data: "0x",
+    };
+  };
+
+  const encodeCallArgs = (args: CallArgs): ActionArgs => {
+    return {
+      actionType: "CALL",
+      qToken: AddressZero,
+      qTokenSecondary: AddressZero,
+      receiver: args.callee,
+      amount: Zero.toString(),
+      collateralTokenId: Zero.toString(),
+      data: args.data,
+    };
   };
 
   beforeEach(async () => {
@@ -759,20 +869,19 @@ describe("Controller", async () => {
     );
 
     nullQToken = <QToken>(
-      new ethers.Contract(
-        ethers.constants.AddressZero,
-        QTokenInterface,
-        provider
-      )
+      new ethers.Contract(AddressZero, QTokenInterface, provider)
     );
 
     const Controller = await ethers.getContractFactory("Controller");
+
+    quantCalculator = await deployQuantCalculator(deployer);
 
     controller = <Controller>(
       await upgrades.deployProxy(Controller, [
         "Quant Protocol",
         "0.2.1",
         optionsFactory.address,
+        quantCalculator.address,
       ])
     );
 
@@ -813,6 +922,73 @@ describe("Controller", async () => {
       );
   });
 
+  // it("should encode meta transaction", async () => {});
+
+  describe("Meta transactions", () => {
+    it("Users should be able to mint options through meta transactions", async () => {
+      const amount = ethers.utils.parseEther("1");
+
+      const actions = [
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenCall2000.address,
+          amount: amount.toString(),
+        }),
+      ];
+
+      const txData = await getSignedTransactionData(
+        parseInt((await controller.getNonce(deployer.address)).toString()),
+        deployer,
+        actions,
+        controller.address
+      );
+
+      const [collateralAddress, collateralAmount] =
+        await getCollateralRequirement(qTokenCall2000, nullQToken, amount);
+      // mint required collateral to the user account
+      const collateral = collateralAddress === WETH.address ? WETH : USDC;
+      await collateral
+        .connect(assetsRegistryManager)
+        .mint(await deployer.address, collateralAmount);
+      // Approve the Controller to use the user's funds
+      await collateral
+        .connect(deployer)
+        .approve(controller.address, collateralAmount);
+
+      expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
+        Zero
+      );
+      expect(await collateral.balanceOf(deployer.address)).to.equal(
+        collateralAmount
+      );
+
+      await controller
+        .connect(secondAccount)
+        .executeMetaTransaction(
+          deployer.address,
+          actions,
+          txData.r,
+          txData.s,
+          txData.v
+        );
+
+      expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
+        amount
+      );
+      expect(await collateral.balanceOf(deployer.address)).to.equal(Zero);
+    });
+    // it("Users should be able to create spreads through meta transactions", async () => {});
+  });
+
+  describe("Contract code size", () => {
+    const MAX_CODE_SIZE = 24576;
+    it("Shouldn't exceed the contract code size limit introduced in Spurious Dragon (24.576 kb)", async () => {
+      const ControllerFactory = await ethers.getContractFactory("Controller");
+      const controllerCodeSize = (ControllerFactory.bytecode.length - 2) / 2;
+      expect(controllerCodeSize).to.be.lessThanOrEqual(MAX_CODE_SIZE);
+    });
+  });
+
   describe("mintOptionsPosition", () => {
     it("Should revert when trying to mint an option which has an oracle which is deactivated", async () => {
       await oracleRegistry
@@ -820,13 +996,13 @@ describe("Controller", async () => {
         .deactivateOracle(mockOracleManager.address);
 
       await expect(
-        controller
-          .connect(secondAccount)
-          .mintOptionsPosition(
-            await secondAccount.getAddress(),
-            qTokenCall2000.address,
-            ethers.BigNumber.from("10")
-          )
+        controller.connect(secondAccount).operate([
+          encodeMintOptionArgs({
+            to: secondAccount.address,
+            qToken: qTokenCall2000.address,
+            amount: ethers.BigNumber.from("10"),
+          }),
+        ])
       ).to.be.revertedWith(
         "Controller: Can't mint an options position as the oracle is inactive"
       );
@@ -834,13 +1010,13 @@ describe("Controller", async () => {
 
     it("Should revert when trying to mint a non-existent option", async () => {
       await expect(
-        controller
-          .connect(secondAccount)
-          .mintOptionsPosition(
-            await secondAccount.getAddress(),
-            ethers.constants.AddressZero,
-            ethers.BigNumber.from("10")
-          )
+        controller.connect(secondAccount).operate([
+          encodeMintOptionArgs({
+            to: secondAccount.address,
+            qToken: AddressZero,
+            amount: ethers.BigNumber.from("10"),
+          }),
+        ])
       ).to.be.revertedWith(
         "Controller: Option needs to be created by the factory first"
       );
@@ -854,13 +1030,13 @@ describe("Controller", async () => {
       await provider.send("evm_mine", [futureTimestamp + 3600]);
 
       await expect(
-        controller
-          .connect(secondAccount)
-          .mintOptionsPosition(
-            await secondAccount.getAddress(),
-            qTokenPut1400.address,
-            ethers.BigNumber.from("10")
-          )
+        controller.connect(secondAccount).operate([
+          encodeMintOptionArgs({
+            to: secondAccount.address,
+            qToken: qTokenPut1400.address,
+            amount: ethers.BigNumber.from("10"),
+          }),
+        ])
       ).to.be.revertedWith("Controller: Cannot mint expired options");
 
       revertToSnapshot(snapshotId);
@@ -915,13 +1091,13 @@ describe("Controller", async () => {
         .createOption(...qTokenParamsDifferentOracle);
 
       await expect(
-        controller
-          .connect(secondAccount)
-          .mintSpread(
-            qTokenOracleOne,
-            qTokenOracleTwo,
-            ethers.utils.parseEther("1")
-          )
+        controller.connect(secondAccount).operate([
+          encodeMintSpreadArgs({
+            qTokenToMint: qTokenOracleOne,
+            qTokenForCollateral: qTokenOracleTwo,
+            amount: ethers.utils.parseEther("1"),
+          }),
+        ])
       ).to.be.revertedWith(
         "Controller: Can't create spreads from options with different oracles"
       );
@@ -942,13 +1118,13 @@ describe("Controller", async () => {
       await optionsFactory.connect(secondAccount).createOption(...qTokenParams);
 
       await expect(
-        controller
-          .connect(secondAccount)
-          .mintSpread(
-            qTokenPutDifferentExpiry,
-            qTokenPut1400.address,
-            ethers.utils.parseEther("1")
-          )
+        controller.connect(secondAccount).operate([
+          encodeMintSpreadArgs({
+            qTokenToMint: qTokenPutDifferentExpiry,
+            qTokenForCollateral: qTokenPut1400.address,
+            amount: ethers.utils.parseEther("1"),
+          }),
+        ])
       ).to.be.revertedWith(
         "Controller: Can't create spreads from options with different expiries"
       );
@@ -969,20 +1145,17 @@ describe("Controller", async () => {
       await optionsFactory.createOption(...qTokenParams);
 
       await expect(
-        controller
-          .connect(secondAccount)
-          .mintSpread(
-            qTokenCallDifferentUnderlying,
-            qTokenCall3520.address,
-            ethers.utils.parseEther("1")
-          )
+        controller.connect(secondAccount).operate([
+          encodeMintSpreadArgs({
+            qTokenToMint: qTokenCallDifferentUnderlying,
+            qTokenForCollateral: qTokenCall3520.address,
+            amount: ethers.utils.parseEther("1"),
+          }),
+        ])
       ).to.be.revertedWith(
         "Controller: Can't create spreads from options with different underlying assets"
       );
     });
-
-    // TODO: Test the following case
-    // it("Should revert when trying to create spreads from options with different underlying assets", async () => {});
 
     it("Users should be able to create a PUT Credit spread", async () => {
       await testMintingOptions(
@@ -1032,9 +1205,12 @@ describe("Controller", async () => {
   describe("exercise", () => {
     it("Should revert when trying to exercise a non-expired option", async () => {
       await expect(
-        controller
-          .connect(secondAccount)
-          .exercise(qTokenPut1400.address, ethers.utils.parseEther("1"))
+        controller.connect(secondAccount).operate([
+          encodeExerciseArgs({
+            qToken: qTokenPut1400.address,
+            amount: ethers.utils.parseEther("1"),
+          }),
+        ])
       ).to.be.revertedWith(
         "Controller: Can not exercise options before their expiry"
       );
@@ -1050,9 +1226,12 @@ describe("Controller", async () => {
       await mockPriceRegistry.mock.hasSettlementPrice.returns(false);
 
       await expect(
-        controller
-          .connect(secondAccount)
-          .exercise(qTokenPut1400.address, ethers.utils.parseEther("1"))
+        controller.connect(secondAccount).operate([
+          encodeExerciseArgs({
+            qToken: qTokenPut1400.address,
+            amount: ethers.utils.parseEther("1"),
+          }),
+        ])
       ).to.be.revertedWith("Controller: Cannot exercise unsettled options");
 
       await revertToSnapshot(snapshotId);
@@ -1078,18 +1257,22 @@ describe("Controller", async () => {
       const qTokenToExercise = qTokenPut1400;
       await qTokenToExercise
         .connect(optionsMinter)
-        .mint(await secondAccount.getAddress(), optionsAmount);
+        .mint(secondAccount.address, optionsAmount);
 
-      expect(await USDC.balanceOf(await secondAccount.getAddress())).to.equal(
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
         ethers.BigNumber.from("0")
       );
 
-      expect(
-        await qTokenToExercise.balanceOf(await secondAccount.getAddress())
-      ).to.equal(optionsAmount);
+      expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
+        optionsAmount
+      );
 
       const payoutAmount = (
-        await controller.getPayout(qTokenToExercise.address, optionsAmount)
+        await quantCalculator.getPayout(
+          qTokenToExercise.address,
+          await controller.optionsFactory(),
+          optionsAmount
+        )
       ).payoutAmount;
 
       // Mint USDC to the Controller so it can pay the user
@@ -1097,28 +1280,31 @@ describe("Controller", async () => {
       expect(await USDC.balanceOf(controller.address)).to.equal(payoutAmount);
 
       await expect(
-        controller
-          .connect(secondAccount)
-          .exercise(qTokenToExercise.address, optionsAmount)
+        controller.connect(secondAccount).operate([
+          encodeExerciseArgs({
+            qToken: qTokenToExercise.address,
+            amount: optionsAmount,
+          }),
+        ])
       )
         .to.emit(controller, "OptionsExercised")
         .withArgs(
-          await secondAccount.getAddress(),
+          secondAccount.address,
           qTokenToExercise.address,
           optionsAmount,
           payoutAmount,
           USDC.address
         );
 
-      expect(await USDC.balanceOf(await secondAccount.getAddress())).to.equal(
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
         payoutAmount
       );
       expect(await USDC.balanceOf(controller.address)).to.equal(
         ethers.BigNumber.from("0")
       );
-      expect(
-        await qTokenToExercise.balanceOf(await secondAccount.getAddress())
-      ).to.equal(ethers.BigNumber.from("0"));
+      expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
+        ethers.BigNumber.from("0")
+      );
 
       revertToSnapshot(snapshotId);
     });
@@ -1143,18 +1329,22 @@ describe("Controller", async () => {
       const qTokenToExercise = qTokenCall2000;
       await qTokenToExercise
         .connect(optionsMinter)
-        .mint(await secondAccount.getAddress(), optionsAmount);
+        .mint(secondAccount.address, optionsAmount);
 
-      expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
+      expect(await WETH.balanceOf(secondAccount.address)).to.equal(
         ethers.BigNumber.from("0")
       );
 
-      expect(
-        await qTokenToExercise.balanceOf(await secondAccount.getAddress())
-      ).to.equal(optionsAmount);
+      expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
+        optionsAmount
+      );
 
       const payoutAmount = (
-        await controller.getPayout(qTokenToExercise.address, optionsAmount)
+        await quantCalculator.getPayout(
+          qTokenToExercise.address,
+          await controller.optionsFactory(),
+          optionsAmount
+        )
       ).payoutAmount;
 
       // Mint WETH to the Controller so it can pay the user
@@ -1165,26 +1355,31 @@ describe("Controller", async () => {
       expect(await WETH.balanceOf(controller.address)).to.equal(payoutAmount);
 
       await expect(
-        controller.connect(secondAccount).exercise(qTokenToExercise.address, 0)
+        controller.connect(secondAccount).operate([
+          encodeExerciseArgs({
+            qToken: qTokenToExercise.address,
+            amount: Zero,
+          }),
+        ])
       )
         .to.emit(controller, "OptionsExercised")
         .withArgs(
-          await secondAccount.getAddress(),
+          secondAccount.address,
           qTokenToExercise.address,
           optionsAmount,
           payoutAmount,
           WETH.address
         );
 
-      expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
+      expect(await WETH.balanceOf(secondAccount.address)).to.equal(
         payoutAmount
       );
       expect(await WETH.balanceOf(controller.address)).to.equal(
         ethers.BigNumber.from("0")
       );
-      expect(
-        await qTokenToExercise.balanceOf(await secondAccount.getAddress())
-      ).to.equal(ethers.BigNumber.from("0"));
+      expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
+        ethers.BigNumber.from("0")
+      );
 
       revertToSnapshot(snapshotId);
     });
@@ -1205,9 +1400,12 @@ describe("Controller", async () => {
       ]);
 
       await expect(
-        controller
-          .connect(secondAccount)
-          .exercise(qTokenPut1400.address, ethers.utils.parseEther("1"))
+        controller.connect(secondAccount).operate([
+          encodeExerciseArgs({
+            qToken: qTokenPut1400.address,
+            amount: ethers.utils.parseEther("1"),
+          }),
+        ])
       ).to.be.revertedWith("ERC20: burn amount exceeds balance");
 
       revertToSnapshot(snapshotId);
@@ -1233,17 +1431,20 @@ describe("Controller", async () => {
       const qTokenToExercise = qTokenCall2000;
       await qTokenToExercise
         .connect(optionsMinter)
-        .mint(await secondAccount.getAddress(), optionsAmount);
+        .mint(secondAccount.address, optionsAmount);
 
-      await controller
-        .connect(secondAccount)
-        .exercise(qTokenToExercise.address, optionsAmount);
+      await controller.connect(secondAccount).operate([
+        encodeExerciseArgs({
+          qToken: qTokenToExercise.address,
+          amount: optionsAmount,
+        }),
+      ]);
 
-      expect(
-        await qTokenToExercise.balanceOf(await secondAccount.getAddress())
-      ).to.equal(ethers.BigNumber.from("0"));
+      expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
+        ethers.BigNumber.from("0")
+      );
 
-      expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
+      expect(await WETH.balanceOf(secondAccount.address)).to.equal(
         ethers.BigNumber.from("0")
       );
 
@@ -1254,30 +1455,28 @@ describe("Controller", async () => {
   describe("claimCollateral", () => {
     it("Should revert when trying to claim collateral from an invalid CollateralToken", async () => {
       await expect(
-        controller
-          .connect(secondAccount)
-          .claimCollateral(
-            ethers.BigNumber.from("123"),
-            ethers.utils.parseEther("1")
-          )
-      ).to.be.revertedWith(
-        "Controller: Can not claim collateral from non-existing option"
-      );
+        controller.connect(secondAccount).operate([
+          encodeClaimCollateralArgs({
+            collateralTokenId: ethers.BigNumber.from("123"),
+            amount: ethers.utils.parseEther("1"),
+          }),
+        ])
+      ).to.be.revertedWith("Can not claim collateral from non-existing option");
     });
 
     it("Should revert when trying to claim collateral from options before their expiry", async () => {
       await expect(
-        controller
-          .connect(secondAccount)
-          .claimCollateral(
-            await collateralToken.getCollateralTokenId(
+        controller.connect(secondAccount).operate([
+          encodeClaimCollateralArgs({
+            collateralTokenId: await collateralToken.getCollateralTokenId(
               qTokenPut400.address,
-              ethers.constants.AddressZero
+              AddressZero
             ),
-            ethers.utils.parseEther("1")
-          )
+            amount: ethers.utils.parseEther("1"),
+          }),
+        ])
       ).to.be.revertedWith(
-        "Controller: Can not claim collateral from options before their expiry"
+        "Can not claim collateral from options before their expiry"
       );
     });
 
@@ -1291,18 +1490,16 @@ describe("Controller", async () => {
       await mockPriceRegistry.mock.hasSettlementPrice.returns(false);
 
       await expect(
-        controller
-          .connect(secondAccount)
-          .claimCollateral(
-            await collateralToken.getCollateralTokenId(
+        controller.connect(secondAccount).operate([
+          encodeClaimCollateralArgs({
+            collateralTokenId: await collateralToken.getCollateralTokenId(
               qTokenPut400.address,
-              ethers.constants.AddressZero
+              AddressZero
             ),
-            ethers.utils.parseEther("1")
-          )
-      ).to.be.revertedWith(
-        "Controller: Can not claim collateral before option is settled"
-      );
+            amount: ethers.utils.parseEther("1"),
+          }),
+        ])
+      ).to.be.revertedWith("Can not claim collateral before option is settled");
 
       revertToSnapshot(snapshotId);
     });
@@ -1414,7 +1611,7 @@ describe("Controller", async () => {
         qTokenPut400
       );
 
-      expect(await USDC.balanceOf(await secondAccount.getAddress())).to.equal(
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
         ethers.BigNumber.from("0")
       );
 
@@ -1553,7 +1750,7 @@ describe("Controller", async () => {
         qTokenCall3520
       );
 
-      expect(await WETH.balanceOf(await secondAccount.getAddress())).to.equal(
+      expect(await WETH.balanceOf(secondAccount.address)).to.equal(
         ethers.BigNumber.from("0")
       );
 
@@ -1612,15 +1809,15 @@ describe("Controller", async () => {
   describe("neutralizePosition", () => {
     it("Should revert when users try to neutralize more options than they have", async () => {
       await expect(
-        controller
-          .connect(secondAccount)
-          .neutralizePosition(
-            await collateralToken.getCollateralTokenId(
+        controller.connect(secondAccount).operate([
+          encodeNeutralizeArgs({
+            collateralTokenId: await collateralToken.getCollateralTokenId(
               qTokenCall3520.address,
-              ethers.constants.AddressZero
+              AddressZero
             ),
-            ethers.utils.parseEther("4")
-          )
+            amount: ethers.utils.parseEther("4"),
+          }),
+        ])
       ).to.be.revertedWith("Controller: Tried to neutralize more than balance");
     });
 
@@ -1635,7 +1832,7 @@ describe("Controller", async () => {
       );
 
       await USDC.connect(assetsRegistryManager).mint(
-        await secondAccount.getAddress(),
+        secondAccount.address,
         collateralRequirement
       );
 
@@ -1644,31 +1841,34 @@ describe("Controller", async () => {
         collateralRequirement
       );
 
-      await controller
-        .connect(secondAccount)
-        .mintOptionsPosition(
-          await secondAccount.getAddress(),
-          qTokenPut1400.address,
-          optionsAmount
-        );
+      await controller.connect(secondAccount).operate([
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenPut1400.address,
+          amount: optionsAmount,
+        }),
+      ]);
 
       const collateralTokenId = await collateralToken.getCollateralTokenId(
         qTokenPut1400.address,
-        ethers.constants.AddressZero
+        AddressZero
       );
       const amountToNeutralize = ethers.utils.parseEther("3");
 
-      await controller
-        .connect(secondAccount)
-        .neutralizePosition(collateralTokenId, amountToNeutralize);
+      await controller.connect(secondAccount).operate([
+        encodeNeutralizeArgs({
+          collateralTokenId,
+          amount: amountToNeutralize,
+        }),
+      ]);
 
-      expect(
-        await qTokenPut1400.balanceOf(await secondAccount.getAddress())
-      ).to.equal(optionsAmount.sub(amountToNeutralize));
+      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
+        optionsAmount.sub(amountToNeutralize)
+      );
 
       expect(
         await collateralToken.balanceOf(
-          await secondAccount.getAddress(),
+          secondAccount.address,
           collateralTokenId
         )
       ).to.equal(optionsAmount.sub(amountToNeutralize));
@@ -1690,7 +1890,7 @@ describe("Controller", async () => {
       );
 
       await USDC.connect(assetsRegistryManager).mint(
-        await secondAccount.getAddress(),
+        secondAccount.address,
         spreadCollateralRequirement.add(longCollateralRequirement)
       );
 
@@ -1699,17 +1899,21 @@ describe("Controller", async () => {
         spreadCollateralRequirement.add(longCollateralRequirement)
       );
 
-      await controller
-        .connect(secondAccount)
-        .mintOptionsPosition(
-          await secondAccount.getAddress(),
-          qTokenPut400.address,
-          optionsAmount
-        );
+      await controller.connect(secondAccount).operate([
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenPut400.address,
+          amount: optionsAmount,
+        }),
+      ]);
 
-      await controller
-        .connect(secondAccount)
-        .mintSpread(qTokenPut1400.address, qTokenPut400.address, optionsAmount);
+      await controller.connect(secondAccount).operate([
+        encodeMintSpreadArgs({
+          qTokenToMint: qTokenPut1400.address,
+          qTokenForCollateral: qTokenPut400.address,
+          amount: optionsAmount,
+        }),
+      ]);
 
       const collateralTokenId = await collateralToken.getCollateralTokenId(
         qTokenPut1400.address,
@@ -1724,13 +1928,16 @@ describe("Controller", async () => {
       );
 
       await expect(
-        controller
-          .connect(secondAccount)
-          .neutralizePosition(collateralTokenId, 0)
+        controller.connect(secondAccount).operate([
+          encodeNeutralizeArgs({
+            collateralTokenId,
+            amount: Zero,
+          }),
+        ])
       )
         .to.emit(controller, "NeutralizePosition")
         .withArgs(
-          await secondAccount.getAddress(),
+          secondAccount.address,
           qTokenPut1400.address,
           optionsAmount,
           collateralOwed,
@@ -1738,93 +1945,72 @@ describe("Controller", async () => {
           qTokenPut400.address
         );
 
-      expect(
-        await qTokenPut1400.balanceOf(await secondAccount.getAddress())
-      ).to.equal(ethers.BigNumber.from("0"));
+      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
+        ethers.BigNumber.from("0")
+      );
 
       expect(
         await collateralToken.balanceOf(
-          await secondAccount.getAddress(),
+          secondAccount.address,
           collateralTokenId
         )
       ).to.equal(ethers.BigNumber.from("0"));
 
-      expect(
-        await qTokenPut400.balanceOf(await secondAccount.getAddress())
-      ).to.equal(optionsAmount);
+      expect(await qTokenPut400.balanceOf(secondAccount.address)).to.equal(
+        optionsAmount
+      );
     });
   });
 
   describe("Meta transactions", () => {
     it("Users should be able to mint options through meta transactions", async () => {
-      const mintOptionsPositionABI: AbiItem = JSON.parse(
-        JSON.stringify(
-          ControllerJSON.abi.filter(
-            (entry) => entry.name === "mintOptionsPosition"
-          )[0]
-        )
-      );
-
-      const optionsAmount = ethers.BigNumber.from("10");
+      const amount = ethers.utils.parseEther("10");
+      const actions = [
+        encodeMintOptionArgs({
+          qToken: qTokenCall2000.address,
+          to: secondAccount.address,
+          amount: 10,
+        }),
+      ];
 
       const txData = await getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
-        mintOptionsPositionABI,
-        [
-          secondAccount.address,
-          qTokenCall2000.address,
-          optionsAmount.toString(),
-        ],
-        deployer,
+        secondAccount,
+        actions,
         controller.address
       );
 
       const [collateralAddress, collateralAmount] =
-        await getCollateralRequirement(
-          qTokenCall2000,
-          nullQToken,
-          optionsAmount
-        );
-
+        await getCollateralRequirement(qTokenCall2000, nullQToken, amount);
       // mint required collateral to the user account
       const collateral = collateralAddress === WETH.address ? WETH : USDC;
-
       await collateral
         .connect(assetsRegistryManager)
         .mint(await deployer.address, collateralAmount);
-
       // Approve the Controller to use the user's funds
       await collateral
         .connect(deployer)
         .approve(controller.address, collateralAmount);
-
       expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
-        ethers.constants.Zero
+        Zero
       );
-
       expect(await collateral.balanceOf(deployer.address)).to.equal(
         collateralAmount
       );
-
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
           deployer.address,
-          txData.functionSignature,
+          actions,
           txData.r,
           txData.s,
           txData.v
         );
-
       expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
-        optionsAmount
+        amount
       );
-
-      expect(await collateral.balanceOf(deployer.address)).to.equal(
-        ethers.constants.Zero
-      );
+      expect(await collateral.balanceOf(deployer.address)).to.equal(Zero);
     });
-
     // it("Users should be able to create spreads through meta transactions", async () => {});
   });
 
@@ -1851,17 +2037,13 @@ describe("Controller", async () => {
     it("Should be able to add new state variables through upgrades", async () => {
       const controllerV2 = await upgradeController(controller);
 
-      expect(await controllerV2.newV2StateVariable()).to.equal(
-        ethers.constants.Zero
-      );
+      expect(await controllerV2.newV2StateVariable()).to.equal(Zero);
     });
 
     it("Should be able to add new functions through upgrades", async () => {
       const controllerV2 = await upgradeController(controller);
 
-      expect(await controllerV2.newV2StateVariable()).to.equal(
-        ethers.constants.Zero
-      );
+      expect(await controllerV2.newV2StateVariable()).to.equal(Zero);
 
       await controllerV2.connect(deployer).setNewV2StateVariable(42);
 
