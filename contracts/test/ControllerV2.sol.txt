@@ -286,8 +286,8 @@ contract ControllerV2 is
 
         {
             QuantMath.FixedPointInt memory collateralOwedFP;
-            uint8 underlyingDecimals =
-                OptionsUtils.getUnderlyingDecimals(
+            uint8 payoutDecimals =
+                OptionsUtils.getPayoutDecimals(
                     QToken(qTokenShort),
                     optionsFactory.quantConfig()
                 );
@@ -298,11 +298,11 @@ contract ControllerV2 is
                 address(0),
                 amountToNeutralize,
                 OPTIONS_DECIMALS,
-                underlyingDecimals
+                payoutDecimals
             );
 
             collateralOwed = collateralOwedFP.toScaledUint(
-                underlyingDecimals,
+                payoutDecimals,
                 true
             );
         }
@@ -411,8 +411,8 @@ contract ControllerV2 is
             payoutFromLong = int256(0).fromUnscaledInt();
         }
 
-        uint8 underlyingDecimals =
-            OptionsUtils.getUnderlyingDecimals(
+        uint8 payoutDecimals =
+            OptionsUtils.getPayoutDecimals(
                 qTokenShort,
                 optionsFactory.quantConfig()
             );
@@ -424,7 +424,7 @@ contract ControllerV2 is
             qTokenLong,
             amountToClaim,
             OPTIONS_DECIMALS,
-            underlyingDecimals
+            payoutDecimals
         );
 
         (, QuantMath.FixedPointInt memory payoutFromShort) =
@@ -438,7 +438,7 @@ contract ControllerV2 is
         returnableCollateral = payoutFromLong
             .add(collateralRequirement)
             .sub(payoutFromShort)
-            .toScaledUint(underlyingDecimals, true);
+            .toScaledUint(payoutDecimals, true);
     }
 
     function getCollateralRequirement(
@@ -452,8 +452,8 @@ contract ControllerV2 is
         returns (address collateral, uint256 collateralAmount)
     {
         QuantMath.FixedPointInt memory collateralAmountFP;
-        uint8 underlyingDecimals =
-            OptionsUtils.getUnderlyingDecimals(
+        uint8 payoutDecimals =
+            OptionsUtils.getPayoutDecimals(
                 QToken(_qTokenToMint),
                 optionsFactory.quantConfig()
             );
@@ -464,11 +464,11 @@ contract ControllerV2 is
             _qTokenForCollateral,
             _optionsAmount,
             OPTIONS_DECIMALS,
-            underlyingDecimals
+            payoutDecimals
         );
 
         collateralAmount = collateralAmountFP.toScaledUint(
-            underlyingDecimals,
+            payoutDecimals,
             false
         );
     }
@@ -501,7 +501,7 @@ contract ControllerV2 is
             );
 
         uint8 payoutDecimals =
-            OptionsUtils.getUnderlyingDecimals(
+            OptionsUtils.getPayoutDecimals(
                 qToken,
                 optionsFactory.quantConfig()
             );

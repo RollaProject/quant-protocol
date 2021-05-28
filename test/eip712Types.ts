@@ -26,7 +26,7 @@ export const metaActionType = [
 export const actionType = [
   { name: "actionType", type: "string" },
   { name: "qToken", type: "address" },
-  { name: "qTokenSecondary", type: "address" },
+  { name: "secondaryAddress", type: "address" },
   { name: "receiver", type: "address" },
   { name: "amount", type: "uint256" },
   { name: "collateralTokenId", type: "uint256" },

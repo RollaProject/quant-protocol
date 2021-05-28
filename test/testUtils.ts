@@ -323,7 +323,7 @@ const deployQuantCalculator = async (
 export type ActionArgs = {
   actionType: string;
   qToken: string;
-  qTokenSecondary: string;
+  secondaryAddress: string;
   receiver: string;
   amount: BigNumberish;
   collateralTokenId: BigNumberish;

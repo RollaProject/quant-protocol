@@ -33,7 +33,6 @@ import {
   deployOracleRegistry,
   deployQuantCalculator,
   deployQuantConfig,
-  getSignedTransactionData,
   mockERC20,
 } from "./testUtils";
 
@@ -502,7 +501,7 @@ describe("Controller", async () => {
     roundMode: BN.RoundingMode = BN.ROUND_DOWN
   ): Promise<[BigNumber, MockERC20]> => {
     const strikePrice = await qToken.strikePrice();
-    const underlyingDecimals = await WETH.decimals();
+    const payoutDecimals = await WETH.decimals();
     const optionsDecimals = 18;
 
     let payoutAmount: BN;
@@ -514,7 +513,7 @@ describe("Controller", async () => {
             .minus(new BN(strikePrice.toString()))
             .times(new BN(amount.toString()))
             .div(new BN(expiryPrice.toString()))
-            .times(new BN(10).pow(underlyingDecimals))
+            .times(new BN(10).pow(payoutDecimals))
             .div(new BN(10).pow(optionsDecimals))
         : new BN(0);
 
@@ -560,7 +559,7 @@ describe("Controller", async () => {
     return {
       actionType: "MINT_OPTION",
       qToken: args.qToken,
-      qTokenSecondary: AddressZero,
+      secondaryAddress: AddressZero,
       receiver: args.to,
       amount: args.amount,
       collateralTokenId: Zero.toString(),
@@ -572,7 +571,7 @@ describe("Controller", async () => {
     return {
       actionType: "MINT_SPREAD",
       qToken: args.qTokenToMint,
-      qTokenSecondary: args.qTokenForCollateral,
+      secondaryAddress: args.qTokenForCollateral,
       receiver: AddressZero,
       amount: args.amount,
       collateralTokenId: Zero.toString(),
@@ -584,7 +583,7 @@ describe("Controller", async () => {
     return {
       actionType: "EXERCISE",
       qToken: args.qToken,
-      qTokenSecondary: AddressZero,
+      secondaryAddress: AddressZero,
       receiver: AddressZero,
       amount: args.amount,
       collateralTokenId: Zero.toString(),
@@ -596,7 +595,7 @@ describe("Controller", async () => {
     return {
       actionType: "CLAIM_COLLATERAL",
       qToken: AddressZero,
-      qTokenSecondary: AddressZero,
+      secondaryAddress: AddressZero,
       receiver: AddressZero,
       amount: args.amount,
       collateralTokenId: args.collateralTokenId,
@@ -608,7 +607,7 @@ describe("Controller", async () => {
     return {
       actionType: "NEUTRALIZE",
       qToken: AddressZero,
-      qTokenSecondary: AddressZero,
+      secondaryAddress: AddressZero,
       receiver: AddressZero,
       amount: args.amount,
       collateralTokenId: args.collateralTokenId,
@@ -620,7 +619,7 @@ describe("Controller", async () => {
     return {
       actionType: "CALL",
       qToken: AddressZero,
-      qTokenSecondary: AddressZero,
+      secondaryAddress: AddressZero,
       receiver: args.callee,
       amount: Zero.toString(),
       collateralTokenId: Zero.toString(),
@@ -923,885 +922,79 @@ describe("Controller", async () => {
 
   // it("should encode meta transaction", async () => {});
 
-  describe("Meta transactions", () => {
-    it("Users should be able to mint options through meta transactions", async () => {
-      const amount = ethers.utils.parseEther("1");
+  describe("neutralizePosition", () => {
+    it("Should round in favour of the protocol when neutralizing positions", async () => {
+      //1400 USD strike -> 1400 * 10^6 = 10^9
+      //1 OPTION REQUIRES 1.4 * 10^9
+      //10^18 OPTION REQUIRES 1.4 * 10^9
+      //1.4 WEI OF USDC NEEDED PER 10^9 options
+      //3.5 WEI of USDC NEEDED FOR 2.5 * 10^9
+      //4 WEI WHEN ROUNDED UP (MINT) FOR 2.5 * 10^9 OPTIONS
+      //3 WEI WHEN ROUNDED DOWN (NEUTRALIZE) FOR 2.5 * 10^9 OPTIONS
 
-      const actions = [
-        encodeMintOptionArgs({
-          to: secondAccount.address,
-          qToken: qTokenCall2000.address,
-          amount: amount.toString(),
-        }),
-      ];
+      const optionsAmount = ethers.utils.parseUnits("2.5", 9);
 
-      const txData = await getSignedTransactionData(
-        parseInt((await controller.getNonce(deployer.address)).toString()),
-        deployer,
-        actions,
-        controller.address
+      const [, collateralRequirement] = await getCollateralRequirement(
+        qTokenPut1400,
+        nullQToken,
+        optionsAmount,
+        BN.ROUND_UP
       );
 
-      const [collateralAddress, collateralAmount] =
-        await getCollateralRequirement(qTokenCall2000, nullQToken, amount);
-      // mint required collateral to the user account
-      const collateral = collateralAddress === WETH.address ? WETH : USDC;
-      await collateral
-        .connect(assetsRegistryManager)
-        .mint(await deployer.address, collateralAmount);
-      // Approve the Controller to use the user's funds
-      await collateral
-        .connect(deployer)
-        .approve(controller.address, collateralAmount);
-
-      expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
-        Zero
-      );
-      expect(await collateral.balanceOf(deployer.address)).to.equal(
-        collateralAmount
+      await USDC.connect(assetsRegistryManager).mint(
+        secondAccount.address,
+        collateralRequirement
       );
 
-      await controller
-        .connect(secondAccount)
-        .executeMetaTransaction(
-          deployer.address,
-          actions,
-          txData.r,
-          txData.s,
-          txData.v
-        );
-
-      expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
-        amount
-      );
-      expect(await collateral.balanceOf(deployer.address)).to.equal(Zero);
-    });
-    // it("Users should be able to create spreads through meta transactions", async () => {});
-  });
-
-  describe("Contract code size", () => {
-    const MAX_CODE_SIZE = 24576;
-    it("Shouldn't exceed the contract code size limit introduced in Spurious Dragon (24.576 kb)", async () => {
-      const ControllerFactory = await ethers.getContractFactory("Controller");
-      const controllerCodeSize = (ControllerFactory.bytecode.length - 2) / 2;
-      expect(controllerCodeSize).to.be.lessThanOrEqual(MAX_CODE_SIZE);
-    });
-  });
-
-  describe("mintOptionsPosition", () => {
-    it("Should revert when trying to mint an option which has an oracle which is deactivated", async () => {
-      await oracleRegistry
-        .connect(oracleManagerAccount)
-        .deactivateOracle(mockOracleManager.address);
-
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeMintOptionArgs({
-            to: secondAccount.address,
-            qToken: qTokenCall2000.address,
-            amount: ethers.BigNumber.from("10"),
-          }),
-        ])
-      ).to.be.revertedWith(
-        "Controller: Can't mint an options position as the oracle is inactive"
-      );
-    });
-
-    it("Should revert when trying to mint a non-existent option", async () => {
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeMintOptionArgs({
-            to: secondAccount.address,
-            qToken: AddressZero,
-            amount: ethers.BigNumber.from("10"),
-          }),
-        ])
-      ).to.be.revertedWith(
-        "Controller: Option needs to be created by the factory first"
-      );
-    });
-
-    it("Should revert when trying to mint an already expired option", async () => {
-      // Take a snapshot of the Hardhat Network
-      const snapshotId = await takeSnapshot();
-
-      // Increase time to one hour past the expiry
-      await provider.send("evm_mine", [futureTimestamp + 3600]);
-
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeMintOptionArgs({
-            to: secondAccount.address,
-            qToken: qTokenPut1400.address,
-            amount: ethers.BigNumber.from("10"),
-          }),
-        ])
-      ).to.be.revertedWith("Controller: Cannot mint expired options");
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to mint CALL options positions", async () => {
-      await testMintingOptions(
-        qTokenCall2000.address,
-        ethers.utils.parseEther("2")
-      );
-    });
-
-    it("Users should be able to mint PUT options positions", async () => {
-      await testMintingOptions(
-        qTokenPut1400.address,
-        ethers.utils.parseEther("2")
-      );
-    });
-
-    // TODO:
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    // it("Users should be able to mint options to a different address", async () => {});
-  });
-
-  describe("mintSpread", () => {
-    it("Should revert when trying to create spreads from options with different oracles", async () => {
-      const qTokenParams: optionParameters = [
-        WETH.address,
-        USDC.address,
-        mockOracleManager.address,
-        ethers.utils.parseUnits("1400", await USDC.decimals()),
-        ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
-        false,
-      ];
-
-      const qTokenParamsDifferentOracle: optionParameters = [...qTokenParams];
-
-      qTokenParamsDifferentOracle[2] = mockOracleManagerTwo.address;
-
-      const qTokenOracleOne = await optionsFactory.getTargetQTokenAddress(
-        ...qTokenParams
-      );
-
-      const qTokenOracleTwo = await optionsFactory.getTargetQTokenAddress(
-        ...qTokenParamsDifferentOracle
-      );
-
-      await optionsFactory.connect(secondAccount).createOption(...qTokenParams);
-
-      await optionsFactory
-        .connect(secondAccount)
-        .createOption(...qTokenParamsDifferentOracle);
-
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeMintSpreadArgs({
-            qTokenToMint: qTokenOracleOne,
-            qTokenForCollateral: qTokenOracleTwo,
-            amount: ethers.utils.parseEther("1"),
-          }),
-        ])
-      ).to.be.revertedWith(
-        "Controller: Can't create spreads from options with different oracles"
-      );
-    });
-
-    it("Should revert when trying to create spreads from options with different expiries", async () => {
-      const qTokenParams: optionParameters = [
-        WETH.address,
-        USDC.address,
-        mockOracleManager.address,
-        ethers.utils.parseUnits("1400", await USDC.decimals()),
-        ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
-        false,
-      ];
-      const qTokenPutDifferentExpiry =
-        await optionsFactory.getTargetQTokenAddress(...qTokenParams);
-
-      await optionsFactory.connect(secondAccount).createOption(...qTokenParams);
-
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeMintSpreadArgs({
-            qTokenToMint: qTokenPutDifferentExpiry,
-            qTokenForCollateral: qTokenPut1400.address,
-            amount: ethers.utils.parseEther("1"),
-          }),
-        ])
-      ).to.be.revertedWith(
-        "Controller: Can't create spreads from options with different expiries"
-      );
-    });
-
-    it("Should revert when trying to create spreads from options with different underlying assets", async () => {
-      const qTokenParams: optionParameters = [
-        USDC.address,
-        WETH.address,
-        mockOracleManager.address,
-        ethers.utils.parseUnits("5000", await USDC.decimals()),
-        ethers.BigNumber.from(futureTimestamp),
-        true,
-      ];
-      const qTokenCallDifferentUnderlying =
-        await optionsFactory.getTargetQTokenAddress(...qTokenParams);
-
-      await optionsFactory.createOption(...qTokenParams);
-
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeMintSpreadArgs({
-            qTokenToMint: qTokenCallDifferentUnderlying,
-            qTokenForCollateral: qTokenCall3520.address,
-            amount: ethers.utils.parseEther("1"),
-          }),
-        ])
-      ).to.be.revertedWith(
-        "Controller: Can't create spreads from options with different underlying assets"
-      );
-    });
-
-    it("Users should be able to create a PUT Credit spread", async () => {
-      await testMintingOptions(
-        qTokenPut1400.address,
-        ethers.utils.parseEther("1"),
-        qTokenPut400.address
-      );
-    });
-
-    it("Users should be able to create a PUT Debit spread", async () => {
-      await testMintingOptions(
-        qTokenPut400.address,
-        ethers.utils.parseEther("2"),
-        qTokenPut1400.address
-      );
-    });
-
-    it("Users should be able to create a CALL Credit Spread", async () => {
-      await testMintingOptions(
-        qTokenCall2880.address,
-        ethers.utils.parseEther("1"),
-        qTokenCall3520.address
-      );
-    });
-
-    it("Users should be able to create a CALL Debit Spread", async () => {
-      await testMintingOptions(
-        qTokenCall3520.address,
-        ethers.utils.parseEther("1"),
-        qTokenCall2880.address
-      );
-    });
-
-    it("Spreads should be created correctly when the CollateralToken had already been created before", async () => {
-      await collateralToken
-        .connect(collateralCreator)
-        .createCollateralToken(qTokenCall2000.address, qTokenCall2880.address);
-
-      await testMintingOptions(
-        qTokenCall2000.address,
-        ethers.utils.parseEther("1"),
-        qTokenCall2880.address
-      );
-    });
-  });
-
-  describe("exercise", () => {
-    it("Should revert when trying to exercise a non-expired option", async () => {
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeExerciseArgs({
-            qToken: qTokenPut1400.address,
-            amount: ethers.utils.parseEther("1"),
-          }),
-        ])
-      ).to.be.revertedWith(
-        "Controller: Can not exercise options before their expiry"
-      );
-    });
-
-    it("Should revert when trying to exercise unsettled options", async () => {
-      // Take a snapshot of the Hardhat Network
-      const snapshotId = await takeSnapshot();
-
-      // Increase time to one hour past the expiry
-      await provider.send("evm_mine", [futureTimestamp + 3600]);
-
-      await mockPriceRegistry.mock.hasSettlementPrice.returns(false);
-
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeExerciseArgs({
-            qToken: qTokenPut1400.address,
-            amount: ethers.utils.parseEther("1"),
-          }),
-        ])
-      ).to.be.revertedWith("Controller: Cannot exercise unsettled options");
-
-      await revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to exercise PUT options", async () => {
-      // Take a snapshot of the Hardhat Network
-      const snapshotId = await takeSnapshot();
-
-      // Increase time to one hour past the expiry
-      await provider.send("evm_mine", [futureTimestamp + 3600]);
-
-      await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
-
-      //Note: Converts to the chainlink 8 decimal format
-      await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
-        ethers.utils.parseUnits("1200", 8),
-        BigNumber.from(8),
-      ]);
-
-      // Mint options to the user
-      const optionsAmount = ethers.utils.parseEther("1");
-      const qTokenToExercise = qTokenPut1400;
-      await qTokenToExercise
-        .connect(optionsMinter)
-        .mint(secondAccount.address, optionsAmount);
-
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
-        ethers.BigNumber.from("0")
-      );
-
-      expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
-        optionsAmount
-      );
-
-      const payoutAmount = (
-        await quantCalculator.getPayout(
-          qTokenToExercise.address,
-          await controller.optionsFactory(),
-          optionsAmount
-        )
-      ).payoutAmount;
-
-      // Mint USDC to the Controller so it can pay the user
-      await USDC.connect(deployer).mint(controller.address, payoutAmount);
-      expect(await USDC.balanceOf(controller.address)).to.equal(payoutAmount);
-
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeExerciseArgs({
-            qToken: qTokenToExercise.address,
-            amount: optionsAmount,
-          }),
-        ])
-      )
-        .to.emit(controller, "OptionsExercised")
-        .withArgs(
-          secondAccount.address,
-          qTokenToExercise.address,
-          optionsAmount,
-          payoutAmount,
-          USDC.address
-        );
-
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
-        payoutAmount
-      );
-      expect(await USDC.balanceOf(controller.address)).to.equal(
-        ethers.BigNumber.from("0")
-      );
-      expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
-        ethers.BigNumber.from("0")
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to exercise CALL options", async () => {
-      // Take a snapshot of the Hardhat Network
-      const snapshotId = await takeSnapshot();
-
-      // Increase time to one hour past the expiry
-      await provider.send("evm_mine", [futureTimestamp + 3600]);
-
-      await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
-
-      //Note: Converts to the chainlink 8 decimal format
-      await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
-        ethers.utils.parseUnits("2500", 8),
-        BigNumber.from(8),
-      ]);
-
-      // Mint options to the user
-      const optionsAmount = ethers.utils.parseEther("2");
-      const qTokenToExercise = qTokenCall2000;
-      await qTokenToExercise
-        .connect(optionsMinter)
-        .mint(secondAccount.address, optionsAmount);
-
-      expect(await WETH.balanceOf(secondAccount.address)).to.equal(
-        ethers.BigNumber.from("0")
-      );
-
-      expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
-        optionsAmount
-      );
-
-      const payoutAmount = (
-        await quantCalculator.getPayout(
-          qTokenToExercise.address,
-          await controller.optionsFactory(),
-          optionsAmount
-        )
-      ).payoutAmount;
-
-      // Mint WETH to the Controller so it can pay the user
-      await WETH.connect(assetsRegistryManager).mint(
+      await USDC.connect(secondAccount).approve(
         controller.address,
-        payoutAmount
+        collateralRequirement
       );
-      expect(await WETH.balanceOf(controller.address)).to.equal(payoutAmount);
-
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeExerciseArgs({
-            qToken: qTokenToExercise.address,
-            amount: Zero,
-          }),
-        ])
-      )
-        .to.emit(controller, "OptionsExercised")
-        .withArgs(
-          secondAccount.address,
-          qTokenToExercise.address,
-          optionsAmount,
-          payoutAmount,
-          WETH.address
-        );
-
-      expect(await WETH.balanceOf(secondAccount.address)).to.equal(
-        payoutAmount
-      );
-      expect(await WETH.balanceOf(controller.address)).to.equal(
-        ethers.BigNumber.from("0")
-      );
-      expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
-        ethers.BigNumber.from("0")
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Should revert when a user tries to exercise an amount of options that exceeds his balance", async () => {
-      // Take a snapshot of the Hardhat Network
-      const snapshotId = await takeSnapshot();
-
-      // Increase time to one hour past the expiry
-      await provider.send("evm_mine", [futureTimestamp + 3600]);
-
-      await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
-
-      //Note: Converts to the chainlink 8 decimal format
-      await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
-        ethers.utils.parseUnits("200", 8),
-        8,
-      ]);
-
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeExerciseArgs({
-            qToken: qTokenPut1400.address,
-            amount: ethers.utils.parseEther("1"),
-          }),
-        ])
-      ).to.be.revertedWith("ERC20: burn amount exceeds balance");
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Burns the QTokens but don't transfer anything when options expire OTM", async () => {
-      // Take a snapshot of the Hardhat Network
-      const snapshotId = await takeSnapshot();
-
-      // Increase time to one hour past the expiry
-      await provider.send("evm_mine", [futureTimestamp + 3600]);
-
-      await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
-
-      //Note: Converts to the chainlink 8 decimal format
-      await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
-        ethers.utils.parseUnits("1800", 8),
-        8,
-      ]);
-
-      // Mint options to the user
-      const optionsAmount = ethers.utils.parseEther("3");
-      const qTokenToExercise = qTokenCall2000;
-      await qTokenToExercise
-        .connect(optionsMinter)
-        .mint(secondAccount.address, optionsAmount);
 
       await controller.connect(secondAccount).operate([
-        encodeExerciseArgs({
-          qToken: qTokenToExercise.address,
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenPut1400.address,
           amount: optionsAmount,
         }),
       ]);
 
-      expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
-        ethers.BigNumber.from("0")
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenPut1400.address,
+        AddressZero
       );
 
-      expect(await WETH.balanceOf(secondAccount.address)).to.equal(
-        ethers.BigNumber.from("0")
+      await controller.connect(secondAccount).operate([
+        encodeNeutralizeArgs({
+          collateralTokenId,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
+        Zero
       );
 
-      revertToSnapshot(snapshotId);
-    });
-  });
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenId
+        )
+      ).to.equal(Zero);
 
-  describe("claimCollateral", () => {
-    it("Should revert when trying to claim collateral from an invalid CollateralToken", async () => {
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeClaimCollateralArgs({
-            collateralTokenId: ethers.BigNumber.from("123"),
-            amount: ethers.utils.parseEther("1"),
-          }),
-        ])
-      ).to.be.revertedWith("Can not claim collateral from non-existing option");
-    });
-
-    it("Should revert when trying to claim collateral from options before their expiry", async () => {
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeClaimCollateralArgs({
-            collateralTokenId: await collateralToken.getCollateralTokenId(
-              qTokenPut400.address,
-              AddressZero
-            ),
-            amount: ethers.utils.parseEther("1"),
-          }),
-        ])
-      ).to.be.revertedWith(
-        "Can not claim collateral from options before their expiry"
-      );
-    });
-
-    it("Should revert when trying to claim collateral from options before their expiry price is settled", async () => {
-      // Take a snapshot of the Hardhat Network
-      const snapshotId = await takeSnapshot();
-
-      // Increase time to one hour past the expiry
-      await provider.send("evm_mine", [futureTimestamp + 3600]);
-
-      await mockPriceRegistry.mock.hasSettlementPrice.returns(false);
-
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeClaimCollateralArgs({
-            collateralTokenId: await collateralToken.getCollateralTokenId(
-              qTokenPut400.address,
-              AddressZero
-            ),
-            amount: ethers.utils.parseEther("1"),
-          }),
-        ])
-      ).to.be.revertedWith("Can not claim collateral before option is settled");
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from PUT options that expired ITM", async () => {
-      const expiryPrice = ethers.utils.parseUnits("300", await USDC.decimals());
-
-      const snapshotId = await testClaimCollateral(
-        qTokenPut400,
-        ethers.utils.parseEther("1"),
-        expiryPrice
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from PUT options that expired OTM", async () => {
-      const expiryPrice = ethers.utils.parseUnits("500", await USDC.decimals());
-
-      const snapshotId = await testClaimCollateral(
-        qTokenPut400,
-        ethers.utils.parseEther("1"),
-        expiryPrice
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from PUT options that expired ATM", async () => {
-      const expiryPrice = ethers.utils.parseUnits("400", await USDC.decimals());
-
-      const snapshotId = await testClaimCollateral(
-        qTokenPut400,
-        ethers.utils.parseEther("1"),
-        expiryPrice
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from CALL options that expired ITM", async () => {
-      const expiryPrice = ethers.utils.parseUnits(
-        "2500",
-        await USDC.decimals()
-      );
-
-      const snapshotId = await testClaimCollateral(
-        qTokenCall2000,
-        ethers.utils.parseEther("1"),
-        expiryPrice
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from CALL options that expired OTM", async () => {
-      const expiryPrice = ethers.utils.parseUnits(
-        "1800",
-        await USDC.decimals()
-      );
-
-      const snapshotId = await testClaimCollateral(
-        qTokenCall2000,
-        ethers.utils.parseEther("1"),
-        expiryPrice
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from CALL options that expired ATM", async () => {
-      const expiryPrice = ethers.utils.parseUnits(
-        "2000",
-        await USDC.decimals()
-      );
-
-      const snapshotId = await testClaimCollateral(
-        qTokenCall2000,
-        ethers.utils.parseEther("1"),
-        expiryPrice
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from PUT Credit Spreads that expired ITM", async () => {
-      const expiryPrice = ethers.utils.parseUnits(
-        "1100",
-        await USDC.decimals()
-      );
-
-      const snapshotId = await testClaimCollateral(
+      const [, collateralOwed] = await getCollateralRequirement(
         qTokenPut1400,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenPut400
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("PUT Credit Spreads that expired ITM and below the coverage of the spread CollateralToken", async () => {
-      const expiryPrice = ethers.utils.parseUnits("300", await USDC.decimals());
-
-      const snapshotId = await testClaimCollateral(
-        qTokenPut1400,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenPut400
+        nullQToken,
+        optionsAmount,
+        BN.ROUND_DOWN
       );
 
       expect(await USDC.balanceOf(secondAccount.address)).to.equal(
-        ethers.BigNumber.from("0")
+        collateralOwed
       );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from PUT Credit Spreads that expired OTM", async () => {
-      const expiryPrice = ethers.utils.parseUnits(
-        "1800",
-        await USDC.decimals()
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        collateralRequirement.sub(collateralOwed)
       );
-
-      const snapshotId = await testClaimCollateral(
-        qTokenPut1400,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenPut400
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from PUT Credit Spreads that expired ATM", async () => {
-      const expiryPrice = ethers.utils.parseUnits(
-        "1400",
-        await USDC.decimals()
-      );
-
-      const snapshotId = await testClaimCollateral(
-        qTokenPut1400,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenPut400
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from PUT Debit Spreads that expired ITM", async () => {
-      const expiryPrice = ethers.utils.parseUnits("200", await USDC.decimals());
-
-      const snapshotId = await testClaimCollateral(
-        qTokenPut400,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenPut1400
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from PUT Debit Spreads that expired OTM", async () => {
-      const expiryPrice = ethers.utils.parseUnits("600", await USDC.decimals());
-
-      const snapshotId = await testClaimCollateral(
-        qTokenPut400,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenPut1400
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from PUT Debit Spreads that expired ATM", async () => {
-      const expiryPrice = ethers.utils.parseUnits("400", await USDC.decimals());
-
-      const snapshotId = await testClaimCollateral(
-        qTokenPut400,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenPut1400
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from CALL Credit Spreads that expired ITM", async () => {
-      const expiryPrice = ethers.utils.parseUnits(
-        "3200",
-        await USDC.decimals()
-      );
-
-      const snapshotId = await testClaimCollateral(
-        qTokenCall2880,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenCall3520
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from CALL Credit Spreads that expired OTM", async () => {
-      const expiryPrice = ethers.utils.parseUnits(
-        "2600",
-        await USDC.decimals()
-      );
-
-      const snapshotId = await testClaimCollateral(
-        qTokenCall2880,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenCall3520
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from CALL Credit Spreads that expired ATM", async () => {
-      const expiryPrice = ethers.utils.parseUnits(
-        "2880",
-        await USDC.decimals()
-      );
-
-      const snapshotId = await testClaimCollateral(
-        qTokenCall2880,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenCall3520
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("CALL Credit Spreads that expired ITM, at the strike price of the long option", async () => {
-      const expiryPrice = ethers.utils.parseUnits(
-        "3520",
-        await USDC.decimals()
-      );
-
-      const snapshotId = await testClaimCollateral(
-        qTokenCall2880,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenCall3520
-      );
-
-      expect(await WETH.balanceOf(secondAccount.address)).to.equal(
-        ethers.BigNumber.from("0")
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from CALL Debit Spreads that expired ITM", async () => {
-      const expiryPrice = ethers.utils.parseUnits(
-        "4000",
-        await USDC.decimals()
-      );
-
-      const snapshotId = await testClaimCollateral(
-        qTokenCall3520,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenCall2880
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from CALL Debit Spreads that expired OTM", async () => {
-      const expiryPrice = ethers.utils.parseUnits(
-        "3000",
-        await USDC.decimals()
-      );
-
-      const snapshotId = await testClaimCollateral(
-        qTokenCall3520,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenCall2880
-      );
-
-      revertToSnapshot(snapshotId);
-    });
-
-    it("Users should be able to claim collateral from CALL Debit Spreads that expired ATM", async () => {
-      const expiryPrice = ethers.utils.parseUnits(
-        "3520",
-        await USDC.decimals()
-      );
-
-      const snapshotId = await testClaimCollateral(
-        qTokenCall3520,
-        ethers.utils.parseEther("1"),
-        expiryPrice,
-        qTokenCall2880
-      );
-
-      revertToSnapshot(snapshotId);
     });
   });
 
@@ -1871,6 +1064,14 @@ describe("Controller", async () => {
           collateralTokenId
         )
       ).to.equal(optionsAmount.sub(amountToNeutralize));
+
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+        ethers.utils.parseUnits("4200", 6)
+      );
+
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        ethers.utils.parseUnits("2800", 6)
+      );
     });
 
     it("Users should be able to neutralize all of their position, and get the long QToken back from a spread", async () => {
@@ -1958,8 +1159,900 @@ describe("Controller", async () => {
       expect(await qTokenPut400.balanceOf(secondAccount.address)).to.equal(
         optionsAmount
       );
+
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+        collateralOwed
+      );
+
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        longCollateralRequirement
+      );
+
+      // TODO: Check that the user is getting his collateral back
     });
   });
+
+  // describe("Meta transactions", () => {
+  //   it("Users should be able to mint options through meta transactions", async () => {
+  //     const amount = ethers.utils.parseEther("1");
+
+  //     const actions = [
+  //       encodeMintOptionArgs({
+  //         to: secondAccount.address,
+  //         qToken: qTokenCall2000.address,
+  //         amount: amount.toString(),
+  //       }),
+  //     ];
+
+  //     const txData = await getSignedTransactionData(
+  //       parseInt((await controller.getNonce(deployer.address)).toString()),
+  //       deployer,
+  //       actions,
+  //       controller.address
+  //     );
+
+  //     const [collateralAddress, collateralAmount] =
+  //       await getCollateralRequirement(qTokenCall2000, nullQToken, amount);
+  //     // mint required collateral to the user account
+  //     const collateral = collateralAddress === WETH.address ? WETH : USDC;
+  //     await collateral
+  //       .connect(assetsRegistryManager)
+  //       .mint(await deployer.address, collateralAmount);
+  //     // Approve the Controller to use the user's funds
+  //     await collateral
+  //       .connect(deployer)
+  //       .approve(controller.address, collateralAmount);
+
+  //     expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
+  //       Zero
+  //     );
+  //     expect(await collateral.balanceOf(deployer.address)).to.equal(
+  //       collateralAmount
+  //     );
+
+  //     await controller
+  //       .connect(secondAccount)
+  //       .executeMetaTransaction(
+  //         deployer.address,
+  //         actions,
+  //         txData.r,
+  //         txData.s,
+  //         txData.v
+  //       );
+
+  //     expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
+  //       amount
+  //     );
+  //     expect(await collateral.balanceOf(deployer.address)).to.equal(Zero);
+  //   });
+  //   // it("Users should be able to create spreads through meta transactions", async () => {});
+  // });
+
+  // describe("Contract code size", () => {
+  //   const MAX_CODE_SIZE = 24576;
+  //   it("Shouldn't exceed the contract code size limit introduced in Spurious Dragon (24.576 kb)", async () => {
+  //     const ControllerFactory = await ethers.getContractFactory("Controller");
+  //     const controllerCodeSize = (ControllerFactory.bytecode.length - 2) / 2;
+  //     expect(controllerCodeSize).to.be.lessThanOrEqual(MAX_CODE_SIZE);
+  //   });
+  // });
+
+  // describe("mintOptionsPosition", () => {
+  //   it("Should revert when trying to mint an option which has an oracle which is deactivated", async () => {
+  //     await oracleRegistry
+  //       .connect(oracleManagerAccount)
+  //       .deactivateOracle(mockOracleManager.address);
+
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeMintOptionArgs({
+  //           to: secondAccount.address,
+  //           qToken: qTokenCall2000.address,
+  //           amount: ethers.BigNumber.from("10"),
+  //         }),
+  //       ])
+  //     ).to.be.revertedWith(
+  //       "Controller: Can't mint an options position as the oracle is inactive"
+  //     );
+  //   });
+
+  //   it("Should revert when trying to mint a non-existent option", async () => {
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeMintOptionArgs({
+  //           to: secondAccount.address,
+  //           qToken: AddressZero,
+  //           amount: ethers.BigNumber.from("10"),
+  //         }),
+  //       ])
+  //     ).to.be.revertedWith(
+  //       "Controller: Option needs to be created by the factory first"
+  //     );
+  //   });
+
+  //   it("Should revert when trying to mint an already expired option", async () => {
+  //     // Take a snapshot of the Hardhat Network
+  //     const snapshotId = await takeSnapshot();
+
+  //     // Increase time to one hour past the expiry
+  //     await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeMintOptionArgs({
+  //           to: secondAccount.address,
+  //           qToken: qTokenPut1400.address,
+  //           amount: ethers.BigNumber.from("10"),
+  //         }),
+  //       ])
+  //     ).to.be.revertedWith("Controller: Cannot mint expired options");
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to mint CALL options positions", async () => {
+  //     await testMintingOptions(
+  //       qTokenCall2000.address,
+  //       ethers.utils.parseEther("2")
+  //     );
+  //   });
+
+  //   it("Users should be able to mint PUT options positions", async () => {
+  //     await testMintingOptions(
+  //       qTokenPut1400.address,
+  //       ethers.utils.parseEther("2")
+  //     );
+  //   });
+
+  //   // TODO:
+  //   // eslint-disable-next-line @typescript-eslint/no-empty-function
+  //   // it("Users should be able to mint options to a different address", async () => {});
+  // });
+
+  // describe("mintSpread", () => {
+  //   it("Should revert when trying to create spreads from options with different oracles", async () => {
+  //     const qTokenParams: optionParameters = [
+  //       WETH.address,
+  //       USDC.address,
+  //       mockOracleManager.address,
+  //       ethers.utils.parseUnits("1400", await USDC.decimals()),
+  //       ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
+  //       false,
+  //     ];
+
+  //     const qTokenParamsDifferentOracle: optionParameters = [...qTokenParams];
+
+  //     qTokenParamsDifferentOracle[2] = mockOracleManagerTwo.address;
+
+  //     const qTokenOracleOne = await optionsFactory.getTargetQTokenAddress(
+  //       ...qTokenParams
+  //     );
+
+  //     const qTokenOracleTwo = await optionsFactory.getTargetQTokenAddress(
+  //       ...qTokenParamsDifferentOracle
+  //     );
+
+  //     await optionsFactory.connect(secondAccount).createOption(...qTokenParams);
+
+  //     await optionsFactory
+  //       .connect(secondAccount)
+  //       .createOption(...qTokenParamsDifferentOracle);
+
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeMintSpreadArgs({
+  //           qTokenToMint: qTokenOracleOne,
+  //           qTokenForCollateral: qTokenOracleTwo,
+  //           amount: ethers.utils.parseEther("1"),
+  //         }),
+  //       ])
+  //     ).to.be.revertedWith(
+  //       "Controller: Can't create spreads from options with different oracles"
+  //     );
+  //   });
+
+  //   it("Should revert when trying to create spreads from options with different expiries", async () => {
+  //     const qTokenParams: optionParameters = [
+  //       WETH.address,
+  //       USDC.address,
+  //       mockOracleManager.address,
+  //       ethers.utils.parseUnits("1400", await USDC.decimals()),
+  //       ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
+  //       false,
+  //     ];
+  //     const qTokenPutDifferentExpiry =
+  //       await optionsFactory.getTargetQTokenAddress(...qTokenParams);
+
+  //     await optionsFactory.connect(secondAccount).createOption(...qTokenParams);
+
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeMintSpreadArgs({
+  //           qTokenToMint: qTokenPutDifferentExpiry,
+  //           qTokenForCollateral: qTokenPut1400.address,
+  //           amount: ethers.utils.parseEther("1"),
+  //         }),
+  //       ])
+  //     ).to.be.revertedWith(
+  //       "Controller: Can't create spreads from options with different expiries"
+  //     );
+  //   });
+
+  //   it("Should revert when trying to create spreads from options with different underlying assets", async () => {
+  //     const qTokenParams: optionParameters = [
+  //       USDC.address,
+  //       WETH.address,
+  //       mockOracleManager.address,
+  //       ethers.utils.parseUnits("5000", await USDC.decimals()),
+  //       ethers.BigNumber.from(futureTimestamp),
+  //       true,
+  //     ];
+  //     const qTokenCallDifferentUnderlying =
+  //       await optionsFactory.getTargetQTokenAddress(...qTokenParams);
+
+  //     await optionsFactory.createOption(...qTokenParams);
+
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeMintSpreadArgs({
+  //           qTokenToMint: qTokenCallDifferentUnderlying,
+  //           qTokenForCollateral: qTokenCall3520.address,
+  //           amount: ethers.utils.parseEther("1"),
+  //         }),
+  //       ])
+  //     ).to.be.revertedWith(
+  //       "Controller: Can't create spreads from options with different underlying assets"
+  //     );
+  //   });
+
+  //   it("Users should be able to create a PUT Credit spread", async () => {
+  //     await testMintingOptions(
+  //       qTokenPut1400.address,
+  //       ethers.utils.parseEther("1"),
+  //       qTokenPut400.address
+  //     );
+  //   });
+
+  //   it("Users should be able to create a PUT Debit spread", async () => {
+  //     await testMintingOptions(
+  //       qTokenPut400.address,
+  //       ethers.utils.parseEther("2"),
+  //       qTokenPut1400.address
+  //     );
+  //   });
+
+  //   it("Users should be able to create a CALL Credit Spread", async () => {
+  //     await testMintingOptions(
+  //       qTokenCall2880.address,
+  //       ethers.utils.parseEther("1"),
+  //       qTokenCall3520.address
+  //     );
+  //   });
+
+  //   it("Users should be able to create a CALL Debit Spread", async () => {
+  //     await testMintingOptions(
+  //       qTokenCall3520.address,
+  //       ethers.utils.parseEther("1"),
+  //       qTokenCall2880.address
+  //     );
+  //   });
+
+  //   it("Spreads should be created correctly when the CollateralToken had already been created before", async () => {
+  //     await collateralToken
+  //       .connect(collateralCreator)
+  //       .createCollateralToken(qTokenCall2000.address, qTokenCall2880.address);
+
+  //     await testMintingOptions(
+  //       qTokenCall2000.address,
+  //       ethers.utils.parseEther("1"),
+  //       qTokenCall2880.address
+  //     );
+  //   });
+  // });
+
+  // describe("exercise", () => {
+  //   it("Should revert when trying to exercise a non-expired option", async () => {
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeExerciseArgs({
+  //           qToken: qTokenPut1400.address,
+  //           amount: ethers.utils.parseEther("1"),
+  //         }),
+  //       ])
+  //     ).to.be.revertedWith(
+  //       "Controller: Can not exercise options before their expiry"
+  //     );
+  //   });
+
+  //   it("Should revert when trying to exercise unsettled options", async () => {
+  //     // Take a snapshot of the Hardhat Network
+  //     const snapshotId = await takeSnapshot();
+
+  //     // Increase time to one hour past the expiry
+  //     await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+  //     await mockPriceRegistry.mock.hasSettlementPrice.returns(false);
+
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeExerciseArgs({
+  //           qToken: qTokenPut1400.address,
+  //           amount: ethers.utils.parseEther("1"),
+  //         }),
+  //       ])
+  //     ).to.be.revertedWith("Controller: Cannot exercise unsettled options");
+
+  //     await revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to exercise PUT options", async () => {
+  //     // Take a snapshot of the Hardhat Network
+  //     const snapshotId = await takeSnapshot();
+
+  //     // Increase time to one hour past the expiry
+  //     await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+  //     await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+
+  //     //Note: Converts to the chainlink 8 decimal format
+  //     await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
+  //       ethers.utils.parseUnits("1200", 8),
+  //       BigNumber.from(8),
+  //     ]);
+
+  //     // Mint options to the user
+  //     const optionsAmount = ethers.utils.parseEther("1");
+  //     const qTokenToExercise = qTokenPut1400;
+  //     await qTokenToExercise
+  //       .connect(optionsMinter)
+  //       .mint(secondAccount.address, optionsAmount);
+
+  //     expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+  //       ethers.BigNumber.from("0")
+  //     );
+
+  //     expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
+  //       optionsAmount
+  //     );
+
+  //     const payoutAmount = (
+  //       await quantCalculator.getPayout(
+  //         qTokenToExercise.address,
+  //         await controller.optionsFactory(),
+  //         optionsAmount
+  //       )
+  //     ).payoutAmount;
+
+  //     // Mint USDC to the Controller so it can pay the user
+  //     await USDC.connect(deployer).mint(controller.address, payoutAmount);
+  //     expect(await USDC.balanceOf(controller.address)).to.equal(payoutAmount);
+
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeExerciseArgs({
+  //           qToken: qTokenToExercise.address,
+  //           amount: optionsAmount,
+  //         }),
+  //       ])
+  //     )
+  //       .to.emit(controller, "OptionsExercised")
+  //       .withArgs(
+  //         secondAccount.address,
+  //         qTokenToExercise.address,
+  //         optionsAmount,
+  //         payoutAmount,
+  //         USDC.address
+  //       );
+
+  //     expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+  //       payoutAmount
+  //     );
+  //     expect(await USDC.balanceOf(controller.address)).to.equal(
+  //       ethers.BigNumber.from("0")
+  //     );
+  //     expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
+  //       ethers.BigNumber.from("0")
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to exercise CALL options", async () => {
+  //     // Take a snapshot of the Hardhat Network
+  //     const snapshotId = await takeSnapshot();
+
+  //     // Increase time to one hour past the expiry
+  //     await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+  //     await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+
+  //     //Note: Converts to the chainlink 8 decimal format
+  //     await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
+  //       ethers.utils.parseUnits("2500", 8),
+  //       BigNumber.from(8),
+  //     ]);
+
+  //     // Mint options to the user
+  //     const optionsAmount = ethers.utils.parseEther("2");
+  //     const qTokenToExercise = qTokenCall2000;
+  //     await qTokenToExercise
+  //       .connect(optionsMinter)
+  //       .mint(secondAccount.address, optionsAmount);
+
+  //     expect(await WETH.balanceOf(secondAccount.address)).to.equal(
+  //       ethers.BigNumber.from("0")
+  //     );
+
+  //     expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
+  //       optionsAmount
+  //     );
+
+  //     const payoutAmount = (
+  //       await quantCalculator.getPayout(
+  //         qTokenToExercise.address,
+  //         await controller.optionsFactory(),
+  //         optionsAmount
+  //       )
+  //     ).payoutAmount;
+
+  //     // Mint WETH to the Controller so it can pay the user
+  //     await WETH.connect(assetsRegistryManager).mint(
+  //       controller.address,
+  //       payoutAmount
+  //     );
+  //     expect(await WETH.balanceOf(controller.address)).to.equal(payoutAmount);
+
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeExerciseArgs({
+  //           qToken: qTokenToExercise.address,
+  //           amount: Zero,
+  //         }),
+  //       ])
+  //     )
+  //       .to.emit(controller, "OptionsExercised")
+  //       .withArgs(
+  //         secondAccount.address,
+  //         qTokenToExercise.address,
+  //         optionsAmount,
+  //         payoutAmount,
+  //         WETH.address
+  //       );
+
+  //     expect(await WETH.balanceOf(secondAccount.address)).to.equal(
+  //       payoutAmount
+  //     );
+  //     expect(await WETH.balanceOf(controller.address)).to.equal(
+  //       ethers.BigNumber.from("0")
+  //     );
+  //     expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
+  //       ethers.BigNumber.from("0")
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Should revert when a user tries to exercise an amount of options that exceeds his balance", async () => {
+  //     // Take a snapshot of the Hardhat Network
+  //     const snapshotId = await takeSnapshot();
+
+  //     // Increase time to one hour past the expiry
+  //     await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+  //     await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+
+  //     //Note: Converts to the chainlink 8 decimal format
+  //     await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
+  //       ethers.utils.parseUnits("200", 8),
+  //       8,
+  //     ]);
+
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeExerciseArgs({
+  //           qToken: qTokenPut1400.address,
+  //           amount: ethers.utils.parseEther("1"),
+  //         }),
+  //       ])
+  //     ).to.be.revertedWith("ERC20: burn amount exceeds balance");
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Burns the QTokens but don't transfer anything when options expire OTM", async () => {
+  //     // Take a snapshot of the Hardhat Network
+  //     const snapshotId = await takeSnapshot();
+
+  //     // Increase time to one hour past the expiry
+  //     await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+  //     await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+
+  //     //Note: Converts to the chainlink 8 decimal format
+  //     await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
+  //       ethers.utils.parseUnits("1800", 8),
+  //       8,
+  //     ]);
+
+  //     // Mint options to the user
+  //     const optionsAmount = ethers.utils.parseEther("3");
+  //     const qTokenToExercise = qTokenCall2000;
+  //     await qTokenToExercise
+  //       .connect(optionsMinter)
+  //       .mint(secondAccount.address, optionsAmount);
+
+  //     await controller.connect(secondAccount).operate([
+  //       encodeExerciseArgs({
+  //         qToken: qTokenToExercise.address,
+  //         amount: optionsAmount,
+  //       }),
+  //     ]);
+
+  //     expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
+  //       ethers.BigNumber.from("0")
+  //     );
+
+  //     expect(await WETH.balanceOf(secondAccount.address)).to.equal(
+  //       ethers.BigNumber.from("0")
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+  // });
+
+  // describe("claimCollateral", () => {
+  //   it("Should revert when trying to claim collateral from an invalid CollateralToken", async () => {
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeClaimCollateralArgs({
+  //           collateralTokenId: ethers.BigNumber.from("123"),
+  //           amount: ethers.utils.parseEther("1"),
+  //         }),
+  //       ])
+  //     ).to.be.revertedWith("Can not claim collateral from non-existing option");
+  //   });
+
+  //   it("Should revert when trying to claim collateral from options before their expiry", async () => {
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeClaimCollateralArgs({
+  //           collateralTokenId: await collateralToken.getCollateralTokenId(
+  //             qTokenPut400.address,
+  //             AddressZero
+  //           ),
+  //           amount: ethers.utils.parseEther("1"),
+  //         }),
+  //       ])
+  //     ).to.be.revertedWith(
+  //       "Can not claim collateral from options before their expiry"
+  //     );
+  //   });
+
+  //   it("Should revert when trying to claim collateral from options before their expiry price is settled", async () => {
+  //     // Take a snapshot of the Hardhat Network
+  //     const snapshotId = await takeSnapshot();
+
+  //     // Increase time to one hour past the expiry
+  //     await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+  //     await mockPriceRegistry.mock.hasSettlementPrice.returns(false);
+
+  //     await expect(
+  //       controller.connect(secondAccount).operate([
+  //         encodeClaimCollateralArgs({
+  //           collateralTokenId: await collateralToken.getCollateralTokenId(
+  //             qTokenPut400.address,
+  //             AddressZero
+  //           ),
+  //           amount: ethers.utils.parseEther("1"),
+  //         }),
+  //       ])
+  //     ).to.be.revertedWith("Can not claim collateral before option is settled");
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from PUT options that expired ITM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits("300", await USDC.decimals());
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenPut400,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from PUT options that expired OTM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits("500", await USDC.decimals());
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenPut400,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from PUT options that expired ATM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits("400", await USDC.decimals());
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenPut400,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from CALL options that expired ITM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits(
+  //       "2500",
+  //       await USDC.decimals()
+  //     );
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenCall2000,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from CALL options that expired OTM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits(
+  //       "1800",
+  //       await USDC.decimals()
+  //     );
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenCall2000,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from CALL options that expired ATM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits(
+  //       "2000",
+  //       await USDC.decimals()
+  //     );
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenCall2000,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from PUT Credit Spreads that expired ITM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits(
+  //       "1100",
+  //       await USDC.decimals()
+  //     );
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenPut1400,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenPut400
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("PUT Credit Spreads that expired ITM and below the coverage of the spread CollateralToken", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits("300", await USDC.decimals());
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenPut1400,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenPut400
+  //     );
+
+  //     expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+  //       ethers.BigNumber.from("0")
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from PUT Credit Spreads that expired OTM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits(
+  //       "1800",
+  //       await USDC.decimals()
+  //     );
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenPut1400,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenPut400
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from PUT Credit Spreads that expired ATM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits(
+  //       "1400",
+  //       await USDC.decimals()
+  //     );
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenPut1400,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenPut400
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from PUT Debit Spreads that expired ITM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits("200", await USDC.decimals());
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenPut400,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenPut1400
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from PUT Debit Spreads that expired OTM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits("600", await USDC.decimals());
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenPut400,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenPut1400
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from PUT Debit Spreads that expired ATM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits("400", await USDC.decimals());
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenPut400,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenPut1400
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from CALL Credit Spreads that expired ITM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits(
+  //       "3200",
+  //       await USDC.decimals()
+  //     );
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenCall2880,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenCall3520
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from CALL Credit Spreads that expired OTM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits(
+  //       "2600",
+  //       await USDC.decimals()
+  //     );
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenCall2880,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenCall3520
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from CALL Credit Spreads that expired ATM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits(
+  //       "2880",
+  //       await USDC.decimals()
+  //     );
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenCall2880,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenCall3520
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("CALL Credit Spreads that expired ITM, at the strike price of the long option", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits(
+  //       "3520",
+  //       await USDC.decimals()
+  //     );
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenCall2880,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenCall3520
+  //     );
+
+  //     expect(await WETH.balanceOf(secondAccount.address)).to.equal(
+  //       ethers.BigNumber.from("0")
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from CALL Debit Spreads that expired ITM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits(
+  //       "4000",
+  //       await USDC.decimals()
+  //     );
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenCall3520,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenCall2880
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from CALL Debit Spreads that expired OTM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits(
+  //       "3000",
+  //       await USDC.decimals()
+  //     );
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenCall3520,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenCall2880
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+
+  //   it("Users should be able to claim collateral from CALL Debit Spreads that expired ATM", async () => {
+  //     const expiryPrice = ethers.utils.parseUnits(
+  //       "3520",
+  //       await USDC.decimals()
+  //     );
+
+  //     const snapshotId = await testClaimCollateral(
+  //       qTokenCall3520,
+  //       ethers.utils.parseEther("1"),
+  //       expiryPrice,
+  //       qTokenCall2880
+  //     );
+
+  //     revertToSnapshot(snapshotId);
+  //   });
+  // });
 
   // describe("Meta transactions", () => {
   //   it("Users should be able to mint options through meta transactions", async () => {
