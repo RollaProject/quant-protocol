@@ -1,6 +1,7 @@
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@openzeppelin/hardhat-upgrades";
+import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
 import "hardhat-typechain";
@@ -28,6 +29,12 @@ const config: HardhatUserConfig = {
         runs: 800,
       },
     },
+  },
+
+  contractSizer: {
+    alphaSort: true,
+    runOnCompile: false,
+    disambiguatePaths: false,
   },
 
   mocha: {

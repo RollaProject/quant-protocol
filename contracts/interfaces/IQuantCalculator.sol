@@ -33,6 +33,8 @@ interface IQuantCalculator {
         returns (
             bool,
             address,
+            uint256,
+            uint8,
             uint256
         );
 

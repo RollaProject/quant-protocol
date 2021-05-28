@@ -4,10 +4,13 @@ pragma abicoder v2;
 
 import "./external/strings.sol";
 
+//address _channelFeeCollector,
+//address _referrer
+
 struct ActionArgs {
     string actionType; //type of action to perform
     address qToken; //qToken to exercise or mint
-    address qTokenSecondary; //qToken used as collateral for spreads
+    address secondaryAddress; //secondary address depending on the action type
     address receiver; //receiving address of minting or function call
     uint256 amount; //amount of qTokens or collateral tokens
     uint256 collateralTokenId; //collateral token id for claiming collateral and neutralizing positions
@@ -31,12 +34,16 @@ library Actions {
 
     struct ExerciseArgs {
         address qToken;
+        address channelFeeCollector;
+        address referrer;
         uint256 amount;
     }
 
     struct ClaimCollateralArgs {
         uint256 collateralTokenId;
         uint256 amount;
+        address channelFeeCollector;
+        address referrer;
     }
 
     struct NeutralizeArgs {
@@ -87,7 +94,7 @@ library Actions {
         return
             MintSpreadArgs({
                 qTokenToMint: _args.qToken,
-                qTokenForCollateral: _args.qTokenSecondary,
+                qTokenForCollateral: _args.secondaryAddress,
                 amount: _args.amount
             });
     }
@@ -102,7 +109,13 @@ library Actions {
             "Actions: can only parse arguments for exercise"
         );
 
-        return ExerciseArgs({qToken: _args.qToken, amount: _args.amount});
+        return
+            ExerciseArgs({
+                qToken: _args.qToken,
+                amount: _args.amount,
+                channelFeeCollector: _args.secondaryAddress,
+                referrer: _args.receiver
+            });
     }
 
     function parseClaimCollateralArgs(ActionArgs memory _args)
@@ -120,7 +133,9 @@ library Actions {
         return
             ClaimCollateralArgs({
                 collateralTokenId: _args.collateralTokenId,
-                amount: _args.amount
+                amount: _args.amount,
+                channelFeeCollector: _args.secondaryAddress,
+                referrer: _args.receiver
             });
     }
 
