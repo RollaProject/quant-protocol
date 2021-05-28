@@ -2,47 +2,49 @@
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "./QuantConfig.sol";
 import "./EIP712MetaTransaction.sol";
-import "./interfaces/IOptionsFactory.sol";
+import "./OperateProxy.sol";
+import "./interfaces/IQToken.sol";
 import "./interfaces/IOracleRegistry.sol";
-import "./interfaces/IPriceRegistry.sol";
-import "./options/QToken.sol";
 import "./interfaces/ICollateralToken.sol";
-import "./interfaces/IAssetsRegistry.sol";
 import "./interfaces/IController.sol";
+import "./interfaces/IOperateProxy.sol";
+import "./interfaces/IQuantCalculator.sol";
+import "./interfaces/IOptionsFactory.sol";
 import "./libraries/ProtocolValue.sol";
 import "./libraries/QuantMath.sol";
 import "./libraries/FundsCalculator.sol";
 import "./libraries/OptionsUtils.sol";
+import "./libraries/Actions.sol";
+import "./libraries/external/strings.sol";
 
 contract Controller is
     IController,
     EIP712MetaTransaction,
     ReentrancyGuardUpgradeable
 {
-    using SafeMath for uint256;
     using SafeERC20 for IERC20;
-
-    using QuantMath for uint256;
-    using QuantMath for int256;
     using QuantMath for QuantMath.FixedPointInt;
+    using Actions for ActionArgs;
+    using strings for *;
 
-    IOptionsFactory public override optionsFactory;
+    address public override optionsFactory;
 
-    uint8 public constant override OPTIONS_DECIMALS = 18;
+    address public override operateProxy;
+
+    address public override quantCalculator;
 
     modifier validQToken(address _qToken) {
         require(
-            optionsFactory.isQToken(_qToken),
+            IOptionsFactory(optionsFactory).isQToken(_qToken),
             "Controller: Option needs to be created by the factory first"
         );
 
-        QToken qToken = QToken(_qToken);
+        IQToken qToken = IQToken(_qToken);
 
         require(
             qToken.expiryTime() > block.timestamp,
@@ -52,16 +54,58 @@ contract Controller is
         _;
     }
 
-    function mintOptionsPosition(
-        address _to,
-        address _qToken,
-        uint256 _optionsAmount
-    ) external override validQToken(_qToken) nonReentrant() returns (uint256) {
-        QToken qToken = QToken(_qToken);
+    function operate(ActionArgs[] memory _actions)
+        external
+        override
+        nonReentrant()
+        returns (bool)
+    {
+        for (uint256 i = 0; i < _actions.length; i++) {
+            ActionArgs memory action = _actions[i];
+            string memory actionType = action.actionType;
+
+            if (actionType.toSlice().equals(string("MINT_OPTION").toSlice())) {
+                _mintOptionsPosition(action.parseMintOptionArgs());
+            } else if (
+                actionType.toSlice().equals(string("MINT_SPREAD").toSlice())
+            ) {
+                _mintSpread(action.parseMintSpreadArgs());
+            } else if (
+                actionType.toSlice().equals(string("EXERCISE").toSlice())
+            ) {
+                _exercise(action.parseExerciseArgs());
+            } else if (
+                actionType.toSlice().equals(
+                    string("CLAIM_COLLATERAL").toSlice()
+                )
+            ) {
+                _claimCollateral(action.parseClaimCollateralArgs());
+            } else if (
+                actionType.toSlice().equals(string("NEUTRALIZE").toSlice())
+            ) {
+                _neutralizePosition(action.parseNeutralizeArgs());
+            } else {
+                require(
+                    actionType.toSlice().equals(string("CALL").toSlice()),
+                    "Controller: Invalid action type"
+                );
+                _call(action.parseCallArgs());
+            }
+        }
+
+        return true;
+    }
+
+    function _mintOptionsPosition(Actions.MintOptionArgs memory _args)
+        internal
+        validQToken(_args.qToken)
+        returns (uint256)
+    {
+        IQToken qToken = IQToken(_args.qToken);
 
         require(
             IOracleRegistry(
-                optionsFactory.quantConfig().protocolAddresses(
+                IOptionsFactory(optionsFactory).quantConfig().protocolAddresses(
                     ProtocolValue.encode("oracleRegistry")
                 )
             )
@@ -70,7 +114,12 @@ contract Controller is
         );
 
         (address collateral, uint256 collateralAmount) =
-            getCollateralRequirement(_qToken, address(0), _optionsAmount);
+            IQuantCalculator(quantCalculator).getCollateralRequirement(
+                _args.qToken,
+                address(0),
+                optionsFactory,
+                _args.amount
+            );
 
         IERC20(collateral).safeTransferFrom(
             _msgSender(),
@@ -79,54 +128,53 @@ contract Controller is
         );
 
         // Mint the options to the sender's address
-        qToken.mint(_to, _optionsAmount);
+        qToken.mint(_args.to, _args.amount);
         uint256 collateralTokenId =
-            optionsFactory.collateralToken().getCollateralTokenId(
-                _qToken,
-                address(0)
-            );
+            IOptionsFactory(optionsFactory)
+                .collateralToken()
+                .getCollateralTokenId(_args.qToken, address(0));
 
         // There's no need to check if the collateralTokenId exists before minting because if the QToken is valid,
         // then it's guaranteed that the respective CollateralToken has already also been created by the OptionsFactory
-        optionsFactory.collateralToken().mintCollateralToken(
-            _to,
+        IOptionsFactory(optionsFactory).collateralToken().mintCollateralToken(
+            _args.to,
             collateralTokenId,
-            _optionsAmount
+            _args.amount
         );
 
-        emit OptionsPositionMinted(_to, _msgSender(), _qToken, _optionsAmount);
+        emit OptionsPositionMinted(
+            _args.to,
+            _msgSender(),
+            _args.qToken,
+            _args.amount
+        );
 
         return collateralTokenId;
     }
 
-    function mintSpread(
-        address _qTokenToMint,
-        address _qTokenForCollateral,
-        uint256 _optionsAmount
-    )
-        external
-        override
-        validQToken(_qTokenToMint)
-        validQToken(_qTokenForCollateral)
-        nonReentrant()
+    function _mintSpread(Actions.MintSpreadArgs memory _args)
+        internal
+        validQToken(_args.qTokenToMint)
+        validQToken(_args.qTokenForCollateral)
         returns (uint256)
     {
         require(
-            _qTokenToMint != _qTokenForCollateral,
+            _args.qTokenToMint != _args.qTokenForCollateral,
             "Controller: Can only create a spread with different tokens"
         );
 
-        QToken qTokenToMint = QToken(_qTokenToMint);
-        QToken qTokenForCollateral = QToken(_qTokenForCollateral);
+        IQToken qTokenToMint = IQToken(_args.qTokenToMint);
+        IQToken qTokenForCollateral = IQToken(_args.qTokenForCollateral);
 
         (address collateral, uint256 collateralAmount) =
-            getCollateralRequirement(
-                _qTokenToMint,
-                _qTokenForCollateral,
-                _optionsAmount
+            IQuantCalculator(quantCalculator).getCollateralRequirement(
+                _args.qTokenToMint,
+                _args.qTokenForCollateral,
+                optionsFactory,
+                _args.amount
             );
 
-        qTokenForCollateral.burn(_msgSender(), _optionsAmount);
+        qTokenForCollateral.burn(_msgSender(), _args.amount);
 
         if (collateralAmount > 0) {
             IERC20(collateral).safeTransferFrom(
@@ -139,57 +187,63 @@ contract Controller is
         // Check if the corresponding CollateralToken has already been created
         // Create it if it hasn't
         uint256 collateralTokenId =
-            optionsFactory.collateralToken().getCollateralTokenId(
-                _qTokenToMint,
-                _qTokenForCollateral
+            IOptionsFactory(optionsFactory)
+                .collateralToken()
+                .getCollateralTokenId(
+                _args.qTokenToMint,
+                _args.qTokenForCollateral
             );
         (, address qTokenAsCollateral) =
-            optionsFactory.collateralToken().idToInfo(collateralTokenId);
+            IOptionsFactory(optionsFactory).collateralToken().idToInfo(
+                collateralTokenId
+            );
         if (qTokenAsCollateral == address(0)) {
-            optionsFactory.collateralToken().createCollateralToken(
-                _qTokenToMint,
-                _qTokenForCollateral
+            IOptionsFactory(optionsFactory)
+                .collateralToken()
+                .createCollateralToken(
+                _args.qTokenToMint,
+                _args.qTokenForCollateral
             );
         }
 
-        optionsFactory.collateralToken().mintCollateralToken(
+        IOptionsFactory(optionsFactory).collateralToken().mintCollateralToken(
             _msgSender(),
             collateralTokenId,
-            _optionsAmount
+            _args.amount
         );
 
-        qTokenToMint.mint(_msgSender(), _optionsAmount);
+        qTokenToMint.mint(_msgSender(), _args.amount);
 
         emit SpreadMinted(
             _msgSender(),
-            _qTokenToMint,
-            _qTokenForCollateral,
-            _optionsAmount
+            _args.qTokenToMint,
+            _args.qTokenForCollateral,
+            _args.amount
         );
 
         return collateralTokenId;
     }
 
-    function exercise(address _qToken, uint256 _amount)
-        external
-        override
-        nonReentrant()
-    {
-        QToken qToken = QToken(_qToken);
+    function _exercise(Actions.ExerciseArgs memory _args) internal {
+        IQToken qToken = IQToken(_args.qToken);
         require(
             block.timestamp > qToken.expiryTime(),
             "Controller: Can not exercise options before their expiry"
         );
 
         uint256 amountToExercise;
-        if (_amount == 0) {
+        if (_args.amount == 0) {
             amountToExercise = qToken.balanceOf(_msgSender());
         } else {
-            amountToExercise = _amount;
+            amountToExercise = _args.amount;
         }
 
         (bool isSettled, address payoutToken, uint256 payoutAmount) =
-            getPayout(_qToken, amountToExercise);
+            IQuantCalculator(quantCalculator).getPayout(
+                _args.qToken,
+                optionsFactory,
+                amountToExercise
+            );
 
         require(isSettled, "Controller: Cannot exercise unsettled options");
 
@@ -201,27 +255,31 @@ contract Controller is
 
         emit OptionsExercised(
             _msgSender(),
-            _qToken,
+            _args.qToken,
             amountToExercise,
             payoutAmount,
             payoutToken
         );
     }
 
-    function claimCollateral(uint256 _collateralTokenId, uint256 _amount)
-        external
-        override
-        nonReentrant()
+    function _claimCollateral(Actions.ClaimCollateralArgs memory _args)
+        internal
     {
         (
             uint256 returnableCollateral,
             address collateralAsset,
             uint256 amountToClaim
-        ) = calculateClaimableCollateral(_collateralTokenId, _amount);
+        ) =
+            IQuantCalculator(quantCalculator).calculateClaimableCollateral(
+                _args.collateralTokenId,
+                _args.amount,
+                optionsFactory,
+                _msgSender()
+            );
 
-        optionsFactory.collateralToken().burnCollateralToken(
+        IOptionsFactory(optionsFactory).collateralToken().burnCollateralToken(
             _msgSender(),
-            _collateralTokenId,
+            _args.collateralTokenId,
             amountToClaim
         );
 
@@ -234,28 +292,25 @@ contract Controller is
 
         emit CollateralClaimed(
             _msgSender(),
-            _collateralTokenId,
+            _args.collateralTokenId,
             amountToClaim,
             returnableCollateral,
             collateralAsset
         );
     }
 
-    function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
-        external
-        override
-        nonReentrant()
-    {
-        ICollateralToken collateralToken = optionsFactory.collateralToken();
+    function _neutralizePosition(Actions.NeutralizeArgs memory _args) internal {
+        ICollateralToken collateralToken =
+            IOptionsFactory(optionsFactory).collateralToken();
         (address qTokenShort, address qTokenAsCollateral) =
-            collateralToken.idToInfo(_collateralTokenId);
+            collateralToken.idToInfo(_args.collateralTokenId);
 
         //get the amount of collateral tokens owned
         uint256 collateralTokensOwned =
-            collateralToken.balanceOf(_msgSender(), _collateralTokenId);
+            collateralToken.balanceOf(_msgSender(), _args.collateralTokenId);
 
         //get the amount of qTokens owned
-        uint256 qTokensOwned = QToken(qTokenShort).balanceOf(_msgSender());
+        uint256 qTokensOwned = IQToken(qTokenShort).balanceOf(_msgSender());
 
         //the amount of position that can be neutralized
         uint256 maxNeutralizable =
@@ -265,12 +320,12 @@ contract Controller is
 
         uint256 amountToNeutralize;
 
-        if (_amount != 0) {
+        if (_args.amount != 0) {
             require(
-                _amount <= maxNeutralizable,
+                _args.amount <= maxNeutralizable,
                 "Controller: Tried to neutralize more than balance"
             );
-            amountToNeutralize = _amount;
+            amountToNeutralize = _args.amount;
         } else {
             amountToNeutralize = maxNeutralizable;
         }
@@ -282,8 +337,8 @@ contract Controller is
             QuantMath.FixedPointInt memory collateralOwedFP;
             uint8 underlyingDecimals =
                 OptionsUtils.getUnderlyingDecimals(
-                    QToken(qTokenShort),
-                    optionsFactory.quantConfig()
+                    IQToken(qTokenShort),
+                    IOptionsFactory(optionsFactory).quantConfig()
                 );
 
             (collateralType, collateralOwedFP) = FundsCalculator
@@ -291,7 +346,7 @@ contract Controller is
                 qTokenShort,
                 address(0),
                 amountToNeutralize,
-                OPTIONS_DECIMALS,
+                IQuantCalculator(quantCalculator).OPTIONS_DECIMALS(),
                 underlyingDecimals
             );
 
@@ -301,11 +356,11 @@ contract Controller is
             );
         }
 
-        QToken(qTokenShort).burn(_msgSender(), amountToNeutralize);
+        IQToken(qTokenShort).burn(_msgSender(), amountToNeutralize);
 
         collateralToken.burnCollateralToken(
             _msgSender(),
-            _collateralTokenId,
+            _args.collateralTokenId,
             amountToNeutralize
         );
 
@@ -313,7 +368,7 @@ contract Controller is
 
         //give the user their long tokens (if any)
         if (qTokenAsCollateral != address(0)) {
-            QToken(qTokenAsCollateral).mint(_msgSender(), amountToNeutralize);
+            IQToken(qTokenAsCollateral).mint(_msgSender(), amountToNeutralize);
         }
 
         emit NeutralizePosition(
@@ -326,196 +381,20 @@ contract Controller is
         );
     }
 
+    function _call(Actions.CallArgs memory _args) internal {
+        IOperateProxy(operateProxy).callFunction(_args.callee, _args.data);
+    }
+
     function initialize(
         string memory _name,
         string memory _version,
-        address _optionsFactory
+        address _optionsFactory,
+        address _quantCalculator
     ) public override initializer {
         __ReentrancyGuard_init();
         EIP712MetaTransaction.initializeEIP712(_name, _version);
-        optionsFactory = IOptionsFactory(_optionsFactory);
-    }
-
-    function calculateClaimableCollateral(
-        uint256 _collateralTokenId,
-        uint256 _amount
-    )
-        public
-        view
-        returns (
-            uint256 returnableCollateral,
-            address collateralAsset,
-            uint256 amountToClaim
-        )
-    {
-        (address _qTokenShort, address qTokenAsCollateral) =
-            optionsFactory.collateralToken().idToInfo(_collateralTokenId);
-
-        require(
-            _qTokenShort != address(0),
-            "Controller: Can not claim collateral from non-existing option"
-        );
-
-        QToken qTokenShort = QToken(_qTokenShort);
-
-        require(
-            block.timestamp > qTokenShort.expiryTime(),
-            "Controller: Can not claim collateral from options before their expiry"
-        );
-        require(
-            qTokenShort.getOptionPriceStatus() == PriceStatus.SETTLED,
-            "Controller: Can not claim collateral before option is settled"
-        );
-
-        amountToClaim = _amount == 0
-            ? optionsFactory.collateralToken().balanceOf(
-                _msgSender(),
-                _collateralTokenId
-            )
-            : _amount;
-
-        address qTokenLong;
-        QuantMath.FixedPointInt memory payoutFromLong;
-
-        PriceRegistry priceRegistry =
-            PriceRegistry(
-                optionsFactory.quantConfig().protocolAddresses(
-                    ProtocolValue.encode("priceRegistry")
-                )
-            );
-
-        IPriceRegistry.PriceWithDecimals memory expiryPrice =
-            priceRegistry.getSettlementPriceWithDecimals(
-                qTokenShort.oracle(),
-                qTokenShort.underlyingAsset(),
-                qTokenShort.expiryTime()
-            );
-
-        if (qTokenAsCollateral != address(0)) {
-            qTokenLong = qTokenAsCollateral;
-
-            (, payoutFromLong) = FundsCalculator.getPayout(
-                qTokenLong,
-                amountToClaim,
-                OPTIONS_DECIMALS,
-                expiryPrice
-            );
-        } else {
-            qTokenLong = address(0);
-            payoutFromLong = int256(0).fromUnscaledInt();
-        }
-
-        uint8 underlyingDecimals =
-            OptionsUtils.getUnderlyingDecimals(
-                qTokenShort,
-                optionsFactory.quantConfig()
-            );
-
-        QuantMath.FixedPointInt memory collateralRequirement;
-        (collateralAsset, collateralRequirement) = FundsCalculator
-            .getCollateralRequirement(
-            _qTokenShort,
-            qTokenLong,
-            amountToClaim,
-            OPTIONS_DECIMALS,
-            underlyingDecimals
-        );
-
-        (, QuantMath.FixedPointInt memory payoutFromShort) =
-            FundsCalculator.getPayout(
-                _qTokenShort,
-                amountToClaim,
-                OPTIONS_DECIMALS,
-                expiryPrice
-            );
-
-        returnableCollateral = payoutFromLong
-            .add(collateralRequirement)
-            .sub(payoutFromShort)
-            .toScaledUint(underlyingDecimals, true);
-    }
-
-    function getCollateralRequirement(
-        address _qTokenToMint,
-        address _qTokenForCollateral,
-        uint256 _optionsAmount
-    )
-        public
-        view
-        override
-        returns (address collateral, uint256 collateralAmount)
-    {
-        QuantMath.FixedPointInt memory collateralAmountFP;
-        uint8 underlyingDecimals =
-            OptionsUtils.getUnderlyingDecimals(
-                QToken(_qTokenToMint),
-                optionsFactory.quantConfig()
-            );
-
-        (collateral, collateralAmountFP) = FundsCalculator
-            .getCollateralRequirement(
-            _qTokenToMint,
-            _qTokenForCollateral,
-            _optionsAmount,
-            OPTIONS_DECIMALS,
-            underlyingDecimals
-        );
-
-        collateralAmount = collateralAmountFP.toScaledUint(
-            underlyingDecimals,
-            false
-        );
-    }
-
-    function getPayout(address _qToken, uint256 _amount)
-        public
-        view
-        override
-        returns (
-            bool isSettled,
-            address payoutToken,
-            uint256 payoutAmount
-        )
-    {
-        QToken qToken = QToken(_qToken);
-        isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
-        if (!isSettled) {
-            return (false, address(0), 0);
-        } else {
-            isSettled = true;
-        }
-
-        QuantMath.FixedPointInt memory payout;
-
-        PriceRegistry priceRegistry =
-            PriceRegistry(
-                optionsFactory.quantConfig().protocolAddresses(
-                    ProtocolValue.encode("priceRegistry")
-                )
-            );
-
-        uint8 payoutDecimals =
-            OptionsUtils.getUnderlyingDecimals(
-                qToken,
-                optionsFactory.quantConfig()
-            );
-
-        address underlyingAsset = QToken(_qToken).underlyingAsset();
-
-        IPriceRegistry.PriceWithDecimals memory expiryPrice =
-            priceRegistry.getSettlementPriceWithDecimals(
-                QToken(_qToken).oracle(),
-                underlyingAsset,
-                QToken(_qToken).expiryTime()
-            );
-
-        (payoutToken, payout) = FundsCalculator.getPayout(
-            _qToken,
-            _amount,
-            OPTIONS_DECIMALS,
-            expiryPrice
-        );
-
-        payoutAmount = payout.toScaledUint(payoutDecimals, true);
+        optionsFactory = _optionsFactory;
+        operateProxy = address(new OperateProxy());
+        quantCalculator = _quantCalculator;
     }
 }

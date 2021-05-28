@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
+pragma abicoder v2;
 
-import "./IOptionsFactory.sol";
+import "../libraries/Actions.sol";
 
 interface IController {
     event OptionsPositionMinted(
@@ -43,49 +44,18 @@ interface IController {
         address collateralAsset
     );
 
-    function mintOptionsPosition(
-        address _to,
-        address _qToken,
-        uint256 _optionsAmount
-    ) external returns (uint256);
-
-    function mintSpread(
-        address _qTokenToMint,
-        address _qTokenForCollateral,
-        uint256 _optionsAmount
-    ) external returns (uint256);
-
-    function exercise(address _qToken, uint256 _amount) external;
-
-    function claimCollateral(uint256 _collateralTokenId, uint256 _amount)
-        external;
-
-    function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
-        external;
+    function operate(ActionArgs[] memory) external returns (bool);
 
     function initialize(
         string memory,
         string memory,
+        address,
         address
     ) external;
 
-    function getCollateralRequirement(
-        address _qTokenToMint,
-        address _qTokenForCollateral,
-        uint256 _optionsAmount
-    ) external view returns (address collateral, uint256 collateralAmount);
+    function optionsFactory() external view returns (address);
 
-    function getPayout(address _qToken, uint256 _amount)
-        external
-        view
-        returns (
-            bool isSettled,
-            address payoutToken,
-            uint256 payoutAmount
-        );
+    function operateProxy() external view returns (address);
 
-    function optionsFactory() external view returns (IOptionsFactory);
-
-    // solhint-disable-next-line func-name-mixedcase
-    function OPTIONS_DECIMALS() external view returns (uint8);
+    function quantCalculator() external view returns (address);
 }
