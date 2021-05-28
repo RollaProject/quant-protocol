@@ -33,7 +33,6 @@ import {
   deployOracleRegistry,
   deployQuantCalculator,
   deployQuantConfig,
-  getSignedTransactionData,
   mockERC20,
 } from "./testUtils";
 
@@ -502,7 +501,7 @@ describe("Controller", async () => {
     roundMode: BN.RoundingMode = BN.ROUND_DOWN
   ): Promise<[BigNumber, MockERC20]> => {
     const strikePrice = await qToken.strikePrice();
-    const underlyingDecimals = await WETH.decimals();
+    const payoutDecimals = await WETH.decimals();
     const optionsDecimals = 18;
 
     let payoutAmount: BN;
@@ -514,7 +513,7 @@ describe("Controller", async () => {
             .minus(new BN(strikePrice.toString()))
             .times(new BN(amount.toString()))
             .div(new BN(expiryPrice.toString()))
-            .times(new BN(10).pow(underlyingDecimals))
+            .times(new BN(10).pow(payoutDecimals))
             .div(new BN(10).pow(optionsDecimals))
         : new BN(0);
 
@@ -560,7 +559,7 @@ describe("Controller", async () => {
     return {
       actionType: "MINT_OPTION",
       qToken: args.qToken,
-      qTokenSecondary: AddressZero,
+      secondaryAddress: AddressZero,
       receiver: args.to,
       amount: args.amount,
       collateralTokenId: Zero.toString(),
@@ -572,7 +571,7 @@ describe("Controller", async () => {
     return {
       actionType: "MINT_SPREAD",
       qToken: args.qTokenToMint,
-      qTokenSecondary: args.qTokenForCollateral,
+      secondaryAddress: args.qTokenForCollateral,
       receiver: AddressZero,
       amount: args.amount,
       collateralTokenId: Zero.toString(),
@@ -584,7 +583,7 @@ describe("Controller", async () => {
     return {
       actionType: "EXERCISE",
       qToken: args.qToken,
-      qTokenSecondary: AddressZero,
+      secondaryAddress: AddressZero,
       receiver: AddressZero,
       amount: args.amount,
       collateralTokenId: Zero.toString(),
@@ -596,7 +595,7 @@ describe("Controller", async () => {
     return {
       actionType: "CLAIM_COLLATERAL",
       qToken: AddressZero,
-      qTokenSecondary: AddressZero,
+      secondaryAddress: AddressZero,
       receiver: AddressZero,
       amount: args.amount,
       collateralTokenId: args.collateralTokenId,
@@ -608,7 +607,7 @@ describe("Controller", async () => {
     return {
       actionType: "NEUTRALIZE",
       qToken: AddressZero,
-      qTokenSecondary: AddressZero,
+      secondaryAddress: AddressZero,
       receiver: AddressZero,
       amount: args.amount,
       collateralTokenId: args.collateralTokenId,
@@ -620,7 +619,7 @@ describe("Controller", async () => {
     return {
       actionType: "CALL",
       qToken: AddressZero,
-      qTokenSecondary: AddressZero,
+      secondaryAddress: AddressZero,
       receiver: args.callee,
       amount: Zero.toString(),
       collateralTokenId: Zero.toString(),
@@ -927,6 +926,257 @@ describe("Controller", async () => {
       const ControllerFactory = await ethers.getContractFactory("Controller");
       const controllerCodeSize = (ControllerFactory.bytecode.length - 2) / 2;
       expect(controllerCodeSize).to.be.lessThanOrEqual(MAX_CODE_SIZE);
+    });
+  });
+  // it("should encode meta transaction", async () => {});
+
+  describe("neutralizePosition", () => {
+    it("Should round in favour of the protocol when neutralizing positions", async () => {
+      //1400 USD strike -> 1400 * 10^6 = 10^9
+      //1 OPTION REQUIRES 1.4 * 10^9
+      //10^18 OPTION REQUIRES 1.4 * 10^9
+      //1.4 WEI OF USDC NEEDED PER 10^9 options
+      //3.5 WEI of USDC NEEDED FOR 2.5 * 10^9
+      //4 WEI WHEN ROUNDED UP (MINT) FOR 2.5 * 10^9 OPTIONS
+      //3 WEI WHEN ROUNDED DOWN (NEUTRALIZE) FOR 2.5 * 10^9 OPTIONS
+
+      const optionsAmount = ethers.utils.parseUnits("2.5", 9);
+
+      const [, collateralRequirement] = await getCollateralRequirement(
+        qTokenPut1400,
+        nullQToken,
+        optionsAmount,
+        BN.ROUND_UP
+      );
+
+      await USDC.connect(assetsRegistryManager).mint(
+        secondAccount.address,
+        collateralRequirement
+      );
+
+      await USDC.connect(secondAccount).approve(
+        controller.address,
+        collateralRequirement
+      );
+
+      await controller.connect(secondAccount).operate([
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenPut1400.address,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenPut1400.address,
+        AddressZero
+      );
+
+      await controller.connect(secondAccount).operate([
+        encodeNeutralizeArgs({
+          collateralTokenId,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
+        Zero
+      );
+
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenId
+        )
+      ).to.equal(Zero);
+
+      const [, collateralOwed] = await getCollateralRequirement(
+        qTokenPut1400,
+        nullQToken,
+        optionsAmount,
+        BN.ROUND_DOWN
+      );
+
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+        collateralOwed
+      );
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        collateralRequirement.sub(collateralOwed)
+      );
+    });
+  });
+
+  describe("neutralizePosition", () => {
+    it("Should revert when users try to neutralize more options than they have", async () => {
+      await expect(
+        controller.connect(secondAccount).operate([
+          encodeNeutralizeArgs({
+            collateralTokenId: await collateralToken.getCollateralTokenId(
+              qTokenCall3520.address,
+              AddressZero
+            ),
+            amount: ethers.utils.parseEther("4"),
+          }),
+        ])
+      ).to.be.revertedWith("Controller: Tried to neutralize more than balance");
+    });
+
+    it("Users should be able to neutralize some of their position", async () => {
+      const optionsAmount = ethers.utils.parseEther("5");
+
+      const [, collateralRequirement] = await getCollateralRequirement(
+        qTokenPut1400,
+        nullQToken,
+        optionsAmount,
+        BN.ROUND_DOWN
+      );
+
+      await USDC.connect(assetsRegistryManager).mint(
+        secondAccount.address,
+        collateralRequirement
+      );
+
+      await USDC.connect(secondAccount).approve(
+        controller.address,
+        collateralRequirement
+      );
+
+      await controller.connect(secondAccount).operate([
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenPut1400.address,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenPut1400.address,
+        AddressZero
+      );
+      const amountToNeutralize = ethers.utils.parseEther("3");
+
+      await controller.connect(secondAccount).operate([
+        encodeNeutralizeArgs({
+          collateralTokenId,
+          amount: amountToNeutralize,
+        }),
+      ]);
+
+      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
+        optionsAmount.sub(amountToNeutralize)
+      );
+
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenId
+        )
+      ).to.equal(optionsAmount.sub(amountToNeutralize));
+
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+        ethers.utils.parseUnits("4200", 6)
+      );
+
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        ethers.utils.parseUnits("2800", 6)
+      );
+    });
+
+    it("Users should be able to neutralize all of their position, and get the long QToken back from a spread", async () => {
+      const optionsAmount = ethers.utils.parseEther("5");
+
+      const [, spreadCollateralRequirement] = await getCollateralRequirement(
+        qTokenPut1400,
+        qTokenPut400,
+        optionsAmount
+      );
+
+      const [, longCollateralRequirement] = await getCollateralRequirement(
+        qTokenPut400,
+        nullQToken,
+        optionsAmount
+      );
+
+      await USDC.connect(assetsRegistryManager).mint(
+        secondAccount.address,
+        spreadCollateralRequirement.add(longCollateralRequirement)
+      );
+
+      await USDC.connect(secondAccount).approve(
+        controller.address,
+        spreadCollateralRequirement.add(longCollateralRequirement)
+      );
+
+      await controller.connect(secondAccount).operate([
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenPut400.address,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      await controller.connect(secondAccount).operate([
+        encodeMintSpreadArgs({
+          qTokenToMint: qTokenPut1400.address,
+          qTokenForCollateral: qTokenPut400.address,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenPut1400.address,
+        qTokenPut400.address
+      );
+
+      const [collateralAsset, collateralOwed] = await getCollateralRequirement(
+        qTokenPut1400,
+        nullQToken,
+        optionsAmount,
+        BN.ROUND_DOWN
+      );
+
+      await expect(
+        controller.connect(secondAccount).operate([
+          encodeNeutralizeArgs({
+            collateralTokenId,
+            amount: Zero,
+          }),
+        ])
+      )
+        .to.emit(controller, "NeutralizePosition")
+        .withArgs(
+          secondAccount.address,
+          qTokenPut1400.address,
+          optionsAmount,
+          collateralOwed,
+          collateralAsset,
+          qTokenPut400.address
+        );
+
+      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
+        ethers.BigNumber.from("0")
+      );
+
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenId
+        )
+      ).to.equal(ethers.BigNumber.from("0"));
+
+      expect(await qTokenPut400.balanceOf(secondAccount.address)).to.equal(
+        optionsAmount
+      );
+
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+        collateralOwed
+      );
+
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        longCollateralRequirement
+      );
+
+      // TODO: Check that the user is getting his collateral back
     });
   });
 
@@ -1744,162 +1994,6 @@ describe("Controller", async () => {
       );
 
       revertToSnapshot(snapshotId);
-    });
-  });
-
-  describe("neutralizePosition", () => {
-    it("Should revert when users try to neutralize more options than they have", async () => {
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeNeutralizeArgs({
-            collateralTokenId: await collateralToken.getCollateralTokenId(
-              qTokenCall3520.address,
-              AddressZero
-            ),
-            amount: ethers.utils.parseEther("4"),
-          }),
-        ])
-      ).to.be.revertedWith("Controller: Tried to neutralize more than balance");
-    });
-
-    it("Users should be able to neutralize some of their position", async () => {
-      const optionsAmount = ethers.utils.parseEther("5");
-
-      const [, collateralRequirement] = await getCollateralRequirement(
-        qTokenPut1400,
-        nullQToken,
-        optionsAmount,
-        BN.ROUND_DOWN
-      );
-
-      await USDC.connect(assetsRegistryManager).mint(
-        secondAccount.address,
-        collateralRequirement
-      );
-
-      await USDC.connect(secondAccount).approve(
-        controller.address,
-        collateralRequirement
-      );
-
-      await controller.connect(secondAccount).operate([
-        encodeMintOptionArgs({
-          to: secondAccount.address,
-          qToken: qTokenPut1400.address,
-          amount: optionsAmount,
-        }),
-      ]);
-
-      const collateralTokenId = await collateralToken.getCollateralTokenId(
-        qTokenPut1400.address,
-        AddressZero
-      );
-      const amountToNeutralize = ethers.utils.parseEther("3");
-
-      await controller.connect(secondAccount).operate([
-        encodeNeutralizeArgs({
-          collateralTokenId,
-          amount: amountToNeutralize,
-        }),
-      ]);
-
-      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
-        optionsAmount.sub(amountToNeutralize)
-      );
-
-      expect(
-        await collateralToken.balanceOf(
-          secondAccount.address,
-          collateralTokenId
-        )
-      ).to.equal(optionsAmount.sub(amountToNeutralize));
-    });
-
-    it("Users should be able to neutralize all of their position, and get the long QToken back from a spread", async () => {
-      const optionsAmount = ethers.utils.parseEther("5");
-
-      const [, spreadCollateralRequirement] = await getCollateralRequirement(
-        qTokenPut1400,
-        qTokenPut400,
-        optionsAmount
-      );
-
-      const [, longCollateralRequirement] = await getCollateralRequirement(
-        qTokenPut400,
-        nullQToken,
-        optionsAmount
-      );
-
-      await USDC.connect(assetsRegistryManager).mint(
-        secondAccount.address,
-        spreadCollateralRequirement.add(longCollateralRequirement)
-      );
-
-      await USDC.connect(secondAccount).approve(
-        controller.address,
-        spreadCollateralRequirement.add(longCollateralRequirement)
-      );
-
-      await controller.connect(secondAccount).operate([
-        encodeMintOptionArgs({
-          to: secondAccount.address,
-          qToken: qTokenPut400.address,
-          amount: optionsAmount,
-        }),
-      ]);
-
-      await controller.connect(secondAccount).operate([
-        encodeMintSpreadArgs({
-          qTokenToMint: qTokenPut1400.address,
-          qTokenForCollateral: qTokenPut400.address,
-          amount: optionsAmount,
-        }),
-      ]);
-
-      const collateralTokenId = await collateralToken.getCollateralTokenId(
-        qTokenPut1400.address,
-        qTokenPut400.address
-      );
-
-      const [collateralAsset, collateralOwed] = await getCollateralRequirement(
-        qTokenPut1400,
-        nullQToken,
-        optionsAmount,
-        BN.ROUND_DOWN
-      );
-
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeNeutralizeArgs({
-            collateralTokenId,
-            amount: Zero,
-          }),
-        ])
-      )
-        .to.emit(controller, "NeutralizePosition")
-        .withArgs(
-          secondAccount.address,
-          qTokenPut1400.address,
-          optionsAmount,
-          collateralOwed,
-          collateralAsset,
-          qTokenPut400.address
-        );
-
-      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
-        ethers.BigNumber.from("0")
-      );
-
-      expect(
-        await collateralToken.balanceOf(
-          secondAccount.address,
-          collateralTokenId
-        )
-      ).to.equal(ethers.BigNumber.from("0"));
-
-      expect(await qTokenPut400.balanceOf(secondAccount.address)).to.equal(
-        optionsAmount
-      );
     });
   });
 
