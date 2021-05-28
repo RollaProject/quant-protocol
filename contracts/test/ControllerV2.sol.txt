@@ -359,18 +359,18 @@ contract ControllerV2 is
 
         require(
             _qTokenShort != address(0),
-            "Controller: Can not claim collateral from non-existing option"
+            "Can not claim collateral from non-existing option"
         );
 
         QToken qTokenShort = QToken(_qTokenShort);
 
         require(
             block.timestamp > qTokenShort.expiryTime(),
-            "Controller: Can not claim collateral from options before their expiry"
+            "Can not claim collateral from options before their expiry"
         );
         require(
             qTokenShort.getOptionPriceStatus() == PriceStatus.SETTLED,
-            "Controller: Can not claim collateral before option is settled"
+            "Can not claim collateral before option is settled"
         );
 
         amountToClaim = _amount == 0
