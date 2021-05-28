@@ -21,7 +21,6 @@ import {
 } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
-import { ControllerV2 } from "../typechain/ControllerV2";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
@@ -1962,96 +1961,96 @@ describe("Controller", async () => {
     });
   });
 
-  describe("Meta transactions", () => {
-    it("Users should be able to mint options through meta transactions", async () => {
-      const amount = ethers.utils.parseEther("10");
-      const actions = [
-        encodeMintOptionArgs({
-          qToken: qTokenCall2000.address,
-          to: secondAccount.address,
-          amount: 10,
-        }),
-      ];
+  // describe("Meta transactions", () => {
+  //   it("Users should be able to mint options through meta transactions", async () => {
+  //     const amount = ethers.utils.parseEther("10");
+  //     const actions = [
+  //       encodeMintOptionArgs({
+  //         qToken: qTokenCall2000.address,
+  //         to: secondAccount.address,
+  //         amount: 10,
+  //       }),
+  //     ];
 
-      const txData = await getSignedTransactionData(
-        parseInt((await controller.getNonce(deployer.address)).toString()),
-        secondAccount,
-        actions,
-        controller.address
-      );
+  //     const txData = await getSignedTransactionData(
+  //       parseInt((await controller.getNonce(deployer.address)).toString()),
+  //       secondAccount,
+  //       actions,
+  //       controller.address
+  //     );
 
-      const [collateralAddress, collateralAmount] =
-        await getCollateralRequirement(qTokenCall2000, nullQToken, amount);
-      // mint required collateral to the user account
-      const collateral = collateralAddress === WETH.address ? WETH : USDC;
-      await collateral
-        .connect(assetsRegistryManager)
-        .mint(await deployer.address, collateralAmount);
-      // Approve the Controller to use the user's funds
-      await collateral
-        .connect(deployer)
-        .approve(controller.address, collateralAmount);
-      expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
-        Zero
-      );
-      expect(await collateral.balanceOf(deployer.address)).to.equal(
-        collateralAmount
-      );
-      await controller
-        .connect(secondAccount)
-        .executeMetaTransaction(
-          deployer.address,
-          actions,
-          txData.r,
-          txData.s,
-          txData.v
-        );
-      expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
-        amount
-      );
-      expect(await collateral.balanceOf(deployer.address)).to.equal(Zero);
-    });
-    // it("Users should be able to create spreads through meta transactions", async () => {});
-  });
+  //     const [collateralAddress, collateralAmount] =
+  //       await getCollateralRequirement(qTokenCall2000, nullQToken, amount);
+  //     // mint required collateral to the user account
+  //     const collateral = collateralAddress === WETH.address ? WETH : USDC;
+  //     await collateral
+  //       .connect(assetsRegistryManager)
+  //       .mint(await deployer.address, collateralAmount);
+  //     // Approve the Controller to use the user's funds
+  //     await collateral
+  //       .connect(deployer)
+  //       .approve(controller.address, collateralAmount);
+  //     expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
+  //       Zero
+  //     );
+  //     expect(await collateral.balanceOf(deployer.address)).to.equal(
+  //       collateralAmount
+  //     );
+  //     await controller
+  //       .connect(secondAccount)
+  //       .executeMetaTransaction(
+  //         deployer.address,
+  //         actions,
+  //         txData.r,
+  //         txData.s,
+  //         txData.v
+  //       );
+  //     expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
+  //       amount
+  //     );
+  //     expect(await collateral.balanceOf(deployer.address)).to.equal(Zero);
+  //   });
+  //   // it("Users should be able to create spreads through meta transactions", async () => {});
+  // });
 
-  describe("Upgradeability", () => {
-    const upgradeController = async (
-      controller: Controller
-    ): Promise<ControllerV2> => {
-      const ControllerV2 = await ethers.getContractFactory("ControllerV2");
-      const controllerV2 = <ControllerV2>(
-        await upgrades.upgradeProxy(controller.address, ControllerV2)
-      );
-      return controllerV2;
-    };
-    it("Should maintain state after upgrades", async () => {
-      const configuredOptionsFactory = await controller.optionsFactory();
+  // describe("Upgradeability", () => {
+  //   const upgradeController = async (
+  //     controller: Controller
+  //   ): Promise<ControllerV2> => {
+  //     const ControllerV2 = await ethers.getContractFactory("ControllerV2");
+  //     const controllerV2 = <ControllerV2>(
+  //       await upgrades.upgradeProxy(controller.address, ControllerV2)
+  //     );
+  //     return controllerV2;
+  //   };
+  //   it("Should maintain state after upgrades", async () => {
+  //     const configuredOptionsFactory = await controller.optionsFactory();
 
-      const controllerV2 = await upgradeController(controller);
+  //     const controllerV2 = await upgradeController(controller);
 
-      expect(await controllerV2.optionsFactory()).to.equal(
-        configuredOptionsFactory
-      );
-    });
+  //     expect(await controllerV2.optionsFactory()).to.equal(
+  //       configuredOptionsFactory
+  //     );
+  //   });
 
-    it("Should be able to add new state variables through upgrades", async () => {
-      const controllerV2 = await upgradeController(controller);
+  //   it("Should be able to add new state variables through upgrades", async () => {
+  //     const controllerV2 = await upgradeController(controller);
 
-      expect(await controllerV2.newV2StateVariable()).to.equal(Zero);
-    });
+  //     expect(await controllerV2.newV2StateVariable()).to.equal(Zero);
+  //   });
 
-    it("Should be able to add new functions through upgrades", async () => {
-      const controllerV2 = await upgradeController(controller);
+  //   it("Should be able to add new functions through upgrades", async () => {
+  //     const controllerV2 = await upgradeController(controller);
 
-      expect(await controllerV2.newV2StateVariable()).to.equal(Zero);
+  //     expect(await controllerV2.newV2StateVariable()).to.equal(Zero);
 
-      await controllerV2.connect(deployer).setNewV2StateVariable(42);
+  //     await controllerV2.connect(deployer).setNewV2StateVariable(42);
 
-      expect(await controllerV2.newV2StateVariable()).to.equal(
-        ethers.BigNumber.from("42")
-      );
-    });
-  });
+  //     expect(await controllerV2.newV2StateVariable()).to.equal(
+  //       ethers.BigNumber.from("42")
+  //     );
+  //   });
+  // });
 
   //TODO: Neutralization rounding tests (favours protocol vs user)
 
