@@ -21,7 +21,6 @@ import {
 } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
-import { ControllerV2 } from "../typechain/ControllerV2";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
@@ -2407,8 +2406,4 @@ describe("Controller", async () => {
       );
     });
   });
-
-  //TODO: Neutralization rounding tests (favours protocol vs user)
-
-  //TODO: Can't create spread with the same qToken for short and long
 });
