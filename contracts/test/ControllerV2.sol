@@ -345,7 +345,7 @@ contract ControllerV2 is
         {
             QuantMath.FixedPointInt memory collateralOwedFP;
             uint8 underlyingDecimals =
-                OptionsUtils.getUnderlyingDecimals(
+                OptionsUtils.getPayoutDecimals(
                     IQToken(qTokenShort),
                     IOptionsFactory(optionsFactory).quantConfig()
                 );

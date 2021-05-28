@@ -93,8 +93,8 @@ contract QuantCalculator is IQuantCalculator {
             payoutFromLong = int256(0).fromUnscaledInt();
         }
 
-        uint8 underlyingDecimals =
-            OptionsUtils.getUnderlyingDecimals(
+        uint8 payoutDecimals =
+            OptionsUtils.getPayoutDecimals(
                 qTokenShort,
                 optionsFactory.quantConfig()
             );
@@ -106,7 +106,7 @@ contract QuantCalculator is IQuantCalculator {
             qTokenLong,
             amountToClaim,
             OPTIONS_DECIMALS,
-            underlyingDecimals
+            payoutDecimals
         );
 
         (, QuantMath.FixedPointInt memory payoutFromShort) =
@@ -117,14 +117,10 @@ contract QuantCalculator is IQuantCalculator {
                 expiryPrice
             );
 
-        // if (payoutFromLong.sub(fee) > collateralRequirement.sub(payoutFromShort) {
-
-        // } else {
         returnableCollateral = payoutFromLong
             .add(collateralRequirement)
             .sub(payoutFromShort)
-            .toScaledUint(underlyingDecimals, true);
-        // }
+            .toScaledUint(payoutDecimals, true);
     }
 
     function getCollateralRequirement(
@@ -141,8 +137,8 @@ contract QuantCalculator is IQuantCalculator {
         IOptionsFactory optionsFactory = IOptionsFactory(_optionsFactory);
 
         QuantMath.FixedPointInt memory collateralAmountFP;
-        uint8 underlyingDecimals =
-            OptionsUtils.getUnderlyingDecimals(
+        uint8 payoutDecimals =
+            OptionsUtils.getPayoutDecimals(
                 IQToken(_qTokenToMint),
                 optionsFactory.quantConfig()
             );
@@ -153,11 +149,11 @@ contract QuantCalculator is IQuantCalculator {
             _qTokenForCollateral,
             _amount,
             OPTIONS_DECIMALS,
-            underlyingDecimals
+            payoutDecimals
         );
 
         collateralAmount = collateralAmountFP.toScaledUint(
-            underlyingDecimals,
+            payoutDecimals,
             false
         );
     }
@@ -173,7 +169,9 @@ contract QuantCalculator is IQuantCalculator {
         returns (
             bool isSettled,
             address payoutToken,
-            uint256 payoutAmount
+            uint256 payoutAmount,
+            uint8 payoutDecimals,
+            uint256 exerciserFee
         )
     {
         IOptionsFactory optionsFactory = IOptionsFactory(_optionsFactory);
@@ -181,7 +179,7 @@ contract QuantCalculator is IQuantCalculator {
         IQToken qToken = IQToken(_qToken);
         isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
         if (!isSettled) {
-            return (false, address(0), 0);
+            return (false, address(0), 0, 0, 0);
         } else {
             isSettled = true;
         }
@@ -195,8 +193,8 @@ contract QuantCalculator is IQuantCalculator {
                 )
             );
 
-        uint8 payoutDecimals =
-            OptionsUtils.getUnderlyingDecimals(
+        payoutDecimals =
+            OptionsUtils.getPayoutDecimals(
                 qToken,
                 optionsFactory.quantConfig()
             );
@@ -218,5 +216,13 @@ contract QuantCalculator is IQuantCalculator {
         );
 
         payoutAmount = payout.toScaledUint(payoutDecimals, true);
+
+        //we round up to favour the protocol
+        exerciserFee =
+            FundsCalculator.getExerciseFee(
+                payoutAmount,
+                payoutDecimals,
+                false
+            );
     }
 }
