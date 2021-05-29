@@ -11,6 +11,7 @@ import "./libraries/FundsCalculator.sol";
 import "./libraries/OptionsUtils.sol";
 import "./libraries/QuantMath.sol";
 
+//TODO: Stop taking optionsFactory as params in here as its an anti-pattern and frontend will need to pass it.
 contract QuantCalculator is IQuantCalculator {
     using SafeMath for uint256;
     using QuantMath for uint256;
@@ -19,6 +20,7 @@ contract QuantCalculator is IQuantCalculator {
 
     uint8 public constant override OPTIONS_DECIMALS = 18;
 
+    //TODO: msgSender balanceOf should be moved to controller
     function calculateClaimableCollateral(
         uint256 _collateralTokenId,
         uint256 _amount,
@@ -123,6 +125,39 @@ contract QuantCalculator is IQuantCalculator {
             .toScaledUint(payoutDecimals, true);
     }
 
+    //TODO: This is largely the same as method below so can use that...?
+    function getNeutralizationPayout(
+        address _qTokenLong,
+        address _qTokenShort,
+        uint256 _amountToNeutralize,
+        address _optionsFactory
+    )
+        external
+        view
+        override
+        returns (address collateralType, uint256 collateralOwed)
+    {
+        uint8 payoutDecimals =
+            OptionsUtils.getPayoutDecimals(
+                IQToken(_qTokenShort),
+                IOptionsFactory(_optionsFactory).quantConfig()
+            );
+
+        //TODO: If it was a credit spread, should not allow him to do this?
+
+        QuantMath.FixedPointInt memory collateralOwedFP;
+        (collateralType, collateralOwedFP) = FundsCalculator
+            .getCollateralRequirement(
+            _qTokenShort,
+            _qTokenLong,
+            _amountToNeutralize,
+            OPTIONS_DECIMALS,
+            payoutDecimals
+        );
+
+        collateralOwed = collateralOwedFP.toScaledUint(payoutDecimals, true);
+    }
+
     function getCollateralRequirement(
         address _qTokenToMint,
         address _qTokenForCollateral,
@@ -158,7 +193,7 @@ contract QuantCalculator is IQuantCalculator {
         );
     }
 
-    function getPayout(
+    function getExercisePayout(
         address _qToken,
         address _optionsFactory,
         uint256 _amount
@@ -193,11 +228,10 @@ contract QuantCalculator is IQuantCalculator {
                 )
             );
 
-        payoutDecimals =
-            OptionsUtils.getPayoutDecimals(
-                qToken,
-                optionsFactory.quantConfig()
-            );
+        payoutDecimals = OptionsUtils.getPayoutDecimals(
+            qToken,
+            optionsFactory.quantConfig()
+        );
 
         address underlyingAsset = qToken.underlyingAsset();
 
@@ -218,11 +252,10 @@ contract QuantCalculator is IQuantCalculator {
         payoutAmount = payout.toScaledUint(payoutDecimals, true);
 
         //we round up to favour the protocol
-        exerciserFee =
-            FundsCalculator.getExerciseFee(
-                payoutAmount,
-                payoutDecimals,
-                false
-            );
+        // exerciserFee = FundsCalculator.getExerciseFee(
+        //     payoutAmount,
+        //     payoutDecimals,
+        //     false
+        // );
     }
 }
