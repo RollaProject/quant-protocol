@@ -7,7 +7,7 @@ shell.mkdir("./docs/uml");
 
 const outputFolder = "./docs/uml/";
 const commandsToRun = [
-  `sol2uml ./contracts -i ./contracts/protocol/test/ -f all -v -o ./docs/uml/QuantProtocol.svg`,
+  `sol2uml ./contracts -i ./contracts/test/ -f all -v -o ./docs/uml/QuantProtocol.svg`,
 ];
 
 const executeCommand = (command) =>
