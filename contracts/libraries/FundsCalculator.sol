@@ -242,11 +242,12 @@ library FundsCalculator {
         uint256 _exerciseTotal,
         uint256 _tokenDecimals,
         bool _roundDown
-    ) internal pure returns (uint256 exerciseFee) {
+    ) public pure returns (QuantMath.FixedPointInt memory exerciseFee) {
         exerciseFee = _exerciseTotal
             .fromScaledUint(_tokenDecimals)
             .mul(int256(50).fromUnscaledInt())
             .div(int256(10000).fromUnscaledInt())
-            .toScaledUint(_tokenDecimals, _roundDown);
+            .toScaledUint(_tokenDecimals, _roundDown)
+            .fromScaledUint(_tokenDecimals);
     }
 }
