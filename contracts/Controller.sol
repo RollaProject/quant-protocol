@@ -99,6 +99,19 @@ contract Controller is
         return true;
     }
 
+    function initialize(
+        string memory _name,
+        string memory _version,
+        address _optionsFactory,
+        address _quantCalculator
+    ) public override initializer {
+        __ReentrancyGuard_init();
+        EIP712MetaTransaction.initializeEIP712(_name, _version);
+        optionsFactory = _optionsFactory;
+        operateProxy = address(new OperateProxy());
+        quantCalculator = _quantCalculator;
+    }
+
     function _mintOptionsPosition(Actions.MintOptionArgs memory _args)
         internal
         validQToken(_args.qToken)
@@ -400,18 +413,5 @@ contract Controller is
 
     function _call(Actions.CallArgs memory _args) internal {
         IOperateProxy(operateProxy).callFunction(_args.callee, _args.data);
-    }
-
-    function initialize(
-        string memory _name,
-        string memory _version,
-        address _optionsFactory,
-        address _quantCalculator
-    ) public override initializer {
-        __ReentrancyGuard_init();
-        EIP712MetaTransaction.initializeEIP712(_name, _version);
-        optionsFactory = _optionsFactory;
-        operateProxy = address(new OperateProxy());
-        quantCalculator = _quantCalculator;
     }
 }
