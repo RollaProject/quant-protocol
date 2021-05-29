@@ -23,7 +23,7 @@ interface IQuantCalculator {
         uint256
     ) external view returns (address, uint256);
 
-    function getPayout(
+    function getExercisePayout(
         address,
         address,
         uint256
@@ -37,6 +37,13 @@ interface IQuantCalculator {
             uint8,
             uint256
         );
+
+    function getNeutralizationPayout(
+        address _qTokenLong,
+        address _qTokenShort,
+        uint256 _amountToNeutralize,
+        address _optionsFactory
+    ) external view returns (address collateralType, uint256 collateralOwed);
 
     // solhint-disable-next-line func-name-mixedcase
     function OPTIONS_DECIMALS() external view returns (uint8);

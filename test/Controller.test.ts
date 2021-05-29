@@ -7,7 +7,7 @@ import {
   constants,
   ContractInterface,
   Signer,
-  Wallet,
+  Wallet
 } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
@@ -17,7 +17,7 @@ import {
   AssetsRegistry,
   OptionsFactory,
   OracleRegistry,
-  QuantCalculator,
+  QuantCalculator
 } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
@@ -33,7 +33,7 @@ import {
   deployOracleRegistry,
   deployQuantCalculator,
   deployQuantConfig,
-  mockERC20,
+  mockERC20
 } from "./testUtils";
 
 const { deployContract, deployMockContract } = waffle;
@@ -949,6 +949,8 @@ describe("Controller", async () => {
         BN.ROUND_UP
       );
 
+      expect(collateralRequirement).to.equal(4);
+
       await USDC.connect(assetsRegistryManager).mint(
         secondAccount.address,
         collateralRequirement
@@ -1003,6 +1005,7 @@ describe("Controller", async () => {
       expect(await USDC.balanceOf(controller.address)).to.equal(
         collateralRequirement.sub(collateralOwed)
       );
+      expect(collateralOwed).to.equal(3);
     });
   });
 
@@ -1031,6 +1034,10 @@ describe("Controller", async () => {
         BN.ROUND_DOWN
       );
 
+      expect(collateralRequirement).to.equal(
+        ethers.utils.parseUnits("7000", 6)
+      );
+
       await USDC.connect(assetsRegistryManager).mint(
         secondAccount.address,
         collateralRequirement
@@ -1049,10 +1056,24 @@ describe("Controller", async () => {
         }),
       ]);
 
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(Zero);
+
       const collateralTokenId = await collateralToken.getCollateralTokenId(
         qTokenPut1400.address,
         AddressZero
       );
+
+      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
+        optionsAmount
+      );
+
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenId
+        )
+      ).to.equal(optionsAmount);
+
       const amountToNeutralize = ethers.utils.parseEther("3");
 
       await controller.connect(secondAccount).operate([
@@ -1062,8 +1083,11 @@ describe("Controller", async () => {
         }),
       ]);
 
+      const remainingAmount = optionsAmount.sub(amountToNeutralize);
+      expect(remainingAmount).to.equal(ethers.utils.parseEther("2"));
+
       expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
-        optionsAmount.sub(amountToNeutralize)
+        remainingAmount
       );
 
       expect(
@@ -1071,7 +1095,7 @@ describe("Controller", async () => {
           secondAccount.address,
           collateralTokenId
         )
-      ).to.equal(optionsAmount.sub(amountToNeutralize));
+      ).to.equal(remainingAmount);
 
       expect(await USDC.balanceOf(secondAccount.address)).to.equal(
         ethers.utils.parseUnits("4200", 6)
@@ -1091,10 +1115,18 @@ describe("Controller", async () => {
         optionsAmount
       );
 
+      expect(spreadCollateralRequirement).to.equal(
+        ethers.utils.parseUnits("5000", 6)
+      );
+
       const [, longCollateralRequirement] = await getCollateralRequirement(
         qTokenPut400,
         nullQToken,
         optionsAmount
+      );
+
+      expect(longCollateralRequirement).to.equal(
+        ethers.utils.parseUnits("2000", 6)
       );
 
       await USDC.connect(assetsRegistryManager).mint(
@@ -1115,6 +1147,30 @@ describe("Controller", async () => {
         }),
       ]);
 
+      const collateralTokenForLong = await collateralToken.getCollateralTokenId(
+        qTokenPut400.address,
+        AddressZero
+      );
+
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenForLong
+        )
+      ).to.equal(optionsAmount);
+
+      expect(await qTokenPut400.balanceOf(secondAccount.address)).to.equal(
+        optionsAmount
+      );
+
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+        spreadCollateralRequirement
+      );
+
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        longCollateralRequirement
+      );
+
       await controller.connect(secondAccount).operate([
         encodeMintSpreadArgs({
           qTokenToMint: qTokenPut1400.address,
@@ -1123,22 +1179,49 @@ describe("Controller", async () => {
         }),
       ]);
 
-      const collateralTokenId = await collateralToken.getCollateralTokenId(
-        qTokenPut1400.address,
-        qTokenPut400.address
+      const collateralTokenForSpread =
+        await collateralToken.getCollateralTokenId(
+          qTokenPut1400.address,
+          qTokenPut400.address
+        );
+
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenForLong
+        )
+      ).to.equal(optionsAmount);
+
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenForSpread
+        )
+      ).to.equal(optionsAmount);
+
+      expect(await qTokenPut400.balanceOf(secondAccount.address)).to.equal(
+        Zero
+      );
+
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(Zero);
+
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        longCollateralRequirement.add(spreadCollateralRequirement)
       );
 
       const [collateralAsset, collateralOwed] = await getCollateralRequirement(
         qTokenPut1400,
-        nullQToken,
+        qTokenPut400,
         optionsAmount,
         BN.ROUND_DOWN
       );
 
+      expect(collateralOwed).to.equal(spreadCollateralRequirement);
+
       await expect(
         controller.connect(secondAccount).operate([
           encodeNeutralizeArgs({
-            collateralTokenId,
+            collateralTokenId: collateralTokenForSpread,
             amount: Zero,
           }),
         ])
@@ -1154,19 +1237,26 @@ describe("Controller", async () => {
         );
 
       expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
-        ethers.BigNumber.from("0")
+        Zero
+      );
+
+      expect(await qTokenPut400.balanceOf(secondAccount.address)).to.equal(
+        optionsAmount
       );
 
       expect(
         await collateralToken.balanceOf(
           secondAccount.address,
-          collateralTokenId
+          collateralTokenForSpread
         )
-      ).to.equal(ethers.BigNumber.from("0"));
+      ).to.equal(Zero);
 
-      expect(await qTokenPut400.balanceOf(secondAccount.address)).to.equal(
-        optionsAmount
-      );
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenForLong
+        )
+      ).to.equal(optionsAmount);
 
       expect(await USDC.balanceOf(secondAccount.address)).to.equal(
         collateralOwed
@@ -1175,8 +1265,171 @@ describe("Controller", async () => {
       expect(await USDC.balanceOf(controller.address)).to.equal(
         longCollateralRequirement
       );
+    });
 
-      // TODO: Check that the user is getting his collateral back
+    //TODO: COPIED THIS TEST CASE FROM ABOVE... NEED TO WRITE PROPERLY...
+    it("Users should be able to neutralize some of their position, and get the long QToken back from a spread when the collateral requirement is 0", async () => {
+      const optionsAmount = ethers.utils.parseEther("5");
+      const amountToNeutralize = ethers.utils.parseEther("3");
+
+      const [, spreadCollateralRequirement] = await getCollateralRequirement(
+        qTokenPut400,
+        qTokenPut1400,
+        optionsAmount
+      );
+
+      expect(spreadCollateralRequirement).to.equal(
+        ethers.utils.parseUnits("0", 6)
+      );
+
+      const [, longCollateralRequirement] = await getCollateralRequirement(
+        qTokenPut1400,
+        nullQToken,
+        optionsAmount
+      );
+
+      expect(longCollateralRequirement).to.equal(
+        ethers.utils.parseUnits("7000", 6)
+      );
+
+      await USDC.connect(assetsRegistryManager).mint(
+        secondAccount.address,
+        spreadCollateralRequirement.add(longCollateralRequirement)
+      );
+
+      await USDC.connect(secondAccount).approve(
+        controller.address,
+        spreadCollateralRequirement.add(longCollateralRequirement)
+      );
+
+      await controller.connect(secondAccount).operate([
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenPut1400.address,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      const collateralTokenForLong = await collateralToken.getCollateralTokenId(
+        qTokenPut1400.address,
+        AddressZero
+      );
+
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenForLong
+        )
+      ).to.equal(optionsAmount);
+
+      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
+        optionsAmount
+      );
+
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+        spreadCollateralRequirement
+      );
+
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        longCollateralRequirement
+      );
+
+      await controller.connect(secondAccount).operate([
+        encodeMintSpreadArgs({
+          qTokenToMint: qTokenPut400.address,
+          qTokenForCollateral: qTokenPut1400.address,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      const collateralTokenForSpread =
+        await collateralToken.getCollateralTokenId(
+          qTokenPut400.address,
+          qTokenPut1400.address
+        );
+
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenForLong
+        )
+      ).to.equal(optionsAmount);
+
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenForSpread
+        )
+      ).to.equal(optionsAmount);
+
+      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
+        Zero
+      );
+
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(Zero);
+
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        longCollateralRequirement.add(spreadCollateralRequirement)
+      );
+
+      const [collateralAsset, collateralOwed] = await getCollateralRequirement(
+        qTokenPut400,
+        qTokenPut1400,
+        amountToNeutralize,
+        BN.ROUND_DOWN
+      );
+
+      expect(collateralOwed).to.equal(Zero);
+
+      await expect(
+        controller.connect(secondAccount).operate([
+          encodeNeutralizeArgs({
+            collateralTokenId: collateralTokenForSpread,
+            amount: amountToNeutralize,
+          }),
+        ])
+      )
+        .to.emit(controller, "NeutralizePosition")
+        .withArgs(
+          secondAccount.address,
+          qTokenPut400.address,
+          amountToNeutralize,
+          collateralOwed,
+          collateralAsset,
+          qTokenPut1400.address
+        );
+
+      expect(await qTokenPut400.balanceOf(secondAccount.address)).to.equal(
+        optionsAmount.sub(amountToNeutralize)
+      );
+
+      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
+        amountToNeutralize
+      );
+
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenForSpread
+        )
+      ).to.equal(optionsAmount.sub(amountToNeutralize));
+
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenForLong
+        )
+      ).to.equal(optionsAmount);
+
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+        collateralOwed
+      );
+
+      expect(collateralOwed).to.equal(Zero);
+
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        longCollateralRequirement
+      );
     });
   });
 
@@ -1459,7 +1712,11 @@ describe("Controller", async () => {
       );
 
       const payoutAmount = (
+<<<<<<< HEAD
         await quantCalculator.getPayout(
+=======
+        await quantCalculator.getExercisePayout(
+>>>>>>> 0fe303d (Fixing some tests and restructuring QuantCalculator)
           qTokenToExercise.address,
           await controller.optionsFactory(),
           optionsAmount
@@ -1531,7 +1788,11 @@ describe("Controller", async () => {
       );
 
       const payoutAmount = (
+<<<<<<< HEAD
         await quantCalculator.getPayout(
+=======
+        await quantCalculator.getExercisePayout(
+>>>>>>> 0fe303d (Fixing some tests and restructuring QuantCalculator)
           qTokenToExercise.address,
           await controller.optionsFactory(),
           optionsAmount
