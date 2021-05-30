@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-import "./interfaces/IOperateProxy.sol";
+import "../interfaces/IOperateProxy.sol";
 
 contract OperateProxy is IOperateProxy {
     function callFunction(address callee, bytes memory data) external override {

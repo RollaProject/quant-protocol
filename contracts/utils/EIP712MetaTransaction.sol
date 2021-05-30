@@ -4,10 +4,10 @@ pragma abicoder v2;
 
 import "@openzeppelin/contracts-upgradeable/drafts/EIP712Upgradeable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./interfaces/IEIP712MetaTransaction.sol";
-import "./interfaces/IController.sol";
-import "./libraries/Actions.sol";
-import {ActionArgs} from "./libraries/Actions.sol";
+import "../interfaces/IEIP712MetaTransaction.sol";
+import "../interfaces/IController.sol";
+import "../libraries/Actions.sol";
+import {ActionArgs} from "../libraries/Actions.sol";
 
 contract EIP712MetaTransaction is EIP712Upgradeable {
     using SafeMath for uint256;
