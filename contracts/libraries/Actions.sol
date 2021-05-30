@@ -4,9 +4,6 @@ pragma abicoder v2;
 
 import "./external/strings.sol";
 
-//address _channelFeeCollector,
-//address _referrer
-
 struct ActionArgs {
     string actionType; //type of action to perform
     address qToken; //qToken to exercise or mint
@@ -34,16 +31,12 @@ library Actions {
 
     struct ExerciseArgs {
         address qToken;
-        address channelFeeCollector;
-        address referrer;
         uint256 amount;
     }
 
     struct ClaimCollateralArgs {
         uint256 collateralTokenId;
         uint256 amount;
-        address channelFeeCollector;
-        address referrer;
     }
 
     struct NeutralizeArgs {
@@ -109,13 +102,7 @@ library Actions {
             "Actions: can only parse arguments for exercise"
         );
 
-        return
-            ExerciseArgs({
-                qToken: _args.qToken,
-                amount: _args.amount,
-                channelFeeCollector: _args.secondaryAddress,
-                referrer: _args.receiver
-            });
+        return ExerciseArgs({qToken: _args.qToken, amount: _args.amount});
     }
 
     function parseClaimCollateralArgs(ActionArgs memory _args)
@@ -133,9 +120,7 @@ library Actions {
         return
             ClaimCollateralArgs({
                 collateralTokenId: _args.collateralTokenId,
-                amount: _args.amount,
-                channelFeeCollector: _args.secondaryAddress,
-                referrer: _args.receiver
+                amount: _args.amount
             });
     }
 
