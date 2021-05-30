@@ -544,16 +544,16 @@ describe("Controller", async () => {
   type MintSpreadArgs = {
     qTokenToMint: string;
     qTokenForCollateral: string;
-    amount: BigNumber;
+    amount: BigNumberish;
   };
-  type ExerciseArgs = { qToken: string; amount: BigNumber };
+  type ExerciseArgs = { qToken: string; amount: BigNumberish };
   type ClaimCollateralArgs = {
-    collateralTokenId: BigNumber;
-    amount: BigNumber;
+    collateralTokenId: BigNumberish;
+    amount: BigNumberish;
   };
   type NeutralizeArgs = {
-    collateralTokenId: BigNumber;
-    amount: BigNumber;
+    collateralTokenId: BigNumberish;
+    amount: BigNumberish;
   };
   type CallArgs = { callee: string; data: BytesLike };
 
@@ -920,64 +920,6 @@ describe("Controller", async () => {
         ethers.utils.id("priceRegistry"),
         mockPriceRegistry.address
       );
-  });
-
-  // it("should encode meta transaction", async () => {});
-
-  describe("Meta transactions", () => {
-    it("Users should be able to mint options through meta transactions", async () => {
-      const amount = ethers.utils.parseEther("1");
-
-      const actions = [
-        encodeMintOptionArgs({
-          to: secondAccount.address,
-          qToken: qTokenCall2000.address,
-          amount: amount.toString(),
-        }),
-      ];
-
-      const txData = await getSignedTransactionData(
-        parseInt((await controller.getNonce(deployer.address)).toString()),
-        deployer,
-        actions,
-        controller.address
-      );
-
-      const [collateralAddress, collateralAmount] =
-        await getCollateralRequirement(qTokenCall2000, nullQToken, amount);
-      // mint required collateral to the user account
-      const collateral = collateralAddress === WETH.address ? WETH : USDC;
-      await collateral
-        .connect(assetsRegistryManager)
-        .mint(await deployer.address, collateralAmount);
-      // Approve the Controller to use the user's funds
-      await collateral
-        .connect(deployer)
-        .approve(controller.address, collateralAmount);
-
-      expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
-        Zero
-      );
-      expect(await collateral.balanceOf(deployer.address)).to.equal(
-        collateralAmount
-      );
-
-      await controller
-        .connect(secondAccount)
-        .executeMetaTransaction(
-          deployer.address,
-          actions,
-          txData.r,
-          txData.s,
-          txData.v
-        );
-
-      expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
-        amount
-      );
-      expect(await collateral.balanceOf(deployer.address)).to.equal(Zero);
-    });
-    // it("Users should be able to create spreads through meta transactions", async () => {});
   });
 
   describe("Contract code size", () => {
@@ -1964,18 +1906,19 @@ describe("Controller", async () => {
 
   describe("Meta transactions", () => {
     it("Users should be able to mint options through meta transactions", async () => {
-      const amount = ethers.utils.parseEther("10");
+      const amount = ethers.utils.parseEther("1");
+
       const actions = [
         encodeMintOptionArgs({
-          qToken: qTokenCall2000.address,
           to: secondAccount.address,
-          amount: 10,
+          qToken: qTokenCall2000.address,
+          amount: amount.toString(),
         }),
       ];
 
       const txData = await getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
-        secondAccount,
+        deployer,
         actions,
         controller.address
       );
@@ -1991,12 +1934,14 @@ describe("Controller", async () => {
       await collateral
         .connect(deployer)
         .approve(controller.address, collateralAmount);
+
       expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
         Zero
       );
       expect(await collateral.balanceOf(deployer.address)).to.equal(
         collateralAmount
       );
+
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
@@ -2006,12 +1951,422 @@ describe("Controller", async () => {
           txData.s,
           txData.v
         );
+
       expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
         amount
       );
       expect(await collateral.balanceOf(deployer.address)).to.equal(Zero);
     });
-    // it("Users should be able to create spreads through meta transactions", async () => {});
+    it("Users should be able to create spreads through meta transactions", async () => {
+      const amount = ethers.utils.parseEther("1");
+
+      const actions = [
+        encodeMintSpreadArgs({
+          qTokenToMint: qTokenCall2880.address,
+          qTokenForCollateral: qTokenCall3520.address,
+          amount: amount.toString(),
+        }),
+      ];
+
+      const txData = await getSignedTransactionData(
+        parseInt((await controller.getNonce(deployer.address)).toString()),
+        deployer,
+        actions,
+        controller.address
+      );
+
+      const [collateralAddress, collateralAmount] =
+        await getCollateralRequirement(qTokenCall2880, qTokenCall3520, amount);
+
+      const collateral = collateralAddress === WETH.address ? WETH : USDC;
+
+      await collateral
+        .connect(assetsRegistryManager)
+        .mint(deployer.address, collateralAmount);
+
+      await collateral
+        .connect(deployer)
+        .approve(controller.address, collateralAmount);
+
+      await qTokenCall3520
+        .connect(optionsMinter)
+        .mint(deployer.address, amount);
+
+      await controller
+        .connect(secondAccount)
+        .executeMetaTransaction(
+          deployer.address,
+          actions,
+          txData.r,
+          txData.s,
+          txData.v
+        );
+
+      expect(await qTokenCall3520.balanceOf(deployer.address)).to.equal(
+        ethers.BigNumber.from("0")
+      );
+
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenCall2880.address,
+        qTokenCall3520.address
+      );
+
+      expect(
+        await collateralToken.balanceOf(deployer.address, collateralTokenId)
+      ).to.equal(amount);
+
+      expect(await collateral.balanceOf(deployer.address)).to.equal(
+        ethers.BigNumber.from("0")
+      );
+
+      expect(await collateral.balanceOf(controller.address)).to.equal(
+        collateralAmount
+      );
+    });
+
+    it("Users should be able to exercise options through meta transactions", async () => {
+      //Take a snapshot of the Hardhat Network
+      const snapshotId = await takeSnapshot();
+
+      // Increase time to one hour past the expiry
+      await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+      await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+
+      //Note: Converts to the chainlink 8 decimal format
+      await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
+        ethers.utils.parseUnits("1200", 8),
+        BigNumber.from(8),
+      ]);
+
+      // Mint options to the user
+      const optionsAmount = ethers.utils.parseEther("1");
+      const qTokenToExercise = qTokenPut1400;
+      await qTokenToExercise
+        .connect(optionsMinter)
+        .mint(deployer.address, optionsAmount);
+
+      const payoutAmount = (
+        await quantCalculator.getPayout(
+          qTokenToExercise.address,
+          await controller.optionsFactory(),
+          optionsAmount
+        )
+      ).payoutAmount;
+
+      // Mint USDC to the Controller so it can pay the user
+      await USDC.connect(deployer).mint(controller.address, payoutAmount);
+      expect(await USDC.balanceOf(controller.address)).to.equal(payoutAmount);
+
+      const actions = [
+        encodeExerciseArgs({
+          qToken: qTokenToExercise.address,
+          amount: optionsAmount.toString(),
+        }),
+      ];
+
+      const txData = await getSignedTransactionData(
+        parseInt((await controller.getNonce(deployer.address)).toString()),
+        deployer,
+        actions,
+        controller.address
+      );
+
+      await controller
+        .connect(secondAccount)
+        .executeMetaTransaction(
+          deployer.address,
+          actions,
+          txData.r,
+          txData.s,
+          txData.v
+        );
+
+      expect(await USDC.balanceOf(deployer.address)).to.equal(payoutAmount);
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        ethers.BigNumber.from("0")
+      );
+      expect(await qTokenToExercise.balanceOf(deployer.address)).to.equal(
+        ethers.BigNumber.from("0")
+      );
+
+      await revertToSnapshot(snapshotId);
+    });
+
+    it("Users should be able to claim collateral through meta transactions", async () => {
+      const expiryPrice = ethers.utils.parseUnits("300", await USDC.decimals());
+
+      await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+
+      //Note: Converts to the chainlink 8 decimal format
+      await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
+        expiryPrice.mul("100"),
+        BigNumber.from(8),
+      ]);
+
+      const optionsAmount = ethers.utils.parseEther("1");
+
+      const [collateralAddress, collateralRequirement] =
+        await getCollateralRequirement(
+          qTokenPut400,
+          nullQToken,
+          optionsAmount,
+          BN.ROUND_CEIL
+        );
+
+      const collateral = collateralAddress === WETH.address ? WETH : USDC;
+
+      await collateral
+        .connect(assetsRegistryManager)
+        .mint(deployer.address, collateralRequirement);
+
+      await collateral
+        .connect(deployer)
+        .approve(controller.address, collateralRequirement);
+
+      await controller.connect(deployer).operate([
+        encodeMintOptionArgs({
+          to: deployer.address,
+          qToken: qTokenPut400.address,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenPut400.address,
+        AddressZero
+      );
+
+      // Take a snapshot of the Hardhat Network
+      const snapshotId = await takeSnapshot();
+
+      // Increase time to one hour past the expiry
+      await provider.send("evm_mine", [futureTimestamp + 3600]);
+
+      const [payoutFromShort, payoutAsset] = await getPayout(
+        qTokenPut400,
+        optionsAmount,
+        expiryPrice,
+        BN.ROUND_UP
+      );
+
+      const claimableCollateral = collateralRequirement.sub(payoutFromShort);
+
+      const actions = [
+        encodeClaimCollateralArgs({
+          collateralTokenId: collateralTokenId.toString(),
+          amount: optionsAmount.toString(),
+        }),
+      ];
+
+      const txData = await getSignedTransactionData(
+        parseInt((await controller.getNonce(deployer.address)).toString()),
+        deployer,
+        actions,
+        controller.address
+      );
+
+      await controller
+        .connect(secondAccount)
+        .executeMetaTransaction(
+          deployer.address,
+          actions,
+          txData.r,
+          txData.s,
+          txData.v
+        );
+
+      const collateralClaimed = await payoutAsset.balanceOf(deployer.address);
+
+      expect(collateralClaimed).to.equal(claimableCollateral);
+
+      const controllerBalanceAfterClaim = await payoutAsset.balanceOf(
+        controller.address
+      );
+
+      const intendedControllerBalanceAfterClaim =
+        collateralRequirement.sub(claimableCollateral);
+
+      //should ideally be 0, but can also be extra wei due to rounding
+      const controllerExtraFunds = controllerBalanceAfterClaim.sub(
+        intendedControllerBalanceAfterClaim
+      );
+
+      expect(
+        parseInt(controllerExtraFunds.toString())
+      ).to.be.greaterThanOrEqual(0);
+      expect(parseInt(controllerExtraFunds.toString())).to.be.lessThanOrEqual(
+        1
+      ); //check the rounding is within 1 wei
+
+      await revertToSnapshot(snapshotId);
+    });
+
+    it("Users should be able to neutralize positions through meta transactions", async () => {
+      const optionsAmount = ethers.utils.parseEther("5");
+
+      const [, collateralRequirement] = await getCollateralRequirement(
+        qTokenPut1400,
+        nullQToken,
+        optionsAmount,
+        BN.ROUND_DOWN
+      );
+
+      await USDC.connect(assetsRegistryManager).mint(
+        deployer.address,
+        collateralRequirement
+      );
+
+      await USDC.connect(deployer).approve(
+        controller.address,
+        collateralRequirement
+      );
+
+      await controller.connect(deployer).operate([
+        encodeMintOptionArgs({
+          to: deployer.address,
+          qToken: qTokenPut1400.address,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenPut1400.address,
+        AddressZero
+      );
+
+      const amountToNeutralize = ethers.utils.parseEther("3");
+
+      const actions = [
+        encodeNeutralizeArgs({
+          collateralTokenId: collateralTokenId.toString(),
+          amount: amountToNeutralize.toString(),
+        }),
+      ];
+
+      const txData = await getSignedTransactionData(
+        parseInt((await controller.getNonce(deployer.address)).toString()),
+        deployer,
+        actions,
+        controller.address
+      );
+
+      await controller
+        .connect(secondAccount)
+        .executeMetaTransaction(
+          deployer.address,
+          actions,
+          txData.r,
+          txData.s,
+          txData.v
+        );
+
+      expect(await qTokenPut1400.balanceOf(deployer.address)).to.equal(
+        optionsAmount.sub(amountToNeutralize)
+      );
+
+      expect(
+        await collateralToken.balanceOf(deployer.address, collateralTokenId)
+      ).to.equal(optionsAmount.sub(amountToNeutralize));
+    });
+
+    it("Users should be able to call external functions through meta transactions", async () => {
+      const newQTokenParams: optionParameters = [
+        WETH.address,
+        USDC.address,
+        mockOracleManager.address,
+        ethers.utils.parseUnits("1000", 6),
+        ethers.BigNumber.from(futureTimestamp),
+        false,
+      ];
+
+      const createOptionCallData = optionsFactory.interface.encodeFunctionData(
+        "createOption",
+        newQTokenParams
+      );
+
+      const actions = [
+        encodeCallArgs({
+          callee: optionsFactory.address,
+          data: createOptionCallData,
+        }),
+      ];
+
+      const txData = await getSignedTransactionData(
+        parseInt((await controller.getNonce(deployer.address)).toString()),
+        deployer,
+        actions,
+        controller.address
+      );
+
+      const optionsLength = await optionsFactory.getOptionsLength();
+      const targetQTokenAddress = await optionsFactory.getTargetQTokenAddress(
+        ...newQTokenParams
+      );
+      expect(await optionsFactory.getQToken(...newQTokenParams)).to.equal(
+        AddressZero
+      );
+      expect(await optionsFactory.isQToken(targetQTokenAddress)).to.be.false;
+
+      await controller
+        .connect(secondAccount)
+        .executeMetaTransaction(
+          deployer.address,
+          actions,
+          txData.r,
+          txData.s,
+          txData.v
+        );
+
+      expect(await optionsFactory.getOptionsLength()).to.equal(
+        optionsLength.add(1)
+      );
+      expect(await optionsFactory.getQToken(...newQTokenParams)).to.equal(
+        targetQTokenAddress
+      );
+      expect(await optionsFactory.isQToken(targetQTokenAddress)).to.be.true;
+    });
+
+    it("Should revert when trying to make reentrant operate calls through meta transactions", async () => {
+      const mintOptionsAction = [
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenCall2000.address,
+          amount: ethers.utils.parseEther("10").toString(),
+        }),
+      ];
+
+      const encodedOperateCallData = controller.interface.encodeFunctionData(
+        "operate",
+        [mintOptionsAction]
+      );
+
+      const reentrantOperateAction = [
+        encodeCallArgs({
+          callee: controller.address,
+          data: encodedOperateCallData,
+        }),
+      ];
+
+      const txData = await getSignedTransactionData(
+        parseInt((await controller.getNonce(deployer.address)).toString()),
+        deployer,
+        reentrantOperateAction,
+        controller.address
+      );
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .executeMetaTransaction(
+            deployer.address,
+            reentrantOperateAction,
+            txData.r,
+            txData.s,
+            txData.v
+          )
+      ).to.be.revertedWith("unsuccessful function call");
+    });
   });
 
   describe("Upgradeability", () => {
