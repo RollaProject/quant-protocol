@@ -5,24 +5,24 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "./QuantConfig.sol";
-import "./EIP712MetaTransaction.sol";
-import "./OperateProxy.sol";
-import "./interfaces/IQToken.sol";
-import "./interfaces/IOracleRegistry.sol";
-import "./interfaces/ICollateralToken.sol";
-import "./interfaces/IController.sol";
-import "./interfaces/IOperateProxy.sol";
-import "./interfaces/IQuantCalculator.sol";
-import "./interfaces/IOptionsFactory.sol";
-import "./libraries/ProtocolValue.sol";
-import "./libraries/QuantMath.sol";
-import "./libraries/FundsCalculator.sol";
-import "./libraries/OptionsUtils.sol";
-import "./libraries/Actions.sol";
-import "./libraries/external/strings.sol";
+import "../QuantConfig.sol";
+import "../EIP712MetaTransaction.sol";
+import "../OperateProxy.sol";
+import "../interfaces/IQToken.sol";
+import "../interfaces/IOracleRegistry.sol";
+import "../interfaces/ICollateralToken.sol";
+import "../interfaces/IController.sol";
+import "../interfaces/IOperateProxy.sol";
+import "../interfaces/IQuantCalculator.sol";
+import "../interfaces/IOptionsFactory.sol";
+import "../libraries/ProtocolValue.sol";
+import "../libraries/QuantMath.sol";
+import "../libraries/FundsCalculator.sol";
+import "../libraries/OptionsUtils.sol";
+import "../libraries/Actions.sol";
+import "../libraries/external/strings.sol";
 
-contract Controller is
+contract ControllerV2 is
     IController,
     EIP712MetaTransaction,
     ReentrancyGuardUpgradeable
@@ -37,6 +37,8 @@ contract Controller is
     address public override operateProxy;
 
     address public override quantCalculator;
+
+    uint256 public newV2StateVariable;
 
     modifier validQToken(address _qToken) {
         require(
@@ -84,6 +86,10 @@ contract Controller is
         }
 
         return true;
+    }
+
+    function setNewV2StateVariable(uint256 _value) external {
+        newV2StateVariable = _value;
     }
 
     function initialize(
