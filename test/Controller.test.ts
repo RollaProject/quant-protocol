@@ -7,7 +7,7 @@ import {
   constants,
   ContractInterface,
   Signer,
-  Wallet
+  Wallet,
 } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
@@ -17,10 +17,11 @@ import {
   AssetsRegistry,
   OptionsFactory,
   OracleRegistry,
-  QuantCalculator
+  QuantCalculator,
 } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
+import { ControllerV2 } from "../typechain/ControllerV2";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
@@ -33,7 +34,8 @@ import {
   deployOracleRegistry,
   deployQuantCalculator,
   deployQuantConfig,
-  mockERC20
+  getSignedTransactionData,
+  mockERC20,
 } from "./testUtils";
 
 const { deployContract, deployMockContract } = waffle;
@@ -1712,11 +1714,7 @@ describe("Controller", async () => {
       );
 
       const payoutAmount = (
-<<<<<<< HEAD
-        await quantCalculator.getPayout(
-=======
         await quantCalculator.getExercisePayout(
->>>>>>> 0fe303d (Fixing some tests and restructuring QuantCalculator)
           qTokenToExercise.address,
           await controller.optionsFactory(),
           optionsAmount
@@ -1788,11 +1786,7 @@ describe("Controller", async () => {
       );
 
       const payoutAmount = (
-<<<<<<< HEAD
-        await quantCalculator.getPayout(
-=======
         await quantCalculator.getExercisePayout(
->>>>>>> 0fe303d (Fixing some tests and restructuring QuantCalculator)
           qTokenToExercise.address,
           await controller.optionsFactory(),
           optionsAmount
@@ -2401,7 +2395,7 @@ describe("Controller", async () => {
         .mint(deployer.address, optionsAmount);
 
       const payoutAmount = (
-        await quantCalculator.getPayout(
+        await quantCalculator.getExercisePayout(
           qTokenToExercise.address,
           await controller.optionsFactory(),
           optionsAmount
