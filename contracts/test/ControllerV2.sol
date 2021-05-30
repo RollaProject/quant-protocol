@@ -248,7 +248,7 @@ contract ControllerV2 is
         }
 
         (bool isSettled, address payoutToken, uint256 payoutAmount) =
-            IQuantCalculator(quantCalculator).getPayout(
+            IQuantCalculator(quantCalculator).getExercisePayout(
                 _args.qToken,
                 optionsFactory,
                 amountToExercise
