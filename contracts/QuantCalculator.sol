@@ -108,7 +108,8 @@ contract QuantCalculator is IQuantCalculator {
             qTokenLong,
             amountToClaim,
             OPTIONS_DECIMALS,
-            payoutDecimals
+            payoutDecimals,
+            false
         );
 
         (, QuantMath.FixedPointInt memory payoutFromShort) =
@@ -119,10 +120,16 @@ contract QuantCalculator is IQuantCalculator {
                 expiryPrice
             );
 
+        uint256 exerciseFeeDue =
+            FundsCalculator
+                .getExerciseFee(payoutFromLong, payoutDecimals, false)
+                .toScaledUint(payoutDecimals, false);
+
         returnableCollateral = payoutFromLong
             .add(collateralRequirement)
             .sub(payoutFromShort)
-            .toScaledUint(payoutDecimals, true);
+            .toScaledUint(payoutDecimals, true)
+            .sub(exerciseFeeDue);
     }
 
     //TODO: This is largely the same as method below so can use that...?
@@ -152,7 +159,8 @@ contract QuantCalculator is IQuantCalculator {
             _qTokenLong,
             _amountToNeutralize,
             OPTIONS_DECIMALS,
-            payoutDecimals
+            payoutDecimals,
+            true
         );
 
         collateralOwed = collateralOwedFP.toScaledUint(payoutDecimals, true);
@@ -184,7 +192,8 @@ contract QuantCalculator is IQuantCalculator {
             _qTokenForCollateral,
             _amount,
             OPTIONS_DECIMALS,
-            payoutDecimals
+            payoutDecimals,
+            false
         );
 
         collateralAmount = collateralAmountFP.toScaledUint(

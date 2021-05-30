@@ -18,9 +18,11 @@ import OracleRegistryJSON from "../artifacts/contracts/pricing/OracleRegistry.so
 import QuantCalculatorJSON from "../artifacts/contracts/QuantCalculator.sol/QuantCalculator.json";
 import MockERC20JSON from "../artifacts/contracts/test/MockERC20.sol/MockERC20.json";
 import ConfigTimelockControllerJSON from "../artifacts/contracts/timelock/ConfigTimelockController.sol/ConfigTimelockController.json";
+import FundsCalculatorJSON from "../artifacts/contracts/libraries/FundsCalculator.sol/FundsCalculator.json";
 import {
   AssetsRegistry,
   ConfigTimelockController,
+  FundsCalculator,
   OptionsFactory,
   OracleRegistry,
   QuantCalculator,
@@ -34,7 +36,7 @@ import { provider } from "./setup";
 
 const web3 = new Web3();
 
-const { deployContract } = waffle;
+const { deployContract, link } = waffle;
 
 const { keccak256, defaultAbiCoder, toUtf8Bytes, solidityPack } = ethers.utils;
 
@@ -314,9 +316,20 @@ const getSignedTransactionData = async (
 const deployQuantCalculator = async (
   deployer: Signer
 ): Promise<QuantCalculator> => {
-  const quantCalculator = <QuantCalculator>(
-    await deployContract(deployer, QuantCalculatorJSON)
+  const fundsCalculator = <FundsCalculator>(await deployContract(deployer, FundsCalculatorJSON));
+
+  const quantCalculatorFactory = await ethers.getContractFactory(
+    "QuantCalculator",
+    {
+      libraries: {
+        FundsCalculator: fundsCalculator.address
+      }
+    }
   );
+
+  const quantCalculator = <QuantCalculator>
+    await quantCalculatorFactory.deploy();
+
   return quantCalculator;
 };
 

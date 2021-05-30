@@ -338,6 +338,8 @@ contract Controller is
             );
         }
 
+        //TODO: Send fees to protocol fee...
+
         emit CollateralClaimed(
             _msgSender(),
             _args.collateralTokenId,

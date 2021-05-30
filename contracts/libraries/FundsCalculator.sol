@@ -5,6 +5,7 @@ pragma abicoder v2;
 import "./QuantMath.sol";
 import "../options/QToken.sol";
 import "../interfaces/IPriceRegistry.sol";
+import "hardhat/console.sol";
 
 //TODO: Deployment scripts should deploy and link this
 library FundsCalculator {
@@ -51,7 +52,8 @@ library FundsCalculator {
         address _qTokenForCollateral,
         uint256 _optionsAmount,
         uint8 _optionsDecimals,
-        uint8 _underlyingDecimals
+        uint8 _underlyingDecimals,
+        bool _roundFeeDown
     )
         internal
         view
@@ -101,7 +103,8 @@ library FundsCalculator {
             _optionsAmount,
             qTokenToMint.isCall(),
             _optionsDecimals,
-            _underlyingDecimals
+            _underlyingDecimals,
+            _roundFeeDown
         );
 
         collateral = qTokenToMint.isCall()
@@ -162,19 +165,22 @@ library FundsCalculator {
         uint256 _optionsAmount,
         bool _qTokenToMintIsCall,
         uint8 _optionsDecimals,
-        uint8 _underlyingDecimals
+        uint8 _underlyingDecimals,
+        bool _roundFeeDown
     ) internal pure returns (QuantMath.FixedPointInt memory collateralAmount) {
         QuantMath.FixedPointInt memory collateralPerOption;
         if (_qTokenToMintIsCall) {
             collateralPerOption = getCallCollateralRequirement(
                 _qTokenToMintStrikePrice,
                 _qTokenForCollateralStrikePrice,
-                _underlyingDecimals
+                _underlyingDecimals,
+                _roundFeeDown
             );
         } else {
             collateralPerOption = getPutCollateralRequirement(
                 _qTokenToMintStrikePrice,
-                _qTokenForCollateralStrikePrice
+                _qTokenForCollateralStrikePrice,
+                _roundFeeDown
             );
         }
 
@@ -185,7 +191,8 @@ library FundsCalculator {
 
     function getPutCollateralRequirement(
         uint256 _qTokenToMintStrikePrice,
-        uint256 _qTokenForCollateralStrikePrice
+        uint256 _qTokenForCollateralStrikePrice,
+        bool _roundFeeDown
     )
         internal
         pure
@@ -200,18 +207,35 @@ library FundsCalculator {
         collateralPerOption = mintStrikePrice;
 
         if (_qTokenForCollateralStrikePrice > 0) {
-            collateralPerOption = mintStrikePrice.isGreaterThan(
-                collateralStrikePrice
+            //if spread
+            QuantMath.FixedPointInt memory maxExerciseFee =
+                getExerciseFee(collateralPerOption, 6, _roundFeeDown);
+
+            QuantMath.FixedPointInt memory collateralRequiredPerOption =
+                mintStrikePrice.sub(collateralStrikePrice).add(maxExerciseFee);
+
+            collateralPerOption = collateralRequiredPerOption
+                .isGreaterThanOrEqual(
+                int256(0).fromUnscaledInt() // Call Debit Spread
             )
-                ? mintStrikePrice.sub(collateralStrikePrice) // Put Credit Spread
-                : int256(0).fromUnscaledInt(); // Put Debit Spread
+                ? collateralRequiredPerOption
+                : int256(0).fromUnscaledInt(); // Call Credit Spread
         }
+
+        // if (_qTokenForCollateralStrikePrice > 0) {
+        //     collateralPerOption = mintStrikePrice.isGreaterThan(
+        //         collateralStrikePrice
+        //     )
+        //         ? mintStrikePrice.sub(collateralStrikePrice) // Put Credit Spread
+        //         : int256(0).fromUnscaledInt(); // Put Debit Spread
+        // }
     }
 
     function getCallCollateralRequirement(
         uint256 _qTokenToMintStrikePrice,
         uint256 _qTokenForCollateralStrikePrice,
-        uint8 _underlyingDecimals
+        uint8 _underlyingDecimals,
+        bool _roundFeeDown
     )
         internal
         pure
@@ -228,23 +252,45 @@ library FundsCalculator {
         );
 
         if (_qTokenForCollateralStrikePrice > 0) {
-            collateralPerOption = mintStrikePrice.isGreaterThanOrEqual(
+            //if spread
+            QuantMath.FixedPointInt memory maxExerciseFee =
+                getExerciseFee(
+                    collateralPerOption,
+                    _underlyingDecimals,
+                    _roundFeeDown
+                );
+
+            QuantMath.FixedPointInt memory collateralRequiredPerOption =
                 collateralStrikePrice
+                    .sub(mintStrikePrice)
+                    .div(collateralStrikePrice)
+                    .add(maxExerciseFee);
+
+            collateralPerOption = collateralRequiredPerOption
+                .isGreaterThanOrEqual(
+                int256(0).fromUnscaledInt() // Call Debit Spread
             )
-                ? int256(0).fromUnscaledInt() // Call Debit Spread
-                : (collateralStrikePrice.sub(mintStrikePrice)).div(
-                    collateralStrikePrice
-                ); // Call Credit Spread
+                ? collateralRequiredPerOption
+                : int256(0).fromUnscaledInt(); // Call Credit Spread
         }
+
+        // if (_qTokenForCollateralStrikePrice > 0) {
+        //     collateralPerOption = mintStrikePrice.isGreaterThanOrEqual(
+        //         collateralStrikePrice
+        //     )
+        //         ? int256(0).fromUnscaledInt() // Call Debit Spread
+        //         : (collateralStrikePrice.sub(mintStrikePrice)).div(
+        //             collateralStrikePrice
+        //         ); // Call Credit Spread
+        // }
     }
 
     function getExerciseFee(
-        uint256 _exerciseTotal,
+        QuantMath.FixedPointInt memory _exerciseTotal,
         uint256 _tokenDecimals,
         bool _roundDown
     ) public pure returns (QuantMath.FixedPointInt memory exerciseFee) {
         exerciseFee = _exerciseTotal
-            .fromScaledUint(_tokenDecimals)
             .mul(int256(50).fromUnscaledInt())
             .div(int256(10000).fromUnscaledInt())
             .toScaledUint(_tokenDecimals, _roundDown)
