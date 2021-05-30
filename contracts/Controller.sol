@@ -5,7 +5,6 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./QuantConfig.sol";
 import "./EIP712MetaTransaction.sol";
 import "./OperateProxy.sol";
@@ -19,7 +18,6 @@ import "./interfaces/IOptionsFactory.sol";
 import "./libraries/ProtocolValue.sol";
 import "./libraries/QuantMath.sol";
 import "./libraries/OptionsUtils.sol";
-import "./interfaces/IProtocolFeeCollector.sol";
 import "./libraries/Actions.sol";
 import "./libraries/external/strings.sol";
 
@@ -30,7 +28,6 @@ contract Controller is
 {
     using SafeERC20 for IERC20;
     using QuantMath for QuantMath.FixedPointInt;
-    using SafeMath for uint256;
     using Actions for ActionArgs;
     using strings for *;
 
@@ -244,13 +241,7 @@ contract Controller is
             amountToExercise = _args.amount;
         }
 
-        (
-            bool isSettled,
-            address payoutToken,
-            uint256 exerciseTotal,
-            uint8 payoutDecimals,
-            uint256 exerciserFee
-        ) =
+        (bool isSettled, address payoutToken, uint256 exerciseTotal) =
             IQuantCalculator(quantCalculator).getExercisePayout(
                 _args.qToken,
                 optionsFactory,
@@ -262,35 +253,9 @@ contract Controller is
         qToken.burn(_msgSender(), amountToExercise);
 
         if (exerciseTotal > 0) {
-            address protocolFeeCollector = address(0); //TODO: Make this real
-
-            //we round down to ensure protocol is not taking extra funds
-            uint256 protocolFee = 0;
-            // IQuantCalculator(quantCalculator).getExerciseFee(
-            //     exerciseTotal,
-            //     payoutDecimals,
-            //     true
-            // );
-
-            // //send the fees to the protocol fee collector
-            // IERC20(payoutToken).transfer(protocolFeeCollector, protocolFee);
-
-            // //call distribute fees on fee collector
-            // //TODO: Make this the real address...
-            // IProtocolFeeCollector(protocolFeeCollector).distributeFees(
-            //     protocolFee,
-            //     payoutToken,
-            //     _args.channelFeeCollector,
-            //     _args.referrer
-            // );
-
-            IERC20(payoutToken).transfer(
-                _msgSender(),
-                exerciseTotal //.sub(exerciserFee)
-            );
+            IERC20(payoutToken).transfer(_msgSender(), exerciseTotal);
         }
 
-        //TODO: Add params in here
         emit OptionsExercised(
             _msgSender(),
             _args.qToken,
