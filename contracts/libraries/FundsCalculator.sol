@@ -237,17 +237,4 @@ library FundsCalculator {
                 ); // Call Credit Spread
         }
     }
-
-    function getExerciseFee(
-        uint256 _exerciseTotal,
-        uint256 _tokenDecimals,
-        bool _roundDown
-    ) public pure returns (QuantMath.FixedPointInt memory exerciseFee) {
-        exerciseFee = _exerciseTotal
-            .fromScaledUint(_tokenDecimals)
-            .mul(int256(50).fromUnscaledInt())
-            .div(int256(10000).fromUnscaledInt())
-            .toScaledUint(_tokenDecimals, _roundDown)
-            .fromScaledUint(_tokenDecimals);
-    }
 }

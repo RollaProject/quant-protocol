@@ -125,7 +125,6 @@ contract QuantCalculator is IQuantCalculator {
             .toScaledUint(payoutDecimals, true);
     }
 
-    //TODO: This is largely the same as method below so can use that...?
     function getNeutralizationPayout(
         address _qTokenLong,
         address _qTokenShort,
@@ -142,8 +141,6 @@ contract QuantCalculator is IQuantCalculator {
                 IQToken(_qTokenShort),
                 IOptionsFactory(_optionsFactory).quantConfig()
             );
-
-        //TODO: If it was a credit spread, should not allow him to do this?
 
         QuantMath.FixedPointInt memory collateralOwedFP;
         (collateralType, collateralOwedFP) = FundsCalculator
@@ -204,9 +201,7 @@ contract QuantCalculator is IQuantCalculator {
         returns (
             bool isSettled,
             address payoutToken,
-            uint256 payoutAmount,
-            uint8 payoutDecimals,
-            uint256 exerciserFee
+            uint256 payoutAmount
         )
     {
         IOptionsFactory optionsFactory = IOptionsFactory(_optionsFactory);
@@ -214,7 +209,7 @@ contract QuantCalculator is IQuantCalculator {
         IQToken qToken = IQToken(_qToken);
         isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
         if (!isSettled) {
-            return (false, address(0), 0, 0, 0);
+            return (false, address(0), 0);
         } else {
             isSettled = true;
         }
@@ -228,7 +223,7 @@ contract QuantCalculator is IQuantCalculator {
                 )
             );
 
-        payoutDecimals = OptionsUtils.getPayoutDecimals(
+        uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
             qToken,
             optionsFactory.quantConfig()
         );
@@ -250,12 +245,5 @@ contract QuantCalculator is IQuantCalculator {
         );
 
         payoutAmount = payout.toScaledUint(payoutDecimals, true);
-
-        //we round up to favour the protocol
-        // exerciserFee = FundsCalculator.getExerciseFee(
-        //     payoutAmount,
-        //     payoutDecimals,
-        //     false
-        // );
     }
 }

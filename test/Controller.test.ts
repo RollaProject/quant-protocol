@@ -2397,8 +2397,4 @@ describe("Controller", async () => {
   //     );
   //   });
   // });
-
-  //TODO: Can't create spread with the same qToken for short and long
-
-  //TODO: Test neutralizing calls and call spreads
 });
