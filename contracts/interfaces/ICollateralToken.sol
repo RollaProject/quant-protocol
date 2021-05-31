@@ -11,8 +11,13 @@ import "./IQToken.sol";
 /// @notice Can be used by owners to claim their collateral
 interface ICollateralToken is IERC1155 {
     struct QTokensDetails {
-        IQToken.QTokenInfo long;
-        IQToken.QTokenInfo short;
+        address underlyingAsset;
+        address strikeAsset;
+        address oracle;
+        uint256 shortStrikePrice;
+        uint256 longStrikePrice;
+        uint256 expiryTime;
+        bool isCall;
     }
 
     /// @notice event emitted when a new CollateralToken is created
