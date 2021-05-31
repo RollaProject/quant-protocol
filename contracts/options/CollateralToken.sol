@@ -189,12 +189,20 @@ contract CollateralToken is ERC1155, ICollateralToken {
             "CollateralToken: Invalid id"
         );
 
-        qTokensDetails.long = IQToken(info.qTokenAddress).getQTokenInfo();
+        IQToken.QTokenInfo memory shortDetails =
+            IQToken(info.qTokenAddress).getQTokenInfo();
+
+        qTokensDetails.underlyingAsset = shortDetails.underlyingAsset;
+        qTokensDetails.strikeAsset = shortDetails.strikeAsset;
+        qTokensDetails.oracle = shortDetails.oracle;
+        qTokensDetails.shortStrikePrice = shortDetails.strikePrice;
+        qTokensDetails.expiryTime = shortDetails.expiryTime;
+        qTokensDetails.isCall = shortDetails.isCall;
 
         if (info.qTokenAsCollateral != address(0)) {
             // the given id is for a CollateralToken representing a spread
-            qTokensDetails.short = IQToken(info.qTokenAsCollateral)
-                .getQTokenInfo();
+            qTokensDetails.longStrikePrice = IQToken(info.qTokenAsCollateral)
+                .strikePrice();
         }
     }
 
