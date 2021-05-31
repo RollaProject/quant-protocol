@@ -19,7 +19,7 @@ contract QuantCalculator is IQuantCalculator {
     using QuantMath for QuantMath.FixedPointInt;
 
     uint8 public constant override OPTIONS_DECIMALS = 18;
-    address public immutable optionsFactory;
+    address public immutable override optionsFactory;
 
     constructor(address _optionsFactory) {
         optionsFactory = _optionsFactory;
