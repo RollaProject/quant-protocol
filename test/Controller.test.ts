@@ -1603,6 +1603,20 @@ describe("Controller", async () => {
       );
     });
 
+    it("Should revert when trying to create spreads with the same short and long qTokens", async () => {
+      await expect(
+        controller.connect(secondAccount).operate([
+          encodeMintSpreadArgs({
+            qTokenToMint: qTokenCall2000.address,
+            qTokenForCollateral: qTokenCall2000.address,
+            amount: ethers.utils.parseEther("1"),
+          }),
+        ])
+      ).to.be.revertedWith(
+        "Controller: Can only create a spread with different tokens"
+      );
+    });
+
     it("Users should be able to create a PUT Credit spread", async () => {
       await testMintingOptions(
         qTokenPut1400.address,
