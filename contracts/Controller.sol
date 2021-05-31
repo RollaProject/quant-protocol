@@ -120,7 +120,6 @@ contract Controller is
             IQuantCalculator(quantCalculator).getCollateralRequirement(
                 _args.qToken,
                 address(0),
-                optionsFactory,
                 _args.amount
             );
 
@@ -173,7 +172,6 @@ contract Controller is
             IQuantCalculator(quantCalculator).getCollateralRequirement(
                 _args.qTokenToMint,
                 _args.qTokenForCollateral,
-                optionsFactory,
                 _args.amount
             );
 
@@ -244,7 +242,6 @@ contract Controller is
         (bool isSettled, address payoutToken, uint256 exerciseTotal) =
             IQuantCalculator(quantCalculator).getExercisePayout(
                 _args.qToken,
-                optionsFactory,
                 amountToExercise
             );
 
@@ -276,7 +273,6 @@ contract Controller is
             IQuantCalculator(quantCalculator).calculateClaimableCollateral(
                 _args.collateralTokenId,
                 _args.amount,
-                optionsFactory,
                 _msgSender()
             );
 
@@ -337,8 +333,7 @@ contract Controller is
             IQuantCalculator(quantCalculator).getNeutralizationPayout(
                 qTokenLong,
                 qTokenShort,
-                amountToNeutralize,
-                optionsFactory
+                amountToNeutralize
             );
 
         IQToken(qTokenShort).burn(_msgSender(), amountToNeutralize);
