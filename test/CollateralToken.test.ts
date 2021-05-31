@@ -675,22 +675,13 @@ describe("CollateralToken", () => {
       );
 
       expect(await collateralToken.getCollateralTokenInfo(id)).to.eql([
-        [
-          await qToken.underlyingAsset(),
-          await qToken.strikeAsset(),
-          await qToken.oracle(),
-          await qToken.strikePrice(),
-          await qToken.expiryTime(),
-          await qToken.isCall(),
-        ],
-        [
-          ethers.constants.AddressZero,
-          ethers.constants.AddressZero,
-          ethers.constants.AddressZero,
-          ethers.constants.Zero,
-          ethers.constants.Zero,
-          false,
-        ],
+        await qToken.underlyingAsset(),
+        await qToken.strikeAsset(),
+        await qToken.oracle(),
+        await qToken.strikePrice(),
+        ethers.constants.Zero,
+        await qToken.expiryTime(),
+        await qToken.isCall(),
       ]);
     });
 
@@ -706,22 +697,13 @@ describe("CollateralToken", () => {
       );
 
       expect(await collateralToken.getCollateralTokenInfo(id)).to.eql([
-        [
-          await qToken.underlyingAsset(),
-          await qToken.strikeAsset(),
-          await qToken.oracle(),
-          await qToken.strikePrice(),
-          await qToken.expiryTime(),
-          await qToken.isCall(),
-        ],
-        [
-          await secondQToken.underlyingAsset(),
-          await secondQToken.strikeAsset(),
-          await secondQToken.oracle(),
-          await secondQToken.strikePrice(),
-          await secondQToken.expiryTime(),
-          await secondQToken.isCall(),
-        ],
+        await qToken.underlyingAsset(),
+        await qToken.strikeAsset(),
+        await qToken.oracle(),
+        await qToken.strikePrice(),
+        await secondQToken.strikePrice(),
+        await qToken.expiryTime(),
+        await qToken.isCall(),
       ]);
     });
   });
