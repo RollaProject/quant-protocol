@@ -312,10 +312,11 @@ const getSignedTransactionData = async (
 };
 
 const deployQuantCalculator = async (
-  deployer: Signer
+  deployer: Signer,
+  optionsFactory: string
 ): Promise<QuantCalculator> => {
   const quantCalculator = <QuantCalculator>(
-    await deployContract(deployer, QuantCalculatorJSON)
+    await deployContract(deployer, QuantCalculatorJSON, [optionsFactory])
   );
   return quantCalculator;
 };
