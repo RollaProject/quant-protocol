@@ -126,7 +126,6 @@ contract ControllerV2 is
             IQuantCalculator(quantCalculator).getCollateralRequirement(
                 _args.qToken,
                 address(0),
-                optionsFactory,
                 _args.amount
             );
 
@@ -179,7 +178,6 @@ contract ControllerV2 is
             IQuantCalculator(quantCalculator).getCollateralRequirement(
                 _args.qTokenToMint,
                 _args.qTokenForCollateral,
-                optionsFactory,
                 _args.amount
             );
 
@@ -247,10 +245,9 @@ contract ControllerV2 is
             amountToExercise = _args.amount;
         }
 
-        (bool isSettled, address payoutToken, uint256 payoutAmount) =
+        (bool isSettled, address payoutToken, uint256 exerciseTotal) =
             IQuantCalculator(quantCalculator).getExercisePayout(
                 _args.qToken,
-                optionsFactory,
                 amountToExercise
             );
 
@@ -258,15 +255,15 @@ contract ControllerV2 is
 
         qToken.burn(_msgSender(), amountToExercise);
 
-        if (payoutAmount > 0) {
-            IERC20(payoutToken).transfer(_msgSender(), payoutAmount);
+        if (exerciseTotal > 0) {
+            IERC20(payoutToken).transfer(_msgSender(), exerciseTotal);
         }
 
         emit OptionsExercised(
             _msgSender(),
             _args.qToken,
             amountToExercise,
-            payoutAmount,
+            exerciseTotal,
             payoutToken
         );
     }
@@ -282,7 +279,6 @@ contract ControllerV2 is
             IQuantCalculator(quantCalculator).calculateClaimableCollateral(
                 _args.collateralTokenId,
                 _args.amount,
-                optionsFactory,
                 _msgSender()
             );
 
@@ -311,7 +307,7 @@ contract ControllerV2 is
     function _neutralizePosition(Actions.NeutralizeArgs memory _args) internal {
         ICollateralToken collateralToken =
             IOptionsFactory(optionsFactory).collateralToken();
-        (address qTokenShort, address qTokenAsCollateral) =
+        (address qTokenShort, address qTokenLong) =
             collateralToken.idToInfo(_args.collateralTokenId);
 
         //get the amount of collateral tokens owned
@@ -339,31 +335,12 @@ contract ControllerV2 is
             amountToNeutralize = maxNeutralizable;
         }
 
-        address collateralType;
-        uint256 collateralOwed;
-
-        {
-            QuantMath.FixedPointInt memory collateralOwedFP;
-            uint8 underlyingDecimals =
-                OptionsUtils.getPayoutDecimals(
-                    IQToken(qTokenShort),
-                    IOptionsFactory(optionsFactory).quantConfig()
-                );
-
-            (collateralType, collateralOwedFP) = FundsCalculator
-                .getCollateralRequirement(
+        (address collateralType, uint256 collateralOwed) =
+            IQuantCalculator(quantCalculator).getNeutralizationPayout(
+                qTokenLong,
                 qTokenShort,
-                address(0),
-                amountToNeutralize,
-                IQuantCalculator(quantCalculator).OPTIONS_DECIMALS(),
-                underlyingDecimals
+                amountToNeutralize
             );
-
-            collateralOwed = collateralOwedFP.toScaledUint(
-                underlyingDecimals,
-                true
-            );
-        }
 
         IQToken(qTokenShort).burn(_msgSender(), amountToNeutralize);
 
@@ -376,8 +353,8 @@ contract ControllerV2 is
         IERC20(collateralType).safeTransfer(_msgSender(), collateralOwed);
 
         //give the user their long tokens (if any)
-        if (qTokenAsCollateral != address(0)) {
-            IQToken(qTokenAsCollateral).mint(_msgSender(), amountToNeutralize);
+        if (qTokenLong != address(0)) {
+            IQToken(qTokenLong).mint(_msgSender(), amountToNeutralize);
         }
 
         emit NeutralizePosition(
@@ -386,7 +363,7 @@ contract ControllerV2 is
             amountToNeutralize,
             collateralOwed,
             collateralType,
-            qTokenAsCollateral
+            qTokenLong
         );
     }
 

@@ -19,12 +19,16 @@ contract QuantCalculator is IQuantCalculator {
     using QuantMath for QuantMath.FixedPointInt;
 
     uint8 public constant override OPTIONS_DECIMALS = 18;
+    address public immutable optionsFactory;
+
+    constructor(address _optionsFactory) {
+        optionsFactory = _optionsFactory;
+    }
 
     //TODO: msgSender balanceOf should be moved to controller
     function calculateClaimableCollateral(
         uint256 _collateralTokenId,
         uint256 _amount,
-        address _optionsFactory,
         address msgSender
     )
         external
@@ -36,10 +40,10 @@ contract QuantCalculator is IQuantCalculator {
             uint256 amountToClaim
         )
     {
-        IOptionsFactory optionsFactory = IOptionsFactory(_optionsFactory);
-
         (address _qTokenShort, address qTokenAsCollateral) =
-            optionsFactory.collateralToken().idToInfo(_collateralTokenId);
+            IOptionsFactory(optionsFactory).collateralToken().idToInfo(
+                _collateralTokenId
+            );
 
         require(
             _qTokenShort != address(0),
@@ -58,7 +62,7 @@ contract QuantCalculator is IQuantCalculator {
         );
 
         amountToClaim = _amount == 0
-            ? optionsFactory.collateralToken().balanceOf(
+            ? IOptionsFactory(optionsFactory).collateralToken().balanceOf(
                 msgSender,
                 _collateralTokenId
             )
@@ -69,7 +73,7 @@ contract QuantCalculator is IQuantCalculator {
 
         IPriceRegistry priceRegistry =
             IPriceRegistry(
-                optionsFactory.quantConfig().protocolAddresses(
+                IOptionsFactory(optionsFactory).quantConfig().protocolAddresses(
                     ProtocolValue.encode("priceRegistry")
                 )
             );
@@ -98,7 +102,7 @@ contract QuantCalculator is IQuantCalculator {
         uint8 payoutDecimals =
             OptionsUtils.getPayoutDecimals(
                 qTokenShort,
-                optionsFactory.quantConfig()
+                IOptionsFactory(optionsFactory).quantConfig()
             );
 
         QuantMath.FixedPointInt memory collateralRequirement;
@@ -128,8 +132,7 @@ contract QuantCalculator is IQuantCalculator {
     function getNeutralizationPayout(
         address _qTokenLong,
         address _qTokenShort,
-        uint256 _amountToNeutralize,
-        address _optionsFactory
+        uint256 _amountToNeutralize
     )
         external
         view
@@ -139,7 +142,7 @@ contract QuantCalculator is IQuantCalculator {
         uint8 payoutDecimals =
             OptionsUtils.getPayoutDecimals(
                 IQToken(_qTokenShort),
-                IOptionsFactory(_optionsFactory).quantConfig()
+                IOptionsFactory(optionsFactory).quantConfig()
             );
 
         QuantMath.FixedPointInt memory collateralOwedFP;
@@ -158,7 +161,6 @@ contract QuantCalculator is IQuantCalculator {
     function getCollateralRequirement(
         address _qTokenToMint,
         address _qTokenForCollateral,
-        address _optionsFactory,
         uint256 _amount
     )
         external
@@ -166,13 +168,11 @@ contract QuantCalculator is IQuantCalculator {
         override
         returns (address collateral, uint256 collateralAmount)
     {
-        IOptionsFactory optionsFactory = IOptionsFactory(_optionsFactory);
-
         QuantMath.FixedPointInt memory collateralAmountFP;
         uint8 payoutDecimals =
             OptionsUtils.getPayoutDecimals(
                 IQToken(_qTokenToMint),
-                optionsFactory.quantConfig()
+                IOptionsFactory(optionsFactory).quantConfig()
             );
 
         (collateral, collateralAmountFP) = FundsCalculator
@@ -190,11 +190,7 @@ contract QuantCalculator is IQuantCalculator {
         );
     }
 
-    function getExercisePayout(
-        address _qToken,
-        address _optionsFactory,
-        uint256 _amount
-    )
+    function getExercisePayout(address _qToken, uint256 _amount)
         external
         view
         override
@@ -204,8 +200,6 @@ contract QuantCalculator is IQuantCalculator {
             uint256 payoutAmount
         )
     {
-        IOptionsFactory optionsFactory = IOptionsFactory(_optionsFactory);
-
         IQToken qToken = IQToken(_qToken);
         isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
         if (!isSettled) {
@@ -218,15 +212,16 @@ contract QuantCalculator is IQuantCalculator {
 
         IPriceRegistry priceRegistry =
             IPriceRegistry(
-                optionsFactory.quantConfig().protocolAddresses(
+                IOptionsFactory(optionsFactory).quantConfig().protocolAddresses(
                     ProtocolValue.encode("priceRegistry")
                 )
             );
 
-        uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
-            qToken,
-            optionsFactory.quantConfig()
-        );
+        uint8 payoutDecimals =
+            OptionsUtils.getPayoutDecimals(
+                qToken,
+                IOptionsFactory(optionsFactory).quantConfig()
+            );
 
         address underlyingAsset = qToken.underlyingAsset();
 

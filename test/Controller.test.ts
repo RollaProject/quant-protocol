@@ -179,7 +179,7 @@ describe("Controller", async () => {
       await quantCalculator.getCollateralRequirement(
         qTokenToMint.address,
         qTokenForCollateral.address,
-        await controller.optionsFactory(),
+
         optionsAmount
       )
     ).to.eql([collateralAddress, collateralAmount]);
@@ -877,7 +877,10 @@ describe("Controller", async () => {
 
     const Controller = await ethers.getContractFactory("Controller");
 
-    quantCalculator = await deployQuantCalculator(deployer);
+    quantCalculator = await deployQuantCalculator(
+      deployer,
+      optionsFactory.address
+    );
 
     controller = <Controller>(
       await upgrades.deployProxy(Controller, [
@@ -1733,7 +1736,6 @@ describe("Controller", async () => {
       const payoutAmount = (
         await quantCalculator.getExercisePayout(
           qTokenToExercise.address,
-          await controller.optionsFactory(),
           optionsAmount
         )
       ).payoutAmount;
@@ -1805,7 +1807,6 @@ describe("Controller", async () => {
       const payoutAmount = (
         await quantCalculator.getExercisePayout(
           qTokenToExercise.address,
-          await controller.optionsFactory(),
           optionsAmount
         )
       ).payoutAmount;
@@ -2414,7 +2415,6 @@ describe("Controller", async () => {
       const payoutAmount = (
         await quantCalculator.getExercisePayout(
           qTokenToExercise.address,
-          await controller.optionsFactory(),
           optionsAmount
         )
       ).payoutAmount;
