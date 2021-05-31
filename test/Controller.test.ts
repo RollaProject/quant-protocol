@@ -11,6 +11,7 @@ import {
 } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
+import Web3 from "web3";
 import ORACLE_MANAGER from "../artifacts/contracts/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
 import PriceRegistry from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
 import {
@@ -74,6 +75,8 @@ describe("Controller", async () => {
   let mockPriceRegistry: MockContract;
   let nullQToken: QToken;
   let quantCalculator: QuantCalculator;
+
+  const web3 = new Web3();
 
   const aMonth = 30 * 24 * 3600; // in seconds
 
@@ -2723,6 +2726,44 @@ describe("Controller", async () => {
           .executeMetaTransaction(
             deployer.address,
             reentrantOperateAction,
+            txData.r,
+            txData.s,
+            txData.v
+          )
+      ).to.be.revertedWith("unsuccessful function call");
+    });
+
+    it("Should revert when trying to call internal methods through meta transactions", async () => {
+      const mintOptionsPositionCallData = `${web3.eth.abi.encodeFunctionSignature(
+        "_mintOptionsPosition((address,address,uint256))"
+      )}${web3.eth.abi
+        .encodeParameter("tuple(address,address,uint256)", [
+          secondAccount.address,
+          qTokenCall2000.address,
+          ethers.utils.parseEther("1"),
+        ])
+        .slice(2)}`;
+
+      const actions = [
+        encodeCallArgs({
+          callee: controller.address,
+          data: mintOptionsPositionCallData,
+        }),
+      ];
+
+      const txData = await getSignedTransactionData(
+        parseInt((await controller.getNonce(deployer.address)).toString()),
+        deployer,
+        actions,
+        controller.address
+      );
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .executeMetaTransaction(
+            deployer.address,
+            actions,
             txData.r,
             txData.s,
             txData.v
