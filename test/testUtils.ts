@@ -271,7 +271,7 @@ const getSignedTransactionData = async (
 
   const domainData = {
     name: "Quant Protocol",
-    version: "0.2.1",
+    version: "0.3.4",
     verifyingContract,
     chainId: provider.network.chainId,
   };
