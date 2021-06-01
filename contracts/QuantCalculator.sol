@@ -130,8 +130,8 @@ contract QuantCalculator is IQuantCalculator {
     }
 
     function getNeutralizationPayout(
-        address _qTokenLong,
         address _qTokenShort,
+        address _qTokenLong,
         uint256 _amountToNeutralize
     )
         external
