@@ -885,7 +885,7 @@ describe("Controller", async () => {
     controller = <Controller>(
       await upgrades.deployProxy(Controller, [
         "Quant Protocol",
-        "0.2.1",
+        "0.3.4",
         optionsFactory.address,
         quantCalculator.address,
       ])

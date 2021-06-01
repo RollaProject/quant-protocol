@@ -31,8 +31,8 @@ interface IQuantCalculator {
         );
 
     function getNeutralizationPayout(
-        address _qTokenLong,
         address _qTokenShort,
+        address _qTokenLong,
         uint256 _amountToNeutralize
     ) external view returns (address collateralType, uint256 collateralOwed);
 

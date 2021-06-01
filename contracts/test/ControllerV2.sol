@@ -337,8 +337,8 @@ contract ControllerV2 is
 
         (address collateralType, uint256 collateralOwed) =
             IQuantCalculator(quantCalculator).getNeutralizationPayout(
-                qTokenLong,
                 qTokenShort,
+                qTokenLong,
                 amountToNeutralize
             );
 
