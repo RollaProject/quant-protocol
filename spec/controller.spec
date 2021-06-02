@@ -9,7 +9,9 @@
 /*
     Declaration of contracts used in the spec 
 */
-using otherContractName as internalName
+using DummyERC20A as erc20A
+using DummyERC20A as erc20B
+using OptionsFactory as optionsFactory
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -24,7 +26,29 @@ using otherContractName as internalName
 */
 
 methods {
+	    
 
+	isValidQToken(address qToken) returns (bool) envfree
+
+	// QToken methods to be called with one of the tokens (DummyERC20*, DummyWeth)	
+	mint(address account, uint256 amount) => DISPATCHER(true)
+	burn(address account, uint256 amount) => DISPATCHER(true)
+    underlyingAsset() returns (address) => DISPATCHER(true)
+	strikeAsset() returns (address) => DISPATCHER(true)
+	strikePrice() returns (uint256) => DISPATCHER(true)
+	expiryTime() returns (uint256) => DISPATCHER(true)	
+	isCall() returns (bool) => DISPATCHER(true)
+
+
+	// IERC20 methods to be called with one of the tokens (DummyERC20A, DummyERC20A) or QToken
+	balanceOf(address) => DISPATCHER(true) 
+	totalSupply() => DISPATCHER(true)
+	transferFrom(address from, address to, uint256 amount) => DISPATCHER(true)
+	transfer(address to, uint256 amount) => DISPATCHER(true)
+
+
+	// OptionsFactory
+	optionsFactory.isQToken(address _qToken) returns (bool) envfree
 }
 
 
@@ -39,21 +63,6 @@ methods {
 // This ghost represents the sum of all deposits to user
 // sumDeposits(s) := sum(...[s].deposits[member] for all addresses member)
 
-ghost sumDeposits(uint256) returns uint {
-    init_state axiom forall uint256 s. sumDeposits(s) == 0;
-}
-
-
-
-
-// whenever there ia an update to
-//     contractmap[user].deposits[memberAddress] := value
-// where previously contractmap[user].deposits[memberAddress] was old_value
-// update sumDeposits := sumDeposits - old_value + value
-hook Sstore contractmap[KEY uint256 s].(offset 0)[KEY uint256 member] uint value (uint old_value) STORAGE {
-    havoc sumDeposits assuming sumDeposits@new(s) == sumDeposits@old(s) + value - old_value &&
-            (forall uint256 other. other != s => sumDeposits@new(other) == sumDeposits@old(other));
-}
 
 
 
@@ -70,15 +79,33 @@ hook Sstore contractmap[KEY uint256 s].(offset 0)[KEY uint256 member] uint value
 */
 
 
-function validState(...) {
 
-} 
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Rules                                            //
 ////////////////////////////////////////////////////////////////////////////
     
+/* 	Rule: validQToken  
+ 	Description:  only valid QToken can change the balance of the system 
+	Formula: 
+	Notes: 
+*/
 
+
+rule validQtoken(address qToken, uint256 amount, method f ) 
+		filtered { f-> f.selector == exercise(address,uint256).selector} 
+{
+	callFunctionWithParams(qToken, amount, f);
+	assert !isValidQToken(qToken);   
+	//assert false;
+}
+
+
+rule check(address qToken) {
+	env e;
+	bool b = optionsFactory.isQToken(qToken);
+	assert false;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -87,17 +114,18 @@ function validState(...) {
     
 
 // easy to use dispatcher
-function callFunctionWithParams(address token, address from, address to,
- 								uint256 amount, uint256 share, method f) {
+
+function callFunctionWithParams(address qToken, uint256 amount, method f) {
 	env e;
 
-	if (f.selector == deposit(address, address, address, uint256, uint256).selector) {
-		deposit(e, token, from, to, amount, share);
-	} else if (f.selector == withdraw(address, address, address, uint256, uint256).selector) {
-		withdraw(e, token, from, to, amount, share); 
-	} else if  (f.selector == transfer(address, address, address, uint256).selector) {
-		transfer(e, token, from, to, share);
-	} else {
+	if (f.selector == exercise(address,uint256).selector) {
+		exercise(e, qToken, amount);
+	}
+	/*
+	else if (f.selector == mintOptionsPosition(address, address, uint256).selector) {
+		mintOptionsPosition(e, token, from, to, amount, share); 
+	} */
+	else{
 		calldataarg args;
 		f(e,args);
 	}
