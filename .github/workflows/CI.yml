@@ -41,7 +41,6 @@ jobs:
 
       - run: yarn lint
       - run: yarn test
-      - run: yarn docs
       - run: yarn coverage
 
       - name: Coveralls GitHub Action
