@@ -15,17 +15,21 @@ contract ControllerHarness is Controller {
     ////////////////////////////////////////////////////////////////////////////
     //                        Getters for The Internals                       //
     ////////////////////////////////////////////////////////////////////////////
-   
-    function getTokenBalanceOf(address t, address u) public view returns (uint256) {
+
+    function getTokenBalanceOf(address t, address u)
+        public
+        view
+        returns (uint256)
+    {
         return IERC20(t).balanceOf(u);
     }
 
-    function isValidQToken(address _qToken) public returns(bool) {
-            return IOptionsFactory(optionsFactory).isQToken(_qToken);
+    function isValidQToken(address _qToken) public returns (bool) {
+        return IOptionsFactory(optionsFactory).isQToken(_qToken);
     }
 
     ////////////////////////////////////////////////////////////////////////////
-    //                       Simplifiers and override                         //
+    //                       Each operation wrapper                           //
     ////////////////////////////////////////////////////////////////////////////
     function mintOptionsPosition(
         address to,
@@ -33,11 +37,7 @@ contract ControllerHarness is Controller {
         uint256 amount
     ) public {
         Actions.MintOptionArgs memory args =
-            Actions.MintOptionArgs({
-                to: to, 
-                qToken: qToken, 
-                amount: amount
-            });
+            Actions.MintOptionArgs({to: to, qToken: qToken, amount: amount});
         _mintOptionsPosition(args);
     }
 
@@ -55,20 +55,38 @@ contract ControllerHarness is Controller {
         _mintSpread(args);
     }
 
-
-    function exercise(
-        address qToken,
-        uint256 amount
-    ) public {
-        Actions.ExerciseArgs memory args = 
-            Actions.ExerciseArgs({
-                qToken: qToken, 
-                amount: amount
-            });
+    function exercise(address qToken, uint256 amount) public {
+        Actions.ExerciseArgs memory args =
+            Actions.ExerciseArgs({qToken: qToken, amount: amount});
         _exercise(args);
     }
 
-    //TODO - continue other functions
+    function claimCollateral(uint256 collateralTokenId, uint256 amount) public {
+        Actions.ClaimCollateralArgs memory args = 
+            Actions.ClaimCollateralArgs({
+                collateralTokenId: collateralTokenId,
+                amount: amount
+            });
+        _claimCollateral(args);
+    }
 
+    function _neutralizePosition(uint256 collateralTokenId, uint256 amount) public {
+        Actions.NeutralizeArgs memory args = 
+            Actions.NeutralizeArgs({
+                collateralTokenId: collateralTokenId,
+                amount: amount
+            });
+        _neutralizePosition(args);
+    }
+
+
+  /*  function operate(ActionArgs[] memory _actions)
+        external
+        override
+        nonReentrant
+        returns (bool)
+    {
+    }
+*/
     // TODO - override initialize and operate
 }

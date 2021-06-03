@@ -86,7 +86,7 @@ methods {
 ////////////////////////////////////////////////////////////////////////////
     
 /* 	Rule: validQToken  
- 	Description:  only valid QToken can change the balance of the system 
+ 	Description:  only valid QToken can be used in the state changing balances 
 	Formula: 
 	Notes: 
 */
@@ -96,8 +96,8 @@ rule validQtoken(address qToken, uint256 amount, method f )
 		filtered { f-> f.selector == exercise(address,uint256).selector} 
 {
 	callFunctionWithParams(qToken, amount, f);
-	assert !isValidQToken(qToken);   
-	//assert false;
+	assert isValidQToken(qToken);   
+
 }
 
 
