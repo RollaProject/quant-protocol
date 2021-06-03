@@ -3,6 +3,7 @@ pragma solidity ^0.7.0;
 pragma abicoder v2;
 
 import "./QuantMath.sol";
+import "./SignedConverter.sol";
 import "../options/QToken.sol";
 import "../interfaces/IPriceRegistry.sol";
 
@@ -12,6 +13,8 @@ library FundsCalculator {
     using QuantMath for uint256;
     using QuantMath for int256;
     using QuantMath for QuantMath.FixedPointInt;
+    using SignedConverter for uint256;
+    using SignedConverter for int256;
 
     struct OptionPayoutInput {
         QuantMath.FixedPointInt strikePrice;
@@ -178,7 +181,13 @@ library FundsCalculator {
             );
         }
 
-        collateralAmount = _optionsAmount.fromScaledUint(_optionsDecimals).mul(
+        // set _optionsDecimals = _BASE_DECIMAL
+//        collateralAmount = _optionsAmount.fromScaledUint(_optionsDecimals).mul(
+//            collateralPerOption
+//        );
+
+        // since _optionsAmount has 27 decimal places, no need to scale
+        collateralAmount = QuantMath.FixedPointInt(_optionsAmount.uintToInt()).mul(
             collateralPerOption
         );
     }
@@ -192,9 +201,12 @@ library FundsCalculator {
         returns (QuantMath.FixedPointInt memory collateralPerOption)
     {
         QuantMath.FixedPointInt memory mintStrikePrice =
-            _qTokenToMintStrikePrice.fromScaledUint(6);
+            //_qTokenToMintStrikePrice.fromScaledUint(6);
+        QuantMath.FixedPointInt((_qTokenToMintStrikePrice.mul(10**21)).uintToInt());             // 21 = _BASE_DECIMAL - 6
+
         QuantMath.FixedPointInt memory collateralStrikePrice =
-            _qTokenForCollateralStrikePrice.fromScaledUint(6);
+            //_qTokenForCollateralStrikePrice.fromScaledUint(6);
+        QuantMath.FixedPointInt((_qTokenForCollateralStrikePrice.mul(10**21)).uintToInt());      // 21 = _BASE_DECIMAL - 6
 
         // Initially (non-spread) required collateral is the long strike price
         collateralPerOption = mintStrikePrice;
@@ -218,14 +230,19 @@ library FundsCalculator {
         returns (QuantMath.FixedPointInt memory collateralPerOption)
     {
         QuantMath.FixedPointInt memory mintStrikePrice =
-            _qTokenToMintStrikePrice.fromScaledUint(6);
+//            _qTokenToMintStrikePrice.fromScaledUint(6);
+        QuantMath.FixedPointInt((_qTokenToMintStrikePrice.mul(10**21)).uintToInt());             // 21 = _BASE_DECIMAL - 6
+
         QuantMath.FixedPointInt memory collateralStrikePrice =
-            _qTokenForCollateralStrikePrice.fromScaledUint(6);
+//            _qTokenForCollateralStrikePrice.fromScaledUint(6);
+        QuantMath.FixedPointInt((_qTokenForCollateralStrikePrice.mul(10**21)).uintToInt());      // 21 = _BASE_DECIMAL - 6
 
         // Initially (non-spread) required collateral is the long strike price
-        collateralPerOption = (10**_underlyingDecimals).fromScaledUint(
-            _underlyingDecimals
-        );
+        // _underlyingDecimals = _BASE_DECIMAL
+//        collateralPerOption = (10**_underlyingDecimals).fromScaledUint(
+//            _underlyingDecimals
+//        );
+          collateralPerOption = QuantMath.FixedPointInt((10**_underlyingDecimals).uintToInt());
 
         if (_qTokenForCollateralStrikePrice > 0) {
             collateralPerOption = mintStrikePrice.isGreaterThanOrEqual(

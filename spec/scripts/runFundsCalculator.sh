@@ -1,4 +1,7 @@
-cd ../../
-certoraRun spec/harness/FundsCalculatorWrapper.sol \
-    --verify FundsCalculatorWrapper:spec/fundsCalculator.spec \
-	--solc solc7.6
+certoraRun spec/harness/FundsCalculatorWrapper.sol contracts/libraries/FundsCalculator.sol spec/harness/DummyERC20A.sol \
+            spec/harness/DummyERC20B.sol spec/harness/QTokenA.sol spec/harness/QTokenB.sol \
+            --verify FundsCalculatorWrapper:spec/fundsCalculator.spec \
+            --rule checkRule1 \
+            --settings -assumeUnwindCond \
+            --solc solc7.6  \
+            --staging --msg "Simplifying FixedPointInt"
