@@ -118,11 +118,24 @@ rule validityOfMintedCollateralToken(address _qTokenAddress, address _qTokenAsCo
 
 	assert(tokenSuppliesContainsCollateralToken(collateralTokenInfoId));
 }
+
+rule aMintedCollateralTokenCanBeBurned(address _qTokenAddress, address _qTokenAsCollateral, address _recipient, address _owner, uint256 _amount)
+{
+	env e;
+	uint256 collateralTokenInfoId;
+
+	collateralTokenInfoId = createCollateralToken(e, _qTokenAddress, _qTokenAsCollateral);
+	mintCollateralToken(e, _recipient, collateralTokenInfoId, _amount);
+
+	assert(tokenSuppliesContainsCollateralToken(collateralTokenInfoId));
+
+	burnCollateralToken(e, _owner, collateralTokenInfoId, _amount);
+
+	assert(!tokenSuppliesContainsCollateralToken(collateralTokenInfoId));
+}
 ////////////////////////////////////////////////////////////////////////////
 //                       Helper Functions                                 //
 ////////////////////////////////////////////////////////////////////////////
-    
-
 // easy to use dispatcher
 /*function callFunctionWithParams(address token, address from, address to,
  								uint256 amount, uint256 share, method f) {
