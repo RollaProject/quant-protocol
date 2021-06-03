@@ -8,7 +8,6 @@ import {
   Wallet,
 } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
-import Web3 from "web3";
 import { hexToNumber } from "web3-utils";
 import AssetsRegistryJSON from "../artifacts/contracts/options/AssetsRegistry.sol/AssetsRegistry.json";
 import CollateralTokenJSON from "../artifacts/contracts/options/CollateralToken.sol/CollateralToken.json";
@@ -31,8 +30,6 @@ import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { actionType, domainType, metaActionType } from "./eip712Types";
 import { provider } from "./setup";
-
-const web3 = new Web3();
 
 const { deployContract } = waffle;
 

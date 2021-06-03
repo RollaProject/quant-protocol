@@ -39,7 +39,7 @@ import {
   mockERC20,
 } from "./testUtils";
 
-const { deployContract, deployMockContract } = waffle;
+const { deployMockContract } = waffle;
 const { AddressZero, Zero } = constants;
 
 type optionParameters = [string, string, string, BigNumber, BigNumber, boolean];
