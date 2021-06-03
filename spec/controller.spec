@@ -49,6 +49,12 @@ methods {
 
 	// OptionsFactory
 	optionsFactory.isQToken(address _qToken) returns (bool) envfree
+
+
+	// CollateralToken
+	mintCollateralToken(address,uint256,address,uint256) => NONDET
+	burnCollateralToken(address,uint256,uint256) => NONDET
+	balanceOf(address, uint256) => NONDET
 }
 
 
@@ -90,20 +96,32 @@ methods {
 	Formula: 
 	Notes: 
 */
-
-
-rule validQtoken(address qToken, uint256 amount, method f ) 
-		filtered { f-> f.selector == exercise(address,uint256).selector} 
+rule validQtoken(  method f )  
 {
-	callFunctionWithParams(qToken, amount, f);
+	address qToken; 
+	address qTokenFroCollateral;
+	uint256 collateralTokenId;
+	address to;
+	uint256 amount;
+	
+	callFunctionWithParams(qToken, qTokenFroCollateral, collateralTokenId, to, amount, f);
 	assert isValidQToken(qToken);   
-
 }
 
 
 rule check(address qToken) {
 	env e;
 	bool b = optionsFactory.isQToken(qToken);
+	assert false;
+}
+
+rule sanity(method f)
+{
+	env e;
+	calldataarg args;
+	uint256 collateralTokenId;
+	uint256 amount;
+	neutralizePosition(e,collateralTokenId, amount);
 	assert false;
 }
 
@@ -115,16 +133,27 @@ rule check(address qToken) {
 
 // easy to use dispatcher
 
-function callFunctionWithParams(address qToken, uint256 amount, method f) {
+function callFunctionWithParams(address qToken, address qTokenFroCollateral, uint256 collateralTokenId, address to, uint256 amount, method f) {
 	env e;
 
 	if (f.selector == exercise(address,uint256).selector) {
 		exercise(e, qToken, amount);
 	}
-	/*
-	else if (f.selector == mintOptionsPosition(address, address, uint256).selector) {
-		mintOptionsPosition(e, token, from, to, amount, share); 
-	} */
+	else if (f.selector == mintOptionsPosition(address,address,uint256).selector) {
+		mintOptionsPosition(e, to, qToken, amount); 
+	} 
+	else if (f.selector == mintSpread(address,address,uint256).selector) {
+		mintSpread(e, qToken, qTokenFroCollateral, amount);
+	}
+	else if (f.selector == exercise(address,uint256).selector) {
+		exercise(e, qToken, amount);
+	}
+	else if (f.selector == claimCollateral(uint256,uint256).selector ) {
+		claimCollateral(e, collateralTokenId, amount);
+	}
+	else if (f.selector == neutralizePosition(uint256,uint256).selector) {
+		neutralizePosition(e, collateralTokenId, amount);
+	}
 	else{
 		calldataarg args;
 		f(e,args);

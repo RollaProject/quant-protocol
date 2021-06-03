@@ -3,9 +3,9 @@
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
-import "../../contracts/options/QToken.sol";
+import "./QTokenCore.sol";
 
-contract QTokenB is QToken { 
+contract QTokenB is QTokenCore { 
 
 	constructor(
         address _quantConfig,
@@ -15,6 +15,6 @@ contract QTokenB is QToken {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    )  QToken(_quantConfig, _underlyingAsset, _strikeAsset, _oracle, _strikePrice, _expiryTime, _isCall) public {}
+    )  QTokenCore(_quantConfig, _underlyingAsset, _strikeAsset, _oracle, _strikePrice, _expiryTime, _isCall) public {}
 
 }

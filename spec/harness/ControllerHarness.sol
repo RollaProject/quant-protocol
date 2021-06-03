@@ -62,7 +62,7 @@ contract ControllerHarness is Controller {
     }
 
     function claimCollateral(uint256 collateralTokenId, uint256 amount) public {
-        Actions.ClaimCollateralArgs memory args = 
+        Actions.ClaimCollateralArgs memory args =
             Actions.ClaimCollateralArgs({
                 collateralTokenId: collateralTokenId,
                 amount: amount
@@ -70,8 +70,10 @@ contract ControllerHarness is Controller {
         _claimCollateral(args);
     }
 
-    function _neutralizePosition(uint256 collateralTokenId, uint256 amount) public {
-        Actions.NeutralizeArgs memory args = 
+    function neutralizePosition(uint256 collateralTokenId, uint256 amount)
+        public
+    {
+        Actions.NeutralizeArgs memory args =
             Actions.NeutralizeArgs({
                 collateralTokenId: collateralTokenId,
                 amount: amount
@@ -79,14 +81,13 @@ contract ControllerHarness is Controller {
         _neutralizePosition(args);
     }
 
-
-  /*  function operate(ActionArgs[] memory _actions)
+    function operate(ActionArgs[] memory _actions)
         external
         override
         nonReentrant
         returns (bool)
     {
     }
-*/
+
     // TODO - override initialize and operate
 }
