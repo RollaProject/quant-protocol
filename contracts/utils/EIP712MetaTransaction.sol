@@ -20,10 +20,12 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
 
     bytes32 private constant _META_ACTION_TYPEHASH =
         keccak256(
+            // solhint-disable-next-line max-line-length
             "MetaAction(uint256 nonce,address from,ActionArgs[] actions)ActionArgs(string actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 collateralTokenId,bytes data)"
         );
     bytes32 private constant _ACTION_TYPEHASH =
         keccak256(
+            // solhint-disable-next-line max-line-length
             "ActionArgs(string actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 collateralTokenId,bytes data)"
         );
 
