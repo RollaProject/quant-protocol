@@ -25,7 +25,17 @@
 
 methods {
 	getCollateralTokenId(uint) returns uint envfree
+	getCollateralTokenInfoTokenAddress(uint) returns address envfree
+	getCollateralTokenInfoTokenAsCollateral(uint) returns address envfree
+	idToInfoContainsId(uint) returns bool envfree
+	collateralTokenIdsContainsId(uint, uint) returns bool envfree
+	tokenSuppliesContainsCollateralToken(uint) returns bool envfree
+
+	//QuantConfig
+	quantRoles(string) => DISPATCHER(true)
+	hasRole(bytes32, address) => DISPATCHER(true)
 }
+
 
 
 
@@ -73,14 +83,41 @@ hook Sstore contractmap[KEY uint256 s].(offset 0)[KEY uint256 member] uint value
 invariant uniqueCollateralTokenId(uint i, uint j)
 	getCollateralTokenId(i) == getCollateralTokenId(j) => i == j
 
-
 ////////////////////////////////////////////////////////////////////////////
 //                       Rules                                            //
 ////////////////////////////////////////////////////////////////////////////
     
+rule integrityOfCollateralTokenInfo(address _qTokenAddress, address _qTokenAsCollateral)
+{
+	env e;
+	uint collateralTokenInfoId;
 
+	collateralTokenInfoId = createCollateralToken(e, _qTokenAddress, _qTokenAsCollateral);
 
+	assert(_qTokenAddress == getCollateralTokenInfoTokenAddress(collateralTokenInfoId) && _qTokenAsCollateral == getCollateralTokenInfoTokenAsCollateral(collateralTokenInfoId));
+}
 
+rule validityOfCollateralToken(address _qTokenAddress, address _qTokenAsCollateral)
+{
+	env e;
+	uint i;
+	uint collateralTokenInfoId;
+
+	collateralTokenInfoId = createCollateralToken(e, _qTokenAddress, _qTokenAsCollateral);
+
+	assert(idToInfoContainsId(collateralTokenInfoId) && collateralTokenIdsContainsId(collateralTokenInfoId, i));
+}
+
+rule validityOfMintedCollateralToken(address _qTokenAddress, address _qTokenAsCollateral, address _recipient, uint256 _amount)
+{
+	env e;
+	uint256 collateralTokenInfoId;
+
+	collateralTokenInfoId = createCollateralToken(e, _qTokenAddress, _qTokenAsCollateral);
+	mintCollateralToken(e, _recipient, collateralTokenInfoId, _amount);
+
+	assert(tokenSuppliesContainsCollateralToken(collateralTokenInfoId));
+}
 ////////////////////////////////////////////////////////////////////////////
 //                       Helper Functions                                 //
 ////////////////////////////////////////////////////////////////////////////

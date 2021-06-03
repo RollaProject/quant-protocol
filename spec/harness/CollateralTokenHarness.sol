@@ -17,6 +17,34 @@ contract CollateralTokenHarness is CollateralToken {
         return collateralTokenIds[tokenId];
     }
 
+    function getCollateralTokenInfoTokenAddress(uint collateralTokenInfoId) public view returns (address) {
+        return idToInfo[collateralTokenInfoId].qTokenAddress;
+    }
+
+    function getCollateralTokenInfoTokenAsCollateral(uint collateralTokenInfoId) public view returns (address) {
+        return idToInfo[collateralTokenInfoId].qTokenAsCollateral;
+    }
+
+    function idToInfoContainsId(uint key) public view returns (bool) {
+        if (idToInfo[key].qTokenAddress == address(0)) {
+            return false;
+        }
+        return true;
+    }
+
+    function collateralTokenIdsContainsId(uint key, uint i) public view returns (bool) {
+        if (collateralTokenIds[i] == key) {
+            return true;
+        }
+        return false;
+    }
+
+    function tokenSuppliesContainsCollateralToken(uint key) public view returns (bool) {
+        if (tokenSupplies[key] == uint256(0)) {
+            return false;
+        }
+        return true;
+    }
 	////////////////////////////////////////////////////////////////////////////
     //                       Simplifiers and override                         //
     ////////////////////////////////////////////////////////////////////////////
