@@ -928,16 +928,6 @@ describe("Controller", async () => {
       );
   });
 
-  describe("Contract code size", () => {
-    const MAX_CODE_SIZE = 24576;
-    it("Shouldn't exceed the contract code size limit introduced in Spurious Dragon (24.576 kb)", async () => {
-      const ControllerFactory = await ethers.getContractFactory("Controller");
-      const controllerCodeSize = (ControllerFactory.bytecode.length - 2) / 2;
-      expect(controllerCodeSize).to.be.lessThanOrEqual(MAX_CODE_SIZE);
-    });
-  });
-  // it("should encode meta transaction", async () => {});
-
   describe("neutralizePosition", () => {
     it("Should round in favour of the protocol when neutralizing positions", async () => {
       //1400 USD strike -> 1400 * 10^6 = 10^9
