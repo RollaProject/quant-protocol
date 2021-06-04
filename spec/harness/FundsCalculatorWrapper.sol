@@ -27,4 +27,49 @@ contract FundsCalculatorWrapper {
         );
         return collateralAmount.value;
     }
+
+    function getPutCollateralRequirement(
+        uint256 _qTokenToMintStrikePrice,
+        uint256 _qTokenForCollateralStrikePrice
+    )
+    public
+    returns (
+        int256 collateralPerOptionValue
+    ) {
+        collateralAmount = FundsCalculator.getPutCollateralRequirement(
+            _qTokenToMintStrikePrice,
+            _qTokenForCollateralStrikePrice
+        );
+
+        collateralPerOptionValue = collateralAmount.value;
+    }
+
+     function getCallCollateralRequirement(
+         uint256 _qTokenToMintStrikePrice,
+         uint256 _qTokenForCollateralStrikePrice,
+         uint8 _underlyingDecimals
+     )
+     public
+     returns (
+        int256 collateralPerOptionValue
+     ) {
+         collateralAmount = FundsCalculator.getCallCollateralRequirement(
+            _qTokenToMintStrikePrice,
+            _qTokenForCollateralStrikePrice,
+            _underlyingDecimals
+        );
+
+         collateralPerOptionValue = collateralAmount.value;
+     }
+
+    ////////////////////////////////////////////////////////////////
+    //                  Helper Functions                          //
+    ////////////////////////////////////////////////////////////////
+    function checkAgeB(int256 _a, int256 _b) public returns (bool){
+        return _a >= _b;
+    }
+
+    function checkAleB(int256 _a, int256 _b) public returns (bool) {
+        return _a <= _b;
+    }
 }
