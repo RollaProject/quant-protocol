@@ -12,7 +12,7 @@
 using DummyERC20A as erc20A
 using DummyERC20A as erc20B
 using OptionsFactory as optionsFactory
-
+using CollateralTokenHarness as collateralToken
 
 ////////////////////////////////////////////////////////////////////////////
 //                      Methods                                           //
@@ -127,7 +127,17 @@ rule sanity(method f)
 	neutralizePosition(e,collateralTokenId, amount);
 	assert false;
 }
-
+// comment
+ rule amount_to_claim_LE_claimable(uint256 collateralTokenId,uint256 amount){
+	address qtoken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	 
+	        (
+            uint256 returnableCollateral,
+            address collateralAsset,
+            uint256 amountToClaim
+        ) = calculateClaimableCollateral(collateralTokenId,amount);
+	assert collateralAsset == qtoken || collateralAsset == collateralTokenId; 
+ }
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Helper Functions                                 //
@@ -162,11 +172,3 @@ function callFunctionWithParams(address qToken, address qTokenFroCollateral, uin
 		f(e,args);
 	}
 }
- rule amount_to_claim_LE_claimable(uint256 collateralTokenId,uint256 amount){
-	        (
-            uint256 returnableCollateral,
-            address collateralAsset,
-            uint256 amountToClaim
-        ) = calculateClaimableCollateral(collateralTokenId,amount);
-	  
- }
