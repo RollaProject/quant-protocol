@@ -89,5 +89,7 @@ contract ControllerHarness is Controller {
     {
     }
 
-    // TODO - override initialize and operate
+    function _msgSender() internal view override returns (address sender) {
+        return msg.sender;
+    }
 }
