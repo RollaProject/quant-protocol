@@ -50,6 +50,7 @@ describe("Controller", async () => {
   let collateralToken: CollateralToken;
   let deployer: Wallet;
   let secondAccount: Wallet;
+  let thirdAccount: Wallet;
   let assetsRegistryManager: Signer;
   let collateralMinter: Signer;
   let optionsMinter: Signer;
@@ -158,7 +159,8 @@ describe("Controller", async () => {
   const testMintingOptions = async (
     qTokenToMintAddress: string,
     optionsAmount: BigNumber,
-    qTokenForCollateralAddress: string = AddressZero
+    qTokenForCollateralAddress: string = AddressZero,
+    accountToMintTo: string = secondAccount.address,
   ) => {
     const qTokenToMint = <QToken>(
       new ethers.Contract(qTokenToMintAddress, QTokenInterface, provider)
@@ -179,7 +181,6 @@ describe("Controller", async () => {
       await quantCalculator.getCollateralRequirement(
         qTokenToMint.address,
         qTokenForCollateral.address,
-
         optionsAmount
       )
     ).to.eql([collateralAddress, collateralAmount]);
@@ -207,7 +208,7 @@ describe("Controller", async () => {
       await expect(
         controller.connect(secondAccount).operate([
           encodeMintOptionArgs({
-            to: secondAccount.address,
+            to: accountToMintTo,
             qToken: qTokenToMintAddress,
             amount: optionsAmount,
           }),
@@ -215,7 +216,7 @@ describe("Controller", async () => {
       )
         .to.emit(controller, "OptionsPositionMinted")
         .withArgs(
-          secondAccount.address,
+          accountToMintTo,
           secondAccount.address,
           qTokenToMintAddress,
           optionsAmount
@@ -229,7 +230,7 @@ describe("Controller", async () => {
 
       expect(
         await collateralToken.balanceOf(
-          secondAccount.address,
+          accountToMintTo,
           collateralTokenId
         )
       ).to.equal(optionsAmount);
@@ -290,7 +291,7 @@ describe("Controller", async () => {
     );
 
     // Check that the user received the QToken
-    expect(await qTokenToMint.balanceOf(secondAccount.address)).to.equal(
+    expect(await qTokenToMint.balanceOf(accountToMintTo)).to.equal(
       optionsAmount
     );
   };
@@ -636,6 +637,7 @@ describe("Controller", async () => {
     [
       deployer,
       secondAccount,
+      thirdAccount,
       assetsRegistryManager,
       collateralMinter,
       optionsMinter,
@@ -1460,7 +1462,7 @@ describe("Controller", async () => {
           }),
         ])
       ).to.be.revertedWith(
-        "Controller: Option needs to be created by the factory first"
+        "Controller: Invalid QToken address"
       );
     });
 
@@ -1484,23 +1486,37 @@ describe("Controller", async () => {
       revertToSnapshot(snapshotId);
     });
 
-    it("Users should be able to mint CALL options positions", async () => {
+    it("Users should be able to mint CALL options positions to their own address", async () => {
       await testMintingOptions(
         qTokenCall2000.address,
         ethers.utils.parseEther("2")
       );
     });
 
-    it("Users should be able to mint PUT options positions", async () => {
+    it("Users should be able to mint PUT options positions to their own address", async () => {
       await testMintingOptions(
         qTokenPut1400.address,
         ethers.utils.parseEther("2")
       );
     });
 
-    // TODO:
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    // it("Users should be able to mint options to a different address", async () => {});
+    it("Users should be able to mint CALL options positions to another address", async () => {
+      await testMintingOptions(
+          qTokenCall2000.address,
+          ethers.utils.parseEther("2"),
+          AddressZero,
+          thirdAccount.address
+      );
+    });
+
+    it("Users should be able to mint PUT options positions to another address", async () => {
+      await testMintingOptions(
+          qTokenPut1400.address,
+          ethers.utils.parseEther("2"),
+          AddressZero,
+          thirdAccount.address
+      );
+    });
   });
 
   describe("mintSpread", () => {

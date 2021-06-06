@@ -204,7 +204,6 @@ describe("ChainlinkOracleManager", function () {
         .withArgs(ethers.utils.id("priceRegistry"))
         .returns(mockPriceRegistry.address);
       // await mockConfig.mock.priceRegistry.returns(mockPriceRegistry.address);
-      //TODO (quantizations): What is this line for?
       await mockPriceRegistry.mock.setSettlementPrice.returns();
 
       await expect(
