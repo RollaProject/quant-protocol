@@ -38,10 +38,9 @@ contract Controller is
     address public override quantCalculator;
 
     modifier validQToken(address _qToken) {
-        //TODO: Better messaging here...
         require(
             IOptionsFactory(optionsFactory).isQToken(_qToken),
-            "Controller: Option needs to be created by the factory first"
+            "Controller: Invalid QToken address"
         );
 
         IQToken qToken = IQToken(_qToken);

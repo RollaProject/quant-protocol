@@ -11,7 +11,6 @@ import "./libraries/FundsCalculator.sol";
 import "./libraries/OptionsUtils.sol";
 import "./libraries/QuantMath.sol";
 
-//TODO: Stop taking optionsFactory as params in here as its an anti-pattern and frontend will need to pass it.
 contract QuantCalculator is IQuantCalculator {
     using SafeMath for uint256;
     using QuantMath for uint256;
@@ -29,7 +28,7 @@ contract QuantCalculator is IQuantCalculator {
     function calculateClaimableCollateral(
         uint256 _collateralTokenId,
         uint256 _amount,
-        address msgSender
+        address _msgSender
     )
         external
         view
@@ -63,7 +62,7 @@ contract QuantCalculator is IQuantCalculator {
 
         amountToClaim = _amount == 0
             ? IOptionsFactory(optionsFactory).collateralToken().balanceOf(
-                msgSender,
+                _msgSender,
                 _collateralTokenId
             )
             : _amount;
