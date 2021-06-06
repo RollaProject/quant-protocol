@@ -55,6 +55,9 @@ methods {
 	mintCollateralToken(address,uint256,address,uint256) => NONDET
 	burnCollateralToken(address,uint256,uint256) => NONDET
 	balanceOf(address, uint256) => NONDET
+	getCollateralTokenId(uint256) => DISPATCHER(true)
+	getCollateralTokenInfoTokenAddress(uint256) returns (address)  => DISPATCHER(true)
+
 }
 
 
