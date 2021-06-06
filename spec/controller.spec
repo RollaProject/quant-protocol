@@ -159,3 +159,11 @@ function callFunctionWithParams(address qToken, address qTokenFroCollateral, uin
 		f(e,args);
 	}
 }
+ rule amount_to_claim_LE_claimable(uint256 collateralTokenId,uint256 amount){
+	        (
+            uint256 returnableCollateral,
+            address collateralAsset,
+            uint256 amountToClaim
+        ) = calculateClaimableCollateral(collateralTokenId,amount);
+	  
+ }
