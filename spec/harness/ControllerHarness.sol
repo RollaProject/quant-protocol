@@ -86,8 +86,9 @@ contract ControllerHarness is Controller {
         override
         nonReentrant
         returns (bool)
-    {
-    }
+    {}
 
-    // TODO - override initialize and operate
+    function _msgSender() internal view override returns (address sender) {
+        return msg.sender;
+    }
 }
