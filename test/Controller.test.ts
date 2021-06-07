@@ -23,6 +23,7 @@ import {
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
 import { ControllerV2 } from "../typechain/ControllerV2";
+import { ExternalQToken } from "../typechain/ExternalQToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
@@ -160,7 +161,7 @@ describe("Controller", async () => {
     qTokenToMintAddress: string,
     optionsAmount: BigNumber,
     qTokenForCollateralAddress: string = AddressZero,
-    accountToMintTo: string = secondAccount.address,
+    accountToMintTo: string = secondAccount.address
   ) => {
     const qTokenToMint = <QToken>(
       new ethers.Contract(qTokenToMintAddress, QTokenInterface, provider)
@@ -229,10 +230,7 @@ describe("Controller", async () => {
         );
 
       expect(
-        await collateralToken.balanceOf(
-          accountToMintTo,
-          collateralTokenId
-        )
+        await collateralToken.balanceOf(accountToMintTo, collateralTokenId)
       ).to.equal(optionsAmount);
     } else {
       // Mint the qTokenForCollateral to the user address
@@ -931,85 +929,6 @@ describe("Controller", async () => {
   });
 
   describe("neutralizePosition", () => {
-    it("Should round in favour of the protocol when neutralizing positions", async () => {
-      //1400 USD strike -> 1400 * 10^6 = 10^9
-      //1 OPTION REQUIRES 1.4 * 10^9
-      //10^18 OPTION REQUIRES 1.4 * 10^9
-      //1.4 WEI OF USDC NEEDED PER 10^9 options
-      //3.5 WEI of USDC NEEDED FOR 2.5 * 10^9
-      //4 WEI WHEN ROUNDED UP (MINT) FOR 2.5 * 10^9 OPTIONS
-      //3 WEI WHEN ROUNDED DOWN (NEUTRALIZE) FOR 2.5 * 10^9 OPTIONS
-
-      const optionsAmount = ethers.utils.parseUnits("2.5", 9);
-
-      const [, collateralRequirement] = await getCollateralRequirement(
-        qTokenPut1400,
-        nullQToken,
-        optionsAmount,
-        BN.ROUND_UP
-      );
-
-      expect(collateralRequirement).to.equal(4);
-
-      await USDC.connect(assetsRegistryManager).mint(
-        secondAccount.address,
-        collateralRequirement
-      );
-
-      await USDC.connect(secondAccount).approve(
-        controller.address,
-        collateralRequirement
-      );
-
-      await controller.connect(secondAccount).operate([
-        encodeMintOptionArgs({
-          to: secondAccount.address,
-          qToken: qTokenPut1400.address,
-          amount: optionsAmount,
-        }),
-      ]);
-
-      const collateralTokenId = await collateralToken.getCollateralTokenId(
-        qTokenPut1400.address,
-        AddressZero
-      );
-
-      await controller.connect(secondAccount).operate([
-        encodeNeutralizeArgs({
-          collateralTokenId,
-          amount: optionsAmount,
-        }),
-      ]);
-
-      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
-        Zero
-      );
-
-      expect(
-        await collateralToken.balanceOf(
-          secondAccount.address,
-          collateralTokenId
-        )
-      ).to.equal(Zero);
-
-      const [, collateralOwed] = await getCollateralRequirement(
-        qTokenPut1400,
-        nullQToken,
-        optionsAmount,
-        BN.ROUND_DOWN
-      );
-
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
-        collateralOwed
-      );
-      expect(await USDC.balanceOf(controller.address)).to.equal(
-        collateralRequirement.sub(collateralOwed)
-      );
-      expect(collateralOwed).to.equal(3);
-    });
-  });
-
-  describe("neutralizePosition", () => {
     it("Should revert when users try to neutralize more options than they have", async () => {
       await expect(
         controller.connect(secondAccount).operate([
@@ -1431,6 +1350,83 @@ describe("Controller", async () => {
         longCollateralRequirement
       );
     });
+
+    it("Should round in favour of the protocol when neutralizing positions", async () => {
+      //1400 USD strike -> 1400 * 10^6 = 10^9
+      //1 OPTION REQUIRES 1.4 * 10^9
+      //10^18 OPTION REQUIRES 1.4 * 10^9
+      //1.4 WEI OF USDC NEEDED PER 10^9 options
+      //3.5 WEI of USDC NEEDED FOR 2.5 * 10^9
+      //4 WEI WHEN ROUNDED UP (MINT) FOR 2.5 * 10^9 OPTIONS
+      //3 WEI WHEN ROUNDED DOWN (NEUTRALIZE) FOR 2.5 * 10^9 OPTIONS
+
+      const optionsAmount = ethers.utils.parseUnits("2.5", 9);
+
+      const [, collateralRequirement] = await getCollateralRequirement(
+        qTokenPut1400,
+        nullQToken,
+        optionsAmount,
+        BN.ROUND_UP
+      );
+
+      expect(collateralRequirement).to.equal(4);
+
+      await USDC.connect(assetsRegistryManager).mint(
+        secondAccount.address,
+        collateralRequirement
+      );
+
+      await USDC.connect(secondAccount).approve(
+        controller.address,
+        collateralRequirement
+      );
+
+      await controller.connect(secondAccount).operate([
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenPut1400.address,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenPut1400.address,
+        AddressZero
+      );
+
+      await controller.connect(secondAccount).operate([
+        encodeNeutralizeArgs({
+          collateralTokenId,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
+        Zero
+      );
+
+      expect(
+        await collateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenId
+        )
+      ).to.equal(Zero);
+
+      const [, collateralOwed] = await getCollateralRequirement(
+        qTokenPut1400,
+        nullQToken,
+        optionsAmount,
+        BN.ROUND_DOWN
+      );
+
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+        collateralOwed
+      );
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        collateralRequirement.sub(collateralOwed)
+      );
+      expect(collateralOwed).to.equal(3);
+    });
   });
 
   describe("mintOptionsPosition", () => {
@@ -1461,9 +1457,7 @@ describe("Controller", async () => {
             amount: ethers.BigNumber.from("10"),
           }),
         ])
-      ).to.be.revertedWith(
-        "Controller: Invalid QToken address"
-      );
+      ).to.be.revertedWith("QuantCalculator: Invalid QToken address");
     });
 
     it("Should revert when trying to mint an already expired option", async () => {
@@ -1502,19 +1496,19 @@ describe("Controller", async () => {
 
     it("Users should be able to mint CALL options positions to another address", async () => {
       await testMintingOptions(
-          qTokenCall2000.address,
-          ethers.utils.parseEther("2"),
-          AddressZero,
-          thirdAccount.address
+        qTokenCall2000.address,
+        ethers.utils.parseEther("2"),
+        AddressZero,
+        thirdAccount.address
       );
     });
 
     it("Users should be able to mint PUT options positions to another address", async () => {
       await testMintingOptions(
-          qTokenPut1400.address,
-          ethers.utils.parseEther("2"),
-          AddressZero,
-          thirdAccount.address
+        qTokenPut1400.address,
+        ethers.utils.parseEther("2"),
+        AddressZero,
+        thirdAccount.address
       );
     });
   });
@@ -1916,6 +1910,104 @@ describe("Controller", async () => {
 
       expect(await WETH.balanceOf(secondAccount.address)).to.equal(
         ethers.BigNumber.from("0")
+      );
+
+      revertToSnapshot(snapshotId);
+    });
+
+    it("QTokens that are not created through the OptionsFactory should not be able to be exercised", async () => {
+      const optionsAmount = ethers.utils.parseEther("15");
+
+      // Take a snapshot of the Hardhat Network
+      const snapshotId = await takeSnapshot();
+
+      // Simulate some user minting real options through the Controller
+      // (i.e., QTokens that were created with the OptionsFactory createOption method)
+      const mintActions = [
+        encodeMintOptionArgs({
+          to: deployer.address,
+          qToken: qTokenPut1400.address,
+          amount: optionsAmount.toString(),
+        }),
+        encodeMintOptionArgs({
+          to: deployer.address,
+          qToken: qTokenPut400.address,
+          amount: optionsAmount.toString(),
+        }),
+      ];
+      const [, firstCollateralAmount] = await getCollateralRequirement(
+        qTokenPut1400,
+        nullQToken,
+        optionsAmount
+      );
+      const [, secondCollateralRequirement] = await getCollateralRequirement(
+        qTokenPut400,
+        nullQToken,
+        optionsAmount
+      );
+      const totalCollateralRequirement = firstCollateralAmount.add(
+        secondCollateralRequirement
+      );
+      const collateral = USDC;
+      await collateral
+        .connect(assetsRegistryManager)
+        .mint(deployer.address, totalCollateralRequirement);
+      await collateral
+        .connect(deployer)
+        .approve(controller.address, totalCollateralRequirement);
+      await controller.connect(deployer).operate(mintActions);
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        totalCollateralRequirement
+      );
+      expect(await qTokenPut1400.balanceOf(deployer.address)).to.equal(
+        optionsAmount
+      );
+
+      expect(await qTokenPut400.balanceOf(deployer.address)).to.equal(
+        optionsAmount
+      );
+
+      // Now we simulate the first option (PUT 1400) expiring ITM
+      await provider.send("evm_mine", [futureTimestamp + 3600]);
+      await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+      await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
+        ethers.utils.parseUnits("800", 8), // Chainlink ETH/USD oracle has 8 decimals
+        BigNumber.from(8),
+      ]);
+
+      // A user now comes and deploy a contract that adheres to the IQToken interface,
+      // or that simply inherits from the QToken contrac
+      const ExternalQToken = await ethers.getContractFactory("ExternalQToken");
+      const externalStrikePrice = ethers.utils.parseUnits(
+        "2600",
+        await USDC.decimals()
+      );
+      const externalQToken = <ExternalQToken>(
+        await ExternalQToken.connect(secondAccount).deploy(
+          await qTokenPut1400.quantConfig(),
+          await qTokenPut1400.underlyingAsset(),
+          await qTokenPut400.strikeAsset(),
+          await qTokenPut1400.oracle(),
+          externalStrikePrice,
+          await qTokenPut1400.expiryTime(),
+          await qTokenPut400.isCall()
+        )
+      );
+
+      // He then mints some of his new, malicious QToken
+      await externalQToken
+        .connect(secondAccount)
+        .permissionlessMint(secondAccount.address, optionsAmount);
+
+      // The malicious user should not be able to exercise his external QToken
+      const exerciseAction = encodeExerciseArgs({
+        qToken: externalQToken.address,
+        amount: optionsAmount.toString(),
+      });
+      await expect(
+        controller.connect(secondAccount).operate([exerciseAction])
+      ).to.be.revertedWith(
+        "QuantCalculator: invalid option. It needs to be created by the factory"
       );
 
       revertToSnapshot(snapshotId);
