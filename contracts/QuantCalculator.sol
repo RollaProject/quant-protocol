@@ -20,6 +20,27 @@ contract QuantCalculator is IQuantCalculator {
     uint8 public constant override OPTIONS_DECIMALS = 18;
     address public immutable override optionsFactory;
 
+    modifier validQToken(address _qToken) {
+        require(
+            IOptionsFactory(optionsFactory).isQToken(_qToken),
+            "QuantCalculator: Invalid QToken address"
+        );
+
+        _;
+    }
+
+    modifier validQTokenAsCollateral(address _qTokenAsCollateral) {
+        if (_qTokenAsCollateral != address(0)) {
+            // it could be the zero address for the qTokenAsCollateral for non-spreads
+            require(
+                IOptionsFactory(optionsFactory).isQToken(_qTokenAsCollateral),
+                "QuantCalculator: Invalid QToken address"
+            );
+        }
+
+        _;
+    }
+
     constructor(address _optionsFactory) {
         optionsFactory = _optionsFactory;
     }
@@ -165,6 +186,8 @@ contract QuantCalculator is IQuantCalculator {
         external
         view
         override
+        validQToken(_qTokenToMint)
+        validQTokenAsCollateral(_qTokenForCollateral)
         returns (address collateral, uint256 collateralAmount)
     {
         QuantMath.FixedPointInt memory collateralAmountFP;
@@ -193,6 +216,7 @@ contract QuantCalculator is IQuantCalculator {
         external
         view
         override
+        validQToken(_qToken)
         returns (
             bool isSettled,
             address payoutToken,
