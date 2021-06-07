@@ -57,7 +57,7 @@ methods {
 	balanceOf(address, uint256) => NONDET
 	getCollateralTokenId(uint256) => DISPATCHER(true)
 	//getCollateralTokenInfoTokenAddress(uint256) returns (address)  => DISPATCHER(true)
-    collateralToken.getCollateralTokenInfoTokenAddress(uint256) returns (address) envfree
+    collateralToken.getCollateralTokenInfoTokenAddress(uint) returns (address) envfree
 }
 
 
@@ -159,18 +159,23 @@ rule solvency(uint256 collateralTokenId,uint256 amount){
 	_claimCollateral(Actions.ClaimCollateralArgs memory _args);
 	assert !lastreverted;
 }*/
-rule only_after_expiry(uint256 collateralTokenId, address qToken){
+rule only_after_expiry(method f)
+	filtered { f-> f.selector == claimCollateral(uint256, uint256).selector ||
+			 	f.selector == exercise(address,uint256).selector }
+{
 	env e;
-	uint256 amount1;
-	uint256 amount2;
-	address qTokenShort;
-    qTokenShort = collateralToken.getCollateralTokenInfoTokenAsCollateral(collateralTokenId);
-    //IQToken qTokenShort = IQToken(_qTokenShort);
+	address qToken; 
+	uint256 collateralTokenId;
+	uint256 amount;
 
-	claimCollateral(e,collateralTokenId, amount1);
-	exercise(e,qToken, amount2);
-	assert e.block.timestamp > getExpiryTime(e,qToken) &&
-			e.block.timestamp > getExpiryTime(e,qTokenShort);
+	if (f.selector == exercise(address,uint256).selector) {
+		exercise(e, qToken, amount);
+	}
+	else if (f.selector == claimCollateral(uint256,uint256).selector ) {
+		require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+    	claimCollateral(e, collateralTokenId, amount);
+	}
+	assert e.block.timestamp > getExpiryTime(e,qToken);
 }
 
 ////////////////////////////////////////////////////////////////////////////
