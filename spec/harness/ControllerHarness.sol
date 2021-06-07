@@ -6,7 +6,7 @@ import "../../contracts/libraries/Actions.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../contracts/Controller.sol";
 import "../../contracts/interfaces/IQToken.sol";
-
+import "../../contracts/interfaces/IOptionsFactory.sol";
 
 contract ControllerHarness is Controller {
     ////////////////////////////////////////////////////////////////////////////
@@ -95,6 +95,10 @@ contract ControllerHarness is Controller {
     }
     function getExpiryTime(address qToken) public view returns (uint256){
         return IQToken(qToken).expiryTime();
+    }
+    function balanceof(uint256 collateralTokenId, address msgSender) public view returns (uint256){
+        ICollateralToken collateralToken;
+        return collateralToken.balanceOf(msgSender,collateralTokenId);
     }
 /*    
     function getIdToInfo(uint256 collateralTokenId) public view returns (uint256){
