@@ -178,6 +178,19 @@ rule only_after_expiry(method f)
 	assert e.block.timestamp > getExpiryTime(e,qToken);
 }
 
+rule additive_claim(uint256 collateralTokenId, uint256 amount1, uint256 amount2){
+	env e;
+	storage init_state = lastStorage;
+	uint256 balance1;
+	uint256 balance2;
+	claimCollateral(e, collateralTokenId, amount1);
+	claimCollateral(e, collateralTokenId, amount2);
+	balance1 = balanceof(e,collateralTokenId,e.msg.sender);
+	claimCollateral(e, collateralTokenId, amount1 + amount2) at init_state;
+	balance2 = balanceof(e,collateralTokenId,e.msg.sender);
+	assert balance1 == balance2;
+}
+
 ////////////////////////////////////////////////////////////////////////////
 //                       Helper Functions                                 //
 ////////////////////////////////////////////////////////////////////////////
