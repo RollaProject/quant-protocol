@@ -1,5 +1,5 @@
 # SafeTransfer simplification
-sed -i 's/safeT/t/g' contracts/Controller.sol
+perl -0777 -i -pe 's/safeT/t/g' contracts/Controller.sol
 
 # Virtualize functions
 perl -0777 -i -pe 's/external\s*override\s*nonReentrant/external virtual override nonReentrant/g' contracts/Controller.sol

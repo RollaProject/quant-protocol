@@ -5,6 +5,8 @@ pragma abicoder v2;
 import "../../contracts/libraries/Actions.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../contracts/Controller.sol";
+import "../../contracts/interfaces/IQToken.sol";
+
 
 contract ControllerHarness is Controller {
     ////////////////////////////////////////////////////////////////////////////
@@ -91,4 +93,18 @@ contract ControllerHarness is Controller {
     function _msgSender() internal view override returns (address sender) {
         return msg.sender;
     }
+    function getExpiryTime(address qToken) public view returns (uint256){
+        return IQToken(qToken).expiryTime();
+    }
+/*    
+    function getIdToInfo(uint256 collateralTokenId) public view returns (uint256){
+    address _qTokenShort;
+    //address qTokenAsCollateral;
+    //        (_qTokenShort,qTokenAsCollateral) =
+    //        optionsFactory.collateralToken().idToInfo(collateralTokenId);
+            _qTokenShort = getgetCollateralTokenInfoTokenAsCollateral(collateralTokenId);
+            IQToken qTokenShort = IQToken(_qTokenShort);
+            return qTokenShort.expiryTime();
+    }*/
+
 }

@@ -56,8 +56,8 @@ methods {
 	burnCollateralToken(address,uint256,uint256) => NONDET
 	balanceOf(address, uint256) => NONDET
 	getCollateralTokenId(uint256) => DISPATCHER(true)
-	getCollateralTokenInfoTokenAddress(uint256) returns (address)  => DISPATCHER(true)
-
+	//getCollateralTokenInfoTokenAddress(uint256) returns (address)  => DISPATCHER(true)
+    collateralToken.getCollateralTokenInfoTokenAddress(uint256) returns (address) envfree
 }
 
 
@@ -128,16 +128,50 @@ rule sanity(method f)
 	assert false;
 }
 // comment
+/* move to fubds calculator
  rule amount_to_claim_LE_claimable(uint256 collateralTokenId,uint256 amount){
+    env e;
+	uint256 returnableCollateral;
+    address collateralAsset;
+    uint256 amountToClaim;
+ 
 	address qtoken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	 
-	        (
-            uint256 returnableCollateral,
-            address collateralAsset,
-            uint256 amountToClaim
-        ) = calculateClaimableCollateral(collateralTokenId,amount);
+	        
+            returnableCollateral,
+            collateralAsset,
+            amountToClaim
+         = calculateClaimableCollateral(e,collateralTokenId,amount);
 	assert collateralAsset == qtoken || collateralAsset == collateralTokenId; 
- }
+ }*/
+
+// 1.  _claimCollateral(Actions.ClaimCollateralArgs memory _args)
+//    the more the user claim the less his balance of collateral tokens
+// 2. claim(x) + claim(y) == claim(x+y)
+// 3. claim(x) <= balanceOf(x)
+/*
+rule solvency(uint256 collateralTokenId,uint256 amount){
+	env e;
+	require _args.collateralTokenId == collateralTokenId;
+	require _args.amount == amount;
+	address Ctoken = getCollateralTokenInfoTokenAddress(collateralTokenId);
+	getCollateralTokenInfoTokenAddress
+	_claimCollateral(Actions.ClaimCollateralArgs memory _args);
+	assert !lastreverted;
+}*/
+rule only_after_expiry(uint256 collateralTokenId, address qToken){
+	env e;
+	uint256 amount1;
+	uint256 amount2;
+	address qTokenShort;
+    qTokenShort = collateralToken.getCollateralTokenInfoTokenAsCollateral(collateralTokenId);
+    //IQToken qTokenShort = IQToken(_qTokenShort);
+
+	claimCollateral(e,collateralTokenId, amount1);
+	exercise(e,qToken, amount2);
+	assert e.block.timestamp > getExpiryTime(e,qToken) &&
+			e.block.timestamp > getExpiryTime(e,qTokenShort);
+}
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Helper Functions                                 //
