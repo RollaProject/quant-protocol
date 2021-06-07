@@ -22,18 +22,19 @@ using DummyERC20A as erc20B
 */
 
 methods {
-   getCollateralRequirement(address _qTokenToMint,
-                                      address _qTokenForCollateral,
-                                      uint256 _optionsAmount,
-                                      uint8 _optionsDecimals,
-                                      uint8 _underlyingDecimals) returns (int256) envfree;
+   getOptionCollateralRequirementWrapper(uint256 _qTokenToMintStrikePrice,
+                                       uint256 _qTokenForCollateralStrikePrice,
+                                       uint256 _optionsAmount,
+                                       bool _qTokenToMintIsCall,
+                                       uint8 _optionsDecimals,
+                                       uint8 _underlyingDecimals) returns (int256) envfree;
 
    getPutCollateralRequirement(uint256 _qTokenToMintStrikePrice,
                                uint256 _qTokenForCollateralStrikePrice) returns (int256) envfree;
 
-   getCallCollateralRequirement(uint256 _qTokenToMintStrikePrice,
-                                uint256 _qTokenForCollateralStrikePrice,
-                                uint8 _underlyingDecimals) returns (int256) envfree;
+   getCallCollateralRequirementWrapper(uint256 _qTokenToMintStrikePrice,
+                                           uint256 _qTokenForCollateralStrikePrice,
+                                           uint8 _underlyingDecimals) returns (int256) envfree;
 
    checkAgeB(int256 _a, int256 _b) returns (bool) envfree;
    checkAleB(int256 _a, int256 _b) returns (bool) envfree;
@@ -73,32 +74,46 @@ definition SIGNED_INT_TO_MATHINT(int256 x) returns mathint = x >= 2^255 ? x - 2^
 //                       Rules                                            //
 ////////////////////////////////////////////////////////////////////////////
 
-// Rule 1 - Spreads require less collateral than minting options
-rule checkRule1(address qTokenToMint,
-                uint256 optionsAmount,
-                uint8 optionsDecimals,
-                uint8 underlyingDecimals,
-                address qTokenForCollateralNonZero) {
+// Rule 1 - spreads require less collateral than minting options
+// checking internal function "getOptionCollateralRequirement"
+rule checkOptionCollateralRequirement(uint256 qTokenToMintStrikePrice,
+                                      uint256 qTokenForCollateralStrikePrice,
+                                      uint256 optionsAmount,
+                                      bool qTokenToMintIsCall,
+                                      uint8 optionsDecimals,
+                                      uint8 underlyingDecimals) {
 
-    // minting a spread
-    require qTokenForCollateralNonZero != 0;
-    int256 spreadCollateral = getCollateralRequirement(qTokenToMint,
-                                                              qTokenForCollateralNonZero,
-                                                              optionsAmount,
-                                                              optionsDecimals,
-                                                              underlyingDecimals);
+   // since Strike Prices are USDCs, they have a decimal value of 6
+   // i.e. there value can be from 0 to 999999
+   require qTokenToMintStrikePrice < 10^6;
+   require qTokenForCollateralStrikePrice < 10^6;
 
-    // minting a non-spread option
-    address qTokenForCollateralZero;
-    require qTokenForCollateralZero == 0;
-    int256 optionCollateral = getCollateralRequirement(qTokenToMint,
-                                                                qTokenForCollateralZero,
-                                                                optionsAmount,
-                                                                optionsDecimals,
-                                                                underlyingDecimals);
+   // to have precise approximation and
+   // to avoid division - set all decimals = Base decimals
+   require underlyingDecimals == 27;
+   require optionsDecimals == 27;
 
-    // check spreads require less collateral than minting option : spreadCollateral <= optionCollateral
-    assert checkAleB(spreadCollateral, optionCollateral);
+   // since optionsDecimals == 27, optionsAmount has to be less than 10^27
+   require optionsAmount < 10^26;
+
+   // minting a non-spread option
+   int256 optionCollateral = getOptionCollateralRequirementWrapper(qTokenToMintStrikePrice,
+                                                            0,
+                                                            optionsAmount,
+                                                            qTokenToMintIsCall,
+                                                            optionsDecimals,
+                                                            underlyingDecimals);
+
+   // minting a spread option (when qTokenForCollateralStrikePrice != 0)
+   int256 spreadCollateral = getOptionCollateralRequirementWrapper(qTokenToMintStrikePrice,
+                                                           qTokenForCollateralStrikePrice,
+                                                           optionsAmount,
+                                                           qTokenToMintIsCall,
+                                                           optionsDecimals,
+                                                           underlyingDecimals);
+
+   // check spreads require less collateral than minting option : spreadCollateral <= optionCollateral
+   assert checkAleB(spreadCollateral, optionCollateral);
 }
 
 // Rule 3 - Put spreads require more collateral
@@ -161,15 +176,22 @@ rule checkCallCollateralRequirement(uint256 mintStrikePrice,
     require collateralStrikePrice1 < 10^6;
     require collateralStrikePrice2 < 10^6;
 
+    // to have precise approximation and
+    // to avoid division - set underlyingDecimals = Base decimals
+    require underlyingDecimals == 27;
+
+    // since we are only concerned about call spreads, make
+    // sure both collateral strike prices are greater than 0
+    require collateralStrikePrice1 > 0;
+    require collateralStrikePrice2 > 0;
+
     // since we need to check the behavior as the collateralStrikePrice increases
     require collateralStrikePrice1 < collateralStrikePrice2;
 
-    int256 collateralRequirement1 = getCallCollateralRequirement@withrevert(mintStrikePrice, collateralStrikePrice1,
-                                                                 underlyingDecimals);
-    assert lastReverted == false, "getCallCollateralRequirement reverted with collateralStrikePrice1";
-    int256 collateralRequirement2 = getCallCollateralRequirement@withrevert(mintStrikePrice, collateralStrikePrice2,
-                                                                 underlyingDecimals);
-    assert lastReverted == false, "getCallCollateralRequirement reverted with collateralStrikePrice2";
+    int256 collateralRequirement1 = getCallCollateralRequirementWrapper(mintStrikePrice, collateralStrikePrice1,
+                                                                            underlyingDecimals);
+    int256 collateralRequirement2 = getCallCollateralRequirementWrapper(mintStrikePrice, collateralStrikePrice2,
+                                                                            underlyingDecimals);
 
     // check more collateral required: collateralRequirement2 >= collateralRequirement1
     assert checkAgeB(collateralRequirement2, collateralRequirement1);
@@ -192,9 +214,9 @@ rule checkCallCollateralRequirement2(uint256 mintStrikePrice1,
     // since we need to check the behavior as the mintStrikePrice increases
     require mintStrikePrice1 < mintStrikePrice2;
 
-    int256 collateralRequirement1 = getCallCollateralRequirement(mintStrikePrice1, collateralStrikePrice,
+    int256 collateralRequirement1 = getCallCollateralRequirementWrapper(mintStrikePrice1, collateralStrikePrice,
                                                                  underlyingDecimals);
-    int256 collateralRequirement2 = getCallCollateralRequirement(mintStrikePrice2, collateralStrikePrice,
+    int256 collateralRequirement2 = getCallCollateralRequirementWrapper(mintStrikePrice2, collateralStrikePrice,
                                                                  underlyingDecimals);
 
     // check less collateral required: collateralRequirement2 <= collateralRequirement1
