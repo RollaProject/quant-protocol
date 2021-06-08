@@ -74,7 +74,7 @@ contract FundsCalculatorWrapper {
         _qTokenForCollateralStrikePrice.fromScaledUint(6);
 
         // Initially (non-spread) required collateral is the long strike price
-        uint256 _collateralAmount = getUnderlyingValue(_underlyingDecimals);            // --- simply get the underlying constant - 10^27 (don't do the exponentiation)
+        uint256 _collateralAmount = getUnderlyingValue(_underlyingDecimals);            // --- simply get the underlying constant - 10^27 (don't do the exponentiation - see summary)
         collateralAmount = _collateralAmount.fromScaledUint(_underlyingDecimals);
 
         if (_qTokenForCollateralStrikePrice > 0) {
@@ -101,6 +101,6 @@ contract FundsCalculatorWrapper {
 
     function getUnderlyingValue(uint8 _underlyingDecimals)
     internal pure returns (uint256 collateralPerOption) {
-        collateralPerOption = 1000000000000000000000000000;     // 10^27 == 10**_underlyingDecimals
+        collateralPerOption = (10**_underlyingDecimals);     // 10^27 == 10**_underlyingDecimals
     }
 }

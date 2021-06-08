@@ -48,6 +48,9 @@ methods {
    	expiryTime() returns (uint256) => DISPATCHER(true)
    	isCall() returns (bool) => ALWAYS(0)
 
+   	// summary for getUnderlyingValue
+   	getUnderlyingValue(uint8 _underlyingDecimals) returns (uint256) => ALWAYS(1000000000000000000000000000)
+
     // IERC20 methods to be called with one of the tokens (DummyERC20A, DummyERC20A) or QToken
     balanceOf(address) => DISPATCHER(true)
     totalSupply() => DISPATCHER(true)
