@@ -88,6 +88,27 @@ contract QuantConfig is
         _setRoleAdmin(role, adminRole);
     }
 
+    function protocolAddressesLength()
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return configuredProtocolAddresses.length;
+    }
+
+    function protocolUints256Length() external view override returns (uint256) {
+        return configuredProtocolUints256.length;
+    }
+
+    function protocolBooleansLength() external view override returns (uint256) {
+        return configuredProtocolBooleans.length;
+    }
+
+    function quantRolesLength() external view override returns (uint256) {
+        return configuredQuantRoles.length;
+    }
+
     /// @notice Initializes the system roles and assign them to the given TimelockController address
     /// @param _timelockController Address of the TimelockController to receive the system roles
     /// @dev The TimelockController should have a Quant multisig as its sole proposer
