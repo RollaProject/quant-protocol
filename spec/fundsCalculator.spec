@@ -125,20 +125,11 @@ rule checkPutCollateralRequirement(uint256 mintStrikePrice,
                                     uint256 collateralStrikePrice1,
                                     uint256 collateralStrikePrice2) {
 
-   // since Strike Prices are USDCs, they have a decimal value of 6
-   // i.e. there value can be from 0 to 999999
-   require mintStrikePrice < 10^6;
-   require collateralStrikePrice1 < 10^6;
-   require collateralStrikePrice2 < 10^6;
-
    // since we need to check the behavior as the collateralStrikePrice decreases
    require collateralStrikePrice1 > collateralStrikePrice2;
 
-   int256 collateralRequirement1 = getPutCollateralRequirement@withrevert(mintStrikePrice, collateralStrikePrice1);
-   assert lastReverted == false, "getPutCollateralRequirement reverted with collateralStrikePrice1";
-
-   int256 collateralRequirement2 = getPutCollateralRequirement@withrevert(mintStrikePrice, collateralStrikePrice2);
-   assert lastReverted == false, "getPutCollateralRequirement reverted with collateralStrikePrice2";
+   int256 collateralRequirement1 = getPutCollateralRequirement(mintStrikePrice, collateralStrikePrice1);
+   int256 collateralRequirement2 = getPutCollateralRequirement(mintStrikePrice, collateralStrikePrice2);
 
    // check collateralRequirement2 >= collateralRequirement1
    assert checkAgeB(collateralRequirement2, collateralRequirement1);
