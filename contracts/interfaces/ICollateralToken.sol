@@ -94,7 +94,7 @@ interface ICollateralToken is IERC1155 {
         uint256[] calldata amounts
     ) external;
 
-    /// @notice Batched burning of of multiple CollateralTokens from a given account
+    /// @notice Batched burning of multiple CollateralTokens from a given account
     /// @dev Should be used when burning multiple CollateralTokens for a single user,
     /// i.e., when a user sells more than one short position through the interface
     /// @param owner address to burn tokens from
@@ -105,6 +105,28 @@ interface ICollateralToken is IERC1155 {
         address owner,
         uint256[] calldata ids,
         uint256[] calldata amounts
+    ) external;
+
+    /// @notice Set approval for all IDs by providing parameters to setApprovalForAll
+    /// alongside a valid signature (r, s, v)
+    /// @dev This method is implemented by following EIP-712: https://eips.ethereum.org/EIPS/eip-712
+    /// @param owner     Address that wants to set operator status
+    /// @param operator  Address to add to the set of authorized operators
+    /// @param approved  True if the operator is approved, false to revoke approval
+    /// @param nonce     Nonce valid for the owner at the time of the meta-tx execution
+    /// @param deadline  Maximum unix timestamp at which the signature is still valid
+    /// @param v         Last byte of the signed data
+    /// @param r         The first 64 bytes of the signed data
+    /// @param s         Bytes 64…128 of the signed data
+    function metaSetApprovalForAll(
+        address owner,
+        address operator,
+        bool approved,
+        uint256 nonce,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) external;
 
     /// @notice The Quant system config
