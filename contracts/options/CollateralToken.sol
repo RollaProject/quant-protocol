@@ -186,6 +186,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         address owner,
         address operator,
         bool approved,
+        uint256 nonce,
         uint256 deadline,
         uint8 v,
         bytes32 r,
@@ -197,6 +198,8 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
             "CollateralToken: expired deadline"
         );
 
+        require(nonce == nonces[owner], "CollateralToken: invalid nonce");
+
         bytes32 structHash =
             keccak256(
                 abi.encode(
@@ -204,7 +207,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
                     owner,
                     operator,
                     approved,
-                    nonces[owner],
+                    nonce,
                     deadline
                 )
             );

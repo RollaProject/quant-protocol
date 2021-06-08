@@ -113,6 +113,7 @@ interface ICollateralToken is IERC1155 {
     /// @param owner     Address that wants to set operator status
     /// @param operator  Address to add to the set of authorized operators
     /// @param approved  True if the operator is approved, false to revoke approval
+    /// @param nonce     Nonce valid for the owner at the time of the meta-tx execution
     /// @param deadline  Maximum unix timestamp at which the signature is still valid
     /// @param v         Last byte of the signed data
     /// @param r         The first 64 bytes of the signed data
@@ -121,6 +122,7 @@ interface ICollateralToken is IERC1155 {
         address owner,
         address operator,
         bool approved,
+        uint256 nonce,
         uint256 deadline,
         uint8 v,
         bytes32 r,

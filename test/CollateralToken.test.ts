@@ -127,6 +127,13 @@ describe("CollateralToken", () => {
 
   describe("metaSetApprovalForAll", () => {
     const futureTimestamp = Math.round(Date.now() / 1000) + 3600 * 24;
+    let nonce: number;
+
+    beforeEach(async () => {
+      nonce = parseInt(
+        (await collateralToken.nonces(deployer.address)).toString()
+      );
+    });
     it("Should revert when passing an expired deadline", async () => {
       const pastTimestamp = Math.round(Date.now() / 1000) - 3600 * 24; // a day in the past
 
@@ -137,6 +144,7 @@ describe("CollateralToken", () => {
             deployer.address,
             secondAccount.address,
             true,
+            nonce,
             pastTimestamp,
             0,
             ethers.constants.HashZero,
@@ -153,12 +161,39 @@ describe("CollateralToken", () => {
             deployer.address,
             secondAccount.address,
             true,
+            nonce,
             futureTimestamp,
             0,
             ethers.constants.HashZero,
             ethers.constants.HashZero
           )
       ).to.be.revertedWith("CollateralToken: invalid signature");
+    });
+
+    it("Should revert when passing an invalid nonce", async () => {
+      const { v, r, s } = getApprovalForAllSignedData(
+        parseInt((await collateralToken.nonces(deployer.address)).toString()),
+        deployer,
+        secondAccount.address,
+        true,
+        futureTimestamp,
+        collateralToken.address
+      );
+
+      await expect(
+        collateralToken
+          .connect(secondAccount)
+          .metaSetApprovalForAll(
+            deployer.address,
+            secondAccount.address,
+            true,
+            nonce + 5,
+            futureTimestamp,
+            v,
+            r,
+            s
+          )
+      ).to.be.revertedWith("CollateralToken: invalid nonce");
     });
 
     it("Should be able to set approvals through meta transactions", async () => {
@@ -185,6 +220,7 @@ describe("CollateralToken", () => {
             deployer.address,
             secondAccount.address,
             true,
+            nonce,
             futureTimestamp,
             v,
             r,
