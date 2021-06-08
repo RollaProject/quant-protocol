@@ -1,4 +1,4 @@
-import { BigNumber, Signer } from "ethers";
+import { BigNumber, Signer, Wallet } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import { CollateralToken } from "../typechain/CollateralToken";
@@ -11,6 +11,7 @@ import {
   deployCollateralToken,
   deployQToken,
   deployQuantConfig,
+  getApprovalForAllSignedData,
   mockERC20,
 } from "./testUtils";
 
@@ -19,8 +20,8 @@ describe("CollateralToken", () => {
   let collateralToken: CollateralToken;
   let qToken: QToken;
   let secondQToken: QToken;
-  let timelockController: Signer;
-  let secondAccount: Signer;
+  let deployer: Wallet;
+  let secondAccount: Wallet;
   let assetRegistryManager: Signer;
   let collateralCreator: Signer;
   let collateralMinter: Signer;
@@ -63,7 +64,7 @@ describe("CollateralToken", () => {
 
   beforeEach(async () => {
     [
-      timelockController,
+      deployer,
       secondAccount,
       assetRegistryManager,
       collateralCreator,
@@ -72,7 +73,7 @@ describe("CollateralToken", () => {
     ] = await provider.getWallets();
     userAddress = await secondAccount.getAddress();
 
-    quantConfig = await deployQuantConfig(timelockController, [
+    quantConfig = await deployQuantConfig(deployer, [
       {
         addresses: [await assetRegistryManager.getAddress()],
         role: "ASSETS_REGISTRY_MANAGER_ROLE",
@@ -91,13 +92,10 @@ describe("CollateralToken", () => {
       },
     ]);
 
-    WETH = await mockERC20(timelockController, "WETH");
-    USDC = await mockERC20(timelockController, "USDC");
+    WETH = await mockERC20(deployer, "WETH");
+    USDC = await mockERC20(deployer, "USDC");
 
-    const assetsRegistry = await deployAssetsRegistry(
-      timelockController,
-      quantConfig
-    );
+    const assetsRegistry = await deployAssetsRegistry(deployer, quantConfig);
 
     await assetsRegistry
       .connect(assetRegistryManager)
@@ -107,14 +105,14 @@ describe("CollateralToken", () => {
       .addAsset(USDC.address, "", "", 0, 1000);
 
     qToken = await deployQToken(
-      timelockController,
+      deployer,
       quantConfig,
       WETH.address,
       USDC.address
     );
 
     secondQToken = await deployQToken(
-      timelockController,
+      deployer,
       quantConfig,
       WETH.address,
       USDC.address,
@@ -124,10 +122,85 @@ describe("CollateralToken", () => {
       true
     );
 
-    collateralToken = await deployCollateralToken(
-      timelockController,
-      quantConfig
-    );
+    collateralToken = await deployCollateralToken(deployer, quantConfig);
+  });
+
+  describe("metaSetApprovalForAll", () => {
+    const futureTimestamp = Math.round(Date.now() / 1000) + 3600 * 24;
+    it("Should revert when passing an expired deadline", async () => {
+      const pastTimestamp = Math.round(Date.now() / 1000) - 3600 * 24; // a day in the past
+
+      await expect(
+        collateralToken
+          .connect(secondAccount)
+          .metaSetApprovalForAll(
+            deployer.address,
+            secondAccount.address,
+            true,
+            pastTimestamp,
+            0,
+            ethers.constants.HashZero,
+            ethers.constants.HashZero
+          )
+      ).to.be.revertedWith("CollateralToken: expired deadline");
+    });
+
+    it("Should revert when passing an invalid signature", async () => {
+      await expect(
+        collateralToken
+          .connect(secondAccount)
+          .metaSetApprovalForAll(
+            deployer.address,
+            secondAccount.address,
+            true,
+            futureTimestamp,
+            0,
+            ethers.constants.HashZero,
+            ethers.constants.HashZero
+          )
+      ).to.be.revertedWith("CollateralToken: invalid signature");
+    });
+
+    it("Should be able to set approvals through meta transactions", async () => {
+      expect(
+        await collateralToken.isApprovedForAll(
+          deployer.address,
+          secondAccount.address
+        )
+      ).to.equal(false);
+
+      const { v, r, s } = getApprovalForAllSignedData(
+        parseInt((await collateralToken.nonces(deployer.address)).toString()),
+        deployer,
+        secondAccount.address,
+        true,
+        futureTimestamp,
+        collateralToken.address
+      );
+
+      await expect(
+        collateralToken
+          .connect(secondAccount)
+          .metaSetApprovalForAll(
+            deployer.address,
+            secondAccount.address,
+            true,
+            futureTimestamp,
+            v,
+            r,
+            s
+          )
+      )
+        .to.emit(collateralToken, "ApprovalForAll")
+        .withArgs(deployer.address, secondAccount.address, true);
+
+      expect(
+        await collateralToken.isApprovedForAll(
+          deployer.address,
+          secondAccount.address
+        )
+      ).to.equal(true);
+    });
   });
 
   describe("createCollateralToken", () => {
@@ -634,7 +707,7 @@ describe("CollateralToken", () => {
       await createTwoCollateralTokens();
 
       const otherQToken = await deployQToken(
-        timelockController,
+        deployer,
         quantConfig,
         WETH.address,
         USDC.address,

@@ -2,9 +2,10 @@
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/drafts/EIP712.sol";
+import "../external/openzeppelin/ERC1155.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../interfaces/ICollateralToken.sol";
 import "../interfaces/IQToken.sol";
@@ -14,7 +15,7 @@ import "../interfaces/IQToken.sol";
 /// @notice Can be used by owners to claim their collateral
 /// @dev This is a multi-token contract that implements the ERC1155 token standard:
 /// https://eips.ethereum.org/EIPS/eip-1155
-contract CollateralToken is ERC1155, ICollateralToken {
+contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
     using SafeMath for uint256;
 
     /// @dev stores metadata for a CollateralToken with an specific id
@@ -37,10 +38,23 @@ contract CollateralToken is ERC1155, ICollateralToken {
     /// @inheritdoc ICollateralToken
     mapping(uint256 => uint256) public override tokenSupplies;
 
+    // Signature nonce per address
+    mapping(address => uint256) public nonces;
+
+    // keccak256(
+    //     "metaSetApprovalForAll(address owner,address operator,bool approved,uint256 nonce,uint256 deadline)"
+    // );
+    bytes32 private constant _META_APPROVAL_TYPEHASH =
+        0xf8f9aaf28cf20cd45b21061d07505fa1da285124284441ea655b9eb837ed89b7;
+
     /// @notice Initializes a new ERC1155 multi-token contract for representing
     /// users' short positions
     /// @param _quantConfig the address of the Quant system configuration contract
-    constructor(address _quantConfig) ERC1155("URI") {
+    constructor(
+        address _quantConfig,
+        string memory _name,
+        string memory _version
+    ) ERC1155("URI") EIP712(_name, _version) {
         quantConfig = IQuantConfig(_quantConfig);
     }
 
@@ -165,6 +179,43 @@ contract CollateralToken is ERC1155, ICollateralToken {
             tokenSupplies[ids[i]] = tokenSupplies[ids[i]].sub(amounts[i]);
             emit CollateralTokenBurned(owner, ids[i], amounts[i]);
         }
+    }
+
+    function metaSetApprovalForAll(
+        address owner,
+        address operator,
+        bool approved,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        // solhint-disable-next-line not-rely-on-time
+        require(
+            block.timestamp <= deadline,
+            "CollateralToken: expired deadline"
+        );
+
+        bytes32 structHash =
+            keccak256(
+                abi.encode(
+                    _META_APPROVAL_TYPEHASH,
+                    owner,
+                    operator,
+                    approved,
+                    nonces[owner],
+                    deadline
+                )
+            );
+
+        bytes32 hash = _hashTypedDataV4(structHash);
+
+        address signer = ecrecover(hash, v, r, s);
+        require(signer == owner, "CollateralToken: invalid signature");
+
+        nonces[owner] = nonces[owner].add(1);
+        _operatorApprovals[owner][operator] = approved;
+        emit ApprovalForAll(owner, operator, approved);
     }
 
     function getCollateralTokensLength()

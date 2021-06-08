@@ -32,3 +32,11 @@ export const actionType = [
   { name: "collateralTokenId", type: "uint256" },
   { name: "data", type: "bytes" },
 ];
+
+export const metaApprovalType = [
+  { name: "owner", type: "address" },
+  { name: "operator", type: "address" },
+  { name: "approved", type: "bool" },
+  { name: "nonce", type: "uint256" },
+  { name: "deadline", type: "uint256" },
+];

@@ -38,6 +38,8 @@ import {
   deployQuantConfig,
   getSignedTransactionData,
   mockERC20,
+  name,
+  version,
 } from "./testUtils";
 
 const { deployMockContract } = waffle;
@@ -884,8 +886,8 @@ describe("Controller", async () => {
 
     controller = <Controller>(
       await upgrades.deployProxy(Controller, [
-        "Quant Protocol",
-        "0.3.4",
+        name,
+        version,
         optionsFactory.address,
         quantCalculator.address,
       ])
@@ -2378,7 +2380,7 @@ describe("Controller", async () => {
         }),
       ];
 
-      const txData = await getSignedTransactionData(
+      const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
         deployer,
         actions,
@@ -2430,7 +2432,7 @@ describe("Controller", async () => {
         }),
       ];
 
-      const txData = await getSignedTransactionData(
+      const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
         deployer,
         actions,
@@ -2526,7 +2528,7 @@ describe("Controller", async () => {
         }),
       ];
 
-      const txData = await getSignedTransactionData(
+      const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
         deployer,
         actions,
@@ -2620,7 +2622,7 @@ describe("Controller", async () => {
         }),
       ];
 
-      const txData = await getSignedTransactionData(
+      const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
         deployer,
         actions,
@@ -2705,7 +2707,7 @@ describe("Controller", async () => {
         }),
       ];
 
-      const txData = await getSignedTransactionData(
+      const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
         deployer,
         actions,
@@ -2753,7 +2755,7 @@ describe("Controller", async () => {
         }),
       ];
 
-      const txData = await getSignedTransactionData(
+      const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
         deployer,
         actions,
@@ -2809,7 +2811,7 @@ describe("Controller", async () => {
         }),
       ];
 
-      const txData = await getSignedTransactionData(
+      const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
         deployer,
         reentrantOperateAction,
@@ -2847,7 +2849,7 @@ describe("Controller", async () => {
         }),
       ];
 
-      const txData = await getSignedTransactionData(
+      const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
         deployer,
         actions,
