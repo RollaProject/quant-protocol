@@ -268,12 +268,14 @@ type SignedTransactionData = {
 
 const getSignedTransactionData = (
   nonce: number,
+  deadline: number,
   userWallet: Wallet,
   actions: ActionArgs[],
   verifyingContract: string
 ): SignedTransactionData => {
   const message = {
     nonce,
+    deadline,
     from: userWallet.address,
     actions,
   };

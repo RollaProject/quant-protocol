@@ -2369,6 +2369,135 @@ describe("Controller", async () => {
   });
 
   describe("Meta transactions", () => {
+    const deadline = Math.floor(Date.now() / 1000) + aMonth + 3600 * 24;
+    let nonce: number;
+
+    beforeEach(async () => {
+      nonce = parseInt(
+        (await controller.getNonce(deployer.address)).toString()
+      );
+    });
+
+    it("Should revert when signer and signature don't match", async () => {
+      const amount = ethers.utils.parseEther("1");
+
+      const actions = [
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenCall2000.address,
+          amount: amount.toString(),
+        }),
+      ];
+
+      const txData = await getSignedTransactionData(
+        nonce,
+        deadline,
+        deployer,
+        actions,
+        controller.address
+      );
+
+      await expect(
+        controller
+          .connect(deployer)
+          .executeMetaTransaction(
+            { nonce, deadline, from: secondAccount.address, actions },
+            txData.r,
+            txData.s,
+            txData.v
+          )
+      ).to.be.revertedWith("signer and signature don't match");
+    });
+
+    it("Should revert when an invalid signature is provided", async () => {
+      const amount = ethers.utils.parseEther("1");
+
+      const actions = [
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenCall2000.address,
+          amount: amount.toString(),
+        }),
+      ];
+
+      await expect(
+        controller
+          .connect(deployer)
+          .executeMetaTransaction(
+            { nonce, deadline, from: secondAccount.address, actions },
+            ethers.constants.HashZero,
+            ethers.constants.HashZero,
+            0
+          )
+      ).to.be.revertedWith("invalid signature");
+    });
+
+    it("Should revert when an invalid nonce is provided", async () => {
+      const amount = ethers.utils.parseEther("1");
+
+      const actions = [
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenCall2000.address,
+          amount: amount.toString(),
+        }),
+      ];
+
+      const txData = await getSignedTransactionData(
+        nonce + 5,
+        deadline,
+        deployer,
+        actions,
+        controller.address
+      );
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .executeMetaTransaction(
+            { nonce: nonce + 5, deadline, from: deployer.address, actions },
+            txData.r,
+            txData.s,
+            txData.v
+          )
+      ).to.be.revertedWith("invalid nonce");
+    });
+
+    it("Should revert when a expired deadline is provided", async () => {
+      const amount = ethers.utils.parseEther("1");
+      const expiredDeadline = Math.floor(Date.now() / 1000) - 3600 * 24;
+
+      const actions = [
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenCall2000.address,
+          amount: amount.toString(),
+        }),
+      ];
+
+      const txData = await getSignedTransactionData(
+        nonce,
+        expiredDeadline,
+        deployer,
+        actions,
+        controller.address
+      );
+
+      await expect(
+        controller.connect(secondAccount).executeMetaTransaction(
+          {
+            nonce,
+            deadline: expiredDeadline,
+            from: deployer.address,
+            actions,
+          },
+          txData.r,
+          txData.s,
+          txData.v
+        )
+      ).to.be.revertedWith("expired deadline");
+    });
+
     it("Users should be able to mint options through meta transactions", async () => {
       const amount = ethers.utils.parseEther("1");
 
@@ -2381,7 +2510,8 @@ describe("Controller", async () => {
       ];
 
       const txData = getSignedTransactionData(
-        parseInt((await controller.getNonce(deployer.address)).toString()),
+        nonce,
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2409,8 +2539,7 @@ describe("Controller", async () => {
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
-          deployer.address,
-          actions,
+          { nonce, deadline, from: deployer.address, actions },
           txData.r,
           txData.s,
           txData.v
@@ -2433,7 +2562,8 @@ describe("Controller", async () => {
       ];
 
       const txData = getSignedTransactionData(
-        parseInt((await controller.getNonce(deployer.address)).toString()),
+        nonce,
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2459,8 +2589,7 @@ describe("Controller", async () => {
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
-          deployer.address,
-          actions,
+          { nonce, deadline, from: deployer.address, actions },
           txData.r,
           txData.s,
           txData.v
@@ -2529,7 +2658,8 @@ describe("Controller", async () => {
       ];
 
       const txData = getSignedTransactionData(
-        parseInt((await controller.getNonce(deployer.address)).toString()),
+        nonce,
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2538,8 +2668,7 @@ describe("Controller", async () => {
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
-          deployer.address,
-          actions,
+          { nonce, deadline, from: deployer.address, actions },
           txData.r,
           txData.s,
           txData.v
@@ -2623,7 +2752,8 @@ describe("Controller", async () => {
       ];
 
       const txData = getSignedTransactionData(
-        parseInt((await controller.getNonce(deployer.address)).toString()),
+        nonce,
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2632,8 +2762,7 @@ describe("Controller", async () => {
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
-          deployer.address,
-          actions,
+          { nonce, deadline, from: deployer.address, actions },
           txData.r,
           txData.s,
           txData.v
@@ -2709,6 +2838,7 @@ describe("Controller", async () => {
 
       const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2717,8 +2847,7 @@ describe("Controller", async () => {
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
-          deployer.address,
-          actions,
+          { nonce, deadline, from: deployer.address, actions },
           txData.r,
           txData.s,
           txData.v
@@ -2757,6 +2886,7 @@ describe("Controller", async () => {
 
       const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2774,8 +2904,7 @@ describe("Controller", async () => {
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
-          deployer.address,
-          actions,
+          { nonce, deadline, from: deployer.address, actions },
           txData.r,
           txData.s,
           txData.v
@@ -2812,22 +2941,25 @@ describe("Controller", async () => {
       ];
 
       const txData = getSignedTransactionData(
-        parseInt((await controller.getNonce(deployer.address)).toString()),
+        nonce,
+        deadline,
         deployer,
         reentrantOperateAction,
         controller.address
       );
 
       await expect(
-        controller
-          .connect(secondAccount)
-          .executeMetaTransaction(
-            deployer.address,
-            reentrantOperateAction,
-            txData.r,
-            txData.s,
-            txData.v
-          )
+        controller.connect(secondAccount).executeMetaTransaction(
+          {
+            nonce,
+            deadline,
+            from: deployer.address,
+            actions: reentrantOperateAction,
+          },
+          txData.r,
+          txData.s,
+          txData.v
+        )
       ).to.be.revertedWith("unsuccessful function call");
     });
 
@@ -2851,6 +2983,7 @@ describe("Controller", async () => {
 
       const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2860,8 +2993,7 @@ describe("Controller", async () => {
         controller
           .connect(secondAccount)
           .executeMetaTransaction(
-            deployer.address,
-            actions,
+            { nonce, deadline, from: deployer.address, actions },
             txData.r,
             txData.s,
             txData.v
