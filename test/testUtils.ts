@@ -28,7 +28,12 @@ import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
-import { actionType, domainType, metaActionType } from "./eip712Types";
+import {
+  actionType,
+  domainType,
+  metaActionType,
+  metaApprovalType,
+} from "./eip712Types";
 import { provider } from "./setup";
 
 const { deployContract } = waffle;
@@ -40,6 +45,9 @@ const PERMIT_TYPEHASH = keccak256(
     "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
   )
 );
+
+export const name = "Quant Protocol";
+export const version = "0.3.5";
 
 const mockERC20 = async (
   deployer: Signer,
@@ -120,7 +128,11 @@ const deployCollateralToken = async (
   quantConfig: QuantConfig
 ): Promise<CollateralToken> => {
   const collateralToken = <CollateralToken>(
-    await deployContract(deployer, CollateralTokenJSON, [quantConfig.address])
+    await deployContract(deployer, CollateralTokenJSON, [
+      quantConfig.address,
+      name,
+      version,
+    ])
   );
 
   return collateralToken;
@@ -254,12 +266,12 @@ type SignedTransactionData = {
   v: number;
 };
 
-const getSignedTransactionData = async (
+const getSignedTransactionData = (
   nonce: number,
   userWallet: Wallet,
   actions: ActionArgs[],
   verifyingContract: string
-): Promise<SignedTransactionData> => {
+): SignedTransactionData => {
   const message = {
     nonce,
     from: userWallet.address,
@@ -267,8 +279,8 @@ const getSignedTransactionData = async (
   };
 
   const domainData = {
-    name: "Quant Protocol",
-    version: "0.3.4",
+    name,
+    version,
     verifyingContract,
     chainId: provider.network.chainId,
   };
@@ -289,6 +301,63 @@ const getSignedTransactionData = async (
 
   const signature = sigUtil.signTypedData_v4(
     Buffer.from(userWallet.privateKey.slice(2), "hex"),
+    {
+      data,
+    }
+  );
+
+  const r = signature.slice(0, 66);
+  const s = "0x".concat(signature.slice(66, 130));
+  const vString = "0x".concat(signature.slice(130, 132));
+
+  let v = hexToNumber(vString);
+  if (![27, 28].includes(v)) v += 27;
+
+  return {
+    r,
+    s,
+    v,
+  };
+};
+
+const getApprovalForAllSignedData = (
+  nonce: number,
+  ownerWallet: Wallet,
+  operator: string,
+  approved: boolean,
+  deadline: number,
+  verifyingContract: string
+): SignedTransactionData => {
+  const message = {
+    owner: ownerWallet.address,
+    operator,
+    approved,
+    nonce,
+    deadline,
+  };
+
+  const domainData = {
+    name,
+    version,
+    verifyingContract,
+    chainId: provider.network.chainId,
+  };
+
+  type metaSetApprovalForAll = "metaSetApprovalForAll";
+  const metaSetApprovalForAll: metaSetApprovalForAll = "metaSetApprovalForAll";
+
+  const data = {
+    types: {
+      EIP712Domain: domainType,
+      metaSetApprovalForAll: metaApprovalType,
+    },
+    domain: domainData,
+    primaryType: metaSetApprovalForAll,
+    message,
+  };
+
+  const signature = sigUtil.signTypedData_v4(
+    Buffer.from(ownerWallet.privateKey.slice(2), "hex"),
     {
       data,
     }
@@ -340,4 +409,5 @@ export {
   getApprovalDigest,
   getSignedTransactionData,
   deployQuantCalculator,
+  getApprovalForAllSignedData,
 };
