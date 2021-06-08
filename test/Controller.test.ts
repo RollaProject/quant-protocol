@@ -2369,6 +2369,8 @@ describe("Controller", async () => {
   });
 
   describe("Meta transactions", () => {
+    const deadline = Math.floor(Date.now() / 1000) + aMonth + 3600 * 24;
+
     it("Users should be able to mint options through meta transactions", async () => {
       const amount = ethers.utils.parseEther("1");
 
@@ -2382,6 +2384,7 @@ describe("Controller", async () => {
 
       const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2409,6 +2412,7 @@ describe("Controller", async () => {
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
+          deadline,
           deployer.address,
           actions,
           txData.r,
@@ -2434,6 +2438,7 @@ describe("Controller", async () => {
 
       const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2459,6 +2464,7 @@ describe("Controller", async () => {
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
+          deadline,
           deployer.address,
           actions,
           txData.r,
@@ -2530,6 +2536,7 @@ describe("Controller", async () => {
 
       const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2538,6 +2545,7 @@ describe("Controller", async () => {
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
+          deadline,
           deployer.address,
           actions,
           txData.r,
@@ -2624,6 +2632,7 @@ describe("Controller", async () => {
 
       const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2632,6 +2641,7 @@ describe("Controller", async () => {
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
+          deadline,
           deployer.address,
           actions,
           txData.r,
@@ -2709,6 +2719,7 @@ describe("Controller", async () => {
 
       const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2717,6 +2728,7 @@ describe("Controller", async () => {
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
+          deadline,
           deployer.address,
           actions,
           txData.r,
@@ -2757,6 +2769,7 @@ describe("Controller", async () => {
 
       const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2774,6 +2787,7 @@ describe("Controller", async () => {
       await controller
         .connect(secondAccount)
         .executeMetaTransaction(
+          deadline,
           deployer.address,
           actions,
           txData.r,
@@ -2813,6 +2827,7 @@ describe("Controller", async () => {
 
       const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
+        deadline,
         deployer,
         reentrantOperateAction,
         controller.address
@@ -2822,6 +2837,7 @@ describe("Controller", async () => {
         controller
           .connect(secondAccount)
           .executeMetaTransaction(
+            deadline,
             deployer.address,
             reentrantOperateAction,
             txData.r,
@@ -2851,6 +2867,7 @@ describe("Controller", async () => {
 
       const txData = getSignedTransactionData(
         parseInt((await controller.getNonce(deployer.address)).toString()),
+        deadline,
         deployer,
         actions,
         controller.address
@@ -2860,6 +2877,7 @@ describe("Controller", async () => {
         controller
           .connect(secondAccount)
           .executeMetaTransaction(
+            deadline,
             deployer.address,
             actions,
             txData.r,

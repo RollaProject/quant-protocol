@@ -14,6 +14,7 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
 
     struct MetaAction {
         uint256 nonce;
+        uint256 deadline;
         address from;
         ActionArgs[] actions;
     }
@@ -21,7 +22,7 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
     bytes32 private constant _META_ACTION_TYPEHASH =
         keccak256(
             // solhint-disable-next-line max-line-length
-            "MetaAction(uint256 nonce,address from,ActionArgs[] actions)ActionArgs(string actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 collateralTokenId,bytes data)"
+            "MetaAction(uint256 nonce,uint256 deadline,address from,ActionArgs[] actions)ActionArgs(string actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 collateralTokenId,bytes data)"
         );
     bytes32 private constant _ACTION_TYPEHASH =
         keccak256(
@@ -38,6 +39,7 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
     );
 
     function executeMetaTransaction(
+        uint256 deadline,
         address userAddress,
         ActionArgs[] memory actions,
         bytes32 r,
@@ -47,6 +49,7 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
         MetaAction memory metaAction =
             MetaAction({
                 nonce: _nonces[userAddress],
+                deadline: deadline,
                 from: userAddress,
                 actions: actions
             });
@@ -117,12 +120,12 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
     ) internal view returns (bool) {
         require(metaAction.nonce == _nonces[user], "invalid nonce");
 
+        require(metaAction.deadline >= block.timestamp, "expired deadline");
+
         address signer =
             ecrecover(_hashTypedDataV4(_hashMetaAction(metaAction)), v, r, s);
 
         require(signer != address(0), "invalid signature");
-
-        // revert(toAsciiString(signer));
 
         return signer == user;
     }
@@ -170,6 +173,7 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
                 abi.encode(
                     _META_ACTION_TYPEHASH,
                     metaAction.nonce,
+                    metaAction.deadline,
                     metaAction.from,
                     keccak256(
                         abi.encodePacked(_hashActions(metaAction.actions))
