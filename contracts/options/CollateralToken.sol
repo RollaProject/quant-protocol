@@ -181,6 +181,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         }
     }
 
+    /// @inheritdoc ICollateralToken
     function metaSetApprovalForAll(
         address owner,
         address operator,
@@ -189,7 +190,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external {
+    ) external override {
         // solhint-disable-next-line not-rely-on-time
         require(
             block.timestamp <= deadline,
