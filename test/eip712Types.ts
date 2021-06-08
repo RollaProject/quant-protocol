@@ -19,6 +19,7 @@ export const domainType = [
 
 export const metaActionType = [
   { name: "nonce", type: "uint256" },
+  { name: "deadline", type: "uint256" },
   { name: "from", type: "address" },
   { name: "actions", type: "ActionArgs[]" },
 ];
