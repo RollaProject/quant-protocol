@@ -54,7 +54,10 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         address _quantConfig,
         string memory _name,
         string memory _version
-    ) ERC1155("URI") EIP712(_name, _version) {
+    )
+        ERC1155("https://tokens.quant.finance/{id}.json")
+        EIP712(_name, _version)
+    {
         quantConfig = IQuantConfig(_quantConfig);
     }
 
