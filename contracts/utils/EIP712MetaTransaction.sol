@@ -14,6 +14,7 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
 
     struct MetaAction {
         uint256 nonce;
+        uint256 deadline;
         address from;
         ActionArgs[] actions;
     }
@@ -21,7 +22,7 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
     bytes32 private constant _META_ACTION_TYPEHASH =
         keccak256(
             // solhint-disable-next-line max-line-length
-            "MetaAction(uint256 nonce,address from,ActionArgs[] actions)ActionArgs(string actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 collateralTokenId,bytes data)"
+            "MetaAction(uint256 nonce,uint256 deadline,address from,ActionArgs[] actions)ActionArgs(string actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 collateralTokenId,bytes data)"
         );
     bytes32 private constant _ACTION_TYPEHASH =
         keccak256(
@@ -38,44 +39,36 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
     );
 
     function executeMetaTransaction(
-        address userAddress,
-        ActionArgs[] memory actions,
+        MetaAction memory metaAction,
         bytes32 r,
         bytes32 s,
         uint8 v
     ) external payable returns (bytes memory) {
-        MetaAction memory metaAction =
-            MetaAction({
-                nonce: _nonces[userAddress],
-                from: userAddress,
-                actions: actions
-            });
-
         require(
-            _verify(userAddress, metaAction, r, s, v),
+            _verify(metaAction.from, metaAction, r, s, v),
             "signer and signature don't match"
         );
 
-        _nonces[userAddress] = _nonces[userAddress].add(1);
+        _nonces[metaAction.from] = _nonces[metaAction.from].add(1);
 
-        // Append the userAddress at the end so that it can be extracted later
+        // Append the metaAction.from at the end so that it can be extracted later
         // from the calling context (see _msgSender() below)
         (bool success, bytes memory returnData) =
             address(this).call(
                 abi.encodePacked(
                     abi.encodeWithSelector(
                         IController(address(this)).operate.selector,
-                        actions
+                        metaAction.actions
                     ),
-                    userAddress
+                    metaAction.from
                 )
             );
 
         require(success, "unsuccessful function call");
         emit MetaTransactionExecuted(
-            userAddress,
+            metaAction.from,
             msg.sender,
-            _nonces[userAddress]
+            _nonces[metaAction.from]
         );
         return returnData;
     }
@@ -117,12 +110,12 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
     ) internal view returns (bool) {
         require(metaAction.nonce == _nonces[user], "invalid nonce");
 
+        require(metaAction.deadline >= block.timestamp, "expired deadline");
+
         address signer =
             ecrecover(_hashTypedDataV4(_hashMetaAction(metaAction)), v, r, s);
 
         require(signer != address(0), "invalid signature");
-
-        // revert(toAsciiString(signer));
 
         return signer == user;
     }
@@ -170,6 +163,7 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
                 abi.encode(
                     _META_ACTION_TYPEHASH,
                     metaAction.nonce,
+                    metaAction.deadline,
                     metaAction.from,
                     keccak256(
                         abi.encodePacked(_hashActions(metaAction.actions))
