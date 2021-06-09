@@ -96,7 +96,7 @@ contract ControllerHarness is Controller {
     function getExpiryTime(address qToken) public view returns (uint256){
         return IQToken(qToken).expiryTime();
     }
-    function balanceofCol(uint256 collateralTokenId, address msgSender) public view returns (uint256){
+    function balanceOfCol(uint256 collateralTokenId, address msgSender) public view returns (uint256){
         ICollateralToken collateralToken;
         return collateralToken.balanceOf(msgSender,collateralTokenId);
     }

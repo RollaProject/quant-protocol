@@ -111,27 +111,11 @@ rule validQtoken(  method f )
 	uint256 amount;
 	
 	callFunctionWithParams(qToken, qTokenFroCollateral, collateralTokenId, to, amount, f);
-	assert isValidQToken(qToken);   
+	assert optionsFactory.isQToken(qToken);   
 }
 
 
-rule check(address qToken) {
-	env e;
-	bool b = optionsFactory.isQToken(qToken);
-	assert false;
-}
-
-rule sanity(method f)
-{
-	env e;
-	calldataarg args;
-	uint256 collateralTokenId;
-	uint256 amount;
-	neutralizePosition(e,collateralTokenId, amount);
-	assert false;
-}
-// comment
-/* move to fubds calculator
+/* move to funds calculator
  rule amount_to_claim_LE_claimable(uint256 collateralTokenId,uint256 amount){
     env e;
 	uint256 returnableCollateral;
@@ -162,6 +146,8 @@ rule solvency(uint256 collateralTokenId,uint256 amount){
 	_claimCollateral(Actions.ClaimCollateralArgs memory _args);
 	assert !lastreverted;
 }*/
+
+
 rule only_after_expiry(method f)
 	filtered { f-> f.selector == claimCollateral(uint256, uint256).selector ||
 			 	f.selector == exercise(address,uint256).selector }
@@ -188,60 +174,62 @@ rule additive_claim(uint256 collateralTokenId, uint256 amount1, uint256 amount2)
 	storage init_state = lastStorage;
 	claimCollateral(e, collateralTokenId, amount1);
 	claimCollateral(e, collateralTokenId, amount2);
-	balance1 = balanceofCol(e,collateralTokenId,e.msg.sender);
+	balance1 = balanceOfCol(e,collateralTokenId,e.msg.sender);
 	claimCollateral(e, collateralTokenId, amount1 + amount2) at init_state;
-	balance2 = balanceofCol(e, collateralTokenId, e.msg.sender);
+	balance2 = balanceOfCol(e, collateralTokenId, e.msg.sender);
 	assert balance1 == balance2;
 }
 rule ratio_after_neutralize(uint256 collateralTokenId, uint256 amount, address qToken){
 	env e;
 	require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	require qToken == qTokenA ; 
-	uint256 totalSuplyTbefore = qTokenA.totalSupply();
-	uint256 totalSuplyCbefore = collateralToken.getTokenSupplies(collateralTokenId);
+	uint256 totalSupllyTBefore = qTokenA.totalSupply();
+	uint256 totalSupllyCBefore = collateralToken.getTokenSupplies(collateralTokenId);
 	neutralizePosition(e, collateralTokenId, amount);
-	uint256 totalSuplyTafter = qTokenA.totalSupply();
-	uint256 totalSuplyCafter = collateralToken.getTokenSupplies(collateralTokenId);
-	assert  totalSuplyTafter - totalSuplyTbefore == totalSuplyCafter - totalSuplyCbefore;
+	uint256 totalSupllyTAfter = qTokenA.totalSupply();
+	uint256 totalSupllyCAfter = collateralToken.getTokenSupplies(collateralTokenId);
+	assert  totalSupllyTAfter - totalSupllyTBefore == totalSupllyCAfter - totalSupllyCBefore;
 	
-	//totalSuplyTbefore * totalSuplyCafter == totalSuplyTafter * totalSuplyCbefore;
 }
-// Mint Options QToken Correctness
-// mintOptionsPosition(to,qToken,amount) =>
-// qToken.balanceOf(to) == qToken.balanceOf(to) + amount &&
-// qToken.totalSupply() == qToken.totalSupply() + amount &&
-// collateralToken.balanceOf(to,tokenId) == collateralToken.balanceOf(to,tokenId) + amount &&
-// collateralToken.tokenSupplies(tokenId) == collateralToken.tokenSupplies(tokenId) + amount;
 
-// Mint options collateral correctness
-// uint amount1;
-// uint amount2;
-// require amount1 > amount2;
-// uint balance1;
-// uint balance2;
-// storage init_state = lastStorage;
-// mintOptionsPosition(to,qToken,amount1);
-// balance1 = collateral.balanceOf(controler);
-// mintOptionsPosition(to,qToken,amount2) at init_state;
-// balance2 = collateral.balanceOf(controler);
-// assert balance1 - balance2 >= amount1 - amount2;
 
-// Mint options collateral correctness 2
-// uint amount1;
-// uint amount2;
-// require amount1 > amount2;
-// uint balanceControlerBefore = qToken.balanceOf(controler);
-// uint balanceUserBefore = qToken.balanceOf(user);
-// mintOptionsPosition(to,qToken,amount);
-// balanceControlerAfter = qToken.balanceOf(controler);
-// balanceUserAfter = qToken.balanceOf(user);
-// assert balanceControlerAfter - balanceControlerBefore == 
-//        balanceUserBefore - balanceUserAfter;
- 
+/*  Rule: Mint Options QToken Correctness
+		formula: mintOptionsPosition(to,qToken,amount) =>
+				qToken.balanceOf(to) == qToken.balanceOf(to) + amount &&
+				qToken.totalSupply() == qToken.totalSupply() + amount &&
+				collateralToken.balanceOf(to,tokenId) == collateralToken.balanceOf(to,tokenId) + amount &&
+				collateralToken.tokenSupplies(tokenId) == collateralToken.tokenSupplies(tokenId) + amount;
+*/
+
+/* 	Rule: Mint options collateral correctness
+		uint amount1;
+		uint amount2;
+		require amount1 > amount2;
+		uint balance1;
+		uint balance2;
+		storage init_state = lastStorage;
+		mintOptionsPosition(to,qToken,amount1);
+		balance1 = collateral.balanceOf(controller);
+		mintOptionsPosition(to,qToken,amount2) at init_state;
+		balance2 = collateral.balanceOf(controller);
+		assert balance1 - balance2 >= amount1 - amount2;
+*/
+
+/* Rule :Mint options collateral correctness
+		collateral increase by the amount collateral of user decrease
+		uint balanceControlerBefore = collateral.balanceOf(controler);
+		uint balanceUserBefore = collateral.balanceOf(user);
+		mintOptionsPosition(to,qToken,amount);
+		balanceControlerAfter = collateral.balanceOf(controler);
+		balanceUserAfter = collateral.balanceOf(user);
+		assert balanceControlerAfter - balanceControlerBefore ==
+			balanceUserBefore - balanceUserAfter;
+
+*/
 
 /*
 rule colToken_Impl_ColDeposited(uint256 collateralTokenId, address user){
-uint colAmount = balanceofCol(e,collateralTokenId,user);
+uint colAmount = balanceOfCol(e,collateralTokenId,user);
 }*/
 
 ////////////////////////////////////////////////////////////////////////////
