@@ -73,10 +73,9 @@ hook Sstore contractmap[KEY uint256 s].(offset 0)[KEY uint256 member] uint value
 
 
 
-/* 	Rule: title  
- 	Description:  
-	Formula: 
-	Notes: assumptions and simplification more explanations 
+/* 	Rule: Uniqueness collateralTokenIds    
+ 	Description:  Each entry in collateralTokenIds is unique
+	Formula: collateralTokenIds[i] = collateralTokenIds[j] => i = j
 */
 
 
@@ -86,7 +85,13 @@ invariant uniqueCollateralTokenId(uint i, uint j)
 ////////////////////////////////////////////////////////////////////////////
 //                       Rules                                            //
 ////////////////////////////////////////////////////////////////////////////
-    
+
+/* 	Rule: Uniqueness collateralTokenIds    
+ 	Description:  Each entry in collateralTokenIds is unique
+	Formula: collateralTokenIds[i] = collateralTokenIds[j] => i = j
+*/
+
+
 rule integrityOfCollateralTokenInfo(address _qTokenAddress, address _qTokenAsCollateral)
 {
 	env e;
