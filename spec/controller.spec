@@ -246,8 +246,8 @@ rule MintOptionsCorrectness(uint collateralTokenId, uint amount){
 */
 rule MintOptionsColCorrectness(uint collateralTokenId, uint amount){
 	env e;
-	address qToken = qTokenA;
-	require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA;
 	uint    balanceControlerBefore = balanceOfCol(e, collateralTokenId,thisContract(e)); // address(this));
 	uint    balanceUserBefore = balanceOfCol(e, collateralTokenId, e.msg.sender);
 	mintOptionsPosition(e,e.msg.sender, qTokenA, amount);
@@ -261,6 +261,20 @@ rule MintOptionsColCorrectness(uint collateralTokenId, uint amount){
 rule colToken_Impl_ColDeposited(uint256 collateralTokenId, address user){
 uint colAmount = balanceOfCol(e,collateralTokenId,user);
 }*/
+
+rule solvencyUser(uint collateralTokenId){
+	env e;
+	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA;
+	uint balanceUserBefore = qTokenA.balanceOf(e,e.msg.sender);
+	uint balanceColBefore = balanceOfCol(e,collateralTokenId,e.msg.sender);
+	method f;
+	calldataarg args;
+	f(e,args);
+	uint balanceUserAfter = qTokenA.balanceOf(e,e.msg.sender);
+	uint balanceColAfter = balanceOfCol(e,collateralTokenId,e.msg.sender);
+	assert (balanceUserBefore + balanceColBefore == balanceUserAfter + balanceColAfter);
+}
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Helper Functions                                 //
