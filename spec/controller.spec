@@ -200,6 +200,24 @@ rule ratio_after_neutralize(uint256 collateralTokenId, uint256 amount, address q
 				collateralToken.balanceOf(to,tokenId) == collateralToken.balanceOf(to,tokenId) + amount &&
 				collateralToken.tokenSupplies(tokenId) == collateralToken.tokenSupplies(tokenId) + amount;
 */
+rule MintOptionsCorrectness(uint collateralTokenId, uint amount){
+	env e;
+	address qToken = qTokenA;
+	require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	uint balanceOfqTokenBefore = qTokenA.balanceOf(e,e.msg.sender);
+	uint totalSupplyqTokenBefore = qTokenA.totalSupply();
+	uint balanceOfcolTokenBefore = balanceOfCol(e,collateralTokenId,e.msg.sender);
+	uint totalSupplyOfcolTokenBefore = collateralToken.getTokenSupplies(collateralTokenId);
+		mintOptionsPosition(e,e.msg.sender,qTokenA,amount);
+	uint balanceOfqTokenAfter = qTokenA.balanceOf(e,e.msg.sender);
+	uint totalSupplyqTokenAfter = qTokenA.totalSupply();
+	uint balanceOfcolTokenAfter = balanceOfCol(e,collateralTokenId,e.msg.sender);
+	uint totalSupplyOfcolTokenAfter = collateralToken.getTokenSupplies(collateralTokenId);
+	assert (balanceOfqTokenAfter == balanceOfqTokenBefore + amount &&
+		   totalSupplyqTokenAfter == totalSupplyqTokenBefore + amount &&
+		   balanceOfcolTokenAfter == balanceOfcolTokenBefore + amount &&
+		   totalSupplyOfcolTokenAfter == totalSupplyOfcolTokenBefore + amount);
+}
 
 /* 	Rule: Mint options collateral correctness
 		uint amount1;
@@ -226,6 +244,18 @@ rule ratio_after_neutralize(uint256 collateralTokenId, uint256 amount, address q
 			balanceUserBefore - balanceUserAfter;
 
 */
+rule MintOptionsColCorrectness(uint collateralTokenId, uint amount){
+	env e;
+	address qToken = qTokenA;
+	require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	uint    balanceControlerBefore = balanceOfCol(e, collateralTokenId,thisContract(e)); // address(this));
+	uint    balanceUserBefore = balanceOfCol(e, collateralTokenId, e.msg.sender);
+	mintOptionsPosition(e,e.msg.sender, qTokenA, amount);
+	uint    balanceControlerAfter = balanceOfCol(e,collateralTokenId, thisContract(e));// address(this));
+	uint    balanceUserAfter = balanceOfCol(e,collateralTokenId, e.msg.sender);
+	assert (balanceControlerAfter - balanceControlerBefore ==
+			balanceUserBefore - balanceUserAfter);
+}
 
 /*
 rule colToken_Impl_ColDeposited(uint256 collateralTokenId, address user){
