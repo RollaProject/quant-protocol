@@ -77,6 +77,11 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         );
 
         require(
+            _qTokenAddress != _qTokenAsCollateral,
+            "CollateralToken: Can only create a collateral token with different tokens"
+        );
+
+        require(
             idToInfo[id].qTokenAddress == address(0),
             "CollateralToken: this token has already been created"
         );
