@@ -298,7 +298,7 @@ contract Controller is
 
         //the amount of position that can be neutralized
         uint256 maxNeutralizable =
-            qTokensOwned > collateralTokensOwned
+            qTokensOwned < collateralTokensOwned
                 ? qTokensOwned
                 : collateralTokensOwned;
 
