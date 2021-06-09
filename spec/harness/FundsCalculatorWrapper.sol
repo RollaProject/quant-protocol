@@ -3,11 +3,13 @@ pragma abicoder v2;
 
 import {FundsCalculator} from "../../contracts/libraries/FundsCalculator.sol";
 import {QuantMath} from "../../contracts/libraries/QuantMath.sol";
+import {SignedConverter} from "../../contracts/libraries/SignedConverter.sol";
 
 contract FundsCalculatorWrapper {
     using QuantMath for uint256;
     using QuantMath for int256;
     using QuantMath for QuantMath.FixedPointInt;
+    using SignedConverter for uint256;
 
     QuantMath.FixedPointInt internal collateralAmount;
 
@@ -51,10 +53,21 @@ contract FundsCalculatorWrapper {
     returns (
         int256 collateralPerOptionValue
     ) {
-        collateralAmount = FundsCalculator.getPutCollateralRequirement(
-            _qTokenToMintStrikePrice,
-            _qTokenForCollateralStrikePrice
-        );
+        QuantMath.FixedPointInt memory mintStrikePrice =
+            QuantMath.FixedPointInt(_qTokenToMintStrikePrice.uintToInt());              // --- ignoring the scaling
+        QuantMath.FixedPointInt memory collateralStrikePrice =
+            QuantMath.FixedPointInt(_qTokenForCollateralStrikePrice.uintToInt());       // --- ignoring the scaling
+
+        // Initially (non-spread) required collateral is the long strike price
+        collateralAmount = mintStrikePrice;
+
+        if (_qTokenForCollateralStrikePrice > 0) {
+            collateralAmount = mintStrikePrice.isGreaterThan(
+                collateralStrikePrice
+            )
+            ? mintStrikePrice.sub(collateralStrikePrice) // Put Credit Spread
+            : int256(0).fromUnscaledInt(); // Put Debit Spread
+        }
 
         collateralPerOptionValue = collateralAmount.value;
     }
