@@ -285,6 +285,18 @@ describe("CollateralToken", () => {
       );
     });
 
+    it("Should revert when trying to create a collateral token with the qToken and qTokenAsCollateral being equal", async () => {
+      await expect(
+        createCollateralToken(
+          collateralCreator,
+          qToken,
+          qToken.address
+        )
+      ).to.be.revertedWith(
+        "CollateralToken: Can only create a collateral token with different tokens"
+      );
+    });
+
     it("Should revert when trying to create a duplicate CollateralToken", async () => {
       await createCollateralToken(
         collateralCreator,
