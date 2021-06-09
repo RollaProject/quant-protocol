@@ -48,6 +48,11 @@ contract CollateralTokenHarness is CollateralToken {
         }
         return true;
     }
+
+    function getTokenSupplies(uint key) public view returns (uint) {
+        return tokenSupplies[key];
+    }
+
 	////////////////////////////////////////////////////////////////////////////
     //                       Simplifiers and override                         //
     ////////////////////////////////////////////////////////////////////////////

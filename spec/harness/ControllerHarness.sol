@@ -96,19 +96,9 @@ contract ControllerHarness is Controller {
     function getExpiryTime(address qToken) public view returns (uint256){
         return IQToken(qToken).expiryTime();
     }
-    function balanceof(uint256 collateralTokenId, address msgSender) public view returns (uint256){
+    function balanceofCol(uint256 collateralTokenId, address msgSender) public view returns (uint256){
         ICollateralToken collateralToken;
         return collateralToken.balanceOf(msgSender,collateralTokenId);
     }
-/*    
-    function getIdToInfo(uint256 collateralTokenId) public view returns (uint256){
-    address _qTokenShort;
-    //address qTokenAsCollateral;
-    //        (_qTokenShort,qTokenAsCollateral) =
-    //        optionsFactory.collateralToken().idToInfo(collateralTokenId);
-            _qTokenShort = getgetCollateralTokenInfoTokenAsCollateral(collateralTokenId);
-            IQToken qTokenShort = IQToken(_qTokenShort);
-            return qTokenShort.expiryTime();
-    }*/
 
 }

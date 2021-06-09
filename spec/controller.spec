@@ -11,6 +11,8 @@
 */
 using DummyERC20A as erc20A
 using DummyERC20A as erc20B
+using QTokenA as qTokenA
+using QTokenB as qTokenB
 using OptionsFactory as optionsFactory
 using CollateralTokenHarness as collateralToken
 
@@ -42,7 +44,7 @@ methods {
 
 	// IERC20 methods to be called with one of the tokens (DummyERC20A, DummyERC20A) or QToken
 	balanceOf(address) => DISPATCHER(true) 
-	totalSupply() => DISPATCHER(true)
+	qTokenA.totalSupply() returns (uint256) envfree => DISPATCHER(true)
 	transferFrom(address from, address to, uint256 amount) => DISPATCHER(true)
 	transfer(address to, uint256 amount) => DISPATCHER(true)
 
@@ -56,6 +58,7 @@ methods {
 	burnCollateralToken(address,uint256,uint256) => NONDET
 	balanceOf(address, uint256) => NONDET
 	getCollateralTokenId(uint256) => DISPATCHER(true)
+	collateralToken.getTokenSupplies(uint) returns (uint) envfree
 	//getCollateralTokenInfoTokenAddress(uint256) returns (address)  => DISPATCHER(true)
     collateralToken.getCollateralTokenInfoTokenAddress(uint) returns (address) envfree
 }
@@ -187,18 +190,59 @@ rule additive_claim(uint256 collateralTokenId, uint256 amount1, uint256 amount2)
 	claimCollateral(e, collateralTokenId, amount2);
 	balance1 = balanceofCol(e,collateralTokenId,e.msg.sender);
 	claimCollateral(e, collateralTokenId, amount1 + amount2) at init_state;
-	balance2 = balanceofCol(e,collateralTokenId,e.msg.sender);
+	balance2 = balanceofCol(e, collateralTokenId, e.msg.sender);
 	assert balance1 == balance2;
 }
-rule ratio_after_neutralize(uint256 collateralTokenId,uint256 amount){
+rule ratio_after_neutralize(uint256 collateralTokenId, uint256 amount, address qToken){
 	env e;
-	uint256 totalSuplyTbefore;
-	uint256 totalSuplyCbefore;
-	neutralizePosition(e,collateralTokenId, amount);
-	uint256 totalSuplyTafter;
-	uint256 totalSuplyCafter;
-	assert totalSuplyTbefore * totalSuplyCafter == totalSuplyTafter * totalSuplyCbefore;
+	require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA ; 
+	uint256 totalSuplyTbefore = qTokenA.totalSupply();
+	uint256 totalSuplyCbefore = collateralToken.getTokenSupplies(collateralTokenId);
+	neutralizePosition(e, collateralTokenId, amount);
+	uint256 totalSuplyTafter = qTokenA.totalSupply();
+	uint256 totalSuplyCafter = collateralToken.getTokenSupplies(collateralTokenId);
+	assert  totalSuplyTafter - totalSuplyTbefore == totalSuplyCafter - totalSuplyCbefore;
+	
+	//totalSuplyTbefore * totalSuplyCafter == totalSuplyTafter * totalSuplyCbefore;
 }
+// Mint Options QToken Correctness
+// mintOptionsPosition(to,qToken,amount) =>
+// qToken.balanceOf(to) == qToken.balanceOf(to) + amount &&
+// qToken.totalSupply() == qToken.totalSupply() + amount &&
+// collateralToken.balanceOf(to,tokenId) == collateralToken.balanceOf(to,tokenId) + amount &&
+// collateralToken.tokenSupplies(tokenId) == collateralToken.tokenSupplies(tokenId) + amount;
+
+// Mint options collateral correctness
+// uint amount1;
+// uint amount2;
+// require amount1 > amount2;
+// uint balance1;
+// uint balance2;
+// storage init_state = lastStorage;
+// mintOptionsPosition(to,qToken,amount1);
+// balance1 = collateral.balanceOf(controler);
+// mintOptionsPosition(to,qToken,amount2) at init_state;
+// balance2 = collateral.balanceOf(controler);
+// assert balance1 - balance2 >= amount1 - amount2;
+
+// Mint options collateral correctness 2
+// uint amount1;
+// uint amount2;
+// require amount1 > amount2;
+// uint balanceControlerBefore = qToken.balanceOf(controler);
+// uint balanceUserBefore = qToken.balanceOf(user);
+// mintOptionsPosition(to,qToken,amount);
+// balanceControlerAfter = qToken.balanceOf(controler);
+// balanceUserAfter = qToken.balanceOf(user);
+// assert balanceControlerAfter - balanceControlerBefore == 
+//        balanceUserBefore - balanceUserAfter;
+ 
+
+/*
+rule colToken_Impl_ColDeposited(uint256 collateralTokenId, address user){
+uint colAmount = balanceofCol(e,collateralTokenId,user);
+}*/
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Helper Functions                                 //
