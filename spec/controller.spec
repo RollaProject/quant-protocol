@@ -226,15 +226,13 @@ rule ratio_after_neutralize(uint256 collateralTokenId, uint256 amount, address q
 // balance2 = collateral.balanceOf(controler);
 // assert balance1 - balance2 >= amount1 - amount2;
 
-// Mint options collateral correctness 2
-// uint amount1;
-// uint amount2;
-// require amount1 > amount2;
-// uint balanceControlerBefore = qToken.balanceOf(controler);
-// uint balanceUserBefore = qToken.balanceOf(user);
+// Mint options collateral correctness
+// collateral increase by the amount collateral of user decrease
+// uint balanceControlerBefore = collateral.balanceOf(controler);
+// uint balanceUserBefore = collateral.balanceOf(user);
 // mintOptionsPosition(to,qToken,amount);
-// balanceControlerAfter = qToken.balanceOf(controler);
-// balanceUserAfter = qToken.balanceOf(user);
+// balanceControlerAfter = collateral.balanceOf(controler);
+// balanceUserAfter = collateral.balanceOf(user);
 // assert balanceControlerAfter - balanceControlerBefore == 
 //        balanceUserBefore - balanceUserAfter;
  
