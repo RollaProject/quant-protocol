@@ -122,6 +122,15 @@ library OptionsUtils {
         );
 
         require(
+            IProviderOracleManager(_oracle).isValidOption(
+                _underlyingAsset,
+                _expiryTime,
+                _strikePrice
+            ),
+            "OptionsFactory: Oracle doesn't support the given option"
+        );
+
+        require(
             oracleRegistry.isOracleActive(_oracle),
             "OptionsFactory: Oracle is not active in the OracleRegistry"
         );
