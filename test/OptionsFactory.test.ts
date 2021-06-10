@@ -140,6 +140,8 @@ describe("OptionsFactory", () => {
       mockOracleManager.address
     );
 
+    await mockOracleManager.mock.isValidOption.returns(true);
+
     // 30 days from now
     futureTimestamp = Math.floor(Date.now() / 1000) + 30 * 24 * 3600;
 
@@ -329,6 +331,24 @@ describe("OptionsFactory", () => {
             false
           )
       ).to.be.revertedWith("underlying not in the registry");
+    });
+
+    it("Should revert when trying to create an option that is considered invalid by the given oracle", async () => {
+      await mockOracleManager.mock.isValidOption.returns(false);
+      await expect(
+        optionsFactory
+          .connect(secondAccount)
+          .createOption(
+            ethers.constants.AddressZero,
+            WETH.address,
+            mockOracleManager.address,
+            ethers.utils.parseUnits("1400", await USDC.decimals()),
+            futureTimestamp,
+            false
+          )
+      ).to.be.revertedWith(
+        "OptionsFactory: Oracle doesn't support the given option"
+      );
     });
   });
 

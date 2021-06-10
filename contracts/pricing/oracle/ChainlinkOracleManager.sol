@@ -127,6 +127,14 @@ contract ChainlinkOracleManager is
                 .toScaledUint(6, true);
     }
 
+    function isValidOption(
+        address,
+        uint256,
+        uint256
+    ) public view virtual override returns (bool) {
+        return true;
+    }
+
     /// @inheritdoc IChainlinkOracleManager
     function searchRoundToSubmit(address _asset, uint256 _expiryTimestamp)
         public
@@ -208,13 +216,19 @@ contract ChainlinkOracleManager is
             "ChainlinkOracleManager: Expiry round prior to the one posted is after the expiry timestamp"
         );
 
-        uint256 price = uint256(aggregator.getAnswer(expiryRoundId));
+        (uint256 price, uint256 roundId) =
+            _getExpiryPrice(
+                aggregator,
+                _expiryTimestamp,
+                _roundIdAfterExpiry,
+                expiryRoundId
+            );
 
         emit PriceRegistrySubmission(
             _asset,
             _expiryTimestamp,
             price,
-            expiryRoundId,
+            roundId,
             msg.sender,
             false
         );
@@ -228,6 +242,15 @@ contract ChainlinkOracleManager is
             price,
             CHAINLINK_ORACLE_DECIMALS
         );
+    }
+
+    function _getExpiryPrice(
+        IEACAggregatorProxy aggregator,
+        uint256,
+        uint256,
+        uint256 _expiryRoundId
+    ) internal view virtual returns (uint256, uint256) {
+        return (uint256(aggregator.getAnswer(_expiryRoundId)), _expiryRoundId);
     }
 
     /// @notice Performs a binary search step between the first and last round in the aggregator proxy
