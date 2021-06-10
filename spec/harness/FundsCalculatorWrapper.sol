@@ -53,21 +53,10 @@ contract FundsCalculatorWrapper {
     returns (
         int256 collateralPerOptionValue
     ) {
-        QuantMath.FixedPointInt memory mintStrikePrice =
-            QuantMath.FixedPointInt(_qTokenToMintStrikePrice.uintToInt());              // --- ignoring the scaling
-        QuantMath.FixedPointInt memory collateralStrikePrice =
-            QuantMath.FixedPointInt(_qTokenForCollateralStrikePrice.uintToInt());       // --- ignoring the scaling
-
-        // Initially (non-spread) required collateral is the long strike price
-        collateralAmount = mintStrikePrice;
-
-        if (_qTokenForCollateralStrikePrice > 0) {
-            collateralAmount = mintStrikePrice.isGreaterThan(
-                collateralStrikePrice
-            )
-            ? mintStrikePrice.sub(collateralStrikePrice) // Put Credit Spread
-            : int256(0).fromUnscaledInt(); // Put Debit Spread
-        }
+        collateralAmount = FundsCalculator.getPutCollateralRequirement(
+        _qTokenToMintStrikePrice,
+        _qTokenForCollateralStrikePrice
+        );
 
         collateralPerOptionValue = collateralAmount.value;
     }
@@ -79,26 +68,15 @@ contract FundsCalculatorWrapper {
         uint8 _underlyingDecimals
     )
     public
-    returns (int256 collateralValue)
+    returns (int256 collateralPerOptionValue)
     {
-        QuantMath.FixedPointInt memory mintStrikePrice =
-        _qTokenToMintStrikePrice.fromScaledUint(6);
-        QuantMath.FixedPointInt memory collateralStrikePrice =
-        _qTokenForCollateralStrikePrice.fromScaledUint(6);
+        collateralAmount = FundsCalculator.getCallCollateralRequirement(
+            _qTokenToMintStrikePrice,
+            _qTokenForCollateralStrikePrice,
+            _underlyingDecimals
+        );
 
-        // Initially (non-spread) required collateral is the long strike price
-        uint256 _collateralAmount = getUnderlyingValue(_underlyingDecimals);            // --- simply get the underlying constant - 10^27 (don't do the exponentiation - see summary)
-        collateralAmount = _collateralAmount.fromScaledUint(_underlyingDecimals);
-
-        if (_qTokenForCollateralStrikePrice > 0) {
-            collateralAmount = mintStrikePrice.isGreaterThanOrEqual(
-                collateralStrikePrice
-            )
-            ? int256(0).fromUnscaledInt() // Call Debit Spread
-            : (collateralStrikePrice.sub(mintStrikePrice)); // Call Credit Spread       --- NO DIV here by collateralStrikePrice
-        }
-
-        collateralValue = collateralAmount.value;
+        collateralPerOptionValue = collateralAmount.value;
     }
 
     ////////////////////////////////////////////////////////////////
