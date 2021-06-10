@@ -100,5 +100,8 @@ contract ControllerHarness is Controller {
         ICollateralToken collateralToken;
         return collateralToken.balanceOf(msgSender,collateralTokenId);
     }
+    function thisContract() public view returns (address){
+        return address(this);
+    }
 
 }
