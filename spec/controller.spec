@@ -51,8 +51,8 @@ methods {
 
 	// OptionsFactory
 	optionsFactory.isQToken(address _qToken) returns (bool) envfree
-
-
+	collateralToken() => NONDET
+	
 	// CollateralToken
 	mintCollateralToken(address,uint256,address,uint256) => DISPATCHER(true)
 	burnCollateralToken(address,uint256,uint256) => DISPATCHER(true)
@@ -63,6 +63,10 @@ methods {
 	//getCollateralTokenInfoTokenAddress(uint256) returns (address)  => DISPATCHER(true)
     collateralToken.getCollateralTokenInfoTokenAddress(uint) returns (address) envfree
 	collateralToken.getCollateralTokenInfoTokenAsCollateral(uint)returns (address) envfree
+
+	// Computations
+	getNeutralizationPayout(address,address,uint256,address) => NONDET 
+
 
 }
 
@@ -160,13 +164,13 @@ rule only_after_expiry(method f, bool eitherClaimOrExercise)
 	uint256 amount;
 	uint256 expiry = getExpiryTime(e,qToken);
 
-	if (eitherClaimOrExercise) {
+	//if (eitherClaimOrExercise) {
 		exercise(e, qToken, amount);
-	}
-	else {
+	//}
+	/*else {
 		require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
     	claimCollateral(e, collateralTokenId, amount);
-	}
+	} */
 	assert e.block.timestamp > expiry;
 }
 
