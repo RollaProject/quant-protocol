@@ -45,4 +45,10 @@ interface IProviderOracleManager {
     /// @param _asset the address of the asset token we want the price for
     /// @return the current price of the asset
     function getCurrentPrice(address _asset) external view returns (uint256);
+
+    function isValidOption(
+        address _underlyingAsset,
+        uint256 _expiryTime,
+        uint256 _strikePrice
+    ) external view returns (bool);
 }

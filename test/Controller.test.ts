@@ -772,10 +772,14 @@ describe("Controller", async () => {
       mockOracleManager.address
     );
 
+    await mockOracleManager.mock.isValidOption.returns(true);
+
     //Note: returning any address here to show existence of the oracle
     await mockOracleManagerTwo.mock.getAssetOracle.returns(
       mockOracleManagerTwo.address
     );
+
+    await mockOracleManagerTwo.mock.isValidOption.returns(true);
 
     await optionsFactory
       .connect(secondAccount)

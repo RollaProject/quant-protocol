@@ -3,18 +3,22 @@ import { MockContract } from "ethereum-waffle";
 import { BigNumber, ContractFactory, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { Address } from "hardhat-deploy/dist/types";
-import { beforeEach, describe, it } from "mocha";
-import AGGREGATOR from "../artifacts/contracts/interfaces/external/chainlink/IEACAggregatorProxy.sol/IEACAggregatorProxy.json";
+import { beforeEach, describe } from "mocha";
 import PRICE_REGISTRY from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
 import CONFIG from "../artifacts/contracts/QuantConfig.sol/QuantConfig.json";
 import {
+  ChainlinkFixedTimeOracleManager,
   ChainlinkOracleManager,
   MockAggregatorProxy,
   PriceRegistry,
 } from "../typechain";
 import { expect, provider } from "./setup";
+import {
+  testChainlinkOracleManager,
+  testProviderOracleManager,
+} from "./testOracleManagers";
 
-describe("ChainlinkOracleManager", function () {
+describe("Chainlink Oracle Manager", async function () {
   let ChainlinkOracleManager: ContractFactory;
   let chainlinkOracleManager: ChainlinkOracleManager;
   let MockAggregatorProxy: ContractFactory;
@@ -22,29 +26,19 @@ describe("ChainlinkOracleManager", function () {
   let PriceRegistry: ContractFactory;
   let priceRegistry: PriceRegistry;
   let mockConfig: MockContract;
-  let mockAggregator: MockContract;
-  let mockAggregatorTwo: MockContract;
   let mockPriceRegistry: MockContract;
   let owner: Signer;
   let oracleManagerAccount: Signer;
-  let fallbackPriceAccount: Signer;
   let normalUserAccount: Signer;
   let normalUserAccountAddress: Address;
-  let fallbackPriceAccountAddress: Address;
 
   const assetOne = "0x0000000000000000000000000000000000000001";
   const assetTwo = "0x0000000000000000000000000000000000000002";
-  const oracleOne = "0x0000000000000000000000000000000000000010";
-  const oracleTwo = "0x0000000000000000000000000000000000000020";
-  const oracleThree = "0x0000000000000000000000000000000000000030";
 
   async function setUpTests() {
-    [owner, oracleManagerAccount, normalUserAccount, fallbackPriceAccount] =
-      provider.getWallets();
+    [owner, oracleManagerAccount, normalUserAccount] = provider.getWallets();
 
     mockConfig = await deployMockContract(owner, CONFIG.abi);
-    mockAggregator = await deployMockContract(owner, AGGREGATOR.abi);
-    mockAggregatorTwo = await deployMockContract(owner, AGGREGATOR.abi);
     mockPriceRegistry = await deployMockContract(owner, PRICE_REGISTRY.abi);
 
     // await mockConfig.mock.protocolAddresses.withArgs("ora")
@@ -63,34 +57,6 @@ describe("ChainlinkOracleManager", function () {
       .returns(mockPriceRegistry.address);
 
     normalUserAccountAddress = await normalUserAccount.getAddress();
-    fallbackPriceAccountAddress = await fallbackPriceAccount.getAddress();
-
-    //TODO (quantizations): Couldn't get waffle working withArgs. Eventually we should move to this method of mocking
-    /*
-    await mockConfig.mock.hasRole
-      .withArgs(oracleManagerRole, oracleManagerAccountAddress)
-      .returns(true);
-
-    await mockConfig.mock.hasRole
-      .withArgs(oracleManagerRole, normalUserAccountAddress)
-      .returns(false);
-
-    await mockConfig.mock.hasRole
-      .withArgs(oracleManagerRole, fallbackPriceAccountAddress)
-      .returns(false);
-
-    await mockConfig.mock.hasRole
-      .withArgs(fallbackPriceRole, fallbackPriceAccountAddress)
-      .returns(true);
-
-    await mockConfig.mock.hasRole
-      .withArgs(fallbackPriceRole, normalUserAccountAddress)
-      .returns(false);
-
-    await mockConfig.mock.hasRole
-      .withArgs(oracleManagerRole, oracleManagerAccountAddress)
-      .returns(false);
-    */
 
     ChainlinkOracleManager = await ethers.getContractFactory(
       "ChainlinkOracleManager"
@@ -119,284 +85,99 @@ describe("ChainlinkOracleManager", function () {
     await setUpTests();
   });
 
-  //TODO (quantizations): in future these should be externalised so they can be added to any implementation of ProviderOracleManager
-  describe("ProviderOracleManager", function () {
-    it("Should allow the addition of asset oracles, get number of assets and fetch prices", async function () {
-      await mockConfig.mock.hasRole.returns(true);
+  const deployChainlinkOracleManager = async (
+    mockConfig: MockContract,
+    fallBackPriceInSeconds: number
+  ): Promise<ChainlinkOracleManager> => {
+    ChainlinkOracleManager = await ethers.getContractFactory(
+      "ChainlinkOracleManager"
+    );
 
-      expect(await chainlinkOracleManager.getAssetsLength()).to.be.equal(0);
-
-      await expect(
-        chainlinkOracleManager
-          .connect(oracleManagerAccount)
-          .addAssetOracle(assetOne, oracleOne)
+    chainlinkOracleManager = <ChainlinkOracleManager>(
+      await ChainlinkOracleManager.deploy(
+        mockConfig.address,
+        fallBackPriceInSeconds
       )
-        .to.emit(chainlinkOracleManager, "OracleAdded")
-        .withArgs(assetOne, oracleOne);
+    );
 
-      expect(await chainlinkOracleManager.getAssetsLength()).to.be.equal(1);
+    return chainlinkOracleManager;
+  };
 
-      await expect(
-        chainlinkOracleManager
-          .connect(oracleManagerAccount)
-          .addAssetOracle(assetTwo, oracleTwo)
+  const deployChainlinkFixedTimeOracleManager = async (
+    mockConfig: MockContract,
+    fallBackPriceInSeconds: number
+  ): Promise<ChainlinkOracleManager> => {
+    const ChainlinkFixedTimeOracleManager = await ethers.getContractFactory(
+      "ChainlinkFixedTimeOracleManager"
+    );
+
+    const chainlinkFixedTimeOracleManager = <ChainlinkFixedTimeOracleManager>(
+      await ChainlinkFixedTimeOracleManager.deploy(
+        mockConfig.address,
+        fallBackPriceInSeconds
       )
-        .to.emit(chainlinkOracleManager, "OracleAdded")
-        .withArgs(assetTwo, oracleTwo);
+    );
 
-      expect(await chainlinkOracleManager.getAssetsLength()).to.be.equal(2);
+    return chainlinkFixedTimeOracleManager;
+  };
 
-      expect(await chainlinkOracleManager.assets(0)).to.be.equal(assetOne);
-      expect(await chainlinkOracleManager.assets(1)).to.be.equal(assetTwo);
-      expect(await chainlinkOracleManager.getAssetOracle(assetOne)).to.be.equal(
-        oracleOne
-      );
-      expect(await chainlinkOracleManager.getAssetOracle(assetTwo)).to.be.equal(
-        oracleTwo
-      );
-      await expect(
-        chainlinkOracleManager
-          .connect(oracleManagerAccount)
-          .addAssetOracle(assetTwo, oracleTwo)
-      ).to.be.revertedWith(
-        "ProviderOracleManager: Oracle already set for asset"
-      );
-      await expect(
-        chainlinkOracleManager
-          .connect(oracleManagerAccount)
-          .addAssetOracle(assetTwo, oracleThree)
-      ).to.be.revertedWith(
-        "ProviderOracleManager: Oracle already set for asset"
-      );
+  const setUpTestWithMockAggregator = async (
+    deployOracleManager: (
+      mockConfig: MockContract,
+      fallBackPriceInSeconds: number
+    ) => Promise<ChainlinkOracleManager>,
+    mockConfig: MockContract,
+    fallBackPriceInSeconds: number
+  ): Promise<ChainlinkOracleManager> => {
+    const oracleManager = await deployOracleManager(
+      mockConfig,
+      fallBackPriceInSeconds
+    );
+    await mockConfig.mock.hasRole.returns(true);
+
+    await mockAggregatorProxy.setLatestTimestamp(51);
+    await mockAggregatorProxy.setLatestRoundData({
+      roundId: 4,
+      answer: 1,
+      startedAt: 1,
+      updatedAt: 1,
+      answeredInRound: 1,
     });
 
-    it("Should not allow a non oracle manager account to add an asset", async function () {
-      await mockConfig.mock.hasRole.returns(false);
+    await mockAggregatorProxy.setLatestRound(4);
 
-      expect(await chainlinkOracleManager.getAssetsLength()).to.be.equal(0);
-      await expect(
-        chainlinkOracleManager
-          .connect(normalUserAccount)
-          .addAssetOracle(assetOne, oracleOne)
-      ).to.be.revertedWith(
-        "ProviderOracleManager: Only an oracle admin can add an oracle"
-      );
-    });
-  });
+    await mockAggregatorProxy.setTimestamp(0, 10);
+    await mockAggregatorProxy.setTimestamp(1, 20);
+    await mockAggregatorProxy.setTimestamp(2, 30);
+    await mockAggregatorProxy.setTimestamp(3, 40);
+    await mockAggregatorProxy.setTimestamp(4, 50);
+    await mockAggregatorProxy.setLatestAnswer(42001);
 
-  describe("ChainlinkOracleManager", function () {
-    it("Fallback method should allow a fallback submitter to submit only after the fallback period", async function () {
-      //time in the past
-      const expiryTimestamp = Math.round(Date.now() / 1000) - 100;
-      const price = 5000;
+    //set the price of the round that'll get picked
+    await mockAggregatorProxy.setRoundIdAnswer(2, 42001);
 
-      await mockConfig.mock.hasRole.returns(true);
+    await oracleManager
+      .connect(oracleManagerAccount)
+      .addAssetOracle(assetOne, mockAggregatorProxy.address);
 
-      await expect(
-        chainlinkOracleManager
-          .connect(oracleManagerAccount)
-          .addAssetOracle(assetOne, oracleOne)
-      )
-        .to.emit(chainlinkOracleManager, "OracleAdded")
-        .withArgs(assetOne, oracleOne);
+    return oracleManager;
+  };
 
-      await mockConfig.mock.protocolAddresses
-        .withArgs(ethers.utils.id("priceRegistry"))
-        .returns(mockPriceRegistry.address);
-      // await mockConfig.mock.priceRegistry.returns(mockPriceRegistry.address);
-      await mockPriceRegistry.mock.setSettlementPrice.returns();
-
-      await expect(
-        chainlinkOracleManager
-          .connect(fallbackPriceAccount)
-          .setExpiryPriceInRegistryFallback(assetOne, expiryTimestamp, price)
-      )
-        .to.emit(chainlinkOracleManager, "PriceRegistrySubmission")
-        .withArgs(
-          assetOne,
-          expiryTimestamp,
-          price,
-          0,
-          fallbackPriceAccountAddress,
-          true
-        );
-
-      //TODO (quantizations): not supported by hardhat waffle. Uncomment when hardhat adds support
-      //TODO (quantizations): track here: https://github.com/nomiclabs/hardhat/issues/1135
-      /*
-      expect("setSettlementPrice").to.be.calledOnContractWith(
-        mockPriceRegistry,
-        [assetOne, expiryTimestamp, price]
-      );
-      */
-
-      await mockPriceRegistry.mock.setSettlementPrice.revertsWithReason(
-        "PriceRegistry: Settlement price has already been set"
-      );
-
-      await expect(
-        chainlinkOracleManager
-          .connect(fallbackPriceAccount)
-          .setExpiryPriceInRegistryFallback(assetOne, expiryTimestamp, price)
-      ).to.be.revertedWith(
-        "PriceRegistry: Settlement price has already been set"
-      );
-    });
-
-    it("Fallback method should not allow a fallback submitter to submit before the fallback period", async function () {
-      chainlinkOracleManager = <ChainlinkOracleManager>(
-        await ChainlinkOracleManager.deploy(mockConfig.address, 500)
-      );
-      await chainlinkOracleManager.deployed();
-
-      await mockConfig.mock.hasRole.returns(true);
-
-      await chainlinkOracleManager.addAssetOracle(assetOne, oracleOne);
-
-      await expect(
-        chainlinkOracleManager
-          .connect(fallbackPriceAccount)
-          .setExpiryPriceInRegistryFallback(
-            assetOne,
-            Math.round(Date.now() / 1000),
-            5000
-          )
-      ).to.be.revertedWith(
-        "ChainlinkOracleManager: The fallback price period has not passed since the timestamp"
-      );
-
-      await mockConfig.mock.hasRole.returns(false);
-
-      await expect(
-        chainlinkOracleManager
-          .connect(normalUserAccount)
-          .setExpiryPriceInRegistryFallback(assetOne, 10, 5000)
-      ).to.be.revertedWith(
-        "ChainlinkOracleManager: Only the fallback price submitter can submit a fallback price"
-      );
-    });
-
-    it("Should fetch the current price of the asset provided correctly", async function () {
-      await mockAggregator.mock.latestAnswer.returns(0);
-      await mockAggregatorTwo.mock.latestAnswer.returns(
-        ethers.utils.parseUnits("2", 8)
-      );
-
-      await expect(
-        chainlinkOracleManager.getCurrentPrice(mockAggregator.address)
-      ).to.be.revertedWith(
-        "ProviderOracleManager: Oracle doesn't exist for that asset"
-      );
-
-      await mockConfig.mock.hasRole.returns(true);
-
-      await expect(
-        chainlinkOracleManager
-          .connect(oracleManagerAccount)
-          .addAssetOracle(assetOne, mockAggregator.address)
-      )
-        .to.emit(chainlinkOracleManager, "OracleAdded")
-        .withArgs(assetOne, mockAggregator.address);
-
-      await expect(
-        chainlinkOracleManager
-          .connect(oracleManagerAccount)
-          .addAssetOracle(assetTwo, mockAggregatorTwo.address)
-      )
-        .to.emit(chainlinkOracleManager, "OracleAdded")
-        .withArgs(assetTwo, mockAggregatorTwo.address);
-
-      await expect(
-        chainlinkOracleManager.getCurrentPrice(assetOne)
-      ).to.be.revertedWith("ChainlinkOracleManager: No pricing data available");
-
-      expect(
-        await chainlinkOracleManager.getCurrentPrice(assetTwo)
-      ).to.be.equal(ethers.utils.parseUnits("2", 6));
-    });
-
-    it("Should fail to fetch the round if the latest timestamp is equal to the expiry timestamp", async function () {
-      await mockConfig.mock.hasRole.returns(true);
-
-      const expiryTimestamp = Math.round(Date.now() / 1000) - 100;
-
-      await mockAggregatorProxy.setLatestTimestamp(expiryTimestamp);
-
-      await chainlinkOracleManager
-        .connect(oracleManagerAccount)
-        .addAssetOracle(assetOne, mockAggregatorProxy.address);
-
-      expect(
-        chainlinkOracleManager.searchRoundToSubmit(assetOne, expiryTimestamp)
-      ).to.be.revertedWith(
-        "ChainlinkOracleManager: The latest round timestamp is not after the expiry timestamp"
-      );
-    });
-
-    it("Should not search if there is only 1 round of data", async function () {
-      await mockConfig.mock.hasRole.returns(true);
-
-      const expiryTimestamp = Math.round(Date.now() / 1000) - 100;
-
-      await mockAggregatorProxy.setLatestTimestamp(expiryTimestamp + 1);
-      await mockAggregatorProxy.setLatestRoundData({
-        roundId: 1,
-        answer: 1,
-        startedAt: 1,
-        updatedAt: 1,
-        answeredInRound: 1,
-      });
-
-      await chainlinkOracleManager
-        .connect(oracleManagerAccount)
-        .addAssetOracle(assetOne, mockAggregatorProxy.address);
-
-      expect(
-        chainlinkOracleManager.searchRoundToSubmit(assetOne, expiryTimestamp)
-      ).to.be.revertedWith(
-        "ChainlinkOracleManager: Not enough rounds to find round after"
-      );
-    });
-
-    const setUpTestWithMockAggregator = async () => {
-      await mockConfig.mock.hasRole.returns(true);
-
-      await mockAggregatorProxy.setLatestTimestamp(51);
-      await mockAggregatorProxy.setLatestRoundData({
-        roundId: 4,
-        answer: 1,
-        startedAt: 1,
-        updatedAt: 1,
-        answeredInRound: 1,
-      });
-
-      await mockAggregatorProxy.setLatestRound(4);
-
-      await mockAggregatorProxy.setTimestamp(0, 10);
-      await mockAggregatorProxy.setTimestamp(1, 20);
-      await mockAggregatorProxy.setTimestamp(2, 30);
-      await mockAggregatorProxy.setTimestamp(3, 40);
-      await mockAggregatorProxy.setTimestamp(4, 50);
-      await mockAggregatorProxy.setLatestAnswer(42001);
-
-      //set the price of the round that'll get picked
-      await mockAggregatorProxy.setRoundIdAnswer(2, 42001);
-
-      await chainlinkOracleManager
-        .connect(oracleManagerAccount)
-        .addAssetOracle(assetOne, mockAggregatorProxy.address);
-    };
-
+  describe("ChainlinkOracleManager", () => {
     it("Should search timestamps successfully and return the round after the timestamp passed", async function () {
-      await setUpTestWithMockAggregator();
+      const oracleManager = await setUpTestWithMockAggregator(
+        deployChainlinkOracleManager,
+        mockConfig,
+        0
+      );
 
-      expect(
-        await chainlinkOracleManager.searchRoundToSubmit(assetOne, 32)
-      ).to.be.equal(3);
+      expect(await oracleManager.searchRoundToSubmit(assetOne, 32)).to.be.equal(
+        3
+      );
 
-      expect(
-        await chainlinkOracleManager.searchRoundToSubmit(assetOne, 40)
-      ).to.be.equal(4);
+      expect(await oracleManager.searchRoundToSubmit(assetOne, 40)).to.be.equal(
+        4
+      );
     });
 
     it("Integration Test: Should submit the correct price to the price registry", async function () {
@@ -405,29 +186,29 @@ describe("ChainlinkOracleManager", function () {
         .withArgs(ethers.utils.id("priceRegistry"))
         .returns(priceRegistry.address);
 
-      await setUpTestWithMockAggregator();
+      const oracleManager = await setUpTestWithMockAggregator(
+        deployChainlinkOracleManager,
+        mockConfig,
+        0
+      );
 
       //price should not be set initially
       await expect(
-        priceRegistry.getSettlementPrice(
-          chainlinkOracleManager.address,
-          assetOne,
-          32
-        )
+        priceRegistry.getSettlementPrice(oracleManager.address, assetOne, 32)
       ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
 
       await expect(
-        chainlinkOracleManager
+        oracleManager
           .connect(normalUserAccount)
           .setExpiryPriceInRegistry(assetOne, 32, ethers.utils.randomBytes(32))
       )
-        .to.emit(chainlinkOracleManager, "PriceRegistrySubmission")
+        .to.emit(oracleManager, "PriceRegistrySubmission")
         .withArgs(assetOne, 32, 42001, 2, normalUserAccountAddress, false);
 
       //price should be set after we set it through the oracle (with loss of precision when casting to 6 decimals)
       expect(
         await priceRegistry.getSettlementPrice(
-          chainlinkOracleManager.address,
+          oracleManager.address,
           assetOne,
           32
         )
@@ -436,7 +217,7 @@ describe("ChainlinkOracleManager", function () {
       //price should be set after we set it through the oracle with full precision
       const priceWithDecimals =
         await priceRegistry.getSettlementPriceWithDecimals(
-          chainlinkOracleManager.address,
+          oracleManager.address,
           assetOne,
           32
         );
@@ -451,29 +232,29 @@ describe("ChainlinkOracleManager", function () {
         .withArgs(ethers.utils.id("priceRegistry"))
         .returns(priceRegistry.address);
 
-      await setUpTestWithMockAggregator();
+      const oracleManager = await setUpTestWithMockAggregator(
+        deployChainlinkOracleManager,
+        mockConfig,
+        0
+      );
 
       //price should not be set initially
       await expect(
-        priceRegistry.getSettlementPrice(
-          chainlinkOracleManager.address,
-          assetOne,
-          32
-        )
+        priceRegistry.getSettlementPrice(oracleManager.address, assetOne, 32)
       ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
 
       await expect(
-        chainlinkOracleManager
+        oracleManager
           .connect(normalUserAccount)
           .setExpiryPriceInRegistryByRound(assetOne, 32, 3)
       )
-        .to.emit(chainlinkOracleManager, "PriceRegistrySubmission")
+        .to.emit(oracleManager, "PriceRegistrySubmission")
         .withArgs(assetOne, 32, 42001, 2, normalUserAccountAddress, false);
 
       //price should be set after we set it through the oracle (with loss of precision when casting to 6 decimals)
       expect(
         await priceRegistry.getSettlementPrice(
-          chainlinkOracleManager.address,
+          oracleManager.address,
           assetOne,
           32
         )
@@ -482,7 +263,7 @@ describe("ChainlinkOracleManager", function () {
       //price should be set after we set it through the oracle with full precision
       const priceWithDecimals =
         await priceRegistry.getSettlementPriceWithDecimals(
-          chainlinkOracleManager.address,
+          oracleManager.address,
           assetOne,
           32
         );
@@ -491,7 +272,7 @@ describe("ChainlinkOracleManager", function () {
       expect(priceWithDecimals[1]).to.equal(BigNumber.from("8"));
 
       await expect(
-        chainlinkOracleManager
+        oracleManager
           .connect(normalUserAccount)
           .setExpiryPriceInRegistryByRound(assetOne, 22, 1)
       ).to.be.revertedWith(
@@ -499,7 +280,7 @@ describe("ChainlinkOracleManager", function () {
       );
 
       await expect(
-        chainlinkOracleManager
+        oracleManager
           .connect(normalUserAccount)
           .setExpiryPriceInRegistryByRound(assetOne, 10, 4)
       ).to.be.revertedWith(
@@ -513,15 +294,369 @@ describe("ChainlinkOracleManager", function () {
         .withArgs(ethers.utils.id("priceRegistry"))
         .returns(priceRegistry.address);
 
-      await setUpTestWithMockAggregator();
+      const oracleManager = await setUpTestWithMockAggregator(
+        deployChainlinkOracleManager,
+        mockConfig,
+        0
+      );
 
       await expect(
-        chainlinkOracleManager
+        oracleManager
           .connect(normalUserAccount)
           .setExpiryPriceInRegistryByRound(assetTwo, 22, 1)
       ).to.be.revertedWith(
         "ProviderOracleManager: Oracle doesn't exist for that asset"
       );
+    });
+
+    it("Integration Test: Should submit the correct price to the price registry when there's a price submission at exactly the given timestamp", async function () {
+      //use the real price registry instead of the mock
+      await mockConfig.mock.protocolAddresses
+        .withArgs(ethers.utils.id("priceRegistry"))
+        .returns(priceRegistry.address);
+
+      const oracleManager = await setUpTestWithMockAggregator(
+        deployChainlinkOracleManager,
+        mockConfig,
+        0
+      );
+
+      //price should not be set initially
+      await expect(
+        priceRegistry.getSettlementPrice(oracleManager.address, assetOne, 30)
+      ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
+
+      await expect(
+        oracleManager
+          .connect(normalUserAccount)
+          .setExpiryPriceInRegistry(assetOne, 30, ethers.utils.randomBytes(22))
+      )
+        .to.emit(oracleManager, "PriceRegistrySubmission")
+        .withArgs(assetOne, 30, 42001, 2, normalUserAccountAddress, false);
+
+      //price should be set after we set it through the oracle (with loss of precision when casting to 6 decimals)
+      expect(
+        await priceRegistry.getSettlementPrice(
+          oracleManager.address,
+          assetOne,
+          30
+        )
+      ).to.equal(420);
+
+      //price should be set after we set it through the oracle with full precision
+      const priceWithDecimals =
+        await priceRegistry.getSettlementPriceWithDecimals(
+          oracleManager.address,
+          assetOne,
+          30
+        );
+
+      expect(priceWithDecimals[0]).to.equal(BigNumber.from("42001"));
+      expect(priceWithDecimals[1]).to.equal(BigNumber.from("8"));
+    });
+
+    it("Should pass the ProviderOracleManager tests", async () => {
+      await testProviderOracleManager(
+        "Regular ChainlinkOracleManager",
+        deployChainlinkOracleManager
+      );
+    });
+
+    it("Should pass the ChainlinkOracleManager tests", async () => {
+      await testChainlinkOracleManager(
+        "Regular ChainlinkOracleManager",
+        deployChainlinkOracleManager
+      );
+    });
+  });
+
+  describe("ChainlinkFixedTimeOracleManager", () => {
+    it("Should search timestamps successfully and return the round after the timestamp passed", async function () {
+      const oracleManager = await setUpTestWithMockAggregator(
+        deployChainlinkFixedTimeOracleManager,
+        mockConfig,
+        0
+      );
+
+      expect(await oracleManager.searchRoundToSubmit(assetOne, 32)).to.be.equal(
+        3
+      );
+
+      expect(await oracleManager.searchRoundToSubmit(assetOne, 40)).to.be.equal(
+        4
+      );
+    });
+    it("Integration Test: Should submit the correct price to the price registry", async function () {
+      //use the real price registry instead of the mock
+      await mockConfig.mock.protocolAddresses
+        .withArgs(ethers.utils.id("priceRegistry"))
+        .returns(priceRegistry.address);
+
+      const oracleManager = await setUpTestWithMockAggregator(
+        deployChainlinkFixedTimeOracleManager,
+        mockConfig,
+        0
+      );
+
+      //price should not be set initially
+      await expect(
+        priceRegistry.getSettlementPrice(oracleManager.address, assetOne, 22)
+      ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
+
+      await expect(
+        oracleManager
+          .connect(normalUserAccount)
+          .setExpiryPriceInRegistry(assetOne, 22, ethers.utils.randomBytes(22))
+      )
+        .to.emit(oracleManager, "PriceRegistrySubmission")
+        .withArgs(assetOne, 22, 42001, 2, normalUserAccountAddress, false);
+
+      //price should be set after we set it through the oracle (with loss of precision when casting to 6 decimals)
+      expect(
+        await priceRegistry.getSettlementPrice(
+          oracleManager.address,
+          assetOne,
+          22
+        )
+      ).to.equal(420);
+
+      //price should be set after we set it through the oracle with full precision
+      const priceWithDecimals =
+        await priceRegistry.getSettlementPriceWithDecimals(
+          oracleManager.address,
+          assetOne,
+          22
+        );
+
+      expect(priceWithDecimals[0]).to.equal(BigNumber.from("42001"));
+      expect(priceWithDecimals[1]).to.equal(BigNumber.from("8"));
+    });
+
+    it("Integration Test: Should submit the correct price to the price registry when submitting a round directly", async function () {
+      //use the real price registry instead of the mock
+      await mockConfig.mock.protocolAddresses
+        .withArgs(ethers.utils.id("priceRegistry"))
+        .returns(priceRegistry.address);
+
+      const oracleManager = await setUpTestWithMockAggregator(
+        deployChainlinkFixedTimeOracleManager,
+        mockConfig,
+        0
+      );
+
+      //price should not be set initially
+      await expect(
+        priceRegistry.getSettlementPrice(oracleManager.address, assetOne, 22)
+      ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
+
+      await expect(
+        oracleManager
+          .connect(normalUserAccount)
+          .setExpiryPriceInRegistryByRound(assetOne, 22, 2)
+      )
+        .to.emit(oracleManager, "PriceRegistrySubmission")
+        .withArgs(assetOne, 22, 42001, 2, normalUserAccountAddress, false);
+
+      //price should be set after we set it through the oracle (with loss of precision when casting to 6 decimals)
+      expect(
+        await priceRegistry.getSettlementPrice(
+          oracleManager.address,
+          assetOne,
+          22
+        )
+      ).to.equal(420);
+
+      //price should be set after we set it through the oracle with full precision
+      const priceWithDecimals =
+        await priceRegistry.getSettlementPriceWithDecimals(
+          oracleManager.address,
+          assetOne,
+          22
+        );
+
+      expect(priceWithDecimals[0]).to.equal(BigNumber.from("42001"));
+      expect(priceWithDecimals[1]).to.equal(BigNumber.from("8"));
+
+      await expect(
+        oracleManager
+          .connect(normalUserAccount)
+          .setExpiryPriceInRegistryByRound(assetOne, 22, 1)
+      ).to.be.revertedWith(
+        "ChainlinkOracleManager: The round posted is not after the expiry timestamp"
+      );
+
+      await expect(
+        oracleManager
+          .connect(normalUserAccount)
+          .setExpiryPriceInRegistryByRound(assetOne, 10, 4)
+      ).to.be.revertedWith(
+        "ChainlinkOracleManager: Expiry round prior to the one posted is after the expiry timestamp"
+      );
+    });
+
+    it("Integration Test: Should fail to submit a round for an asset that doesn't exist in the oracle", async function () {
+      //use the real price registry instead of the mock
+      await mockConfig.mock.protocolAddresses
+        .withArgs(ethers.utils.id("priceRegistry"))
+        .returns(priceRegistry.address);
+
+      const oracleManager = await setUpTestWithMockAggregator(
+        deployChainlinkFixedTimeOracleManager,
+        mockConfig,
+        0
+      );
+
+      await expect(
+        oracleManager
+          .connect(normalUserAccount)
+          .setExpiryPriceInRegistryByRound(assetTwo, 22, 1)
+      ).to.be.revertedWith(
+        "ProviderOracleManager: Oracle doesn't exist for that asset"
+      );
+    });
+
+    it("Integration Test: Should submit the correct price to the price registry when there's a price submission at exactly the given timestamp", async function () {
+      //use the real price registry instead of the mock
+      await mockConfig.mock.protocolAddresses
+        .withArgs(ethers.utils.id("priceRegistry"))
+        .returns(priceRegistry.address);
+
+      const oracleManager = await setUpTestWithMockAggregator(
+        deployChainlinkFixedTimeOracleManager,
+        mockConfig,
+        0
+      );
+
+      //price should not be set initially
+      await expect(
+        priceRegistry.getSettlementPrice(oracleManager.address, assetOne, 30)
+      ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
+
+      await expect(
+        oracleManager
+          .connect(normalUserAccount)
+          .setExpiryPriceInRegistry(assetOne, 30, ethers.utils.randomBytes(22))
+      )
+        .to.emit(oracleManager, "PriceRegistrySubmission")
+        .withArgs(assetOne, 30, 42001, 2, normalUserAccountAddress, false);
+
+      //price should be set after we set it through the oracle (with loss of precision when casting to 6 decimals)
+      expect(
+        await priceRegistry.getSettlementPrice(
+          oracleManager.address,
+          assetOne,
+          30
+        )
+      ).to.equal(420);
+
+      //price should be set after we set it through the oracle with full precision
+      const priceWithDecimals =
+        await priceRegistry.getSettlementPriceWithDecimals(
+          oracleManager.address,
+          assetOne,
+          30
+        );
+
+      expect(priceWithDecimals[0]).to.equal(BigNumber.from("42001"));
+      expect(priceWithDecimals[1]).to.equal(BigNumber.from("8"));
+    });
+
+    describe("isValidOption", () => {
+      let oracleManager: ChainlinkFixedTimeOracleManager;
+
+      const fixedTimeUpdate = 28800; // 8 A.M.
+
+      beforeEach(async () => {
+        oracleManager = <ChainlinkFixedTimeOracleManager>(
+          await setUpTestWithMockAggregator(
+            deployChainlinkFixedTimeOracleManager,
+            mockConfig,
+            0
+          )
+        );
+      });
+
+      it("Should revert when an accout without the oracle manager role tries to add a valid fixed time for updates", async () => {
+        await mockConfig.mock.hasRole.returns(false);
+        await expect(
+          oracleManager
+            .connect(normalUserAccount)
+            .setFixedTimeUpdate(fixedTimeUpdate, true)
+        ).to.be.revertedWith(
+          "ChainlinkFixedTimeOracleManager: Only an oracle admin can add a fixed time for updates"
+        );
+      });
+      it("Should allow the addition of valid option expiry timestamps", async () => {
+        const firstValidExpiry = 2412144000; // Sat Jun 09 2046 08:00:00 GMT+0000
+        const secondValidExpiry = 2412230400; // Sun Jun 10 2046 08:00:00 GMT+0000
+        const invalidExpiry = 2412165600; // Sat Jun 09 2046 14:00:00 GMT+0000
+
+        expect(
+          await oracleManager.isValidOption(
+            ethers.constants.AddressZero,
+            firstValidExpiry,
+            ethers.constants.Zero
+          )
+        ).to.equal(false);
+
+        expect(
+          await oracleManager.isValidOption(
+            ethers.constants.AddressZero,
+            secondValidExpiry,
+            ethers.constants.Zero
+          )
+        ).to.equal(false);
+
+        expect(
+          await oracleManager.isValidOption(
+            ethers.constants.AddressZero,
+            invalidExpiry,
+            ethers.constants.Zero
+          )
+        ).to.equal(false);
+
+        // Add 8 A.M. to the chainlinkFixedTimeUpdates mapping
+        await oracleManager
+          .connect(oracleManagerAccount)
+          .setFixedTimeUpdate(fixedTimeUpdate, true);
+
+        expect(
+          await oracleManager.isValidOption(
+            ethers.constants.AddressZero,
+            firstValidExpiry,
+            ethers.constants.Zero
+          )
+        ).to.equal(true);
+
+        expect(
+          await oracleManager.isValidOption(
+            ethers.constants.AddressZero,
+            secondValidExpiry,
+            ethers.constants.Zero
+          )
+        ).to.equal(true);
+
+        expect(
+          await oracleManager.isValidOption(
+            ethers.constants.AddressZero,
+            invalidExpiry,
+            ethers.constants.Zero
+          )
+        ).to.equal(false);
+      });
+
+      it("Should pass the ProviderOracleManager tests", async () => {
+        await testProviderOracleManager(
+          "ChainlinkFixedTimeOracleManager",
+          deployChainlinkFixedTimeOracleManager
+        );
+      });
+      it("Should pass the ChainlinkOracleManager tests", async () => {
+        await testChainlinkOracleManager(
+          "ChainlinkFixedTimeOracleManager",
+          deployChainlinkFixedTimeOracleManager
+        );
+      });
     });
   });
 });
