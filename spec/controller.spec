@@ -56,13 +56,14 @@ methods {
 	// CollateralToken
 	mintCollateralToken(address,uint256,address,uint256) => DISPATCHER(true)
 	burnCollateralToken(address,uint256,uint256) => DISPATCHER(true)
-	balanceOf(address, uint256) => DISPATCHER(true)
+	//balanceOf(address, uint256) => DISPATCHER(true)
 	idToInfo(uint256) => DISPATCHER(true)
 	getCollateralTokenId(uint256) => DISPATCHER(true)
 	collateralToken.getTokenSupplies(uint) returns (uint) envfree
 	//getCollateralTokenInfoTokenAddress(uint256) returns (address)  => DISPATCHER(true)
     collateralToken.getCollateralTokenInfoTokenAddress(uint) returns (address) envfree
 	collateralToken.getCollateralTokenInfoTokenAsCollateral(uint)returns (address) envfree
+	collateralToken.balanceOf(address, uint256) returns (uint256) envfree => DISPATCHER(true)
 
 	// Computations
 	getNeutralizationPayout(address,address,uint256,address) => NONDET 
@@ -181,9 +182,9 @@ rule additive_claim(uint256 collateralTokenId, uint256 amount1, uint256 amount2)
 	storage init_state = lastStorage;
 	claimCollateral(e, collateralTokenId, amount1);
 	claimCollateral(e, collateralTokenId, amount2);
-	balance1 = balanceOfCol(e,collateralTokenId,e.msg.sender);
+	balance1 = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 	claimCollateral(e, collateralTokenId, amount1 + amount2) at init_state;
-	balance2 = balanceOfCol(e, collateralTokenId, e.msg.sender);
+	balance2 = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 	assert balance1 == balance2;
 }
 
@@ -217,12 +218,12 @@ rule MintOptionsCorrectness(uint collateralTokenId, uint amount){
 	require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	uint balanceOfqTokenBefore = qTokenA.balanceOf(e,e.msg.sender);
 	uint totalSupplyqTokenBefore = qTokenA.totalSupply();
-	uint balanceOfcolTokenBefore = balanceOfCol(e,collateralTokenId,e.msg.sender);
-	uint totalSupplyOfcolTokenBefore = collateralToken.getTokenSupplies(collateralTokenId);
+	uint balanceOfcolTokenBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
+	uint totalSupplyOfcolTokenBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
 		mintOptionsPosition(e,e.msg.sender,qTokenA,amount);
 	uint balanceOfqTokenAfter = qTokenA.balanceOf(e,e.msg.sender);
 	uint totalSupplyqTokenAfter = qTokenA.totalSupply();
-	uint balanceOfcolTokenAfter = balanceOfCol(e,collateralTokenId,e.msg.sender);
+	uint balanceOfcolTokenAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
 	uint totalSupplyOfcolTokenAfter = collateralToken.getTokenSupplies(collateralTokenId);
 	assert (balanceOfqTokenAfter == balanceOfqTokenBefore + amount &&
 		   totalSupplyqTokenAfter == totalSupplyqTokenBefore + amount &&
@@ -259,11 +260,11 @@ rule MintOptionsColCorrectness(uint collateralTokenId, uint amount){
 	env e;
 	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	require qToken == qTokenA;
-	uint    balanceControlerBefore = balanceOfCol(e, collateralTokenId,thisContract(e)); // address(this));
-	uint    balanceUserBefore = balanceOfCol(e, collateralTokenId, e.msg.sender);
-	mintOptionsPosition(e,e.msg.sender, qTokenA, amount);
-	uint    balanceControlerAfter = balanceOfCol(e,collateralTokenId, thisContract(e));// address(this));
-	uint    balanceUserAfter = balanceOfCol(e,collateralTokenId, e.msg.sender);
+	uint    balanceControlerBefore = 0;
+	uint    balanceUserBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
+	mintOptionsPosition(e, e.msg.sender, qTokenA, amount);
+	uint    balanceControlerAfter = 0;
+	uint    balanceUserAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
 	assert (balanceControlerAfter - balanceControlerBefore ==
 			balanceUserBefore - balanceUserAfter);
 }
@@ -273,17 +274,21 @@ rule colToken_Impl_ColDeposited(uint256 collateralTokenId, address user){
 uint colAmount = balanceOfCol(e,collateralTokenId,user);
 }*/
 
-rule solvencyUser(uint collateralTokenId){
+rule solvencyUser(uint collateralTokenId, method f){
 	env e;
+	address qTokenFroCollateral;
+	address to;
+	uint256 amount;
+	
 	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	require qToken == qTokenA;
-	uint balanceUserBefore = qTokenA.balanceOf(e,e.msg.sender);
-	uint balanceColBefore = balanceOfCol(e,collateralTokenId,e.msg.sender);
-	method f;
-	calldataarg args;
-	f(e,args);
+	uint balanceUserBefore = qTokenA.balanceOf(e,e.msg.sender); //collateral.blanceOf(e.msg.sender)
+	uint balanceColBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
+
+	callFunctionWithParams(qToken, qTokenFroCollateral, collateralTokenId, to, amount, f);
+
 	uint balanceUserAfter = qTokenA.balanceOf(e,e.msg.sender);
-	uint balanceColAfter = balanceOfCol(e,collateralTokenId,e.msg.sender);
+	uint balanceColAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 	assert (balanceUserBefore + balanceColBefore == balanceUserAfter + balanceColAfter);
 }
 
