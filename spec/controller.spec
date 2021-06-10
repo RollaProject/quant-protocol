@@ -54,13 +54,16 @@ methods {
 
 
 	// CollateralToken
-	mintCollateralToken(address,uint256,address,uint256) => NONDET
-	burnCollateralToken(address,uint256,uint256) => NONDET
-	balanceOf(address, uint256) => NONDET
+	mintCollateralToken(address,uint256,address,uint256) => DISPATCHER(true)
+	burnCollateralToken(address,uint256,uint256) => DISPATCHER(true)
+	balanceOf(address, uint256) => DISPATCHER(true)
+	idToInfo(uint256) => DISPATCHER(true)
 	getCollateralTokenId(uint256) => DISPATCHER(true)
 	collateralToken.getTokenSupplies(uint) returns (uint) envfree
 	//getCollateralTokenInfoTokenAddress(uint256) returns (address)  => DISPATCHER(true)
     collateralToken.getCollateralTokenInfoTokenAddress(uint) returns (address) envfree
+	collateralToken.getCollateralTokenInfoTokenAsCollateral(uint)returns (address) envfree
+
 }
 
 
@@ -148,23 +151,23 @@ rule solvency(uint256 collateralTokenId,uint256 amount){
 }*/
 
 
-rule only_after_expiry(method f)
-	filtered { f-> f.selector == claimCollateral(uint256, uint256).selector ||
-			 	f.selector == exercise(address,uint256).selector }
+rule only_after_expiry(method f, bool eitherClaimOrExercise)
+	
 {
 	env e;
 	address qToken; 
 	uint256 collateralTokenId;
 	uint256 amount;
+	uint256 expiry = getExpiryTime(e,qToken);
 
-	if (f.selector == exercise(address,uint256).selector) {
+	if (eitherClaimOrExercise) {
 		exercise(e, qToken, amount);
 	}
-	else if (f.selector == claimCollateral(uint256,uint256).selector ) {
+	else {
 		require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
     	claimCollateral(e, collateralTokenId, amount);
 	}
-	assert e.block.timestamp > getExpiryTime(e,qToken);
+	assert e.block.timestamp > expiry;
 }
 
 rule additive_claim(uint256 collateralTokenId, uint256 amount1, uint256 amount2){
@@ -179,16 +182,20 @@ rule additive_claim(uint256 collateralTokenId, uint256 amount1, uint256 amount2)
 	balance2 = balanceOfCol(e, collateralTokenId, e.msg.sender);
 	assert balance1 == balance2;
 }
+
+
+
 rule ratio_after_neutralize(uint256 collateralTokenId, uint256 amount, address qToken){
 	env e;
 	require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require collateralToken.getCollateralTokenInfoTokenAsCollateral(collateralTokenId) != collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	require qToken == qTokenA ; 
-	uint256 totalSupllyTBefore = qTokenA.totalSupply();
-	uint256 totalSupllyCBefore = collateralToken.getTokenSupplies(collateralTokenId);
+	uint256 totalSupplyTBefore = qTokenA.totalSupply();
+	uint256 totalSupplyCBefore = collateralToken.getTokenSupplies(collateralTokenId);
 	neutralizePosition(e, collateralTokenId, amount);
-	uint256 totalSupllyTAfter = qTokenA.totalSupply();
-	uint256 totalSupllyCAfter = collateralToken.getTokenSupplies(collateralTokenId);
-	assert  totalSupllyTAfter - totalSupllyTBefore == totalSupllyCAfter - totalSupllyCBefore;
+	uint256 totalSupplyTAfter = qTokenA.totalSupply();
+	uint256 totalSupplyCAfter = collateralToken.getTokenSupplies(collateralTokenId);
+	assert  totalSupplyTAfter - totalSupplyTBefore == totalSupplyCAfter - totalSupplyCBefore;
 	
 }
 
