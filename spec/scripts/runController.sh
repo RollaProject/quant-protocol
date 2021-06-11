@@ -4,6 +4,8 @@ spec/harness/DummyERC20B.sol spec/harness/QTokenA.sol spec/harness/QTokenB.sol c
 	--verify ControllerHarness:spec/controller.spec --settings -optimisticReturnsize=true,-ignoreViewFunctions,-postProcessCounterExamples=true \
 	--solc solc7.6 \
 	--rule $1 \
+	--optimistic_loop \
+	--cache QuantController \
 	--staging --msg "Controller : $1 "
 
 

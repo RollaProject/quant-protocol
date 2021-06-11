@@ -50,11 +50,12 @@ methods {
 
 
 	// OptionsFactory
-	optionsFactory.isQToken(address _qToken) returns (bool) envfree
+	optionsFactory.isQToken(address _qToken) returns (bool) envfree => DISPATCHER(true)
 	collateralToken() => NONDET
+	quantConfig() => NONDET
 	
 	// CollateralToken
-	mintCollateralToken(address,uint256,address,uint256) => DISPATCHER(true)
+	mintCollateralToken(address,uint256,uint256) => DISPATCHER(true)
 	burnCollateralToken(address,uint256,uint256) => DISPATCHER(true)
 	//balanceOf(address, uint256) => DISPATCHER(true)
 	idToInfo(uint256) => DISPATCHER(true)
@@ -67,6 +68,10 @@ methods {
 
 	// Computations
 	getNeutralizationPayout(address,address,uint256,address) => NONDET 
+
+
+	//ERC1155Receiver
+	onERC1155Received(address, address, uint256, uint256, bytes memory)  => NONDET
 
 
 }
@@ -110,16 +115,21 @@ methods {
 	Formula: 
 	Notes: 
 */
-rule validQtoken(  method f )  
+rule validQtoken(method f)  
 {
 	address qToken; 
-	address qTokenFroCollateral;
+	address qTokenForCollateral;
 	uint256 collateralTokenId;
 	address to;
 	uint256 amount;
-	
-	callFunctionWithParams(qToken, qTokenFroCollateral, collateralTokenId, to, amount, f);
-	assert optionsFactory.isQToken(qToken);   
+	require qToken == qTokenA;
+	// we need to assume that changes through collateralId are on valid qToken
+	require qToken != collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	// some functions do not take qToken as input so there is no check
+	uint256 totalSupplyBefore = qTokenA.totalSupply();
+	callFunctionWithParams(qToken, qTokenForCollateral, collateralTokenId, to, amount, f);
+	// any change to the total supply of a qToken should be to a validQtoken
+	assert totalSupplyBefore != qTokenA.totalSupply() => optionsFactory.isQToken(qToken);   
 }
 
 
@@ -193,8 +203,8 @@ rule additive_claim(uint256 collateralTokenId, uint256 amount1, uint256 amount2)
 rule ratio_after_neutralize(uint256 collateralTokenId, uint256 amount, address qToken){
 	env e;
 	require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
-	require collateralToken.getCollateralTokenInfoTokenAsCollateral(collateralTokenId) != collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	require qToken == qTokenA ; 
+	require collateralToken.getCollateralTokenInfoTokenAsCollateral(collateralTokenId) != qTokenA;
 	uint256 totalSupplyTBefore = qTokenA.totalSupply();
 	uint256 totalSupplyCBefore = collateralToken.getTokenSupplies(collateralTokenId);
 	neutralizePosition(e, collateralTokenId, amount);
@@ -291,6 +301,17 @@ rule solvencyUser(uint collateralTokenId, method f){
 	uint balanceColAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 	assert (balanceUserBefore + balanceColBefore == balanceUserAfter + balanceColAfter);
 }
+
+
+/* 
+	Rule: Inverse
+
+	minting (simple or spread) and then neutralize are inverse
+
+
+	minting and then claimCollateral and exercise are inverse  (also fro spread?)
+
+*/
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Helper Functions                                 //
