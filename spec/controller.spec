@@ -59,7 +59,7 @@ methods {
 	burnCollateralToken(address,uint256,uint256) => DISPATCHER(true)
 	//balanceOf(address, uint256) => DISPATCHER(true)
 	idToInfo(uint256) => DISPATCHER(true)
-	getCollateralTokenId(uint256) => DISPATCHER(true)
+	collateralToken.getCollateralTokenId(address,address) returns (uint256) envfree => DISPATCHER(true)
 	collateralToken.getTokenSupplies(uint) returns (uint) envfree
 	//getCollateralTokenInfoTokenAddress(uint256) returns (address)  => DISPATCHER(true)
     collateralToken.getCollateralTokenInfoTokenAddress(uint) returns (address) envfree
@@ -71,7 +71,7 @@ methods {
 
 
 	//ERC1155Receiver
-	onERC1155Received(address, address, uint256, uint256, bytes memory)  => NONDET
+	onERC1155Received(address,address,uint256,uint256,bytes) => NONDET
 
 
 }
@@ -125,6 +125,7 @@ rule validQtoken(method f)
 	require qToken == qTokenA;
 	// we need to assume that changes through collateralId are on valid qToken
 	require qToken != collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken != collateralToken.getCollateralTokenInfoTokenAsCollateral(collateralTokenId);
 	// some functions do not take qToken as input so there is no check
 	uint256 totalSupplyBefore = qTokenA.totalSupply();
 	callFunctionWithParams(qToken, qTokenForCollateral, collateralTokenId, to, amount, f);
@@ -222,10 +223,11 @@ rule ratio_after_neutralize(uint256 collateralTokenId, uint256 amount, address q
 				collateralToken.balanceOf(to,tokenId) == collateralToken.balanceOf(to,tokenId) + amount &&
 				collateralToken.tokenSupplies(tokenId) == collateralToken.tokenSupplies(tokenId) + amount;
 */
-rule MintOptionsCorrectness(uint collateralTokenId, uint amount){
+rule MintOptionsCorrectness(uint256 collateralTokenId, uint amount){
 	env e;
 	address qToken = qTokenA;
-	require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	address qTokenLong = 0;
+	require collateralTokenId == collateralToken.getCollateralTokenId(qToken, qTokenLong);
 	uint balanceOfqTokenBefore = qTokenA.balanceOf(e,e.msg.sender);
 	uint totalSupplyqTokenBefore = qTokenA.totalSupply();
 	uint balanceOfcolTokenBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
