@@ -36,8 +36,24 @@ methods {
                                            uint256 _qTokenForCollateralStrikePrice,
                                            uint8 _underlyingDecimals) returns (int256) envfree;
 
+   setPayoutInput(uint256 _strikePrice,
+                   uint256 _expiryPrice,
+                   uint256 _amount,
+                   uint8 _expiryDecimals,
+                   uint8 _optionsDecimals) envfree;
+
+   getPayoutForPutWrapper() returns (int256) envfree;
+   getPayoutForCallWrapper() returns (int256) envfree;
+   getPayoutAmountWrapper(bool _isCall,
+                               uint256 _strikePrice,
+                               uint256 _expiryPrice,
+                               uint256 _amount,
+                               uint8 _optionsDecimals,
+                               uint8 _expiryDecimals) returns (int256) envfree;
+
    checkAgeB(int256 _a, int256 _b) returns (bool) envfree;
    checkAleB(int256 _a, int256 _b) returns (bool) envfree;
+   checkAeqB(int256 _a, int256 _b) returns (bool) envfree;
 
    	// QToken methods to be called with one of the tokens (DummyERC20*, DummyWeth)
    	mint(address account, uint256 amount) => DISPATCHER(true)
@@ -48,8 +64,9 @@ methods {
    	expiryTime() returns (uint256) => DISPATCHER(true)
    	isCall() returns (bool) => ALWAYS(0)
 
-   	// summary for getUnderlyingValue
-   	getUnderlyingValue(uint8 _underlyingDecimals) returns (uint256) => ALWAYS(1000000000000000000000000000)
+   	// Ghost function for division
+   	computeDivision(int256 c, int256 m) returns (int256) =>
+   	    ghost_division(c, m)
 
     // IERC20 methods to be called with one of the tokens (DummyERC20A, DummyERC20A) or QToken
     balanceOf(address) => DISPATCHER(true)
@@ -60,11 +77,21 @@ methods {
 
 definition SIGNED_INT_TO_MATHINT(int256 x) returns mathint = x >= 2^255 ? x - 2^256 : x;
 
-
 ////////////////////////////////////////////////////////////////////////////
 //                       Ghost                                            //
 ////////////////////////////////////////////////////////////////////////////
+ghost ghost_division(int256, int256) returns int256 {
 
+    // everything smaller than 10^27
+    axiom forall int256 c. forall int256 m.
+        ghost_division(c, m) <= 1000000000000000000000000000;
+
+    axiom forall int256 c. forall int256 m1. forall int256 m2.
+        m1 > m2 => ghost_division(c, m1) <= ghost_division(c, m2);
+
+    axiom forall int256 c1. forall int256 c2. forall int256 m.
+        c1 > c2 => ghost_division(c1, m) >= ghost_division(c2, m);
+}
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -86,18 +113,8 @@ rule checkOptionCollateralRequirement(uint256 qTokenToMintStrikePrice,
                                       uint8 optionsDecimals,
                                       uint8 underlyingDecimals) {
 
-   // since Strike Prices are USDCs, they have a decimal value of 6
-   // i.e. there value can be from 0 to 999999
-   require qTokenToMintStrikePrice < 10^6;
-   require qTokenForCollateralStrikePrice < 10^6;
-
-   // to have precise approximation and
-   // to avoid division - set all decimals = Base decimals
-   require underlyingDecimals == 27;
-   require optionsDecimals == 27;
-
-   // since optionsDecimals == 27, optionsAmount has to be less than 10^27
-   require optionsAmount < 10^26;
+   require underlyingDecimals == 6;
+   require optionsDecimals == 18;
 
    // minting a non-spread option
    int256 optionCollateral = getOptionCollateralRequirementWrapper(qTokenToMintStrikePrice,
@@ -189,7 +206,6 @@ rule checkCallCollateralRequirement(uint256 mintStrikePrice,
 
     // check more collateral required: collateralRequirement2 >= collateralRequirement1
     assert checkAgeB(collateralRequirement2, collateralRequirement1);
-
 }
 
 // Rule 4 - Call spreads require less collateral
@@ -215,7 +231,55 @@ rule checkCallCollateralRequirement2(uint256 mintStrikePrice1,
 
     // check less collateral required: collateralRequirement2 <= collateralRequirement1
     assert checkAleB(collateralRequirement2, collateralRequirement1);
+}
 
+// getPayoutForPut:  assert (expiryPrice < payoutInput.strikePrice && amount > 0 <=> payoutAmount > 0)
+rule checkPayoutForPut(uint256 strikePrice,
+                       uint256 expiryPrice,
+                       uint256 amount,
+                       uint8 expiryDecimals,
+                       uint8 optionsDecimals) {
+
+    require expiryDecimals == 6;
+    require optionsDecimals == 18;
+
+    setPayoutInput(strikePrice, expiryPrice, amount, expiryDecimals, optionsDecimals);
+    int256 payoutAmount = getPayoutForPutWrapper();
+
+    assert payoutAmount > 0 <=> (strikePrice > expiryPrice) && (amount > 0);
+}
+
+// getPayoutForCall:  assert (payoutAmount > 0 => expiryPrice > payoutInput.strikePrice && amount > 0 )
+rule checkPayoutForCall(uint256 strikePrice,
+                       uint256 expiryPrice,
+                       uint256 amount,
+                       uint8 expiryDecimals,
+                       uint8 optionsDecimals) {
+
+    require expiryDecimals == 6;
+    require optionsDecimals == 18;
+
+    setPayoutInput(strikePrice, expiryPrice, amount, expiryDecimals, optionsDecimals);
+    int256 payoutAmount = getPayoutForCallWrapper();
+
+    assert payoutAmount > 0 => (expiryPrice > strikePrice) && (amount > 0);
+}
+
+// getPayoutAmount: assert (expiryPrice == strikePrice || (amount == 0) => payoutAmount == 0)
+rule checkPayoutAmount(uint256 strikePrice,
+                       uint256 expiryPrice,
+                       uint256 amount,
+                       uint8 optionsDecimals,
+                       uint8 expiryDecimals,
+                       bool _isCall) {
+
+    require expiryDecimals == 6;
+    require optionsDecimals == 18;
+
+    int256 payoutAmount = getPayoutAmountWrapper(_isCall, strikePrice, expiryPrice, amount,
+                                                 optionsDecimals, expiryDecimals);
+
+    assert (expiryPrice == strikePrice) || (amount == 0) => payoutAmount == 0;
 }
 
 

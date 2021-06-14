@@ -5,10 +5,12 @@ pragma abicoder v2;
 import "./QuantMath.sol";
 import "../options/QToken.sol";
 import "../interfaces/IPriceRegistry.sol";
+import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 
 //TODO: Deployment scripts should deploy and link this
 library FundsCalculator {
     using SafeMath for uint256;
+    using SignedSafeMath for int256;
     using QuantMath for uint256;
     using QuantMath for int256;
     using QuantMath for QuantMath.FixedPointInt;
@@ -136,11 +138,13 @@ library FundsCalculator {
         payoutAmount = payoutInput.expiryPrice.isGreaterThan(
             payoutInput.strikePrice
         )
-            ? payoutInput
-                .expiryPrice
-                .sub(payoutInput.strikePrice)
-                .mul(payoutInput.amount)
-                .div(payoutInput.expiryPrice)
+        //    ?        payoutInput
+        //                .expiryPrice
+        //                .sub(payoutInput.strikePrice)
+        //                .mul(payoutInput.amount)
+        //                .div(payoutInput.expiryPrice)
+            ? (QuantMath.FixedPointInt(computeDivision(payoutInput.expiryPrice.value,
+               payoutInput.strikePrice.value))).mul(payoutInput.amount)
             : int256(0).fromUnscaledInt();
     }
 
@@ -223,7 +227,7 @@ library FundsCalculator {
             _qTokenForCollateralStrikePrice.fromScaledUint(6);
 
         // Initially (non-spread) required collateral is the long strike price
-        collateralPerOption = (10**_underlyingDecimals).fromScaledUint(
+        collateralPerOption = uint256(1000000).fromScaledUint(
             _underlyingDecimals
         );
 
@@ -232,9 +236,23 @@ library FundsCalculator {
                 collateralStrikePrice
             )
                 ? int256(0).fromUnscaledInt() // Call Debit Spread
-                : (collateralStrikePrice.sub(mintStrikePrice)).div(
-                    collateralStrikePrice
-                ); // Call Credit Spread
+                : QuantMath.FixedPointInt(computeDivision(collateralStrikePrice.value,
+                  mintStrikePrice.value));// Call Credit Spread
         }
     }
+
+    function computeDivision(
+        int256 _collateralStrikePrice,
+        int256 _mintStrikePrice
+    )
+    internal
+    pure
+    returns (int256 collateralPerOption)
+    {
+        int256 _SCALING_FACTOR = 1e27;
+
+        int256 subResult = _collateralStrikePrice.sub(_mintStrikePrice);
+        collateralPerOption = subResult.mul(_SCALING_FACTOR) / _collateralStrikePrice;
+    }
+
 }
