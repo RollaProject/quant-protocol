@@ -44,6 +44,28 @@ library Actions {
         uint256 amount;
     }
 
+    struct QTokenPermitArgs {
+        address qToken;
+        address owner;
+        address spender;
+        uint256 value;
+        uint256 deadline;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+    }
+
+    struct CollateralTokenApprovalArgs {
+        address owner;
+        address operator;
+        bool approved;
+        uint256 nonce;
+        uint256 deadline;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+    }
+
     struct CallArgs {
         address callee;
         bytes data;
@@ -138,6 +160,62 @@ library Actions {
             NeutralizeArgs({
                 collateralTokenId: _args.collateralTokenId,
                 amount: _args.amount
+            });
+    }
+
+    function parseQTokenPermitArgs(ActionArgs memory _args)
+        internal
+        pure
+        returns (QTokenPermitArgs memory)
+    {
+        require(
+            _args.actionType.toSlice().equals(
+                string("QTOKEN_PERMIT").toSlice()
+            ),
+            "Actions: can only parse arguments for QToken.permit"
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) =
+            abi.decode(_args.data, (uint8, bytes32, bytes32));
+
+        return
+            QTokenPermitArgs({
+                qToken: _args.qToken,
+                owner: _args.secondaryAddress,
+                spender: _args.receiver,
+                value: _args.amount,
+                deadline: _args.collateralTokenId,
+                v: v,
+                r: r,
+                s: s
+            });
+    }
+
+    function parseCollateralTokenApprovalArgs(ActionArgs memory _args)
+        internal
+        pure
+        returns (CollateralTokenApprovalArgs memory)
+    {
+        require(
+            _args.actionType.toSlice().equals(
+                string("COLLATERAL_TOKEN_APPROVAL").toSlice()
+            ),
+            "Actions: can only parse arguments for CollateralToken.metaSetApprovalForAll"
+        );
+
+        (bool approved, uint8 v, bytes32 r, bytes32 s) =
+            abi.decode(_args.data, (bool, uint8, bytes32, bytes32));
+
+        return
+            CollateralTokenApprovalArgs({
+                owner: _args.secondaryAddress,
+                operator: _args.receiver,
+                approved: approved,
+                nonce: _args.amount,
+                deadline: _args.collateralTokenId,
+                v: v,
+                r: r,
+                s: s
             });
     }
 
