@@ -1,5 +1,6 @@
 import BN from "bignumber.js";
 import { MockContract } from "ethereum-waffle";
+import { ecsign } from "ethereumjs-util";
 import {
   BigNumber,
   BigNumberish,
@@ -9,6 +10,7 @@ import {
   Signer,
   Wallet,
 } from "ethers";
+import { defaultAbiCoder } from "ethers/lib/utils";
 import { ethers, upgrades, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import Web3 from "web3";
@@ -36,6 +38,8 @@ import {
   deployOracleRegistry,
   deployQuantCalculator,
   deployQuantConfig,
+  getApprovalDigest,
+  getApprovalForAllSignedData,
   getSignedTransactionData,
   mockERC20,
   name,
@@ -559,6 +563,26 @@ describe("Controller", async () => {
     collateralTokenId: BigNumberish;
     amount: BigNumberish;
   };
+  type QTokenPermitArgs = {
+    qToken: string;
+    owner: string;
+    spender: string;
+    value: BigNumberish;
+    deadline: BigNumberish;
+    v: BigNumberish;
+    r: BytesLike;
+    s: BytesLike;
+  };
+  type CollateralTokenApprovalArgs = {
+    owner: string;
+    operator: string;
+    approved: boolean;
+    nonce: BigNumberish;
+    deadline: BigNumberish;
+    v: BigNumberish;
+    r: BytesLike;
+    s: BytesLike;
+  };
   type CallArgs = { callee: string; data: BytesLike };
 
   const encodeMintOptionArgs = (args: MintOptionArgs): ActionArgs => {
@@ -618,6 +642,38 @@ describe("Controller", async () => {
       amount: args.amount,
       collateralTokenId: args.collateralTokenId,
       data: "0x",
+    };
+  };
+
+  const encodeQTokenPermitArgs = (args: QTokenPermitArgs): ActionArgs => {
+    return {
+      actionType: "QTOKEN_PERMIT",
+      qToken: args.qToken,
+      secondaryAddress: args.owner,
+      receiver: args.spender,
+      amount: args.value,
+      collateralTokenId: args.deadline,
+      data: defaultAbiCoder.encode(
+        ["uint8", "bytes32", "bytes32"],
+        [args.v, args.r, args.s]
+      ),
+    };
+  };
+
+  const encodeCollateralTokenApprovalArgs = (
+    args: CollateralTokenApprovalArgs
+  ): ActionArgs => {
+    return {
+      actionType: "COLLATERAL_TOKEN_APPROVAL",
+      qToken: AddressZero,
+      secondaryAddress: args.owner,
+      receiver: args.operator,
+      amount: args.nonce,
+      collateralTokenId: args.deadline,
+      data: defaultAbiCoder.encode(
+        ["bool", "uint8", "bytes32", "bytes32"],
+        [args.approved, args.v, args.r, args.s]
+      ),
     };
   };
 
@@ -2372,6 +2428,95 @@ describe("Controller", async () => {
     });
   });
 
+  describe("qTokenPermit", () => {
+    it("Users should be able to call the permit method on QTokens through Controller actions", async () => {
+      const deadline = Math.floor(Date.now() / 1000) + aMonth + 3600 * 24;
+      const value = ethers.utils.parseEther("1");
+      const qToken = qTokenCall3520;
+      const owner = deployer.address;
+      const spender = secondAccount.address;
+
+      const digest = await getApprovalDigest(
+        qToken,
+        { owner, spender, value },
+        await qToken.nonces(owner),
+        ethers.BigNumber.from(deadline)
+      );
+
+      const { v, r, s } = ecsign(
+        Buffer.from(digest.slice(2), "hex"),
+        Buffer.from(deployer.privateKey.slice(2), "hex")
+      );
+
+      const actions = [
+        encodeQTokenPermitArgs({
+          qToken: qToken.address,
+          owner,
+          spender,
+          value: value.toString(),
+          deadline: deadline.toString(),
+          v,
+          r: ethers.utils.hexlify(r),
+          s: ethers.utils.hexlify(s),
+        }),
+      ];
+
+      expect(await qToken.allowance(owner, spender)).to.equal(Zero);
+
+      await expect(controller.connect(deployer).operate(actions))
+        .to.emit(qToken, "Approval")
+        .withArgs(owner, spender, value);
+
+      expect(await qToken.allowance(owner, spender)).to.equal(value);
+    });
+  });
+
+  describe("collateralTokenApproval", () => {
+    it("Users should be able to set the approval on the CollateralToken through Controller actions", async () => {
+      const deadline = Math.floor(Date.now() / 1000) + aMonth + 3600 * 24;
+      const owner = deployer.address;
+      const operator = secondAccount.address;
+      const approved = true;
+      const collateralTokenNonce = (
+        await collateralToken.nonces(owner)
+      ).toString();
+
+      const { v, r, s } = getApprovalForAllSignedData(
+        parseInt(collateralTokenNonce),
+        deployer,
+        operator,
+        approved,
+        deadline,
+        collateralToken.address
+      );
+
+      const actions = [
+        encodeCollateralTokenApprovalArgs({
+          owner,
+          operator,
+          approved,
+          nonce: collateralTokenNonce,
+          deadline: deadline.toString(),
+          v,
+          r,
+          s,
+        }),
+      ];
+
+      expect(await collateralToken.isApprovedForAll(owner, operator)).to.equal(
+        false
+      );
+
+      await expect(controller.connect(deployer).operate(actions))
+        .to.emit(collateralToken, "ApprovalForAll")
+        .withArgs(owner, operator, true);
+
+      expect(await collateralToken.isApprovedForAll(owner, operator)).to.equal(
+        true
+      );
+    });
+  });
+
   describe("Meta transactions", () => {
     const deadline = Math.floor(Date.now() / 1000) + aMonth + 3600 * 24;
     let nonce: number;
@@ -2864,6 +3009,123 @@ describe("Controller", async () => {
       expect(
         await collateralToken.balanceOf(deployer.address, collateralTokenId)
       ).to.equal(optionsAmount.sub(amountToNeutralize));
+    });
+
+    it("Users should be able to call the permit method on QTokens through actions in meta transactions", async () => {
+      const value = ethers.utils.parseEther("1");
+      const qToken = qTokenPut1400;
+      const owner = deployer.address;
+      const spender = secondAccount.address;
+
+      const digest = await getApprovalDigest(
+        qToken,
+        { owner, spender, value },
+        await qToken.nonces(owner),
+        ethers.BigNumber.from(deadline)
+      );
+
+      const { v, r, s } = ecsign(
+        Buffer.from(digest.slice(2), "hex"),
+        Buffer.from(deployer.privateKey.slice(2), "hex")
+      );
+
+      const actions = [
+        encodeQTokenPermitArgs({
+          qToken: qTokenPut1400.address,
+          owner,
+          spender,
+          value: value.toString(),
+          deadline: deadline.toString(),
+          v,
+          r: ethers.utils.hexlify(r),
+          s: ethers.utils.hexlify(s),
+        }),
+      ];
+
+      const txData = getSignedTransactionData(
+        nonce,
+        deadline,
+        deployer,
+        actions,
+        controller.address
+      );
+
+      expect(await qToken.allowance(owner, spender)).to.equal(Zero);
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .executeMetaTransaction(
+            { nonce, deadline, from: deployer.address, actions },
+            txData.r,
+            txData.s,
+            txData.v
+          )
+      )
+        .to.emit(qToken, "Approval")
+        .withArgs(owner, spender, value);
+
+      expect(await qToken.allowance(owner, spender)).to.equal(value);
+    });
+
+    it("Users should be able to set the approval on the CollateralToken through actions in meta transactions", async () => {
+      const owner = deployer.address;
+      const operator = secondAccount.address;
+      const approved = true;
+      const collateralTokenNonce = (
+        await collateralToken.nonces(owner)
+      ).toString();
+
+      const { v, r, s } = getApprovalForAllSignedData(
+        parseInt(collateralTokenNonce),
+        deployer,
+        operator,
+        approved,
+        deadline,
+        collateralToken.address
+      );
+
+      const actions = [
+        encodeCollateralTokenApprovalArgs({
+          owner,
+          operator,
+          approved,
+          nonce: collateralTokenNonce,
+          deadline: deadline.toString(),
+          v,
+          r,
+          s,
+        }),
+      ];
+
+      const txData = getSignedTransactionData(
+        nonce,
+        deadline,
+        deployer,
+        actions,
+        controller.address
+      );
+
+      expect(await collateralToken.isApprovedForAll(owner, operator)).to.equal(
+        false
+      );
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .executeMetaTransaction(
+            { nonce, deadline, from: deployer.address, actions },
+            txData.r,
+            txData.s,
+            txData.v
+          )
+      )
+        .to.emit(collateralToken, "ApprovalForAll")
+        .withArgs(owner, operator, true);
+
+      expect(await collateralToken.isApprovedForAll(owner, operator)).to.equal(
+        true
+      );
     });
 
     it("Users should be able to call external functions through meta transactions", async () => {
