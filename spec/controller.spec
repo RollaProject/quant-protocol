@@ -59,7 +59,8 @@ methods {
 	burnCollateralToken(address,uint256,uint256) => DISPATCHER(true)
 	//balanceOf(address, uint256) => DISPATCHER(true)
 	idToInfo(uint256) => DISPATCHER(true)
-	collateralToken.getCollateralTokenId(address,address) returns (uint256) envfree => DISPATCHER(true)
+	collateralToken.getCollateralTokenId(address p,address q) returns (uint256) envfree => ghost_collateral(p,q)
+
 	collateralToken.getTokenSupplies(uint) returns (uint) envfree
 	//getCollateralTokenInfoTokenAddress(uint256) returns (address)  => DISPATCHER(true)
     collateralToken.getCollateralTokenInfoTokenAddress(uint) returns (address) envfree
@@ -88,7 +89,11 @@ methods {
 // This ghost represents the sum of all deposits to user
 // sumDeposits(s) := sum(...[s].deposits[member] for all addresses member)
 
-
+// A ghost to represent the uniqueness of collateralTokenId for each pair of qTokens
+ghost ghost_collateral(address , address) returns uint; //`{
+	//axiom forall uint256 p1. forall uint256 q1. forall uint256 p2. forall uint256 q2.
+    //     (p1 != p2 || q1 != q2)  => ghost_collateral(p1,q1) != ghost_collateral(p2,q2);
+//}
 
 
 ////////////////////////////////////////////////////////////////////////////
