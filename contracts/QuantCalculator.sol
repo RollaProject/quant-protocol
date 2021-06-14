@@ -45,7 +45,6 @@ contract QuantCalculator is IQuantCalculator {
         optionsFactory = _optionsFactory;
     }
 
-    //TODO: msgSender balanceOf should be moved to controller
     function calculateClaimableCollateral(
         uint256 _collateralTokenId,
         uint256 _amount,

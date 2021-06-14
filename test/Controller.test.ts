@@ -1248,7 +1248,6 @@ describe("Controller", async () => {
       );
     });
 
-    //TODO: COPIED THIS TEST CASE FROM ABOVE... NEED TO WRITE PROPERLY...
     it("Users should be able to neutralize some of their position, and get the long QToken back from a spread when the collateral requirement is 0", async () => {
       const optionsAmount = ethers.utils.parseEther("5");
       const amountToNeutralize = ethers.utils.parseEther("3");
