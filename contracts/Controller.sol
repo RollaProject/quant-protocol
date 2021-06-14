@@ -57,6 +57,12 @@ contract Controller is
                 _claimCollateral(action.parseClaimCollateralArgs());
             } else if (_equalStrings(actionType, "NEUTRALIZE")) {
                 _neutralizePosition(action.parseNeutralizeArgs());
+            } else if (_equalStrings(actionType, "QTOKEN_PERMIT")) {
+                _qTokenPermit(action.parseQTokenPermitArgs());
+            } else if (_equalStrings(actionType, "COLLATERAL_TOKEN_APPROVAL")) {
+                _collateralTokenApproval(
+                    action.parseCollateralTokenApprovalArgs()
+                );
             } else {
                 require(
                     _equalStrings(actionType, "CALL"),
@@ -343,6 +349,33 @@ contract Controller is
             collateralOwed,
             collateralType,
             qTokenLong
+        );
+    }
+
+    function _qTokenPermit(Actions.QTokenPermitArgs memory _args) internal {
+        IQToken(_args.qToken).permit(
+            _args.owner,
+            _args.spender,
+            _args.value,
+            _args.deadline,
+            _args.v,
+            _args.r,
+            _args.s
+        );
+    }
+
+    function _collateralTokenApproval(
+        Actions.CollateralTokenApprovalArgs memory _args
+    ) internal {
+        IOptionsFactory(optionsFactory).collateralToken().metaSetApprovalForAll(
+            _args.owner,
+            _args.operator,
+            _args.approved,
+            _args.nonce,
+            _args.deadline,
+            _args.v,
+            _args.r,
+            _args.s
         );
     }
 
