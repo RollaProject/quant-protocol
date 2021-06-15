@@ -158,12 +158,6 @@ rule checkPutCollateralRequirement2(uint256 mintStrikePrice1,
                                     uint256 mintStrikePrice2,
                                     uint256 collateralStrikePrice) {
 
-   // since Strike Prices are USDCs, they have a decimal value of 6
-   // i.e. there value can be from 0 to 999999
-   require mintStrikePrice1 < 10^6;
-   require mintStrikePrice2 < 10^6;
-   require collateralStrikePrice < 10^6;
-
    // since we need to check the behaviour as the mintStrikePrice decreases
    require mintStrikePrice1 > mintStrikePrice2;
 
@@ -181,15 +175,7 @@ rule checkCallCollateralRequirement(uint256 mintStrikePrice,
                                     uint256 collateralStrikePrice2,
                                     uint8 underlyingDecimals) {
 
-    // since Strike Prices are USDCs, they have a decimal value of 6
-    // i.e. there value can be from 0 to 999999
-    require mintStrikePrice < 10^6;
-    require collateralStrikePrice1 < 10^6;
-    require collateralStrikePrice2 < 10^6;
-
-    // to have precise approximation and
-    // to avoid division - set underlyingDecimals = Base decimals
-    require underlyingDecimals == 27;
+    require underlyingDecimals == 6;
 
     // since we are only concerned about call spreads, make
     // sure both collateral strike prices are greater than 0
@@ -214,12 +200,6 @@ rule checkCallCollateralRequirement2(uint256 mintStrikePrice1,
                                     uint256 mintStrikePrice2,
                                     uint256 collateralStrikePrice,
                                     uint8 underlyingDecimals) {
-
-    // since Strike Prices are USDCs, they have a decimal value of 6
-    // i.e. there value can be from 0 to 999999
-    require mintStrikePrice1 < 10^6;
-    require mintStrikePrice2 < 10^6;
-    require collateralStrikePrice < 10^6;
 
     // since we need to check the behavior as the mintStrikePrice increases
     require mintStrikePrice1 < mintStrikePrice2;
