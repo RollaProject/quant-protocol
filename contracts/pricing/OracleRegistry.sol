@@ -21,9 +21,6 @@ contract OracleRegistry is IOracleRegistry {
     /// @inheritdoc IOracleRegistry
     address[] public override oracles;
 
-    /// @dev the oracle id of the last added oracle, if there is one. oracles start at id of 1
-    uint256 private _currentId; //TODO: Can just use oracles.length
-
     /// @inheritdoc IOracleRegistry
     IQuantConfig public override config;
 
@@ -47,15 +44,16 @@ contract OracleRegistry is IOracleRegistry {
         );
 
         oracles.push(_oracle);
-        _currentId = _currentId.add(1);
 
-        emit AddedOracle(_oracle, _currentId);
+        uint256 currentId = oracles.length;
+
+        emit AddedOracle(_oracle, currentId);
 
         // TODO: Test this
         config.grantRole(config.quantRoles("PRICE_SUBMITTER_ROLE"), _oracle);
 
-        oracleInfo[_oracle] = OracleInfo(false, _currentId);
-        return oracles.length;
+        oracleInfo[_oracle] = OracleInfo(false, currentId);
+        return currentId;
     }
 
     /// @inheritdoc IOracleRegistry
