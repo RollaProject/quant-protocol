@@ -173,4 +173,18 @@ describe("OracleRegistry", () => {
       "OracleRegistry: Only an oracle admin can add an oracle"
     );
   });
+
+  it("Should grant the PRICE_SUBMITTER_ROLE to oracles when their added to the registry", async () => {
+    const priceSubmitterRole = ethers.utils.id("PRICE_SUBMITTER_ROLE");
+
+    expect(await quantConfig.hasRole(priceSubmitterRole, oracleOne)).to.equal(
+      false
+    );
+
+    await oracleProviderRegistry.connect(oracleManager).addOracle(oracleOne);
+
+    expect(await quantConfig.hasRole(priceSubmitterRole, oracleOne)).to.equal(
+      true
+    );
+  });
 });

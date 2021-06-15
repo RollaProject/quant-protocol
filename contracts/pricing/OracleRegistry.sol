@@ -49,7 +49,6 @@ contract OracleRegistry is IOracleRegistry {
 
         emit AddedOracle(_oracle, currentId);
 
-        // TODO: Test this
         config.grantRole(config.quantRoles("PRICE_SUBMITTER_ROLE"), _oracle);
 
         oracleInfo[_oracle] = OracleInfo(false, currentId);
