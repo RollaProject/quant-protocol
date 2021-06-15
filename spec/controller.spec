@@ -251,10 +251,21 @@ rule MintOptionsCorrectness(uint256 collateralTokenId, uint amount){
 	uint totalSupplyColTokenAfter = collateralToken.getTokenSupplies(collateralTokenId);
 	require balanceOfqTokenAfter <= totalSupplyqTokenAfter &&
 			balanceOfcolTokenAfter <= totalSupplyColTokenAfter;
+	require amount < 1000 &&
+			balanceOfqTokenBefore < 1000 &&
+			totalSupplyqTokenBefore < 1000 &&
+			balanceOfcolTokenBefore < 1000 &&
+			totalSupplyColTokenBefore < 1000 &&
+			balanceOfqTokenAfter < 1000 &&
+			totalSupplyqTokenAfter < 1000 &&
+			balanceOfcolTokenAfter < 1000 &&
+			totalSupplyColTokenAfter < 1000;
 	assert (balanceOfqTokenAfter == balanceOfqTokenBefore + amount &&
 		   totalSupplyqTokenAfter == totalSupplyqTokenBefore + amount &&
-		   balanceOfcolTokenAfter == balanceOfcolTokenBefore + amount &&
-		   totalSupplyColTokenAfter == totalSupplyColTokenBefore + amount);
+		   balanceOfcolTokenAfter >= balanceOfcolTokenBefore &&
+		   totalSupplyColTokenAfter >= totalSupplyColTokenBefore);
+		   //balanceOfcolTokenAfter == balanceOfcolTokenBefore + amount &&
+		   //totalSupplyColTokenAfter == totalSupplyColTokenBefore + amount);
 }
 
 /* 	Rule: Mint options collateral correctness
@@ -321,10 +332,27 @@ rule solvencyUser(uint collateralTokenId, method f){
 
 	uint balanceUserAfter = getTokenBalanceOf(e,asset,e.msg.sender);
 	uint balanceColAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
-	assert (balanceUserBefore + balanceColBefore == balanceUserAfter + balanceColAfter +1);
+	require amount < 1000 &&
+			balanceUserBefore < 1000 &&
+			balanceColBefore < 1000 &&
+			balanceUserAfter < 1000 &&
+			balanceColAfter < 1000;
+	assert (balanceUserBefore + balanceColBefore == balanceUserAfter + balanceColAfter);
 }
-
-
+/*
+rule After_Exercise(address qToken, uint256 amount){
+	env e;
+	exercise(qToken, amount);
+}
+rule After_claimCollateral(uint256 collateralTokenId, uint256 amount){
+	env e;
+	claimCollateral(collateralTokenId, amount);
+}
+rule After_mintSpread(address qToken,address qTokenForCollateral,uint256 amount){
+	env e;
+	mintSpread(qToken, qTokenForCollateral, amount);
+}
+*/
 /* 
 	Rule: Inverse
 
