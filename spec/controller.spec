@@ -15,7 +15,7 @@ using QTokenA as qTokenA
 using QTokenB as qTokenB
 using OptionsFactory as optionsFactory
 using CollateralTokenHarness as collateralToken
-
+using QuantCalculatorHarness as quantCalculator
 ////////////////////////////////////////////////////////////////////////////
 //                      Methods                                           //
 ////////////////////////////////////////////////////////////////////////////
@@ -60,7 +60,7 @@ methods {
 	//balanceOf(address, uint256) => DISPATCHER(true)
 	idToInfo(uint256) => DISPATCHER(true)
 	collateralToken.getCollateralTokenId(address p,address q) returns (uint256) envfree => ghost_collateral(p,q)
-
+	quantCalculator.qTokenToCollateralType(address) returns (address) envfree
 	collateralToken.getTokenSupplies(uint) returns (uint) envfree
 	//getCollateralTokenInfoTokenAddress(uint256) returns (address)  => DISPATCHER(true)
     collateralToken.getCollateralTokenInfoTokenAddress(uint) returns (address) envfree
@@ -133,7 +133,8 @@ rule validQtoken(method f)
 	require qToken != collateralToken.getCollateralTokenInfoTokenAsCollateral(collateralTokenId);
 	// some functions do not take qToken as input so there is no check
 	uint256 totalSupplyBefore = qTokenA.totalSupply();
-	callFunctionWithParams(qToken, qTokenForCollateral, collateralTokenId, to, amount, f);
+	address xxx; // doesn't matter
+	callFunctionWithParams(xxx, qToken, qTokenForCollateral, collateralTokenId, to, amount, f);
 	// any change to the total supply of a qToken should be to a validQtoken
 	assert totalSupplyBefore != qTokenA.totalSupply() => optionsFactory.isQToken(qToken);   
 }
@@ -231,21 +232,29 @@ rule ratio_after_neutralize(uint256 collateralTokenId, uint256 amount, address q
 rule MintOptionsCorrectness(uint256 collateralTokenId, uint amount){
 	env e;
 	address qToken = qTokenA;
-	address qTokenLong = 0;
-	require collateralTokenId == collateralToken.getCollateralTokenId(qToken, qTokenLong);
+	//address qTokenLong = 0;
+	//require collateralTokenId == collateralToken.getCollateralTokenId(qToken, qTokenLong);
+	require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	//require quantCalculator.qTokenToCollateralType(qToken) == collateralToken;
+	require ghost_collateral(qToken,0) == collateralTokenId;
+	require qTokenA.isCall(e);
 	uint balanceOfqTokenBefore = qTokenA.balanceOf(e,e.msg.sender);
 	uint totalSupplyqTokenBefore = qTokenA.totalSupply();
 	uint balanceOfcolTokenBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
-	uint totalSupplyOfcolTokenBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
+	uint totalSupplyColTokenBefore = collateralToken.getTokenSupplies(collateralTokenId);
+	require balanceOfqTokenBefore <= totalSupplyqTokenBefore &&
+			balanceOfcolTokenBefore <= totalSupplyColTokenBefore;
 		mintOptionsPosition(e,e.msg.sender,qTokenA,amount);
 	uint balanceOfqTokenAfter = qTokenA.balanceOf(e,e.msg.sender);
 	uint totalSupplyqTokenAfter = qTokenA.totalSupply();
 	uint balanceOfcolTokenAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
-	uint totalSupplyOfcolTokenAfter = collateralToken.getTokenSupplies(collateralTokenId);
+	uint totalSupplyColTokenAfter = collateralToken.getTokenSupplies(collateralTokenId);
+	require balanceOfqTokenAfter <= totalSupplyqTokenAfter &&
+			balanceOfcolTokenAfter <= totalSupplyColTokenAfter;
 	assert (balanceOfqTokenAfter == balanceOfqTokenBefore + amount &&
 		   totalSupplyqTokenAfter == totalSupplyqTokenBefore + amount &&
 		   balanceOfcolTokenAfter == balanceOfcolTokenBefore + amount &&
-		   totalSupplyOfcolTokenAfter == totalSupplyOfcolTokenBefore + amount);
+		   totalSupplyColTokenAfter == totalSupplyColTokenBefore + amount);
 }
 
 /* 	Rule: Mint options collateral correctness
@@ -277,10 +286,11 @@ rule MintOptionsColCorrectness(uint collateralTokenId, uint amount){
 	env e;
 	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	require qToken == qTokenA;
-	uint    balanceControlerBefore = 0;
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+	uint    balanceControlerBefore = 0;//IQToken(asset).balanceOf(e,currentContract);
 	uint    balanceUserBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 	mintOptionsPosition(e, e.msg.sender, qTokenA, amount);
-	uint    balanceControlerAfter = 0;
+	uint    balanceControlerAfter = 0;//IQToken(asset).balanceOf(e,currentContract);
 	uint    balanceUserAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
 	assert (balanceControlerAfter - balanceControlerBefore ==
 			balanceUserBefore - balanceUserAfter);
@@ -299,14 +309,19 @@ rule solvencyUser(uint collateralTokenId, method f){
 	
 	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	require qToken == qTokenA;
-	uint balanceUserBefore = qTokenA.balanceOf(e,e.msg.sender); //collateral.blanceOf(e.msg.sender)
+	require ghost_collateral(qToken,0) == collateralTokenId;
+	require qTokenA.isCall(e);
+	address asset = qTokenA.underlyingAsset(e);
+	require e.msg.sender != currentContract;//check if allowed
+	uint balanceUserBefore = getTokenBalanceOf(e,asset,e.msg.sender);
 	uint balanceColBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 
-	callFunctionWithParams(qToken, qTokenFroCollateral, collateralTokenId, to, amount, f);
+	//callFunctionWithParams(e.msg.sender, qToken, qTokenFroCollateral, collateralTokenId, to, amount, f);
+	mintOptionsPosition(e,e.msg.sender,qTokenA,amount);
 
-	uint balanceUserAfter = qTokenA.balanceOf(e,e.msg.sender);
+	uint balanceUserAfter = getTokenBalanceOf(e,asset,e.msg.sender);
 	uint balanceColAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
-	assert (balanceUserBefore + balanceColBefore == balanceUserAfter + balanceColAfter);
+	assert (balanceUserBefore + balanceColBefore == balanceUserAfter + balanceColAfter +1);
 }
 
 
@@ -327,8 +342,9 @@ rule solvencyUser(uint collateralTokenId, method f){
 
 // easy to use dispatcher
 
-function callFunctionWithParams(address qToken, address qTokenFroCollateral, uint256 collateralTokenId, address to, uint256 amount, method f) {
+function callFunctionWithParams(address expectedSender, address qToken, address qTokenFroCollateral, uint256 collateralTokenId, address to, uint256 amount, method f) {
 	env e;
+	require e.msg.sender == expectedSender;
 
 	if (f.selector == exercise(address,uint256).selector) {
 		exercise(e, qToken, amount);
