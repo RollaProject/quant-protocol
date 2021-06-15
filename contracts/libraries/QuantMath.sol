@@ -58,12 +58,7 @@ library QuantMath {
         } else if (_decimals > _BASE_DECIMALS) {
             uint256 exp = _decimals.sub(_BASE_DECIMALS);
             fixedPoint = FixedPointInt((_a.div(10**exp)).uintToInt());
-        } else if (_decimals == 6) {
-            fixedPoint = FixedPointInt((_a.mul(1000000000000000000000)).uintToInt());
-        } else if (_decimals == 18) {
-            fixedPoint = FixedPointInt((_a.mul(1000000000)).uintToInt());
-        }
-        else {
+        } else {
             uint256 exp = _BASE_DECIMALS - _decimals;
             fixedPoint = FixedPointInt((_a.mul(10**exp)).uintToInt());
         }
