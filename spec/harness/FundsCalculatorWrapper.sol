@@ -15,7 +15,6 @@ contract FundsCalculatorWrapper {
     using SignedConverter for uint256;
 
     QuantMath.FixedPointInt internal collateralAmount;
-    QuantMath.FixedPointInt internal payoutOutput;
     FundsCalculator.OptionPayoutInput internal payoutInput;
 
     function setPayoutInput(
@@ -139,13 +138,5 @@ contract FundsCalculatorWrapper {
 
     function checkAleB(int256 _a, int256 _b) public returns (bool) {
         return _a <= _b;
-    }
-
-    function checkAeqB(int256 _a, int256 _b) public returns (bool) {
-        return _a == _b;
-    }
-
-    function checkAplusBeqC(int256 _a, int256 _b, int256 _c) public returns (bool) {
-        return _c == _a.add(_b);
     }
 }
