@@ -236,6 +236,7 @@ rule MintOptionsCorrectness(uint256 collateralTokenId, uint amount){
 	//require collateralTokenId == collateralToken.getCollateralTokenId(qToken, qTokenLong);
 	require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	//require quantCalculator.qTokenToCollateralType(qToken) == collateralToken;
+	require quantCalculator.qTokenToCollateralType(qToken) != qToken;
 	require ghost_collateral(qToken,0) == collateralTokenId;
 	require qTokenA.isCall(e);
 	uint balanceOfqTokenBefore = qTokenA.balanceOf(e,e.msg.sender);
@@ -324,13 +325,13 @@ rule solvencyUser(uint collateralTokenId, method f){
 	require qTokenA.isCall(e);
 	address asset = qTokenA.underlyingAsset(e);
 	require e.msg.sender != currentContract;//check if allowed
-	uint balanceUserBefore = getTokenBalanceOf(e,asset,e.msg.sender);
+	uint balanceUserBefore = getTokenBalanceOf(e, asset, e.msg.sender);
 	uint balanceColBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 
 	//callFunctionWithParams(e.msg.sender, qToken, qTokenFroCollateral, collateralTokenId, to, amount, f);
 	mintOptionsPosition(e,e.msg.sender,qTokenA,amount);
 
-	uint balanceUserAfter = getTokenBalanceOf(e,asset,e.msg.sender);
+	uint balanceUserAfter = getTokenBalanceOf(e, asset, e.msg.sender);
 	uint balanceColAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 	require amount < 1000 &&
 			balanceUserBefore < 1000 &&
@@ -339,11 +340,20 @@ rule solvencyUser(uint collateralTokenId, method f){
 			balanceColAfter < 1000;
 	assert (balanceUserBefore + balanceColBefore == balanceUserAfter + balanceColAfter);
 }
-/*
+
 rule After_Exercise(address qToken, uint256 amount){
 	env e;
-	exercise(qToken, amount);
+	require qTokenA == qToken;
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+	uint balanceUserBefore = getTokenBalanceOf(e, asset, e.msg.sender);
+	uint balanceContractBefore = getTokenBalanceOf(e, asset, currentContract);
+	exercise(e,qToken, amount);
+	uint balanceUserAfter = getTokenBalanceOf(e, asset, e.msg.sender);
+	uint balanceContractAfter = getTokenBalanceOf(e, asset, currentContract);
+	assert balanceUserAfter - balanceUserBefore ==
+		   balanceContractAfter - balanceContractBefore;
 }
+/*
 rule After_claimCollateral(uint256 collateralTokenId, uint256 amount){
 	env e;
 	claimCollateral(collateralTokenId, amount);
