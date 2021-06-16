@@ -62,7 +62,7 @@ methods {
    	strikeAsset() returns (address) => DISPATCHER(true)
    	strikePrice() returns (uint256) => DISPATCHER(true)
    	expiryTime() returns (uint256) => DISPATCHER(true)
-   	isCall() returns (bool) => ALWAYS(0)
+   	isCall() returns (bool) => NONDET
 
    	// Ghost function for division
    	computeDivision(int256 c, int256 m) returns (int256) =>
