@@ -2,13 +2,12 @@ import GnosisSafeL2Artifact from "@gnosis.pm/safe-contracts/build/artifacts/cont
 import GnosisSafeProxyFactoryArtifact from "@gnosis.pm/safe-contracts/build/artifacts/contracts/proxies/GnosisSafeProxyFactory.sol/GnosisSafeProxyFactory.json";
 import { executeContractCallWithSigners } from "@gnosis.pm/safe-contracts/dist/utils/execution";
 import { calculateProxyAddress } from "@gnosis.pm/safe-contracts/dist/utils/proxies";
-import { Wallet } from "ethers";
+import { Contract, Wallet } from "ethers";
 import { ethers, upgrades } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import { ConfigTimelockController, QuantConfig } from "../../../typechain";
 import { expect, provider } from "../../setup";
 import { revertToSnapshot, takeSnapshot } from "../../testUtils";
-import { GnosisSafeL2 } from "./types";
 
 const { AddressZero, Zero } = ethers.constants;
 
@@ -17,8 +16,8 @@ describe("GnosisSafeL2 integration tests", () => {
   let user1: Wallet;
   let user2: Wallet;
   let user3: Wallet;
-  let gnosisSafeL2: GnosisSafeL2;
-  let quantMultisig: GnosisSafeL2;
+  let gnosisSafeL2;
+  let quantMultisig: Contract;
   let gnosisSafeProxyFactory;
   let owners: Array<string>;
   let configTimelockController: ConfigTimelockController;
@@ -46,7 +45,7 @@ describe("GnosisSafeL2 integration tests", () => {
     );
 
     // singleton to be used by the Proxy Factory to create a new Safe (multisig)
-    gnosisSafeL2 = <GnosisSafeL2>await GnosisSafeL2.deploy();
+    gnosisSafeL2 = await GnosisSafeL2.deploy();
 
     const GnosisSafeProxyFactory = new ethers.ContractFactory(
       GnosisSafeProxyFactoryArtifact.abi,
