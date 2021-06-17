@@ -68,8 +68,16 @@ describe("OracleRegistry", () => {
       false
     );
 
-    await oracleProviderRegistry.connect(oracleManager).addOracle(oracleOne);
-    await oracleProviderRegistry.connect(oracleManager).addOracle(oracleTwo);
+    await expect(
+      oracleProviderRegistry.connect(oracleManager).addOracle(oracleOne)
+    )
+      .to.emit(oracleProviderRegistry, "AddedOracle")
+      .withArgs(ethers.utils.getAddress(oracleOne), ethers.BigNumber.from("1"));
+    await expect(
+      oracleProviderRegistry.connect(oracleManager).addOracle(oracleTwo)
+    )
+      .to.emit(oracleProviderRegistry, "AddedOracle")
+      .withArgs(ethers.utils.getAddress(oracleTwo), ethers.BigNumber.from("2"));
     expect(await oracleProviderRegistry.getOraclesLength()).to.equal(2);
     expect(await oracleProviderRegistry.getOracleId(oracleOne)).to.equal(1);
     expect(await oracleProviderRegistry.getOracleId(oracleTwo)).to.equal(2);

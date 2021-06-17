@@ -10,6 +10,15 @@ interface IOptionsRegistry {
         bool isVisible;
     }
 
+    event NewOption(address underlyingAsset, address qToken, uint256 index);
+
+    event OptionVisibilityChanged(
+        address underlyingAsset,
+        address qToken,
+        uint256 index,
+        bool isVisible
+    );
+
     function addOption(address _qToken) external;
 
     function makeOptionVisible(address _qToken, uint256 index) external;

@@ -2684,13 +2684,21 @@ describe("Controller", async () => {
         collateralAmount
       );
 
-      await controller
-        .connect(secondAccount)
-        .executeMetaTransaction(
-          { nonce, deadline, from: deployer.address, actions },
-          txData.r,
-          txData.s,
-          txData.v
+      await expect(
+        controller
+          .connect(secondAccount)
+          .executeMetaTransaction(
+            { nonce, deadline, from: deployer.address, actions },
+            txData.r,
+            txData.s,
+            txData.v
+          )
+      )
+        .to.emit(controller, "MetaTransactionExecuted")
+        .withArgs(
+          deployer.address,
+          secondAccount.address,
+          await (await controller.getNonce(deployer.address)).add(1)
         );
 
       expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
@@ -2734,13 +2742,21 @@ describe("Controller", async () => {
         .connect(optionsMinter)
         .mint(deployer.address, amount);
 
-      await controller
-        .connect(secondAccount)
-        .executeMetaTransaction(
-          { nonce, deadline, from: deployer.address, actions },
-          txData.r,
-          txData.s,
-          txData.v
+      await expect(
+        controller
+          .connect(secondAccount)
+          .executeMetaTransaction(
+            { nonce, deadline, from: deployer.address, actions },
+            txData.r,
+            txData.s,
+            txData.v
+          )
+      )
+        .to.emit(controller, "MetaTransactionExecuted")
+        .withArgs(
+          deployer.address,
+          secondAccount.address,
+          await (await controller.getNonce(deployer.address)).add(1)
         );
 
       expect(await qTokenCall3520.balanceOf(deployer.address)).to.equal(
@@ -2813,13 +2829,21 @@ describe("Controller", async () => {
         controller.address
       );
 
-      await controller
-        .connect(secondAccount)
-        .executeMetaTransaction(
-          { nonce, deadline, from: deployer.address, actions },
-          txData.r,
-          txData.s,
-          txData.v
+      await expect(
+        controller
+          .connect(secondAccount)
+          .executeMetaTransaction(
+            { nonce, deadline, from: deployer.address, actions },
+            txData.r,
+            txData.s,
+            txData.v
+          )
+      )
+        .to.emit(controller, "MetaTransactionExecuted")
+        .withArgs(
+          deployer.address,
+          secondAccount.address,
+          await (await controller.getNonce(deployer.address)).add(1)
         );
 
       expect(await USDC.balanceOf(deployer.address)).to.equal(payoutAmount);
@@ -2907,13 +2931,21 @@ describe("Controller", async () => {
         controller.address
       );
 
-      await controller
-        .connect(secondAccount)
-        .executeMetaTransaction(
-          { nonce, deadline, from: deployer.address, actions },
-          txData.r,
-          txData.s,
-          txData.v
+      await expect(
+        controller
+          .connect(secondAccount)
+          .executeMetaTransaction(
+            { nonce, deadline, from: deployer.address, actions },
+            txData.r,
+            txData.s,
+            txData.v
+          )
+      )
+        .to.emit(controller, "MetaTransactionExecuted")
+        .withArgs(
+          deployer.address,
+          secondAccount.address,
+          await (await controller.getNonce(deployer.address)).add(1)
         );
 
       const collateralClaimed = await payoutAsset.balanceOf(deployer.address);
@@ -2992,13 +3024,21 @@ describe("Controller", async () => {
         controller.address
       );
 
-      await controller
-        .connect(secondAccount)
-        .executeMetaTransaction(
-          { nonce, deadline, from: deployer.address, actions },
-          txData.r,
-          txData.s,
-          txData.v
+      await expect(
+        controller
+          .connect(secondAccount)
+          .executeMetaTransaction(
+            { nonce, deadline, from: deployer.address, actions },
+            txData.r,
+            txData.s,
+            txData.v
+          )
+      )
+        .to.emit(controller, "MetaTransactionExecuted")
+        .withArgs(
+          deployer.address,
+          secondAccount.address,
+          await (await controller.getNonce(deployer.address)).add(1)
         );
 
       expect(await qTokenPut1400.balanceOf(deployer.address)).to.equal(
@@ -3166,14 +3206,24 @@ describe("Controller", async () => {
       );
       expect(await optionsFactory.isQToken(targetQTokenAddress)).to.be.false;
 
-      await controller
-        .connect(secondAccount)
-        .executeMetaTransaction(
-          { nonce, deadline, from: deployer.address, actions },
-          txData.r,
-          txData.s,
-          txData.v
-        );
+      const OperateProxy = await ethers.getContractFactory(
+        "OperateProxy",
+        deployer
+      );
+      const operateProxy = OperateProxy.attach(await controller.operateProxy());
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .executeMetaTransaction(
+            { nonce, deadline, from: deployer.address, actions },
+            txData.r,
+            txData.s,
+            txData.v
+          )
+      )
+        .to.emit(operateProxy, "FunctionCallExecuted")
+        .withArgs(secondAccount.address, "0x");
 
       expect(await optionsFactory.getOptionsLength()).to.equal(
         optionsLength.add(1)

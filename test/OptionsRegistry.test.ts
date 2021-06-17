@@ -37,7 +37,9 @@ describe("OptionsRegistry", () => {
       await optionsRegistry.numberOfOptionsForUnderlying(mockUnderlyingAsset)
     ).to.equal(0);
 
-    await optionsRegistry.connect(admin).addOption(qToken.address);
+    await expect(optionsRegistry.connect(admin).addOption(qToken.address))
+      .to.emit(optionsRegistry, "NewOption")
+      .withArgs(mockUnderlyingAsset, qToken.address, 0);
 
     //check there's an underlying now
     expect(await optionsRegistry.numberOfUnderlyingAssets()).to.equal(1);
@@ -45,7 +47,9 @@ describe("OptionsRegistry", () => {
       (await optionsRegistry.getOptionDetails(mockUnderlyingAsset, 0))[0]
     ).to.equal(qToken.address);
 
-    await optionsRegistry.connect(admin).addOption(qTokenTwo.address);
+    await expect(optionsRegistry.connect(admin).addOption(qTokenTwo.address))
+      .to.emit(optionsRegistry, "NewOption")
+      .withArgs(mockUnderlyingAsset, qTokenTwo.address, 1);
 
     expect(await optionsRegistry.numberOfUnderlyingAssets()).to.equal(1);
     expect(
@@ -82,9 +86,13 @@ describe("OptionsRegistry", () => {
       )[1]
     ).to.equal(false);
 
-    await optionsRegistry
-      .connect(secondAccount)
-      .makeOptionVisible(qToken.address, 0);
+    await expect(
+      optionsRegistry
+        .connect(secondAccount)
+        .makeOptionVisible(qToken.address, 0)
+    )
+      .to.emit(optionsRegistry, "OptionVisibilityChanged")
+      .withArgs(mockUnderlyingAsset, qToken.address, 0, true);
 
     expect(
       await (
@@ -92,9 +100,13 @@ describe("OptionsRegistry", () => {
       )[1]
     ).to.equal(true);
 
-    await optionsRegistry
-      .connect(secondAccount)
-      .makeOptionInvisible(qToken.address, 0);
+    await expect(
+      optionsRegistry
+        .connect(secondAccount)
+        .makeOptionInvisible(qToken.address, 0)
+    )
+      .to.emit(optionsRegistry, "OptionVisibilityChanged")
+      .withArgs(mockUnderlyingAsset, qToken.address, 0, false);
 
     expect(
       await (
