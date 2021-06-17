@@ -59,11 +59,12 @@ contract QuantCalculatorHarness is IQuantCalculator {
     {
         address x;
         uint y;
-        (x,y) = calcOriginal.getCollateralRequirement(_qTokenToMint,_qTokenForCollateral,_optionsFactory,_amount);
+        y = collateralRequirement[_qTokenToMint][_qTokenForCollateral][_amount];
         //if (IQToken(_qTokenToMint).isCall()) {y = _amount;}//Gadi
         return (qTokenToCollateralType[_qTokenToMint],y);
     }
     mapping (address => address) public qTokenToCollateralType;
+    mapping (address => mapping( address => mapping( uint256 => uint256) )) public collateralRequirement;
     
     function getExercisePayout(
         address _qToken,
