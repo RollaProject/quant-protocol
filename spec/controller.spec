@@ -60,7 +60,6 @@ methods {
 	//balanceOf(address, uint256) => DISPATCHER(true)
 	idToInfo(uint256) => DISPATCHER(true)
 	collateralToken.getCollateralTokenId(address p,address q) returns (uint256) envfree => ghost_collateral(p,q)
-	quantCalculator.qTokenToCollateralType(address) returns (address) envfree
 	collateralToken.getTokenSupplies(uint) returns (uint) envfree
 	//getCollateralTokenInfoTokenAddress(uint256) returns (address)  => DISPATCHER(true)
     collateralToken.getCollateralTokenInfoTokenAddress(uint) returns (address) envfree
@@ -69,10 +68,13 @@ methods {
 
 	// Computations
 	getNeutralizationPayout(address,address,uint256,address) => NONDET 
+	quantCalculator.collateralRequirement(address,address,uint256) returns uint256 envfree
+	quantCalculator.qTokenToCollateralType(address) returns (address) envfree
 
 
 	//ERC1155Receiver
 	onERC1155Received(address,address,uint256,uint256,bytes) => NONDET
+
 
 
 }
@@ -319,13 +321,18 @@ rule solvencyUser(uint collateralTokenId, method f){
 	address to;
 	uint256 amount;
 	
+	//setup qToken, collateralTokenID and underlying asset 
 	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	require qToken == qTokenA;
 	require ghost_collateral(qToken,0) == collateralTokenId;
-	//require qTokenA.isCall(e);
-	address asset = quantCalculator.qTokenToCollateralType(qToken);
-	require  asset != qToken;
+	address asset = qTokenA.underlyingAsset(e);
+	
+
+	require qTokenA.isCall(e);
+	require quantCalculator.collateralRequirement(qTokenA,0,amount) == amount;
+
 	require e.msg.sender != currentContract;//check if allowed
+	
 	uint balanceUserBefore = getTokenBalanceOf(e, asset, e.msg.sender);
 	uint balanceColBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 

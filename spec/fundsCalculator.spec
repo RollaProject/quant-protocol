@@ -2,7 +2,7 @@
     This is a specification file for smart contract verification with the Certora prover.
     For more information, visit: https://www.certora.com/
 
-    This file is run with scripts/...
+    This file is run with scripts/runFundsCalculator.sh
 	Assumptions:
 */
 
@@ -53,7 +53,6 @@ methods {
 
    checkAgeB(int256 _a, int256 _b) returns (bool) envfree;
    checkAleB(int256 _a, int256 _b) returns (bool) envfree;
-   checkAeqB(int256 _a, int256 _b) returns (bool) envfree;
 
    	// QToken methods to be called with one of the tokens (DummyERC20*, DummyWeth)
    	mint(address account, uint256 amount) => DISPATCHER(true)
@@ -62,7 +61,7 @@ methods {
    	strikeAsset() returns (address) => DISPATCHER(true)
    	strikePrice() returns (uint256) => DISPATCHER(true)
    	expiryTime() returns (uint256) => DISPATCHER(true)
-   	isCall() returns (bool) => ALWAYS(0)
+   	isCall() returns (bool) => NONDET
 
    	// Ghost function for division
    	computeDivision(int256 c, int256 m) returns (int256) =>
@@ -74,8 +73,6 @@ methods {
     transferFrom(address from, address to, uint256 amount) => DISPATCHER(true)
     transfer(address to, uint256 amount) => DISPATCHER(true)
 }
-
-definition SIGNED_INT_TO_MATHINT(int256 x) returns mathint = x >= 2^255 ? x - 2^256 : x;
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Ghost                                            //
@@ -104,8 +101,12 @@ ghost ghost_division(int256, int256) returns int256 {
 //                       Rules                                            //
 ////////////////////////////////////////////////////////////////////////////
 
-// Rule 1 - spreads require less collateral than minting options
-// checking internal function "getOptionCollateralRequirement"
+/*
+	Rule: Spreads require less collateral than minting options
+ 	Description: Minting spreads (for both calls and puts) require same or less collateral than minting options.
+	Formula:
+			spreadCollateral <= optionCollateral
+*/
 rule checkOptionCollateralRequirement(uint256 qTokenToMintStrikePrice,
                                       uint256 qTokenForCollateralStrikePrice,
                                       uint256 optionsAmount,
@@ -136,8 +137,12 @@ rule checkOptionCollateralRequirement(uint256 qTokenToMintStrikePrice,
    assert checkAleB(spreadCollateral, optionCollateral);
 }
 
-// Rule 3 - Put spreads require more collateral
-// as the collateral option token strike price decreases
+/*
+	Rule: Put collateral increases with decrease in collateral strike price
+ 	Description: Put spreads require same or more collateral as the collateral option token strike price decreases.
+	Formula:
+			collateralStrikePrice1 > collateralStrikePrice2 => collateralRequirement2 >= collateralRequirement1
+*/
 rule checkPutCollateralRequirement(uint256 mintStrikePrice,
                                     uint256 collateralStrikePrice1,
                                     uint256 collateralStrikePrice2) {
@@ -152,8 +157,12 @@ rule checkPutCollateralRequirement(uint256 mintStrikePrice,
    assert checkAgeB(collateralRequirement2, collateralRequirement1);
 }
 
-// Rule 5 - Put spreads require less collateral
-// as the mint option token strike price decreases
+/*
+	Rule: Put collateral decreases with decreases in mint strike price
+ 	Description: Put spreads require same or less collateral as the mint option token strike price decreases.
+	Formula:
+			mintStrikePrice1 > mintStrikePrice2 => collateralRequirement2 <= collateralRequirement1
+*/
 rule checkPutCollateralRequirement2(uint256 mintStrikePrice1,
                                     uint256 mintStrikePrice2,
                                     uint256 collateralStrikePrice) {
@@ -168,8 +177,15 @@ rule checkPutCollateralRequirement2(uint256 mintStrikePrice1,
    assert checkAleB(collateralRequirement2, collateralRequirement1);
 }
 
-// Rule 2 - Call spreads require more collateral
-// as the collateral option token strike price increases
+/*
+	Rule: Call spread collateral increases with increase in collateral strike price
+ 	Description: Call spreads require same or more collateral requirement as the collateral option token strike price increases.
+	Formula:
+			collateralStrikePrice1 > 0 &&
+			collateralStrikePrice2 > 0 &&
+			collateralStrikePrice1 < collateralStrikePrice2 => collateralRequirement2 >= collateralRequirement1
+
+*/
 rule checkCallCollateralRequirement(uint256 mintStrikePrice,
                                     uint256 collateralStrikePrice1,
                                     uint256 collateralStrikePrice2,
@@ -194,8 +210,13 @@ rule checkCallCollateralRequirement(uint256 mintStrikePrice,
     assert checkAgeB(collateralRequirement2, collateralRequirement1);
 }
 
-// Rule 4 - Call spreads require less collateral
-// as the mint option strike price increases
+/*
+	Rule: Call spread collateral decreases with increases in mint strike price
+ 	Description: Call spreads require same or less collateral requirement as the mint option strike price increases.
+	Formula:
+			mintStrikePrice1 < mintStrikePrice2 => collateralRequirement2 <= collateralRequirement1
+
+*/
 rule checkCallCollateralRequirement2(uint256 mintStrikePrice1,
                                     uint256 mintStrikePrice2,
                                     uint256 collateralStrikePrice,
@@ -213,7 +234,15 @@ rule checkCallCollateralRequirement2(uint256 mintStrikePrice1,
     assert checkAleB(collateralRequirement2, collateralRequirement1);
 }
 
-// getPayoutForPut:  assert (expiryPrice < payoutInput.strikePrice && amount > 0 <=> payoutAmount > 0)
+
+/*
+	Rule: Positive Put Payout
+ 	Description: Payout for Puts is positive if and only if strike price is greater than expiry price and
+ 	             options amount is greater than 0.
+	Formula:
+			payoutAmount > 0 <=> (strikePrice > expiryPrice) && (optionsAmount > 0)
+
+*/
 rule checkPayoutForPut(uint256 strikePrice,
                        uint256 expiryPrice,
                        uint256 amount,
@@ -229,7 +258,14 @@ rule checkPayoutForPut(uint256 strikePrice,
     assert payoutAmount > 0 <=> (strikePrice > expiryPrice) && (amount > 0);
 }
 
-// getPayoutForCall:  assert (payoutAmount > 0 => expiryPrice > payoutInput.strikePrice && amount > 0 )
+/*
+	Rule: Positive Call Payout
+ 	Description: If payout for a Call is positive, then expiry price must be greater than strike price and
+ 	             options amount must be positive.
+	Formula:
+			payoutAmount > 0 => (expiryPrice > strikePrice) && (optionsAmount > 0)
+
+*/
 rule checkPayoutForCall(uint256 strikePrice,
                        uint256 expiryPrice,
                        uint256 amount,
@@ -245,7 +281,14 @@ rule checkPayoutForCall(uint256 strikePrice,
     assert payoutAmount > 0 => (expiryPrice > strikePrice) && (amount > 0);
 }
 
-// getPayoutAmount: assert (expiryPrice == strikePrice || (amount == 0) => payoutAmount == 0)
+/*
+	Rule: Zero Payout amount
+ 	Description: If expiry price is equal to strike price of an option or options amount is zero, the
+ 	             payout amount then is also zero.
+	Formula:
+			(expiryPrice == strikePrice) || (amount == 0) => payoutAmount == 0
+
+*/
 rule checkPayoutAmount(uint256 strikePrice,
                        uint256 expiryPrice,
                        uint256 amount,
