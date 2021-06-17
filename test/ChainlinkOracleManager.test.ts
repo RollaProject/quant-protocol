@@ -368,6 +368,34 @@ describe("Chainlink Oracle Manager", async function () {
         deployChainlinkOracleManager
       );
     });
+
+    describe("isValidOption", () => {
+      it("Should return true regardless of the parameters that are passed", async () => {
+        const oracleManager = <ChainlinkOracleManager>(
+          await setUpTestWithMockAggregator(
+            deployChainlinkOracleManager,
+            mockConfig,
+            0
+          )
+        );
+
+        expect(
+          await oracleManager.isValidOption(
+            ethers.constants.AddressZero,
+            ethers.constants.Zero,
+            ethers.constants.Zero
+          )
+        ).to.equal(true);
+
+        expect(
+          await oracleManager.isValidOption(
+            ethers.Wallet.createRandom().address,
+            Math.floor(Math.random() * 1000000 + 1),
+            Math.floor(Math.random() * 1000000 + 1)
+          )
+        ).to.equal(true);
+      });
+    });
   });
 
   describe("ChainlinkFixedTimeOracleManager", () => {
