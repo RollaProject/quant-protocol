@@ -399,6 +399,18 @@ export type ActionArgs = {
   data: BytesLike;
 };
 
+export const takeSnapshot = async (): Promise<string> => {
+  const id: string = await provider.send("evm_snapshot", [
+    new Date().getTime(),
+  ]);
+
+  return id;
+};
+
+export const revertToSnapshot = async (id: string): Promise<void> => {
+  await provider.send("evm_revert", [id]);
+};
+
 export {
   deployCollateralToken,
   deployOptionsFactory,

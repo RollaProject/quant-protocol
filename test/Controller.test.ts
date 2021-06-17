@@ -43,6 +43,8 @@ import {
   getSignedTransactionData,
   mockERC20,
   name,
+  revertToSnapshot,
+  takeSnapshot,
   version,
 } from "./testUtils";
 
@@ -87,18 +89,6 @@ describe("Controller", async () => {
   const web3 = new Web3();
 
   const aMonth = 30 * 24 * 3600; // in seconds
-
-  const takeSnapshot = async (): Promise<string> => {
-    const id: string = await provider.send("evm_snapshot", [
-      new Date().getTime(),
-    ]);
-
-    return id;
-  };
-
-  const revertToSnapshot = async (id: string) => {
-    await provider.send("evm_revert", [id]);
-  };
 
   const getCollateralRequirement = async (
     qTokenToMint: QToken,
