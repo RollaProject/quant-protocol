@@ -1,6 +1,7 @@
-import { assert, expect } from "chai";
+import { assert } from "chai";
 import { ethers } from "hardhat";
 import { QuantMathTester } from "../typechain";
+import { expect } from "./setup";
 
 describe("QuantMath lib", () => {
   let lib: QuantMathTester;
