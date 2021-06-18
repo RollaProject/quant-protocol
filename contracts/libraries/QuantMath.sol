@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 /**
- * @title FixedPointInt256
+ * @title QuantMath
  * @notice FixedPoint library
  */
 library QuantMath {
