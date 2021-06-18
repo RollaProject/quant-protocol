@@ -383,6 +383,38 @@ rule After_mintSpread(address qToken,address qTokenForCollateral,uint256 amount)
 
 */
 
+rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFactory) {
+    env e;
+    uint256 returnableCollateral;
+    address collateralAsset;
+    uint256 amountToClaim;
+
+	//setup qToken, collateralTokenID and asset
+	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA;
+	require collateralToken.getCollateralTokenInfoTokenAsCollateral(collateralTokenId) == 0;
+	require ghost_collateral(qToken,0) == collateralTokenId;
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+
+    // token from calculateClaimableCollateral
+	returnableCollateral,
+	collateralAsset,
+	amountToClaim = quantCalculator.calculateClaimableCollateral(e, collateralTokenId, amount, optionsFactory, e.msg.sender);
+
+	// token from getExercisePayout
+	bool isSettled;
+    address payoutToken;
+    uint256 payoutAmount;
+
+    isSettled,
+    payoutToken,
+    payoutAmount = quantCalculator.getExercisePayout(e, qToken, optionsFactory, amount);
+
+    assert collateralAsset == payoutToken;
+
+    // get asset from getCollateralRequirement and check for equality.
+}
+
 ////////////////////////////////////////////////////////////////////////////
 //                       Helper Functions                                 //
 ////////////////////////////////////////////////////////////////////////////
