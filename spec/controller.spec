@@ -383,6 +383,8 @@ rule After_mintSpread(address qToken,address qTokenForCollateral,uint256 amount)
 
 */
 
+// getExercisePayout, getCollateralRequirement, calculateClaimableCollateral
+// return the same ERC20token for the same qtoken/collateralTokenID
 rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFactory) {
     env e;
     uint256 returnableCollateral;
