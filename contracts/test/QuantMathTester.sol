@@ -15,6 +15,22 @@ contract QuantMathTester {
         return QuantMath.fromUnscaledInt(a);
     }
 
+    function testFromScaledUint(uint256 a, uint256 decimals)
+        external
+        pure
+        returns (QuantMath.FixedPointInt memory)
+    {
+        return QuantMath.fromScaledUint(a, decimals);
+    }
+
+    function testToScaledUint(
+        QuantMath.FixedPointInt memory a,
+        uint256 decimals,
+        bool roundDown
+    ) external pure returns (uint256) {
+        return QuantMath.toScaledUint(a, decimals, roundDown);
+    }
+
     function testAdd(
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b

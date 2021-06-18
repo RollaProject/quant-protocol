@@ -308,4 +308,51 @@ describe("QuantMath lib", () => {
       );
     });
   });
+
+  describe("Test fromScaledUint", () => {
+    it("Should return a FixedPointInt with the same value that was passed if passing 27 decimals", async () => {
+      const a = ethers.utils.parseUnits("42", "27");
+      expect((await lib.testFromScaledUint(a, 27)).value).to.equal(a);
+    });
+
+    it("Should return a FixedPointInt with (x - 27) decimals if passing x decimals and x > 27", async () => {
+      const decimals = 40;
+      const a = ethers.utils.parseUnits("42", decimals.toString());
+      expect((await lib.testFromScaledUint(a, decimals)).value).to.equal(
+        a.div(10 ** (decimals - 27))
+      );
+    });
+
+    it("Should return a FixedPointInt with (27 - x) decimals if passing x decimals and x < 27", async () => {
+      const decimals = 20;
+      const a = ethers.utils.parseUnits("42", decimals.toString());
+      expect((await lib.testFromScaledUint(a, decimals)).value).to.equal(
+        a.mul(10 ** (27 - decimals))
+      );
+    });
+  });
+
+  describe("Test toScaledUint", () => {
+    it("Should return an uint with 27 decimals if passing that as the amount of decimals", async () => {
+      const decimals = "27";
+      const a = { value: ethers.utils.parseUnits("42", decimals) };
+      expect(await lib.testToScaledUint(a, decimals, false)).to.equal(a.value);
+    });
+
+    it("Should return an uint with (x - 27) decimals if passing x decimals and x > 27", async () => {
+      const decimals = 40;
+      const a = { value: ethers.utils.parseUnits("42", decimals.toString()) };
+      expect(await lib.testToScaledUint(a, decimals, false)).to.equal(
+        a.value.mul(10 ** (decimals - 27))
+      );
+    });
+
+    it("Should return an uint with (27 - x) decimals if passing x decimals and x < 27", async () => {
+      const decimals = 20;
+      const a = { value: ethers.utils.parseUnits("42", decimals.toString()) };
+      expect(await lib.testToScaledUint(a, decimals, false)).to.equal(
+        a.value.div(10 ** (27 - decimals))
+      );
+    });
+  });
 });
