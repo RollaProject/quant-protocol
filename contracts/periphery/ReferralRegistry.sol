@@ -46,15 +46,6 @@ contract ReferralRegistry {
         _createReferralCode(msg.sender, code);
     }
 
-    /// @notice Add referral code to registry
-    /// @param user The user which is claiming a code
-    /// @param code The code for the user to claim
-    function _createReferralCode(address user, bytes32 code) internal {
-        codeOwner[code] = user;
-        userCodes[msg.sender].push(code);
-        emit CreatedReferralCode(user, code);
-    }
-
     /// @notice Register to Quant using a referral code
     /// @param code The code for the user to sign up with
     function registerUserByReferralCode(bytes32 code) external {
@@ -71,26 +62,6 @@ contract ReferralRegistry {
         _registerUser(referrer, "");
     }
 
-    /// @notice Register a user in the system
-    /// @param referrer Address of the referrer
-    /// @param code Referral code used. Default code if no code used
-    function _registerUser(address referrer, bytes32 code) internal {
-        require(
-            userReferrer[msg.sender] == address(0),
-            "ReferralRegistry: cannot register twice"
-        );
-        require(referrer != msg.sender, "ReferralRegistry: cannot refer self");
-        userReferrer[msg.sender] = referrer;
-        emit NewUserRegistration(msg.sender, referrer, code);
-    }
-
-    /// @notice Check if a code has been claimed by another user
-    /// @param code the code to check
-    /// @return true if the code has been claimed otherwise false
-    function isCodeUsed(bytes32 code) public view returns (bool) {
-        return codeOwner[code] != address(0);
-    }
-
     /// @notice Check who a user is referred by
     /// @param user the user to get the referrer of
     function getReferrer(address user)
@@ -102,5 +73,34 @@ contract ReferralRegistry {
             userReferrer[user] != address(0)
                 ? userReferrer[user]
                 : defaultReferrer;
+    }
+
+    /// @notice Check if a code has been claimed by another user
+    /// @param code the code to check
+    /// @return true if the code has been claimed otherwise false
+    function isCodeUsed(bytes32 code) public view returns (bool) {
+        return codeOwner[code] != address(0);
+    }
+
+    /// @notice Add referral code to registry
+    /// @param user The user which is claiming a code
+    /// @param code The code for the user to claim
+    function _createReferralCode(address user, bytes32 code) internal {
+        codeOwner[code] = user;
+        userCodes[msg.sender].push(code);
+        emit CreatedReferralCode(user, code);
+    }
+
+    /// @notice Register a user in the system
+    /// @param referrer Address of the referrer
+    /// @param code Referral code used. Default code if no code used
+    function _registerUser(address referrer, bytes32 code) internal {
+        require(
+            userReferrer[msg.sender] == address(0),
+            "ReferralRegistry: cannot register twice"
+        );
+        require(referrer != msg.sender, "ReferralRegistry: cannot refer self");
+        userReferrer[msg.sender] = referrer;
+        emit NewUserRegistration(msg.sender, referrer, code);
     }
 }

@@ -8,7 +8,6 @@ import { ReferralRegistry } from "../typechain";
 const { deployContract } = waffle;
 
 describe("Referral Registry", () => {
-  let signers: SignerWithAddress[];
   let deployer: SignerWithAddress;
   let signer: SignerWithAddress;
   let signerTwo: SignerWithAddress;
@@ -19,7 +18,6 @@ describe("Referral Registry", () => {
   const dummyCode1 = formatBytes32String("test1");
   const dummyCode2 = formatBytes32String("test2");
   const dummyCode3 = formatBytes32String("test3");
-  const DEFAULT_CODE = formatBytes32String("0");
 
   before(async function () {
     [deployer, signer, signerTwo, defaultReferrer] = await ethers.getSigners();
