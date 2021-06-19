@@ -1,5 +1,5 @@
 module.exports = {
   testCommand: "hardhat test",
   compileCommand: "hardhat compile",
-  skipFiles: ["external/", "test/", "libraries/external"],
+  skipFiles: ["external/", "test/", "libraries/external", "timelock/TimelockController.sol"],
 };
