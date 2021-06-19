@@ -81,7 +81,7 @@ library Actions {
             "Actions: can only parse arguments for the minting of options"
         );
 
-        require(_args.amount != 0, "Actions cannot mint 0 options");
+        require(_args.amount != 0, "Actions: cannot mint 0 options");
 
         return
             MintOptionArgs({
