@@ -42,6 +42,10 @@ contract QuantConfig is
 
         protocolAddresses[_protocolAddress] = _newValue;
         configuredProtocolAddresses.push(_protocolAddress);
+
+        if (_protocolAddress == ProtocolValue.encode("priceRegistry")) {
+            protocolBooleans[ProtocolValue.encode("isPriceRegistrySet")] = true;
+        }
     }
 
     function setProtocolUint256(bytes32 _protocolUint256, uint256 _newValue)
@@ -73,10 +77,7 @@ contract QuantConfig is
         override
         onlyOwner()
     {
-        bytes32 role = keccak256(abi.encodePacked(_protocolRole));
-        grantRole(role, _roleAdmin);
-        quantRoles[_protocolRole] = role;
-        configuredQuantRoles.push(role);
+        _setProtocolRole(_protocolRole, _roleAdmin);
     }
 
     function setRoleAdmin(bytes32 role, bytes32 adminRole)
@@ -84,7 +85,6 @@ contract QuantConfig is
         override
         onlyOwner()
     {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
         _setRoleAdmin(role, adminRole);
     }
 
@@ -122,15 +122,26 @@ contract QuantConfig is
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(DEFAULT_ADMIN_ROLE, _timelockController);
         // // On deployment, this role should be transferd to the OptionsFactory as its only admin
-        bytes32 optionsControllerRole = keccak256("OPTIONS_CONTROLLER_ROLE");
+        string memory optionsControllerRole = "OPTIONS_CONTROLLER_ROLE";
         // quantRoles["OPTIONS_CONTROLLER_ROLE"] = optionsControllerRole;
-        _setupRole(optionsControllerRole, _timelockController);
-        _setupRole(optionsControllerRole, _msgSender());
+        _setProtocolRole(optionsControllerRole, _timelockController);
+        _setProtocolRole(optionsControllerRole, _msgSender());
         // quantRoles.push(optionsControllerRole);
-        bytes32 oracleManagerRole = keccak256("ORACLE_MANAGER_ROLE");
+        string memory oracleManagerRole = "ORACLE_MANAGER_ROLE";
         // quantRoles["ORACLE_MANAGER_ROLE"] = oracleManagerRole;
-        _setupRole(oracleManagerRole, _timelockController);
-        _setupRole(oracleManagerRole, _msgSender());
+        _setProtocolRole(oracleManagerRole, _timelockController);
+        _setProtocolRole(oracleManagerRole, _msgSender());
         timelockController = _timelockController;
+    }
+
+    function _setProtocolRole(string memory _protocolRole, address _roleAdmin)
+        internal
+    {
+        bytes32 role = keccak256(abi.encodePacked(_protocolRole));
+        grantRole(role, _roleAdmin);
+        if (quantRoles[_protocolRole] == bytes32(0)) {
+            quantRoles[_protocolRole] = role;
+            configuredQuantRoles.push(role);
+        }
     }
 }
