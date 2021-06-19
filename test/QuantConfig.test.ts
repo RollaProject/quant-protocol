@@ -11,6 +11,8 @@ describe("QuantConfig", () => {
 
   const protocolFee = ethers.utils.id("fee");
 
+  const priceRegistry = ethers.utils.id("priceRegistry");
+
   beforeEach(async () => {
     [timelockController, secondAccount] = await ethers.getSigners();
     const QuantConfig = await ethers.getContractFactory("QuantConfig");
@@ -82,6 +84,97 @@ describe("QuantConfig", () => {
       .setProtocolUint256(protocolFee, ethers.BigNumber.from("400"));
     expect(await quantConfig.protocolUints256(protocolFee)).to.equal(
       ethers.BigNumber.from("400")
+    );
+  });
+
+  it("Should revert when trying to set the priceRegistry twice", async () => {
+    await quantConfig
+      .connect(timelockController)
+      .setProtocolAddress(priceRegistry, ethers.Wallet.createRandom().address);
+    await expect(
+      quantConfig.setProtocolAddress(
+        priceRegistry,
+        ethers.Wallet.createRandom().address
+      )
+    ).to.be.revertedWith("QuantConfig: priceRegistry can only be set once");
+  });
+
+  it("Should revert when trying to change isPriceRegistrySet after the priceRegistry had already been set once", async () => {
+    await quantConfig
+      .connect(timelockController)
+      .setProtocolAddress(priceRegistry, ethers.Wallet.createRandom().address);
+    await expect(
+      quantConfig.setProtocolBoolean(
+        ethers.utils.id("isPriceRegistrySet"),
+        false
+      )
+    ).to.be.revertedWith(
+      "QuantConfig: can only change isPriceRegistrySet once"
+    );
+  });
+
+  it("Should revert when trying to set a role admin with an unauthorized account", async () => {
+    await expect(
+      quantConfig
+        .connect(secondAccount)
+        .setRoleAdmin(
+          ethers.utils.id("PRICE_SUBMITTER_ROLE"),
+          ethers.utils.id("ORACLE_MANAGER_ROLE")
+        )
+    ).to.be.revertedWith("Ownable: caller is not the owner");
+  });
+
+  it("Should return the correct length for protocol value arrays", async () => {
+    const initialQuantRoles = 2; // there are 2 roles configured in the initialize method
+
+    expect(await quantConfig.protocolAddressesLength()).to.equal(0);
+    expect(await quantConfig.protocolUints256Length()).to.equal(0);
+    expect(await quantConfig.protocolBooleansLength()).to.equal(0);
+    expect(await quantConfig.quantRolesLength()).to.equal(initialQuantRoles);
+
+    const randomNumber = (): number => {
+      return Math.floor(Math.random() * 10 + 1);
+    };
+
+    const numAddresses = randomNumber();
+    for (let i = 0; i < numAddresses; i++) {
+      await quantConfig
+        .connect(timelockController)
+        .setProtocolAddress(
+          ethers.utils.id(`protocolAddress${i}`),
+          ethers.Wallet.createRandom().address
+        );
+    }
+
+    const numUints = randomNumber();
+    for (let i = 0; i < numUints; i++) {
+      await quantConfig
+        .connect(timelockController)
+        .setProtocolUint256(ethers.utils.id(`protocolUint${i}`), i);
+    }
+
+    const numBooleans = randomNumber();
+    for (let i = 0; i < numBooleans; i++) {
+      await quantConfig
+        .connect(timelockController)
+        .setProtocolBoolean(ethers.utils.id(`protocolBoolean${i}`), i % 2 == 0);
+    }
+
+    const numRoles = randomNumber();
+    for (let i = 0; i < numRoles; i++) {
+      await quantConfig
+        .connect(timelockController)
+        .setProtocolRole(
+          `protocolRole${i}`,
+          await timelockController.getAddress()
+        );
+    }
+
+    expect(await quantConfig.protocolAddressesLength()).to.equal(numAddresses);
+    expect(await quantConfig.protocolUints256Length()).to.equal(numUints);
+    expect(await quantConfig.protocolBooleansLength()).to.equal(numBooleans);
+    expect(await quantConfig.quantRolesLength()).to.equal(
+      numRoles + initialQuantRoles
     );
   });
 });
