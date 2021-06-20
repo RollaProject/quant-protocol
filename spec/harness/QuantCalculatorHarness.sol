@@ -24,6 +24,30 @@ contract QuantCalculatorHarness is IQuantCalculator {
     mapping (address => mapping( uint256 => uint256) ) public exercisePayout;
     
 
+
+    function getClaimableCollateralValue(
+        uint256 _collateralTokenId,
+        uint256 _amount
+    )  public view returns (uint256) {
+        return claimableCollateral[_collateralTokenId][_amount];
+    }
+
+    function getCollateralRequirementValue(
+        address _qTokenToMint,
+        address _qTokenForCollateral,
+        uint256 _amount
+    ) public view returns (uint256) {
+        return collateralRequirement[_qTokenToMint][_qTokenForCollateral][_amount];
+    }
+
+    function getExercisePayoutValue(
+        address _qToken,
+        uint256 _amount
+    ) public view returns (uint256)  {
+        return exercisePayout[_qToken][_amount];
+    }
+
+
     function calculateClaimableCollateral(
         uint256 _collateralTokenId,
         uint256 _amount,
@@ -52,7 +76,7 @@ contract QuantCalculatorHarness is IQuantCalculator {
         (address _qTokenShort, address qTokenAsCollateral) =
             optionsFactory.collateralToken().idToInfo(_collateralTokenId);
 
-        returnableCollateral = claimableCollateral[_collateralTokenId][amountToClaim];
+        returnableCollateral = getClaimableCollateralValue(_collateralTokenId,amountToClaim);
         collateralAsset = qTokenToCollateralType[_qTokenShort];
     }
 
@@ -81,7 +105,7 @@ contract QuantCalculatorHarness is IQuantCalculator {
         override
         returns (address collateral, uint256 collateralAmount)
     {
-        collateralAmount = collateralRequirement[_qTokenToMint][_qTokenForCollateral][_amount];
+        collateralAmount = getCollateralRequirementValue(_qTokenToMint,_qTokenForCollateral,_amount);
         collateral =  qTokenToCollateralType[_qTokenToMint];
     }
 
@@ -105,7 +129,7 @@ contract QuantCalculatorHarness is IQuantCalculator {
     {
         IQToken qToken = IQToken(_qToken);
         isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
-        payoutAmount = exercisePayout[_qToken][_amount];
+        payoutAmount = getExercisePayoutValue(_qToken,_amount);
         payoutToken = qTokenToCollateralType[_qToken];
     }
 }
