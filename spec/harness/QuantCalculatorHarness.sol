@@ -13,7 +13,17 @@ contract QuantCalculatorHarness is IQuantCalculator {
     uint8 public constant override OPTIONS_DECIMALS = 0;
 
     IQuantCalculator calcOriginal;
-    //TODO: msgSender balanceOf should be moved to controller
+    
+
+    mapping (address => address) public qTokenToCollateralType;
+    // a symbolic mapping form (qToken, qtokenLong, amount) to collateralRequirement 
+    mapping (address => mapping( address => mapping( uint256 => uint256) )) public collateralRequirement;
+    // a symbolic mapping form (_collateralTokenId, amount) to claimableCollateral 
+    mapping (uint256 => mapping( uint256 => uint256) ) public claimableCollateral;
+    // a symbolic mapping form (qToken, amount) to exercisePayout 
+    mapping (address => mapping( uint256 => uint256) ) public exercisePayout;
+    
+
     function calculateClaimableCollateral(
         uint256 _collateralTokenId,
         uint256 _amount,
@@ -29,7 +39,21 @@ contract QuantCalculatorHarness is IQuantCalculator {
             uint256 amountToClaim
         )
     {
-        return calcOriginal.calculateClaimableCollateral(_collateralTokenId,_amount,_optionsFactory,msgSender);
+
+        IOptionsFactory optionsFactory = IOptionsFactory(_optionsFactory);
+
+        amountToClaim = _amount == 0
+            ? optionsFactory.collateralToken().balanceOf(
+                msgSender,
+                _collateralTokenId
+            )
+            : _amount;
+
+        (address _qTokenShort, address qTokenAsCollateral) =
+            optionsFactory.collateralToken().idToInfo(_collateralTokenId);
+
+        returnableCollateral = claimableCollateral[_collateralTokenId][amountToClaim];
+        collateralAsset = qTokenToCollateralType[_qTokenShort];
     }
 
     function getNeutralizationPayout(
@@ -57,15 +81,14 @@ contract QuantCalculatorHarness is IQuantCalculator {
         override
         returns (address collateral, uint256 collateralAmount)
     {
-        address x;
-        uint y;
-        y = collateralRequirement[_qTokenToMint][_qTokenForCollateral][_amount];
-        //if (IQToken(_qTokenToMint).isCall()) {y = _amount;}//Gadi
-        return (qTokenToCollateralType[_qTokenToMint],y);
+        collateralAmount = collateralRequirement[_qTokenToMint][_qTokenForCollateral][_amount];
+        collateral =  qTokenToCollateralType[_qTokenToMint];
     }
-    mapping (address => address) public qTokenToCollateralType;
-    mapping (address => mapping( address => mapping( uint256 => uint256) )) public collateralRequirement;
+
+
     
+
+
     function getExercisePayout(
         address _qToken,
         address _optionsFactory,
@@ -80,6 +103,9 @@ contract QuantCalculatorHarness is IQuantCalculator {
             uint256 payoutAmount
         )
     {
-        return calcOriginal.getExercisePayout(_qToken,_optionsFactory,_amount);
+        IQToken qToken = IQToken(_qToken);
+        isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
+        payoutAmount = exercisePayout[_qToken][_amount];
+        payoutToken = qTokenToCollateralType[_qToken];
     }
 }

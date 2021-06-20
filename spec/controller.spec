@@ -43,7 +43,7 @@ methods {
 
 
 	// IERC20 methods to be called with one of the tokens (DummyERC20A, DummyERC20A) or QToken
-	balanceOf(address) => DISPATCHER(true) 
+	qTokenA.balanceOf(address) returns (uint256) envfree => DISPATCHER(true) 
 	qTokenA.totalSupply() returns (uint256) envfree => DISPATCHER(true)
 	transferFrom(address from, address to, uint256 amount) => DISPATCHER(true)
 	transfer(address to, uint256 amount) => DISPATCHER(true)
@@ -65,7 +65,7 @@ methods {
     collateralToken.getCollateralTokenInfoTokenAddress(uint) returns (address) envfree
 	collateralToken.getCollateralTokenInfoTokenAsCollateral(uint)returns (address) envfree
 	collateralToken.balanceOf(address, uint256) returns (uint256) envfree => DISPATCHER(true)
-
+	createCollateralToken(address,address) => NONDET
 	// Computations
 	getNeutralizationPayout(address,address,uint256,address) => NONDET 
 	quantCalculator.collateralRequirement(address,address,uint256) returns uint256 envfree
@@ -97,6 +97,9 @@ ghost ghost_collateral(address , address) returns uint; //`{
     //     (p1 != p2 || q1 != q2)  => ghost_collateral(p1,q1) != ghost_collateral(p2,q2);
 //}
 
+ghost ghost_claimableCollateral(address, address, uint256) returns uint;
+
+ghost ghost_exercisePayout(address, address, uint256) returns uint;
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Invariants                                       //
@@ -117,7 +120,7 @@ ghost ghost_collateral(address , address) returns uint; //`{
 //                       Rules                                            //
 ////////////////////////////////////////////////////////////////////////////
     
-/* 	Rule: validQToken  
+/* 	Rule: Valid QToken  
  	Description:  only valid QToken can be used in the state changing balances 
 	Formula: 
 	Notes: 
@@ -241,14 +244,14 @@ rule MintOptionsCorrectness(uint256 collateralTokenId, uint amount){
 	require quantCalculator.qTokenToCollateralType(qToken) != qToken;
 	require ghost_collateral(qToken,0) == collateralTokenId;
 	require qTokenA.isCall(e);
-	uint balanceOfqTokenBefore = qTokenA.balanceOf(e,e.msg.sender);
+	uint balanceOfqTokenBefore = qTokenA.balanceOf(e.msg.sender);
 	uint totalSupplyqTokenBefore = qTokenA.totalSupply();
 	uint balanceOfcolTokenBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 	uint totalSupplyColTokenBefore = collateralToken.getTokenSupplies(collateralTokenId);
 	require balanceOfqTokenBefore <= totalSupplyqTokenBefore &&
 			balanceOfcolTokenBefore <= totalSupplyColTokenBefore;
 		mintOptionsPosition(e,e.msg.sender,qTokenA,amount);
-	uint balanceOfqTokenAfter = qTokenA.balanceOf(e,e.msg.sender);
+	uint balanceOfqTokenAfter = qTokenA.balanceOf(e.msg.sender);
 	uint totalSupplyqTokenAfter = qTokenA.totalSupply();
 	uint balanceOfcolTokenAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
 	uint totalSupplyColTokenAfter = collateralToken.getTokenSupplies(collateralTokenId);
@@ -315,39 +318,41 @@ rule colToken_Impl_ColDeposited(uint256 collateralTokenId, address user){
 uint colAmount = balanceOfCol(e,collateralTokenId,user);
 }*/
 
-rule solvencyUser(uint collateralTokenId, method f){
+rule solvencyUser(uint collateralTokenId, uint pricePerQToken, method f){
 	env e;
-	address qTokenFroCollateral;
+	address qTokenFroCollateral = 0;
 	address to;
 	uint256 amount;
+	
 	
 	//setup qToken, collateralTokenID and underlying asset 
 	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	require qToken == qTokenA;
-	require ghost_collateral(qToken,0) == collateralTokenId;
-	address asset = qTokenA.underlyingAsset(e);
+	require ghost_collateral(qToken,qTokenFroCollateral) == collateralTokenId;
+	address asset = quantCalculator.qTokenToCollateralType(qToken);
+	require asset != qToken;
 	
 
-	require qTokenA.isCall(e);
-	require quantCalculator.collateralRequirement(qTokenA,0,amount) == amount;
+	//require qTokenA.isCall(e);
+	require quantCalculator.collateralRequirement(qTokenA,qTokenFroCollateral,amount) == amount ;
 
 	require e.msg.sender != currentContract;//check if allowed
+	require to == e.msg.sender;
 	
 	uint balanceUserBefore = getTokenBalanceOf(e, asset, e.msg.sender);
 	uint balanceColBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
+	uint balanceQTokenBefore = qTokenA.balanceOf(e.msg.sender);
+	mathint userAssetsBefore = balanceUserBefore + balanceColBefore;
 
 	//callFunctionWithParams(e.msg.sender, qToken, qTokenFroCollateral, collateralTokenId, to, amount, f);
 	mintOptionsPosition(e,e.msg.sender,qTokenA,amount);
 
 	uint balanceUserAfter = getTokenBalanceOf(e, asset, e.msg.sender);
 	uint balanceColAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
-	
-	require amount < 1000 &&
-			balanceUserBefore < 1000 &&
-			balanceColBefore < 1000 &&
-			balanceUserAfter < 1000 &&
-			balanceColAfter < 1000;
-	assert (balanceUserBefore + balanceColBefore == balanceUserAfter + balanceColAfter);
+	uint balanceQTokenAfter = qTokenA.balanceOf(e.msg.sender);
+	mathint userAssetsAfter = balanceUserAfter + balanceColAfter;
+
+	assert (userAssetsBefore == userAssetsAfter);
 }
 
 rule After_Exercise(address qToken, uint256 amount){
@@ -398,6 +403,7 @@ function callFunctionWithParams(address expectedSender, address qToken, address 
 		exercise(e, qToken, amount);
 	}
 	else if (f.selector == mintOptionsPosition(address,address,uint256).selector) {
+		require qTokenFroCollateral == 0;
 		mintOptionsPosition(e, to, qToken, amount); 
 	} 
 	else if (f.selector == mintSpread(address,address,uint256).selector) {
