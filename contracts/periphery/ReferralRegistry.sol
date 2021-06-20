@@ -2,9 +2,12 @@
 pragma solidity ^0.7.0;
 
 import "hardhat/console.sol";
+import "../libraries/ReferralCodeValidator.sol";
 
 /// @title A registry for managing users and their referrers
 contract ReferralRegistry {
+    using ReferralCodeValidator for string;
+
     bytes32 public constant DEFAULT_CODE = "0";
 
     uint256 public maxCodesPerUser;
@@ -36,8 +39,10 @@ contract ReferralRegistry {
     }
 
     /// @notice Allows a user to claim a custom referral code
-    /// @param code The code for the user to claim
-    function claimReferralCode(bytes32 code) external {
+    /// @param codeStr The code for the user to claim
+    function claimReferralCode(string memory codeStr) external {
+        bytes32 code = codeStr.validateCode();
+
         require(!isCodeUsed(code), "ReferralRegistry: code already exists");
         require(
             userCodes[msg.sender].length < maxCodesPerUser,
