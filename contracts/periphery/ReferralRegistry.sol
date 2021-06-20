@@ -30,10 +30,10 @@ contract ReferralRegistry is EIP712 {
     // Signature nonce per address
     mapping(address => uint256) public nonces;
 
-    // solhint-disable-next-line max-line-length
-    // keccak256("metaReferralAction(address user,uint256 action,bytes actionData,uint256 nonce,uint256 deadline)");
     bytes32 private constant _META_REFERRAL_ACTION_TYPEHASH =
-        0x629daf876edf0b27f3326ca85ed9e8f544c4c4f2be3a3c9517228e2d98715869;
+        keccak256(
+            "metaReferralAction(address user,uint256 action,bytes actionData,uint256 nonce,uint256 deadline)"
+        );
 
     event NewUserRegistration(
         address indexed referred,
@@ -97,7 +97,7 @@ contract ReferralRegistry is EIP712 {
                     _META_REFERRAL_ACTION_TYPEHASH,
                     user,
                     action,
-                    actionData,
+                    keccak256(actionData),
                     nonce,
                     deadline
                 )
