@@ -4,6 +4,7 @@ import { formatBytes32String } from "ethers/lib/utils";
 import { ethers, waffle } from "hardhat";
 import ReferralRegistryJSON from "../artifacts/contracts/periphery/ReferralRegistry.sol/ReferralRegistry.json";
 import { ReferralRegistry } from "../typechain";
+import { name, version } from "./testUtils";
 
 const { deployContract } = waffle;
 
@@ -28,6 +29,8 @@ describe("Referral Registry", () => {
       referralRegistry = (await deployContract(deployer, ReferralRegistryJSON, [
         await defaultReferrer.getAddress(),
         3,
+        name,
+        version,
       ])) as ReferralRegistry;
     });
 
