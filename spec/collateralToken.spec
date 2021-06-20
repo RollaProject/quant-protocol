@@ -11,7 +11,6 @@
 */
 //using otherContractName as internalName
 
-
 ////////////////////////////////////////////////////////////////////////////
 //                      Methods                                           //
 ////////////////////////////////////////////////////////////////////////////
@@ -44,27 +43,14 @@ methods {
 ////////////////////////////////////////////////////////////////////////////
 
 
-// Ghosts are like additional function
-// sumDeposits(address user) returns (uint256);
-// This ghost represents the sum of all deposits to user
-// sumDeposits(s) := sum(...[s].deposits[member] for all addresses member)
+ghost ghostBalances(uint256, address) returns uint256;
 
-/*ghost sumDeposits(uint256) returns uint {
-    init_state axiom forall uint256 s. sumDeposits(s) == 0;
+hook Sload uint256 balance _balances[KEY uint256 collateralTokenId][KEY address token] STORAGE {
+    require ghostBalances(collateralTokenId, token) == balance;
 }
-
-
-
-
-// whenever there is an update to
-//     contractmap[user].deposits[memberAddress] := value
-// where previously contractmap[user].deposits[memberAddress] was old_value
-// update sumDeposits := sumDeposits - old_value + value
-hook Sstore contractmap[KEY uint256 s].(offset 0)[KEY uint256 member] uint value (uint old_value) STORAGE {
-    havoc sumDeposits assuming sumDeposits@new(s) == sumDeposits@old(s) + value - old_value &&
-            (forall uint256 other. other != s => sumDeposits@new(other) == sumDeposits@old(other));
-}*/
-
+hook Sstore _balances[KEY uint256 collateralTokenId][KEY address token] uint256 balance STORAGE {
+    havoc ghostBalances assuming ghostBalances@new(collateralTokenId, token) == balance && (forall uint256 x. forall address y. x != collateralTokenId || y != token => ghostBalances@new(x, y) == ghostBalances@old(x, y));
+}
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -90,7 +76,15 @@ invariant uniqueCollateralTokenId(uint i, uint j)
  	Description:  Each entry in collateralTokenIds is unique
 	Formula: collateralTokenIds[i] = collateralTokenIds[j] => i = j
 */
+rule integrityOfCollateralTokenBalance(address _qTokenAddress, address _qTokenAsCollateral, address _recipient, uint256 _amount) {
+	env e;
+	uint collateralTokenInfoId;
 
+	collateralTokenInfoId = createCollateralToken(e, _qTokenAddress, _qTokenAsCollateral);
+	mintCollateralToken(e, _recipient, collateralTokenInfoId, _amount);
+
+	assert ghostBalances(collateralTokenInfoId, _recipient) == _amount;
+}
 
 rule integrityOfCollateralTokenInfo(address _qTokenAddress, address _qTokenAsCollateral)
 {
