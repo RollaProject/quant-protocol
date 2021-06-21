@@ -43,8 +43,9 @@ methods {
 
 	// IERC20 methods to be called with one of the tokens (DummyERC20A, DummyERC20A) or QToken
 	qTokenA.balanceOf(address) returns (uint256) envfree => DISPATCHER(true) 
-	qTokenB.balanceOf(address) returns (uint256) envfree => DISPATCHER(true) 
 	qTokenA.totalSupply() returns (uint256) envfree => DISPATCHER(true)
+	qTokenB.balanceOf(address) returns (uint256) envfree => DISPATCHER(true) 
+	qTokenB.totalSupply() returns (uint256) envfree => DISPATCHER(true)
 	transferFrom(address from, address to, uint256 amount) => DISPATCHER(true)
 	transfer(address to, uint256 amount) => DISPATCHER(true)
 
@@ -380,7 +381,6 @@ rule integrityMintOptions(uint256 collateralTokenId, uint amount){
 	uint totalSupplyqTokenAfter = qTokenA.totalSupply();
 	uint balanceOfcolTokenAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
 	uint totalSupplyColTokenAfter = collateralToken.getTokenSupplies(collateralTokenId);
-
 	assert (balanceOfqTokenAfter == balanceOfqTokenBefore + amount &&
 		   totalSupplyqTokenAfter == totalSupplyqTokenBefore + amount &&
 		   balanceOfcolTokenAfter == balanceOfcolTokenBefore + amount &&
@@ -401,17 +401,6 @@ rule integrityMintOptions(uint256 collateralTokenId, uint amount){
 		assert balance1 - balance2 >= amount1 - amount2;
 */
 
-/* Rule :Mint options collateral correctness
-		collateral increase by the amount collateral of user decrease
-		uint balanceControlerBefore = collateral.balanceOf(controler);
-		uint balanceUserBefore = collateral.balanceOf(user);
-		mintOptionsPosition(to,qToken,amount);
-		balanceControlerAfter = collateral.balanceOf(controler);
-		balanceUserAfter = collateral.balanceOf(user);
-		assert balanceControlerAfter - balanceControlerBefore ==
-			balanceUserBefore - balanceUserAfter;
-
-*/
 /* 	Rule: MintOptionsColCorrectness (Rule #7)
  	Description: increase in user's balance equals decrease in the contract's balance in the respective token
 	Formula: 
@@ -581,6 +570,62 @@ rule moreOptionsMorePayout(uint collateralTokenId, uint amount1, uint amount2){
 	exercise(e,qTokenA, amount2) at init_state;
 	uint	balanceAssetAfter2 = getTokenBalanceOf(e, asset, e.msg.sender);
 	assert amount1 >= amount2 => balanceAssetAfter1 >= balanceAssetAfter2;
+}
+/* 	Rule: mintSpreadBalancesCorrectness (Rule #13)
+ 	Description: Minting spreads must burn the qTokens provided as collateral, mint the desired qTokens and also mint collateral tokens representing the spread
+	Formula: 
+	Notes: 
+*/
+rule mintSpreadBalancesCorrectness(address qTokenToMint, address qTokenForCollateral, uint amount){
+	env e;
+	address collateralTokenId;
+	//setup qToken, collateralTokenID and underlying asset 
+	setupQtokenCollateralTokenId(qTokenToMint, qTokenForCollateral, collateralTokenId);
+	require qTokenToMint == qTokenA;
+	require qTokenForCollateral == qTokenB;
+
+		// need this because of issue in ghost 
+	require ghost_collateralRequirement(qTokenToMint, qTokenForCollateral, amount) == quantCalculator.collateralRequirement(qTokenToMint, qTokenForCollateral, amount);
+	//assume property proven in QuantCalculator
+	require ghost_collateralRequirement(qTokenToMint, qTokenForCollateral, amount) == 
+		ghost_claimableCollateral(collateralTokenId, amount) + ghost_exercisePayout(qTokenToMint, amount);
+
+	require e.msg.sender != currentContract;//check if allowed
+
+
+	address asset = quantCalculator.qTokenToCollateralType(qTokenToMint);
+	require asset != qTokenToMint && asset != qTokenForCollateral;
+	uint	balanceAssetUserBefore = getTokenBalanceOf(e, asset, e.msg.sender);
+	uint	balanceAssetContBefore = getTokenBalanceOf(e, asset, currentContract);
+
+	uint qTokenForColBefore = qTokenB.balanceOf(e.msg.sender);
+	require qTokenForColBefore >= amount;
+	uint qTokenForColTotalBefore = qTokenB.totalSupply();
+	uint balanceColBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
+	uint balanceColTotalBefore = collateralToken.getTokenSupplies(collateralTokenId);
+	uint qTokenToMintBefore = qTokenA.balanceOf(e.msg.sender);
+	uint qTokenToMintTotalBefore = qTokenA.totalSupply();
+
+	mintSpread(e, qTokenA, qTokenB, amount);
+
+	uint balanceAssetUserAfter = getTokenBalanceOf(e, asset, e.msg.sender);
+	uint balanceAssetContAfter = getTokenBalanceOf(e, asset, currentContract);
+	uint qTokenForColAfter = qTokenB.balanceOf(e.msg.sender);
+	uint qTokenForColTotalAfter = qTokenB.totalSupply();
+	uint balanceColAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
+	uint balanceColTotalAfter = collateralToken.getTokenSupplies(collateralTokenId);
+	uint qTokenToMintAfter = qTokenA.balanceOf(e.msg.sender);
+	uint qTokenToMintTotalAfter = qTokenA.totalSupply();
+
+	assert balanceAssetUserBefore - balanceAssetUserAfter ==
+		   balanceAssetContAfter - balanceAssetContBefore   &&
+		   qTokenForColBefore == qTokenForColAfter + amount &&
+		   qTokenForColTotalBefore == qTokenForColTotalAfter + amount &&
+		   balanceColBefore == balanceColAfter - amount &&
+		   balanceColTotalBefore == balanceColTotalAfter - amount &&
+		   qTokenToMintBefore == qTokenToMintAfter - amount &&
+		   qTokenToMintTotalBefore == qTokenToMintTotalAfter - amount;
+
 }
 /*
 rule colToken_Impl_ColDeposited(uint256 collateralTokenId, address user){
@@ -781,3 +826,13 @@ function monotonicExercisePayout(address qToken, uint x, uint y ) {
 
 	require ghost_exercisePayout(qToken, x) <= ghost_exercisePayout(qToken, y);
 }
+
+/*
+rule modulo(){
+	uint x;
+	uint y;
+	uint z;
+	require x % y == 0 && x>1 && y>1 && z>1 && x<100 && y<100 && z<100;
+	assert y * z != x;
+}
+*/
