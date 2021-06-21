@@ -466,7 +466,7 @@ rule exerciseBurnCorectness(uint collateralTokenId, uint amount){
 	require e.msg.sender != currentContract;//check if allowed
 
 	uint totalSupplyBefore = qTokenA.totalSupply();
-	require amount == qTokenA.balanceOf(e,e.msg.sender);
+	require amount == qTokenA.balanceOf(e.msg.sender);
 	exercise(e,qTokenA, 0);
 	uint totalSupplyAfter = qTokenA.totalSupply();
 	assert totalSupplyBefore - amount == totalSupplyAfter;
