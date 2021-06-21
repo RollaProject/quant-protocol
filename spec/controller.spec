@@ -173,15 +173,20 @@ ghost ghost_exercisePayout(address, uint256) returns uint;// {
 
 
 ////////////////////////////////////////////////////////////////////////////
-//                       Rules                                            //
+//                       General Rules                                   //
 ////////////////////////////////////////////////////////////////////////////
     
 /* 	Rule: Valid QToken  
  	Description:  only valid QToken can be used in the state changing balances 
-	Formula: 
+	Formula: 	{ t = qToken.totalSupply() }
+					op
+				{ qToken.totalSupply() != t => qToken.isValid() }
 	Notes: 
 */
 rule validQtoken(method f)  
+		filtered { f -> f.selector != certorafallback_0().selector &&
+						f.selector != executeMetaTransaction(address,(string,address,address,address,uint256,uint256,bytes)[],bytes32,bytes32,uint8).selector &&
+						f.selector != initialize(string,string,address,address).selector }			
 {
 	address qToken; 
 	address qTokenForCollateral;
@@ -232,26 +237,32 @@ rule only_after_expiry(method f, bool eitherClaimOrExercise)
 	address qToken; 
 	uint256 amount;
 	uint256 expiry = getExpiryTime(e,qToken);
-		exercise(e, qToken, amount);
+	exercise(e, qToken, amount);
 
 	assert e.block.timestamp > expiry;
 }
 
 /* 	Rule: additiveClaim
  	Description: Claim collateral of x and then of y should produce same result as claim collateral of (x+y)
-	Formula:  claim(x) + claim(y) == claim(x+y)
+	Formula:  claimCollateral(cId, x) + claimCollateral(cId, y) ~ claimCollateral(cID, x+y)
+			with respect to collateralToken.balanceOf(e.msg.sender, cId)
 	Notes: 
 */
-rule additiveClaim(uint256 collateralTokenId, uint256 amount1, uint256 amount2){
+rule additiveClaim(address qToken, address qTokenForCollateral, 
+				uint256 collateralTokenId, uint256 amount1, uint256 amount2){
 	env e;
-	uint256 balance1;
-	uint256 balance2;
+	
+	setupQtokenCollateralTokenId(qToken, qTokenForCollateral, collateralTokenId);
 	storage init_state = lastStorage;
+
 	claimCollateral(e, collateralTokenId, amount1);
 	claimCollateral(e, collateralTokenId, amount2);
-	balance1 = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
+	uint256 sum =  amount1 + amount2;
+	additivityClaimableCollateral(collateralTokenId, sum, amount1 , amount2);
+	uint256 balance1 = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
+	
 	claimCollateral(e, collateralTokenId, amount1 + amount2) at init_state;
-	balance2 = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
+	uint256 balance2 = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 	assert balance1 == balance2;
 }
 
@@ -275,43 +286,47 @@ rule ratioAfterNeutralize(uint256 collateralTokenId, uint256 amount, address qTo
 }
 
 
-/*  Rule: Mint Options QToken Correctness
+
+
+
+////////////////////////////////////////////////////////////////////////////
+//                       Minting Options Rules                            //
+////////////////////////////////////////////////////////////////////////////
+
+
+/*  Rule: Integrity of Mint Options 
 		formula: mintOptionsPosition(to,qToken,amount) =>
 				qToken.balanceOf(to) == qToken.balanceOf(to) + amount &&
 				qToken.totalSupply() == qToken.totalSupply() + amount &&
 				collateralToken.balanceOf(to,tokenId) == collateralToken.balanceOf(to,tokenId) + amount &&
 				collateralToken.tokenSupplies(tokenId) == collateralToken.tokenSupplies(tokenId) + amount;
 */
-
-/* 	Rule: mintOptionsCorrectness
- 	Description: total supply option tokens increased by amount
-	 			 total supply collateral tokens increased by amount
-				 user's balance option tokens increased by amount
-				 user's balance collateral tokens increased by amount
-	Formula: 
-	Notes: 
-*/
-rule mintOptionsCorrectness(uint256 collateralTokenId, uint amount){
+rule integrityMintOptions(uint256 collateralTokenId, uint amount){
 	env e;
 	address qToken = qTokenA;
-	require qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	address qTokenForCollateral = 0;
+	setupQtokenCollateralTokenId(qToken, qTokenForCollateral, collateralTokenId);
 	require quantCalculator.qTokenToCollateralType(qToken) != qToken;
-	require ghost_collateral(qToken,0) == collateralTokenId;
-	require qTokenA.isCall(e);
+	
+	//require qTokenA.isCall(e);
 	uint balanceOfqTokenBefore = qTokenA.balanceOf(e.msg.sender);
 	uint totalSupplyqTokenBefore = qTokenA.totalSupply();
 	uint balanceOfcolTokenBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 	uint totalSupplyColTokenBefore = collateralToken.getTokenSupplies(collateralTokenId);
 	require balanceOfqTokenBefore <= totalSupplyqTokenBefore &&
 			balanceOfcolTokenBefore <= totalSupplyColTokenBefore;
-		mintOptionsPosition(e,e.msg.sender,qTokenA,amount);
+		
+	mintOptionsPosition(e,e.msg.sender,qTokenA,amount);
+	
 	uint balanceOfqTokenAfter = qTokenA.balanceOf(e.msg.sender);
 	uint totalSupplyqTokenAfter = qTokenA.totalSupply();
 	uint balanceOfcolTokenAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
 	uint totalSupplyColTokenAfter = collateralToken.getTokenSupplies(collateralTokenId);
-	require balanceOfqTokenAfter <= totalSupplyqTokenAfter &&
-			balanceOfcolTokenAfter <= totalSupplyColTokenAfter;
-	require amount < 1000 &&
+	
+	//require balanceOfqTokenAfter <= totalSupplyqTokenAfter &&
+	//		balanceOfcolTokenAfter <= totalSupplyColTokenAfter;
+	
+	/* require amount < 1000 &&
 			balanceOfqTokenBefore < 1000 &&
 			totalSupplyqTokenBefore < 1000 &&
 			balanceOfcolTokenBefore < 1000 &&
@@ -319,7 +334,7 @@ rule mintOptionsCorrectness(uint256 collateralTokenId, uint amount){
 			balanceOfqTokenAfter < 1000 &&
 			totalSupplyqTokenAfter < 1000 &&
 			balanceOfcolTokenAfter < 1000 &&
-			totalSupplyColTokenAfter < 1000;
+			totalSupplyColTokenAfter < 1000; */
 	assert (balanceOfqTokenAfter == balanceOfqTokenBefore + amount &&
 		   totalSupplyqTokenAfter == totalSupplyqTokenBefore + amount &&
 		   balanceOfcolTokenAfter == balanceOfcolTokenBefore + amount &&
@@ -352,7 +367,7 @@ rule mintOptionsCorrectness(uint256 collateralTokenId, uint amount){
 
 */
 /* 	Rule: MintOptionsColCorrectness (Rule #7)
- 	Description: increase in user's balance equals decrease in the contract's balance in the repective token
+ 	Description: increase in user's balance equals decrease in the contract's balance in the respective token
 	Formula: 
 	Notes: 
 */
@@ -496,7 +511,7 @@ rule solvencyUser(uint collateralTokenId, uint pricePerQToken, method f, uint va
 }
 
 /* 	Rule: balancesAfterExercise
- 	Description: increase in user's balance equals decrease in the contract's balance in the repective token
+ 	Description: increase in user's balance equals decrease in the contract's balance in the respective token
 	Formula: 
 	Notes: 
 */
