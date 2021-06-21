@@ -41,3 +41,11 @@ export const metaApprovalType = [
   { name: "nonce", type: "uint256" },
   { name: "deadline", type: "uint256" },
 ];
+
+export const metaReferralActionType = [
+  { name: "user", type: "address" },
+  { name: "action", type: "uint256" },
+  { name: "actionData", type: "bytes" },
+  { name: "nonce", type: "uint256" },
+  { name: "deadline", type: "uint256" },
+];
