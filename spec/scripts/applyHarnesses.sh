@@ -9,7 +9,7 @@ perl -0777 -i -pe 's/internal\s*pure\s*returns/internal pure virtual returns/g' 
 perl -0777 -i -pe 's/internal view returns/internal view virtual returns/g' contracts/utils/EIP712MetaTransaction.sol
 
 # Decimal simplification
-perl -0777 -i -pe 's/\(\(_a.div\(10\*\*exp\)\).uintToInt\(\)\);\s*} else {/\(\(_a.div\(10\*\*exp\)\).uintToInt\(\)\);
+perl -0777 -i -pe 's/\(\(_a.div\(10\*\*exp\)\).uintToInt\(\)\);\s*} else \{/\(\(_a.div\(10\*\*exp\)\).uintToInt\(\)\);
         } else if (_decimals == 6) {
             fixedPoint = FixedPointInt((_a.mul(1000000000000000000000)).uintToInt());
         } else if (_decimals == 18) {
