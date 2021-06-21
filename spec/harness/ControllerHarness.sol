@@ -26,10 +26,7 @@ contract ControllerHarness is Controller {
         return IERC20(t).balanceOf(u);
     }
 
-    function isValidQToken(address _qToken) public returns (bool) {
-        return IOptionsFactory(optionsFactory).isQToken(_qToken);
-    }
-
+    
     ////////////////////////////////////////////////////////////////////////////
     //                       Each operation wrapper                           //
     ////////////////////////////////////////////////////////////////////////////
