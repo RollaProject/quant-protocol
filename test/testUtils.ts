@@ -33,6 +33,7 @@ import {
   domainType,
   metaActionType,
   metaApprovalType,
+  metaReferralActionType,
 } from "./eip712Types";
 import { provider } from "./setup";
 
@@ -409,6 +410,69 @@ export const takeSnapshot = async (): Promise<string> => {
 
 export const revertToSnapshot = async (id: string): Promise<void> => {
   await provider.send("evm_revert", [id]);
+};
+
+export enum ReferralAction {
+  CLAIM_CODE,
+  REGISTER_BY_CODE,
+  REGISTER_BY_REFERRER,
+}
+
+export const getReferralActionSignedData = (
+  userWallet: Wallet,
+  action: ReferralAction,
+  actionData: BytesLike,
+  nonce: number,
+  deadline: number,
+  verifyingContract: string
+): SignedTransactionData => {
+  const message = {
+    user: userWallet.address,
+    action,
+    actionData,
+    nonce,
+    deadline,
+  };
+
+  const domainData = {
+    name,
+    version,
+    verifyingContract,
+    chainId: provider.network.chainId,
+  };
+
+  type metaReferralAction = "metaReferralAction";
+  const metaReferralAction: metaReferralAction = "metaReferralAction";
+
+  const data = {
+    types: {
+      EIP712Domain: domainType,
+      metaReferralAction: metaReferralActionType,
+    },
+    domain: domainData,
+    primaryType: metaReferralAction,
+    message,
+  };
+
+  const signature = sigUtil.signTypedData_v4(
+    Buffer.from(userWallet.privateKey.slice(2), "hex"),
+    {
+      data,
+    }
+  );
+
+  const r = signature.slice(0, 66);
+  const s = "0x".concat(signature.slice(66, 130));
+  const vString = "0x".concat(signature.slice(130, 132));
+
+  let v = hexToNumber(vString);
+  if (![27, 28].includes(v)) v += 27;
+
+  return {
+    r,
+    s,
+    v,
+  };
 };
 
 export {

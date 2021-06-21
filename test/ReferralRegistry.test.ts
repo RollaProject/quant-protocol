@@ -1,18 +1,25 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { expect } from "chai";
-import { formatBytes32String } from "ethers/lib/utils";
+import { Wallet } from "ethers";
+import { defaultAbiCoder, formatBytes32String } from "ethers/lib/utils";
 import { ethers, waffle } from "hardhat";
 import ReferralRegistryJSON from "../artifacts/contracts/periphery/ReferralRegistry.sol/ReferralRegistry.json";
 import { ReferralRegistry } from "../typechain";
-import { name, version } from "./testUtils";
+import { expect, provider } from "./setup";
+import {
+  getReferralActionSignedData,
+  name,
+  ReferralAction,
+  version,
+} from "./testUtils";
 
 const { deployContract } = waffle;
 
+const { HashZero } = ethers.constants;
+
 describe("Referral Registry", () => {
-  let deployer: SignerWithAddress;
-  let signer: SignerWithAddress;
-  let signerTwo: SignerWithAddress;
-  let defaultReferrer: SignerWithAddress;
+  let deployer: Wallet;
+  let signer: Wallet;
+  let signerTwo: Wallet;
+  let defaultReferrer: Wallet;
   let referralRegistry: ReferralRegistry;
 
   const dummyCode = "test";
@@ -21,7 +28,8 @@ describe("Referral Registry", () => {
   const dummyCode3 = "test3";
 
   before(async function () {
-    [deployer, signer, signerTwo, defaultReferrer] = await ethers.getSigners();
+    [deployer, signer, signerTwo, defaultReferrer] =
+      await provider.getWallets();
   });
 
   describe("ReferralRegistry", () => {
@@ -130,6 +138,177 @@ describe("Referral Registry", () => {
       expect(
         await referralRegistry.getReferrer(await signerTwo.getAddress())
       ).to.be.equal(await signer.getAddress());
+    });
+
+    describe("metaReferralAction", () => {
+      const futureTimestamp = Math.round(Date.now() / 1000) + 3600 * 24;
+      let nonce: number;
+
+      beforeEach(async () => {
+        nonce = parseInt(
+          (await referralRegistry.nonces(signer.address)).toString()
+        );
+      });
+
+      it("should revert when passing an expired deadline", async () => {
+        const pastTimestamp = Math.round(Date.now() / 1000) - 3600 * 24; // a day in the past
+
+        await expect(
+          referralRegistry
+            .connect(signerTwo)
+            .metaReferralAction(
+              signer.address,
+              ReferralAction.CLAIM_CODE,
+              "0x",
+              nonce,
+              pastTimestamp,
+              0,
+              HashZero,
+              HashZero
+            )
+        ).to.be.revertedWith("ReferralRegistry: expired deadline");
+      });
+
+      it("should revert when passing an invalid nonce", async () => {
+        await expect(
+          referralRegistry
+            .connect(signerTwo)
+            .metaReferralAction(
+              signer.address,
+              ReferralAction.CLAIM_CODE,
+              "0x",
+              nonce + 4,
+              futureTimestamp,
+              0,
+              HashZero,
+              HashZero
+            )
+        ).to.be.revertedWith("ReferralRegistry: invalid nonce");
+      });
+
+      it("should revert when passing an invalid signature", async () => {
+        await expect(
+          referralRegistry
+            .connect(signerTwo)
+            .metaReferralAction(
+              signer.address,
+              ReferralAction.CLAIM_CODE,
+              "0x",
+              nonce,
+              futureTimestamp,
+              0,
+              HashZero,
+              HashZero
+            )
+        ).to.be.revertedWith("ReferralRegistry: invalid signature");
+      });
+
+      it("should be able to claim referral codes through meta transactions", async () => {
+        const code = "mycode";
+        const actionData = defaultAbiCoder.encode(["string"], [code]);
+
+        const { v, r, s } = getReferralActionSignedData(
+          signer,
+          ReferralAction.CLAIM_CODE,
+          actionData,
+          nonce,
+          futureTimestamp,
+          referralRegistry.address
+        );
+
+        await expect(
+          referralRegistry
+            .connect(signerTwo)
+            .metaReferralAction(
+              signer.address,
+              ReferralAction.CLAIM_CODE,
+              actionData,
+              nonce,
+              futureTimestamp,
+              v,
+              r,
+              s
+            )
+        )
+          .to.emit(referralRegistry, "CreatedReferralCode")
+          .withArgs(await signer.getAddress(), formatBytes32String(code));
+        expect(
+          await referralRegistry.codeOwner(formatBytes32String(code))
+        ).to.be.equal(await signer.getAddress());
+      });
+
+      it("should be able to register users by referral codes through meta transactions", async () => {
+        const code = formatBytes32String("anothercode");
+        const actionData = defaultAbiCoder.encode(["bytes32"], [code]);
+
+        const { v, r, s } = getReferralActionSignedData(
+          signer,
+          ReferralAction.REGISTER_BY_CODE,
+          actionData,
+          nonce,
+          futureTimestamp,
+          referralRegistry.address
+        );
+
+        await expect(
+          referralRegistry
+            .connect(signerTwo)
+            .metaReferralAction(
+              signer.address,
+              ReferralAction.REGISTER_BY_CODE,
+              actionData,
+              nonce,
+              futureTimestamp,
+              v,
+              r,
+              s
+            )
+        )
+          .to.emit(referralRegistry, "NewUserRegistration")
+          .withArgs(signer.address, defaultReferrer.address, code);
+
+        expect(await referralRegistry.userReferrer(signer.address)).to.equal(
+          defaultReferrer.address
+        );
+      });
+
+      it("should be able to register users by referrer addresses through meta transactions", async () => {
+        const referrer = deployer.address;
+        const actionData = defaultAbiCoder.encode(["address"], [referrer]);
+
+        const { v, r, s } = getReferralActionSignedData(
+          signer,
+          ReferralAction.REGISTER_BY_REFERRER,
+          actionData,
+          nonce,
+          futureTimestamp,
+          referralRegistry.address
+        );
+
+        await expect(
+          referralRegistry
+            .connect(signerTwo)
+            .metaReferralAction(
+              signer.address,
+              ReferralAction.REGISTER_BY_REFERRER,
+              actionData,
+              nonce,
+              futureTimestamp,
+              v,
+              r,
+              s
+            )
+        )
+          .to.emit(referralRegistry, "NewUserRegistration")
+          .withArgs(
+            await signer.getAddress(),
+            await deployer.getAddress(),
+            ethers.constants.HashZero
+          );
+        expect(
+          await referralRegistry.userReferrer(await signer.getAddress())
+        ).to.be.equal(await deployer.getAddress());
+      });
     });
   });
 });
