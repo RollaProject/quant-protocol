@@ -428,7 +428,6 @@ rule exercisingOptionsInSteps(uint256 collateralTokenId, uint256 amount1, uint25
 	//setup qToken, collateralTokenID and underlying asset 
 	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	require qToken == qTokenA;
-	require ghost_collateral(qToken,0) == collateralTokenId;	
 
 	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
 	require asset != qToken;
@@ -436,18 +435,79 @@ rule exercisingOptionsInSteps(uint256 collateralTokenId, uint256 amount1, uint25
 	require e.msg.sender != currentContract;//check if allowed
 
 	storage init_state = lastStorage;
-	require quantCalculator.collateralRequirement(qTokenA,0,amount1) == amount1;
 	exercise(e,qTokenA, amount1);
-	require quantCalculator.collateralRequirement(qTokenA,0,amount2) == amount2;
 	exercise(e,qTokenA, amount2);
 	uint256	balance1 = getTokenBalanceOf(e, asset, e.msg.sender); 
-	require quantCalculator.collateralRequirement(qTokenA,0,amount1 + amount2) == amount1 + amount2;
 	exercise(e,qTokenA, amount1 + amount2) at init_state;
 	uint256	balance2 = getTokenBalanceOf(e, asset, e.msg.sender);
 	assert balance1 >= balance2;
 
 }
 
+/* 	Rule: exerciseLeCollateral (Rule #10)
+ 	Description:  Options can't be exercised for more collateral than the minter put in
+	Formula: 
+	Notes: 
+*/ // add (if solvency doesn't work)	require quantCalculator.collateralRequirement(qTokenA,0,amount) == amount; but for getExercisePayout
+rule exerciseLeCollateral(uint collateralTokenId, uint amount){
+	env e;
+	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA;
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+	require asset != qToken;
+
+	require e.msg.sender != currentContract;//check if allowed
+
+	uint balanceCol = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
+	require balanceCol > 0;
+	uint	balanceAssetBefore = getTokenBalanceOf(e, asset, e.msg.sender);
+	exercise(e,qTokenA, amount);
+	uint	balanceAssetAfter = getTokenBalanceOf(e, asset, e.msg.sender);
+	assert balanceAssetBefore + balanceCol >= balanceAssetAfter;
+}
+
+/* 	Rule: exerciseBurnCorectness (Rule #11)
+ 	Description:  Exercising options must always burn the amount passed into the function
+	Formula: 
+	Notes: 
+*/
+rule exerciseBurnCorectness(uint collateralTokenId, uint amount){
+	env e;
+	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA;
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+	require asset != qToken;
+
+	require e.msg.sender != currentContract;//check if allowed
+
+	uint totalSupplyBefore = qTokenA.totalSupply();
+	require amount == qTokenA.balanceOf(e,e.msg.sender);
+	exercise(e,qTokenA, 0);
+	uint totalSupplyAfter = qTokenA.totalSupply();
+	assert totalSupplyBefore - amount == totalSupplyAfter;
+}
+
+/* 	Rule: exerciseBurnCorectness (Rule #12)
+ 	Description:  Exercising options must always burn the amount passed into the function
+	Formula: 
+	Notes: 
+*/
+rule moreOptionsMorePayout(uint collateralTokenId, uint amount1, uint amount2){
+	env e;
+	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA;
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+	require asset != qToken;
+
+	require e.msg.sender != currentContract;//check if allowed
+
+	storage init_state = lastStorage;
+	exercise(e,qTokenA, amount1);
+	uint	balanceAssetAfter1 = getTokenBalanceOf(e, asset, e.msg.sender);
+	exercise(e,qTokenA, amount2) at init_state;
+	uint	balanceAssetAfter2 = getTokenBalanceOf(e, asset, e.msg.sender);
+	assert amount1 > amount2 => balanceAssetAfter1 > balanceAssetAfter2;
+}
 /*
 rule colToken_Impl_ColDeposited(uint256 collateralTokenId, address user){
 uint colAmount = balanceOfCol(e,collateralTokenId,user);
