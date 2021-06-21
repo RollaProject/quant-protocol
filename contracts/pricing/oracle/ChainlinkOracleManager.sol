@@ -271,7 +271,7 @@ contract ChainlinkOracleManager is
         uint64 firstRoundId = uint64(_firstRoundProxy);
 
         uint80 roundToCheck =
-            _toUint80(uint256(firstRoundId).add(uint256(lastRoundId)).div(2));
+            uint80(uint256(firstRoundId).add(uint256(lastRoundId)).div(2));
         uint80 roundToCheckProxy =
             uint80((uint256(phaseId) << phaseOffset) | roundToCheck);
 
@@ -295,20 +295,5 @@ contract ChainlinkOracleManager is
                 firstRoundId,
                 roundToCheck
             );
-    }
-
-    /**
-     * @dev Returns the downcasted uint80 from uint256, reverting on
-     * overflow (when the input is greater than largest uint80).
-     *
-     * Counterpart to Solidity's `uint80` operator.
-     *
-     * Requirements:
-     *
-     * - input must fit into 80 bits
-     */
-    function _toUint80(uint256 _value) internal pure returns (uint80) {
-        require(_value < 2**80, "SafeCast: value doesn't fit in 80 bits");
-        return uint80(_value);
     }
 }
