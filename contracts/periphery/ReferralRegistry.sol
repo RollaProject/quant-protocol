@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/drafts/EIP712.sol";
+import "../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
+import "../../node_modules/@openzeppelin/contracts/drafts/EIP712.sol";
 import "../libraries/ReferralCodeValidator.sol";
 
 /// @title A registry for managing users and their referrers

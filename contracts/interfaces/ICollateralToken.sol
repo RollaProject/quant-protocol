@@ -2,7 +2,7 @@
 pragma solidity >=0.7.0 <0.9.0;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "../../node_modules/@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "./IQuantConfig.sol";
 import "./IQToken.sol";
 

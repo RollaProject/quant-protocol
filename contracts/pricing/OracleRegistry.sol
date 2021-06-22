@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "../../node_modules/@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IOracleRegistry.sol";
 

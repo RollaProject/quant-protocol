@@ -2,9 +2,9 @@
 pragma solidity 0.7.6;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/drafts/EIP712.sol";
+import "../../node_modules/@openzeppelin/contracts/access/AccessControl.sol";
+import "../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
+import "../../node_modules/@openzeppelin/contracts/drafts/EIP712.sol";
 import "../external/openzeppelin/ERC1155.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../interfaces/ICollateralToken.sol";

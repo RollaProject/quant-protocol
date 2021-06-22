@@ -2,8 +2,8 @@
 pragma solidity 0.7.6;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "../../node_modules/@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "../../node_modules/@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../libraries/ProtocolValue.sol";
 import "../interfaces/ITimelockedConfig.sol";
 

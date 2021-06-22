@@ -2,7 +2,7 @@
 pragma solidity 0.7.6;
 
 import "./ChainlinkOracleManager.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
 
 contract ChainlinkFixedTimeOracleManager is ChainlinkOracleManager {

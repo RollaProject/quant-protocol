@@ -2,8 +2,8 @@
 pragma solidity >=0.7.0 <0.9.0;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
+import "../../node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../../node_modules/@openzeppelin/contracts/drafts/IERC20Permit.sol";
 import "./IQuantConfig.sol";
 
 /// @dev Current pricing status of option. Only SETTLED options can be exercised

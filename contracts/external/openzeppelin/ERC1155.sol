@@ -2,13 +2,13 @@
 
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "@openzeppelin/contracts/token/ERC1155/IERC1155MetadataURI.sol";
-import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
-import "@openzeppelin/contracts/introspection/ERC165.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import "../../../node_modules/@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "../../../node_modules/@openzeppelin/contracts/token/ERC1155/IERC1155MetadataURI.sol";
+import "../../../node_modules/@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import "../../../node_modules/@openzeppelin/contracts/utils/Context.sol";
+import "../../../node_modules/@openzeppelin/contracts/introspection/ERC165.sol";
+import "../../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
+import "../../../node_modules/@openzeppelin/contracts/utils/Address.sol";
 
 /**
  *

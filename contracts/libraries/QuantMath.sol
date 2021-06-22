@@ -2,8 +2,8 @@
 pragma solidity 0.7.6;
 
 import "./SignedConverter.sol";
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../node_modules/@openzeppelin/contracts/math/SignedSafeMath.sol";
+import "../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 
 /**
  * @title QuantMath

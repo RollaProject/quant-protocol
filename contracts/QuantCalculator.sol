@@ -2,7 +2,7 @@
 pragma solidity 0.7.6;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/IQuantCalculator.sol";
 import "./interfaces/IOptionsFactory.sol";
 import "./interfaces/IQToken.sol";

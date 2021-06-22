@@ -2,10 +2,10 @@
 pragma solidity 0.7.6;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts/drafts/ERC20Permit.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
+import "../../node_modules/@openzeppelin/contracts/drafts/ERC20Permit.sol";
+import "../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
+import "../../node_modules/@openzeppelin/contracts/utils/Strings.sol";
+import "../../node_modules/@quant-finance/solidity-datetime/contracts/DateTime.sol";
 import "../pricing/PriceRegistry.sol";
 import "../interfaces/IAssetsRegistry.sol";
 import "../interfaces/IQuantConfig.sol";

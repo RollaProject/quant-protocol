@@ -2,8 +2,8 @@
 pragma solidity 0.7.6;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts-upgradeable/drafts/EIP712Upgradeable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../node_modules/@openzeppelin/contracts-upgradeable/drafts/EIP712Upgradeable.sol";
+import "../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/IEIP712MetaTransaction.sol";
 import "../interfaces/IController.sol";
 import "../libraries/Actions.sol";

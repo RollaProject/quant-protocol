@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/utils/Context.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../node_modules/@openzeppelin/contracts/utils/Context.sol";
+import "../../node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 
 contract BasicERC20 is Context, IERC20 {
     using SafeMath for uint256;
