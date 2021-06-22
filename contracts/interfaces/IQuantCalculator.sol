@@ -5,7 +5,6 @@ interface IQuantCalculator {
     function calculateClaimableCollateral(
         uint256,
         uint256,
-        address,
         address
     )
         external
@@ -19,15 +18,10 @@ interface IQuantCalculator {
     function getCollateralRequirement(
         address,
         address,
-        address,
         uint256
     ) external view returns (address, uint256);
 
-    function getExercisePayout(
-        address,
-        address,
-        uint256
-    )
+    function getExercisePayout(address, uint256)
         external
         view
         returns (
@@ -37,12 +31,13 @@ interface IQuantCalculator {
         );
 
     function getNeutralizationPayout(
-        address _qTokenLong,
         address _qTokenShort,
-        uint256 _amountToNeutralize,
-        address _optionsFactory
+        address _qTokenLong,
+        uint256 _amountToNeutralize
     ) external view returns (address collateralType, uint256 collateralOwed);
 
     // solhint-disable-next-line func-name-mixedcase
     function OPTIONS_DECIMALS() external view returns (uint8);
+
+    function optionsFactory() external view returns (address);
 }

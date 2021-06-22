@@ -37,23 +37,6 @@ contract Controller is
 
     address public override quantCalculator;
 
-    modifier validQToken(address _qToken) {
-        //TODO: Better messaging here...
-        require(
-            IOptionsFactory(optionsFactory).isQToken(_qToken),
-            "Controller: Option needs to be created by the factory first"
-        );
-
-        IQToken qToken = IQToken(_qToken);
-
-        require(
-            qToken.expiryTime() > block.timestamp,
-            "Controller: Cannot mint expired options"
-        );
-
-        _;
-    }
-
     function operate(ActionArgs[] memory _actions)
         external
         override
@@ -74,6 +57,12 @@ contract Controller is
                 _claimCollateral(action.parseClaimCollateralArgs());
             } else if (_equalStrings(actionType, "NEUTRALIZE")) {
                 _neutralizePosition(action.parseNeutralizeArgs());
+            } else if (_equalStrings(actionType, "QTOKEN_PERMIT")) {
+                _qTokenPermit(action.parseQTokenPermitArgs());
+            } else if (_equalStrings(actionType, "COLLATERAL_TOKEN_APPROVAL")) {
+                _collateralTokenApproval(
+                    action.parseCollateralTokenApprovalArgs()
+                );
             } else {
                 require(
                     _equalStrings(actionType, "CALL"),
@@ -101,10 +90,18 @@ contract Controller is
 
     function _mintOptionsPosition(Actions.MintOptionArgs memory _args)
         internal
-        validQToken(_args.qToken)
         returns (uint256)
     {
         IQToken qToken = IQToken(_args.qToken);
+
+        (address collateral, uint256 collateralAmount) =
+            IQuantCalculator(quantCalculator).getCollateralRequirement(
+                _args.qToken,
+                address(0),
+                _args.amount
+            );
+
+        _checkIfUnexpiredQToken(_args.qToken);
 
         require(
             IOracleRegistry(
@@ -115,14 +112,6 @@ contract Controller is
                 .isOracleActive(qToken.oracle()),
             "Controller: Can't mint an options position as the oracle is inactive"
         );
-
-        (address collateral, uint256 collateralAmount) =
-            IQuantCalculator(quantCalculator).getCollateralRequirement(
-                _args.qToken,
-                address(0),
-                optionsFactory,
-                _args.amount
-            );
 
         IERC20(collateral).safeTransferFrom(
             _msgSender(),
@@ -157,8 +146,6 @@ contract Controller is
 
     function _mintSpread(Actions.MintSpreadArgs memory _args)
         internal
-        validQToken(_args.qTokenToMint)
-        validQToken(_args.qTokenForCollateral)
         returns (uint256)
     {
         require(
@@ -173,9 +160,11 @@ contract Controller is
             IQuantCalculator(quantCalculator).getCollateralRequirement(
                 _args.qTokenToMint,
                 _args.qTokenForCollateral,
-                optionsFactory,
                 _args.amount
             );
+
+        _checkIfUnexpiredQToken(_args.qTokenToMint);
+        _checkIfUnexpiredQToken(_args.qTokenForCollateral);
 
         qTokenForCollateral.burn(_msgSender(), _args.amount);
 
@@ -244,7 +233,6 @@ contract Controller is
         (bool isSettled, address payoutToken, uint256 exerciseTotal) =
             IQuantCalculator(quantCalculator).getExercisePayout(
                 _args.qToken,
-                optionsFactory,
                 amountToExercise
             );
 
@@ -276,7 +264,6 @@ contract Controller is
             IQuantCalculator(quantCalculator).calculateClaimableCollateral(
                 _args.collateralTokenId,
                 _args.amount,
-                optionsFactory,
                 _msgSender()
             );
 
@@ -317,7 +304,7 @@ contract Controller is
 
         //the amount of position that can be neutralized
         uint256 maxNeutralizable =
-            qTokensOwned > collateralTokensOwned
+            qTokensOwned < collateralTokensOwned
                 ? qTokensOwned
                 : collateralTokensOwned;
 
@@ -335,10 +322,9 @@ contract Controller is
 
         (address collateralType, uint256 collateralOwed) =
             IQuantCalculator(quantCalculator).getNeutralizationPayout(
-                qTokenLong,
                 qTokenShort,
-                amountToNeutralize,
-                optionsFactory
+                qTokenLong,
+                amountToNeutralize
             );
 
         IQToken(qTokenShort).burn(_msgSender(), amountToNeutralize);
@@ -366,8 +352,44 @@ contract Controller is
         );
     }
 
+    function _qTokenPermit(Actions.QTokenPermitArgs memory _args) internal {
+        IQToken(_args.qToken).permit(
+            _args.owner,
+            _args.spender,
+            _args.value,
+            _args.deadline,
+            _args.v,
+            _args.r,
+            _args.s
+        );
+    }
+
+    function _collateralTokenApproval(
+        Actions.CollateralTokenApprovalArgs memory _args
+    ) internal {
+        IOptionsFactory(optionsFactory).collateralToken().metaSetApprovalForAll(
+            _args.owner,
+            _args.operator,
+            _args.approved,
+            _args.nonce,
+            _args.deadline,
+            _args.v,
+            _args.r,
+            _args.s
+        );
+    }
+
     function _call(Actions.CallArgs memory _args) internal {
         IOperateProxy(operateProxy).callFunction(_args.callee, _args.data);
+    }
+
+    function _checkIfUnexpiredQToken(address _qToken) internal view {
+        IQToken qToken = IQToken(_qToken);
+
+        require(
+            qToken.expiryTime() > block.timestamp,
+            "Controller: Cannot mint expired options"
+        );
     }
 
     function _equalStrings(string memory str1, string memory str2)

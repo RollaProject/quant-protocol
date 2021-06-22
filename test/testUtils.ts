@@ -8,7 +8,6 @@ import {
   Wallet,
 } from "ethers";
 import { ethers, upgrades, waffle } from "hardhat";
-import Web3 from "web3";
 import { hexToNumber } from "web3-utils";
 import AssetsRegistryJSON from "../artifacts/contracts/options/AssetsRegistry.sol/AssetsRegistry.json";
 import CollateralTokenJSON from "../artifacts/contracts/options/CollateralToken.sol/CollateralToken.json";
@@ -29,10 +28,14 @@ import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import { QuantConfig } from "../typechain/QuantConfig";
-import { actionType, domainType, metaActionType } from "./eip712Types";
+import {
+  actionType,
+  domainType,
+  metaActionType,
+  metaApprovalType,
+  metaReferralActionType,
+} from "./eip712Types";
 import { provider } from "./setup";
-
-const web3 = new Web3();
 
 const { deployContract } = waffle;
 
@@ -43,6 +46,9 @@ const PERMIT_TYPEHASH = keccak256(
     "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
   )
 );
+
+export const name = "Quant Protocol";
+export const version = "0.4.0";
 
 const mockERC20 = async (
   deployer: Signer,
@@ -123,7 +129,11 @@ const deployCollateralToken = async (
   quantConfig: QuantConfig
 ): Promise<CollateralToken> => {
   const collateralToken = <CollateralToken>(
-    await deployContract(deployer, CollateralTokenJSON, [quantConfig.address])
+    await deployContract(deployer, CollateralTokenJSON, [
+      quantConfig.address,
+      name,
+      version,
+    ])
   );
 
   return collateralToken;
@@ -257,21 +267,23 @@ type SignedTransactionData = {
   v: number;
 };
 
-const getSignedTransactionData = async (
+const getSignedTransactionData = (
   nonce: number,
+  deadline: number,
   userWallet: Wallet,
   actions: ActionArgs[],
   verifyingContract: string
-): Promise<SignedTransactionData> => {
+): SignedTransactionData => {
   const message = {
     nonce,
+    deadline,
     from: userWallet.address,
     actions,
   };
 
   const domainData = {
-    name: "Quant Protocol",
-    version: "0.2.1",
+    name,
+    version,
     verifyingContract,
     chainId: provider.network.chainId,
   };
@@ -311,11 +323,69 @@ const getSignedTransactionData = async (
   };
 };
 
+const getApprovalForAllSignedData = (
+  nonce: number,
+  ownerWallet: Wallet,
+  operator: string,
+  approved: boolean,
+  deadline: number,
+  verifyingContract: string
+): SignedTransactionData => {
+  const message = {
+    owner: ownerWallet.address,
+    operator,
+    approved,
+    nonce,
+    deadline,
+  };
+
+  const domainData = {
+    name,
+    version,
+    verifyingContract,
+    chainId: provider.network.chainId,
+  };
+
+  type metaSetApprovalForAll = "metaSetApprovalForAll";
+  const metaSetApprovalForAll: metaSetApprovalForAll = "metaSetApprovalForAll";
+
+  const data = {
+    types: {
+      EIP712Domain: domainType,
+      metaSetApprovalForAll: metaApprovalType,
+    },
+    domain: domainData,
+    primaryType: metaSetApprovalForAll,
+    message,
+  };
+
+  const signature = sigUtil.signTypedData_v4(
+    Buffer.from(ownerWallet.privateKey.slice(2), "hex"),
+    {
+      data,
+    }
+  );
+
+  const r = signature.slice(0, 66);
+  const s = "0x".concat(signature.slice(66, 130));
+  const vString = "0x".concat(signature.slice(130, 132));
+
+  let v = hexToNumber(vString);
+  if (![27, 28].includes(v)) v += 27;
+
+  return {
+    r,
+    s,
+    v,
+  };
+};
+
 const deployQuantCalculator = async (
-  deployer: Signer
+  deployer: Signer,
+  optionsFactory: string
 ): Promise<QuantCalculator> => {
   const quantCalculator = <QuantCalculator>(
-    await deployContract(deployer, QuantCalculatorJSON)
+    await deployContract(deployer, QuantCalculatorJSON, [optionsFactory])
   );
   return quantCalculator;
 };
@@ -330,6 +400,81 @@ export type ActionArgs = {
   data: BytesLike;
 };
 
+export const takeSnapshot = async (): Promise<string> => {
+  const id: string = await provider.send("evm_snapshot", [
+    new Date().getTime(),
+  ]);
+
+  return id;
+};
+
+export const revertToSnapshot = async (id: string): Promise<void> => {
+  await provider.send("evm_revert", [id]);
+};
+
+export enum ReferralAction {
+  CLAIM_CODE,
+  REGISTER_BY_CODE,
+  REGISTER_BY_REFERRER,
+}
+
+export const getReferralActionSignedData = (
+  userWallet: Wallet,
+  action: ReferralAction,
+  actionData: BytesLike,
+  nonce: number,
+  deadline: number,
+  verifyingContract: string
+): SignedTransactionData => {
+  const message = {
+    user: userWallet.address,
+    action,
+    actionData,
+    nonce,
+    deadline,
+  };
+
+  const domainData = {
+    name,
+    version,
+    verifyingContract,
+    chainId: provider.network.chainId,
+  };
+
+  type metaReferralAction = "metaReferralAction";
+  const metaReferralAction: metaReferralAction = "metaReferralAction";
+
+  const data = {
+    types: {
+      EIP712Domain: domainType,
+      metaReferralAction: metaReferralActionType,
+    },
+    domain: domainData,
+    primaryType: metaReferralAction,
+    message,
+  };
+
+  const signature = sigUtil.signTypedData_v4(
+    Buffer.from(userWallet.privateKey.slice(2), "hex"),
+    {
+      data,
+    }
+  );
+
+  const r = signature.slice(0, 66);
+  const s = "0x".concat(signature.slice(66, 130));
+  const vString = "0x".concat(signature.slice(130, 132));
+
+  let v = hexToNumber(vString);
+  if (![27, 28].includes(v)) v += 27;
+
+  return {
+    r,
+    s,
+    v,
+  };
+};
+
 export {
   deployCollateralToken,
   deployOptionsFactory,
@@ -342,4 +487,5 @@ export {
   getApprovalDigest,
   getSignedTransactionData,
   deployQuantCalculator,
+  getApprovalForAllSignedData,
 };
