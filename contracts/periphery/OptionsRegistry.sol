@@ -19,15 +19,6 @@ contract OptionsRegistry is AccessControl, IOptionsRegistry {
     /// @notice exhaustive list of underlying assets in registry
     address[] public underlyingAssets;
 
-    event NewOption(address underlyingAsset, address qToken, uint256 index);
-
-    event OptionVisibilityChanged(
-        address underlyingAsset,
-        address qToken,
-        uint256 index,
-        bool isVisible
-    );
-
     /// @param _admin administrator address which can manage options and assign option managers
     constructor(address _admin) {
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);

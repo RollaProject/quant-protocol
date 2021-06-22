@@ -40,4 +40,12 @@ interface ITimelockedConfig {
     function quantRoles(string calldata) external view returns (bytes32);
 
     function configuredQuantRoles(uint256) external view returns (bytes32);
+
+    function protocolAddressesLength() external view returns (uint256);
+
+    function protocolUints256Length() external view returns (uint256);
+
+    function protocolBooleansLength() external view returns (uint256);
+
+    function quantRolesLength() external view returns (uint256);
 }

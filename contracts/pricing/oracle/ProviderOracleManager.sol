@@ -59,6 +59,12 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
         override
         returns (uint256);
 
+    function isValidOption(
+        address _underlyingAsset,
+        uint256 _expiryTime,
+        uint256 _strikePrice
+    ) public view virtual override returns (bool);
+
     /// @inheritdoc IProviderOracleManager
     function getAssetOracle(address _asset)
         public

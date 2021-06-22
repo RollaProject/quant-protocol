@@ -68,8 +68,16 @@ describe("OracleRegistry", () => {
       false
     );
 
-    await oracleProviderRegistry.connect(oracleManager).addOracle(oracleOne);
-    await oracleProviderRegistry.connect(oracleManager).addOracle(oracleTwo);
+    await expect(
+      oracleProviderRegistry.connect(oracleManager).addOracle(oracleOne)
+    )
+      .to.emit(oracleProviderRegistry, "AddedOracle")
+      .withArgs(ethers.utils.getAddress(oracleOne), ethers.BigNumber.from("1"));
+    await expect(
+      oracleProviderRegistry.connect(oracleManager).addOracle(oracleTwo)
+    )
+      .to.emit(oracleProviderRegistry, "AddedOracle")
+      .withArgs(ethers.utils.getAddress(oracleTwo), ethers.BigNumber.from("2"));
     expect(await oracleProviderRegistry.getOraclesLength()).to.equal(2);
     expect(await oracleProviderRegistry.getOracleId(oracleOne)).to.equal(1);
     expect(await oracleProviderRegistry.getOracleId(oracleTwo)).to.equal(2);
@@ -171,6 +179,20 @@ describe("OracleRegistry", () => {
       oracleProviderRegistry.connect(secondAccount).deactivateOracle(oracleOne)
     ).to.be.revertedWith(
       "OracleRegistry: Only an oracle admin can add an oracle"
+    );
+  });
+
+  it("Should grant the PRICE_SUBMITTER_ROLE to oracles when their added to the registry", async () => {
+    const priceSubmitterRole = ethers.utils.id("PRICE_SUBMITTER_ROLE");
+
+    expect(await quantConfig.hasRole(priceSubmitterRole, oracleOne)).to.equal(
+      false
+    );
+
+    await oracleProviderRegistry.connect(oracleManager).addOracle(oracleOne);
+
+    expect(await quantConfig.hasRole(priceSubmitterRole, oracleOne)).to.equal(
+      true
     );
   });
 });

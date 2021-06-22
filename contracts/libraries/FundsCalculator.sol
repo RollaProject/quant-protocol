@@ -6,7 +6,6 @@ import "./QuantMath.sol";
 import "../options/QToken.sol";
 import "../interfaces/IPriceRegistry.sol";
 
-//TODO: Deployment scripts should deploy and link this
 library FundsCalculator {
     using SafeMath for uint256;
     using QuantMath for uint256;
