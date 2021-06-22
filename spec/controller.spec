@@ -152,8 +152,11 @@ ghost ghost_collateralRequirement(address, address, uint256) returns uint;// {
   //       xPlusY == x + y => ghost_collateralRequirement(q1, q2, xPlusY) == ghost_collateralRequirement(q1, q2, x) + /ghost_collateralRequirement(q1, q2, y);
 //}
 
-ghost ghost_exercisePayout(address, uint256) returns uint;// {
-	// additive
+ghost ghost_exercisePayout(address, uint256) returns uint{
+	axiom forall address p. forall uint256 amount1. forall uint256 amount2.
+	amount1 > amount2 => ghost_exercisePayout(p,amount1) >= ghost_exercisePayout(p,amount2);
+}
+	// monotonic
 //	axiom forall address q. forall uint256 x. forall uint256 y. forall uint256 xPlusY.
   //       xPlusY == x + y => ghost_exercisePayout(q, xPlusY) == ghost_exercisePayout(q, x) + ghost_exercisePayout(q, y);
 
@@ -486,6 +489,7 @@ rule moreOptionsMorePayout(uint collateralTokenId, uint amount1, uint amount2){
 	require qToken == qTokenA;
 	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
 	require asset != qToken;
+	
 
 	require e.msg.sender != currentContract;//check if allowed
 
@@ -691,29 +695,14 @@ rule zeroCollateralZeroClaim(uint256 collateralTokenId, uint256 amount){
 	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
 	uint balanceContractBefore = getTokenBalanceOf(e, asset, currentContract);
 	uint balanceUserColBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
-	//require collateralTokenId == address(0);
-	claimCollateral(e,collateralTokenId, amount);
-	uint balanceContractAfter = getTokenBalanceOf(e, asset, currentContract);
-	assert balanceUserColBefore == 0 => balanceContractBefore == balanceContractAfter;
-}
-/* 	Rule: claimCorrectness
- 	Description:
-	Formula: 
-	Notes: 
-*/
-rule claimCorrectness(uint256 collateralTokenId, uint256 amount){ // to complete!
-	env e;
-	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
-	require qToken == qTokenA;
-	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
-	uint balanceContractBefore = getTokenBalanceOf(e, asset, currentContract);
-	uint balanceUserColBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
-	//require collateralTokenId == address(0);
 	claimCollateral(e,collateralTokenId, amount);
 	uint balanceContractAfter = getTokenBalanceOf(e, asset, currentContract);
 	assert balanceUserColBefore == 0 => balanceContractBefore == balanceContractAfter;
 }
 
+rule InverseMintNeut(uint256 collateralTokenId, uint256 amount){
+
+}
 
 /*
 rule After_mintSpread(address qToken,address qTokenForCollateral,uint256 amount){
