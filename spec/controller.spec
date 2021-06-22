@@ -302,7 +302,7 @@ rule solvencyUser(uint collateralTokenId, uint pricePerQToken, method f, uint va
 
 
 
-/* 	Rule: additiveClaim
+/* 	Rule: additiveClaim (rule #15)
  	Description: Claim collateral of x and then of y should produce same result as claim collateral of (x+y)
 	Formula:  claimCollateral(cId, x) + claimCollateral(cId, y) ~ claimCollateral(cID, x+y)
 			with respect to collateralToken.balanceOf(e.msg.sender, cId)
@@ -627,6 +627,52 @@ rule mintSpreadBalancesCorrectness(address qTokenToMint, address qTokenForCollat
 		   qTokenToMintTotalBefore == qTokenToMintTotalAfter - amount;
 
 }
+/* 	Rule: neutralizeOptionsInSteps (Rule #17)
+ 	Description: Neutralizing options in steps doesn't yield higher payout than exercising in one go
+	Formula: 
+	Notes: 
+*/
+rule neutralizingOptionsInSteps(uint256 collateralTokenId, uint256 amount1, uint256 amount2){
+	env e;
+	//setup qToken, collateralTokenID and underlying asset 
+	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA;
+
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+	require asset != qToken;
+
+	require e.msg.sender != currentContract;//check if allowed
+
+	storage init_state = lastStorage;
+	neutralizePosition(e, collateralTokenId, amount1);
+	neutralizePosition(e, collateralTokenId, amount2);
+	uint256	balance1 = getTokenBalanceOf(e, asset, e.msg.sender); 
+	neutralizePosition(e, collateralTokenId, amount1 + amount2) at init_state;
+	uint256	balance2 = getTokenBalanceOf(e, asset, e.msg.sender);
+	assert balance1 >= balance2;
+
+}
+/* 	Rule: neutralizeBurnCorectness (Rule #19)
+ 	Description:  Neutralizing options must always burn the amount passed into the function
+	Formula: 
+	Notes: 
+*/
+rule neutralizeBurnCorectness(uint collateralTokenId, uint amount){
+	env e;
+	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA;
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+	require asset != qToken;
+
+	require e.msg.sender != currentContract;//check if allowed
+
+	uint totalSupplyBefore = qTokenA.totalSupply();
+	//require amount == qTokenA.balanceOf(e.msg.sender);
+	neutralizePosition(e, collateralTokenId, amount);
+	uint totalSupplyAfter = qTokenA.totalSupply();
+	assert totalSupplyBefore - amount == totalSupplyAfter;
+}
+
 /*
 rule colToken_Impl_ColDeposited(uint256 collateralTokenId, address user){
 uint colAmount = balanceOfCol(e,collateralTokenId,user);
@@ -836,3 +882,4 @@ rule modulo(){
 	assert y * z != x;
 }
 */
+}
