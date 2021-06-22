@@ -882,4 +882,3 @@ rule modulo(){
 	assert y * z != x;
 }
 */
-}
