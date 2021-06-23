@@ -7,15 +7,31 @@ import "../../contracts/interfaces/IOptionsFactory.sol";
 import "../../contracts/interfaces/IQToken.sol";
 import "../../contracts/interfaces/IPriceRegistry.sol";
 
-//TODO: Stop taking optionsFactory as params in here as its an anti-pattern and frontend will need to pass it.
+
+
 contract QuantCalculatorHarness is IQuantCalculator {
 
-    uint8 public constant override OPTIONS_DECIMALS = 0;
+    modifier validQToken(address _qToken) {
+        require(
+            IOptionsFactory(optionsFactory).isQToken(_qToken),
+            "QuantCalculator: Invalid QToken address"
+        );
 
-    IQuantCalculator calcOriginal;
-    
+        _;
+    }
 
-    mapping (address => address) public qTokenToCollateralType;
+    modifier validQTokenAsCollateral(address _qTokenAsCollateral) {
+        if (_qTokenAsCollateral != address(0)) {
+            // it could be the zero address for the qTokenAsCollateral for non-spreads
+            require(
+                IOptionsFactory(optionsFactory).isQToken(_qTokenAsCollateral),
+                "QuantCalculator: Invalid QToken address"
+            );
+        }
+
+        _;
+    }
+
     // a symbolic mapping form (qToken, qtokenLong, amount) to collateralRequirement 
     mapping (address => mapping( address => mapping( uint256 => uint256) )) public collateralRequirement;
     // a symbolic mapping form (_collateralTokenId, amount) to claimableCollateral 
@@ -24,11 +40,19 @@ contract QuantCalculatorHarness is IQuantCalculator {
     mapping (address => mapping( uint256 => uint256) ) public exercisePayout;
     
 
+    uint8 public constant override OPTIONS_DECIMALS = 0;
+
+    IQuantCalculator calcOriginal;
+    address public override optionsFactory;
+    
+
+    mapping (address => address) public qTokenToCollateralType;
+
 
     function getClaimableCollateralValue(
         uint256 _collateralTokenId,
         uint256 _amount
-    )  public view returns (uint256) {
+    )  internal view returns (uint256) {
         return claimableCollateral[_collateralTokenId][_amount];
     }
 
@@ -36,14 +60,14 @@ contract QuantCalculatorHarness is IQuantCalculator {
         address _qTokenToMint,
         address _qTokenForCollateral,
         uint256 _amount
-    ) public view returns (uint256) {
+    ) internal view returns (uint256) {
         return collateralRequirement[_qTokenToMint][_qTokenForCollateral][_amount];
     }
 
     function getExercisePayoutValue(
         address _qToken,
         uint256 _amount
-    ) public view returns (uint256)  {
+    ) internal view returns (uint256)  {
         return exercisePayout[_qToken][_amount];
     }
 
@@ -51,7 +75,6 @@ contract QuantCalculatorHarness is IQuantCalculator {
     function calculateClaimableCollateral(
         uint256 _collateralTokenId,
         uint256 _amount,
-        address _optionsFactory,
         address msgSender
     )
         external
@@ -64,17 +87,15 @@ contract QuantCalculatorHarness is IQuantCalculator {
         )
     {
 
-        IOptionsFactory optionsFactory = IOptionsFactory(_optionsFactory);
-
         amountToClaim = _amount == 0
-            ? optionsFactory.collateralToken().balanceOf(
+            ? IOptionsFactory(optionsFactory).collateralToken().balanceOf(
                 msgSender,
                 _collateralTokenId
             )
             : _amount;
 
         (address _qTokenShort, address qTokenAsCollateral) =
-            optionsFactory.collateralToken().idToInfo(_collateralTokenId);
+            IOptionsFactory(optionsFactory).collateralToken().idToInfo(_collateralTokenId);
 
         returnableCollateral = getClaimableCollateralValue(_collateralTokenId,amountToClaim);
         collateralAsset = qTokenToCollateralType[_qTokenShort];
@@ -83,26 +104,26 @@ contract QuantCalculatorHarness is IQuantCalculator {
     function getNeutralizationPayout(
         address _qTokenLong,
         address _qTokenShort,
-        uint256 _amountToNeutralize,
-        address _optionsFactory
+        uint256 _amountToNeutralize
     )
         external
         view
         override
         returns (address collateralType, uint256 collateralOwed)
     {
-        return calcOriginal.getNeutralizationPayout(_qTokenLong,_qTokenShort,_amountToNeutralize,_optionsFactory);
+        return calcOriginal.getNeutralizationPayout(_qTokenLong,_qTokenShort,_amountToNeutralize);
     }
 
     function getCollateralRequirement(
         address _qTokenToMint,
         address _qTokenForCollateral,
-        address _optionsFactory,
         uint256 _amount
     )
         external
         view
         override
+        validQToken(_qTokenToMint)
+        validQTokenAsCollateral(_qTokenForCollateral)
         returns (address collateral, uint256 collateralAmount)
     {
         collateralAmount = getCollateralRequirementValue(_qTokenToMint,_qTokenForCollateral,_amount);
@@ -115,12 +136,12 @@ contract QuantCalculatorHarness is IQuantCalculator {
 
     function getExercisePayout(
         address _qToken,
-        address _optionsFactory,
         uint256 _amount
     )
         external
         view
         override
+        validQToken(_qToken)
         returns (
             bool isSettled,
             address payoutToken,
