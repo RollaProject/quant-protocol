@@ -17,18 +17,21 @@ contract FundsCalculatorWrapper {
     QuantMath.FixedPointInt internal collateralAmount;
     FundsCalculator.OptionPayoutInput internal payoutInput;
 
+    uint256 private constant _BASE_DECIMALS = 27;
+
     function setPayoutInput(
         uint256 _strikePrice,
         uint256 _expiryPrice,
         uint256 _amount,
         uint8 _expiryDecimals,
-        uint8 _optionsDecimals
+        uint8 _optionsDecimals,
+        bool noScaling
     ) public {
         payoutInput =
         FundsCalculator.OptionPayoutInput(
-            _strikePrice.fromScaledUint(6),
-            _expiryPrice.fromScaledUint(_expiryDecimals),
-            _amount.fromScaledUint(_optionsDecimals)
+            _strikePrice.fromScaledUint(noScaling ? _BASE_DECIMALS : 6),
+            _expiryPrice.fromScaledUint(noScaling ? _BASE_DECIMALS : _expiryDecimals),
+            _amount.fromScaledUint(noScaling ? _BASE_DECIMALS : _optionsDecimals)
         );
     }
 
@@ -55,7 +58,7 @@ contract FundsCalculatorWrapper {
     }
 
     // Rule 3 and 5
-    function getPutCollateralRequirement(
+    function getPutCollateralRequirementWrapper(
         uint256 _qTokenToMintStrikePrice,
         uint256 _qTokenForCollateralStrikePrice
     )
@@ -138,5 +141,15 @@ contract FundsCalculatorWrapper {
 
     function checkAleB(int256 _a, int256 _b) public returns (bool) {
         return _a <= _b;
+    }
+
+    function checkAplusBeqC(int256 _a, int256 _b, int256 _c) public returns (bool) {
+        return _c == _a + _b;
+    }
+
+    function uintToInt(uint256 a) public returns (int256) {
+        require(a < 2**255, "FundsCalculatorWrapper: out of int range");
+
+        return int256(a);
     }
 }
