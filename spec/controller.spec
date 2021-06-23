@@ -101,7 +101,7 @@ methods {
 	quantCalculator.exercisePayout(
 		address qToken,
 		uint amount
-	) returns (uint256) envfree 
+	) returns (uint256) envfree => ghost_exercisePayout(qToken,amount)
 
 
 	//ERC1155Receiver
@@ -136,7 +136,10 @@ claimableCollateral() ==  collateralRequirement() + exercisePayout()
 ***/
 
 // A ghost to represent the amount of claimableCollateral per collateralId and amount
-ghost ghost_claimableCollateral(uint256, uint256) returns uint;// {
+ghost ghost_claimableCollateral(uint256, uint256) returns uint{
+	//zero value
+	axiom forall uint256 cId. ghost_claimableCollateral(cId,0) == 0;
+}
 	// additive
 //	axiom for each 2 calls to getClaimableCollateralValue(cID1,x) and getClaimableCollateralValue(cID2,y)  cID1 == cID2 => 
   //      			ghost_claimableCollateral(cID,x + y) == ghost_claimableCollateral(cID,x) + ghost_claimableCollateral(cID, y);
@@ -197,7 +200,7 @@ hook Sload uint payout quantCalculator.(slot 2)[KEY address qToken][KEY uint amo
 ////////////////////////////////////////////////////////////////////////////
     
 /* 	Rule: Valid QToken  
- 	Description:  only valid QToken can be used in the state changing balances 
+ 	Description:  Only valid QToken can be used in functions that change the QToken's totalSupply 
 	Formula: 	{ t = qToken.totalSupply() }
 					op
 				{ qToken.totalSupply() != t => qToken.isValid() }
@@ -254,9 +257,16 @@ rule solvencyUser(uint collateralTokenId, uint pricePerQToken, method f, uint va
 	require ghost_collateralRequirement(qToken, qTokenForCollateral, amount) == quantCalculator.collateralRequirement(qToken, qTokenForCollateral, amount);
 
 
-	//assume property proven in QuantCalculator
+	//assume main property of QuantCalculator
 	require ghost_collateralRequirement(qToken, qTokenForCollateral, amount) == 
-		ghost_claimableCollateral(collateralTokenId, amount) + ghost_exercisePayout(qToken, amount);
+			ghost_claimableCollateral(collateralTokenId, amount) + ghost_exercisePayout(qToken, amount);
+	if (qTokenForCollateral != 0) {
+		require ghost_collateralRequirement(qToken, qTokenForCollateral, amount) == 
+				ghost_collateralRequirement(qToken, 0, amount) -
+				ghost_collateralRequirement(qTokenForCollateral, 0, amount) ;
+		require ghost_collateralRequirement(qTokenForCollateral, 0, amount) == ghost_exercisePayout(qTokenForCollateral, amount);
+	}
+	
 
 	require e.msg.sender != currentContract;//check if allowed
 	require to == e.msg.sender;
@@ -278,8 +288,10 @@ rule solvencyUser(uint collateralTokenId, uint pricePerQToken, method f, uint va
 	
 	mathint userAssetsBefore = assetBalanceBefore + valueOfCollateralTokenIdBefore + valueOfQTokenBefore + valueOfQTokenLongBefore;
 
-	callFunctionWithParams(e.msg.sender, qToken, qTokenForCollateral, collateralTokenId, to, amount, f);
+	//callFunctionWithParams(e.msg.sender, qToken, qTokenForCollateral, collateralTokenId, to, amount, f);
 	//mintOptionsPosition(e,e.msg.sender,qTokenA,amount);
+	mintSpread(e,qToken, qTokenForCollateral, amount);
+	
 	
 	uint assetBalanceAfter = getTokenBalanceOf(e, asset, e.msg.sender);
 	uint balanceColAfter = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
@@ -572,8 +584,8 @@ rule exerciseBurnCorectness(uint collateralTokenId, uint amount){
 	assert totalSupplyBefore - amount == totalSupplyAfter;
 }
 
-/* 	Rule: exerciseBurnCorectness (Rule #12)
- 	Description:  Exercising options must always burn the amount passed into the function
+/* 	Rule: moreOptionsMorePayout (Rule #12)
+ 	Description:  As the optionsAmount to exercise increases, the payout is at least the same as an exercise of options with a lower amount
 	Formula: 
 	Notes: 
 */
@@ -590,12 +602,43 @@ rule moreOptionsMorePayout(uint collateralTokenId, uint amount1, uint amount2){
 	require e.msg.sender != currentContract;//check if allowed
 
 	storage init_state = lastStorage;
-	monotonicExercisePayout(qToken, amount1, amount2);
+	//monotonicExercisePayout(qToken, amount1, amount2);
 	exercise(e,qTokenA, amount1);
 	uint	balanceAssetAfter1 = getTokenBalanceOf(e, asset, e.msg.sender);
 	exercise(e,qTokenA, amount2) at init_state;
 	uint	balanceAssetAfter2 = getTokenBalanceOf(e, asset, e.msg.sender);
+	require balanceAssetAfter1 < 1000 && balanceAssetAfter2 < 1000; // to remove
 	assert amount1 >= amount2 => balanceAssetAfter1 >= balanceAssetAfter2;
+}
+
+/* 	Rule: nonameYet 
+ 	Description: 
+	Formula: 
+	Notes: 
+*/
+rule nonameYet(uint256 collateralTokenId, uint256 amount, method f){
+	env e;
+	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA;
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+	require asset != qToken;
+	require ghost_claimableCollateral(collateralTokenId, amount) == quantCalculator.claimableCollateral(collateralTokenId, amount);
+	address qTokenForCollateral;
+	address to;
+	require e.msg.sender != currentContract;//check if allowed
+	require to == e.msg.sender;
+
+		//setup qToken, collateralTokenID and underlying asset 
+	setupQtokenCollateralTokenId(qToken, qTokenForCollateral, collateralTokenId);
+
+	uint userBalanceOfQToken = qTokenA.balanceOf(e.msg.sender);
+	uint userBalanceOfCol = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
+	uint qTokenTotalSupply = qTokenA.totalSupply();
+	uint ColTotalSupply = collateralToken.getTokenSupplies(collateralTokenId);
+	require userBalanceOfQToken == qTokenTotalSupply <=> userBalanceOfCol == ColTotalSupply;
+	callFunctionWithParams(e.msg.sender, qTokenA, qTokenForCollateral, collateralTokenId, to, amount, f);
+
+	assert userBalanceOfQToken == qTokenTotalSupply <=> userBalanceOfCol == ColTotalSupply;
 }
 /* 	Rule: mintSpreadBalancesCorrectness (Rule #13)
  	Description: Minting spreads must burn the qTokens provided as collateral, mint the desired qTokens and also mint collateral tokens representing the spread
@@ -735,16 +778,21 @@ rule zeroCollateralZeroClaim(uint256 collateralTokenId, uint256 amount){
 	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	require qToken == qTokenA;
 	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+	require asset != qToken;
+	require ghost_claimableCollateral(collateralTokenId, amount) == quantCalculator.claimableCollateral(collateralTokenId, amount);
+	
 	uint balanceContractBefore = getTokenBalanceOf(e, asset, currentContract);
 	uint balanceUserColBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 	claimCollateral(e,collateralTokenId, amount);
 	uint balanceContractAfter = getTokenBalanceOf(e, asset, currentContract);
 	assert balanceUserColBefore == 0 => balanceContractBefore == balanceContractAfter;
 }
-
+/*
 rule InverseMintNeut(uint256 collateralTokenId, uint256 amount){
 	assert false;
 }
+
+}*/
 
 /*
 rule After_mintSpread(address qToken,address qTokenForCollateral,uint256 amount){
@@ -874,7 +922,7 @@ function additivityCollateralRequirement(address qToken, address qTokenForCollat
 	require ghost_collateralRequirement(qToken, qTokenForCollateral, sum) == ghost_collateralRequirement(qToken, qTokenForCollateral, x) + ghost_collateralRequirement(qToken, qTokenForCollateral, y);
 }
 
-
+/*
 function monotonicExercisePayout(address qToken, uint x, uint y ) {
 	require x <= y ;
 	
@@ -882,14 +930,5 @@ function monotonicExercisePayout(address qToken, uint x, uint y ) {
 	require ghost_exercisePayout(qToken, y) == quantCalculator.exercisePayout(qToken, y);
 
 	require ghost_exercisePayout(qToken, x) <= ghost_exercisePayout(qToken, y);
-}
-
-/*
-rule modulo(){
-	uint x;
-	uint y;
-	uint z;
-	require x % y == 0 && x>1 && y>1 && z>1 && x<100 && y<100 && z<100;
-	assert y * z != x;
 }
 */
