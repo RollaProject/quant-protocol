@@ -142,6 +142,13 @@ ghost ghost_claimableCollateral(uint256, uint256) returns uint;// {
   //      			ghost_claimableCollateral(cID,x + y) == ghost_claimableCollateral(cID,x) + ghost_claimableCollateral(cID, y);
 //}
 
+/* claimableCollateral 
+hook Sload uint256 claim quantCalculator.(slot 1)[KEY uint256 collateralTokenId][KEY uint256 amount] STORAGE {
+   require ghost_claimableCollateral(collateralTokenId,amount) == claim;
+} */
+
+
+
 // A ghost to represent the amount of claimableCollateral per collateralId and amount
 ghost ghost_collateralRequirement(address, address, uint256) returns uint;// {
 	// additive
@@ -149,15 +156,26 @@ ghost ghost_collateralRequirement(address, address, uint256) returns uint;// {
   //       xPlusY == x + y => ghost_collateralRequirement(q1, q2, xPlusY) == ghost_collateralRequirement(q1, q2, x) + /ghost_collateralRequirement(q1, q2, y);
 //}
 
-ghost ghost_exercisePayout(address, uint256) returns uint{
+/* collateralRequirement 
+hook Sload uint colReq quantCalculator.(slot 0)[KEY address qToken][KEY address qTokenLong][KEY uint amount] STORAGE {
+   require ghost_collateralRequirement(qToken,qTokenLong,amount) == colReq;
+} */
+
+
+ghost ghost_exercisePayout(address, uint256) returns uint; /*{
 	axiom forall address p. forall uint256 amount1. forall uint256 amount2.
 	amount1 > amount2 => ghost_exercisePayout(p,amount1) >= ghost_exercisePayout(p,amount2);
-}
+}*/
 	// monotonic
 //	axiom forall address q. forall uint256 x. forall uint256 y. forall uint256 xPlusY.
   //       xPlusY == x + y => ghost_exercisePayout(q, xPlusY) == ghost_exercisePayout(q, x) + ghost_exercisePayout(q, y);
 
 //}
+
+/* exercisePayout 
+hook Sload uint payout quantCalculator.(slot 2)[KEY address qToken][KEY uint amount] STORAGE {
+   require ghost_exercisePayout(qToken,amount) == payout;
+}*/
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Invariants                                       //
@@ -187,7 +205,7 @@ ghost ghost_exercisePayout(address, uint256) returns uint{
 */
 rule validQtoken(method f)  
 		filtered { f -> f.selector != certorafallback_0().selector &&
-						f.selector != executeMetaTransaction(address,(string,address,address,address,uint256,uint256,bytes)[],bytes32,bytes32,uint8).selector &&
+						f.selector != executeMetaTransaction((uint256,uint256,address,(string,address,address,address,uint256,uint256,bytes)[]),bytes32,bytes32,uint8).selector  && 
 						f.selector != initialize(string,string,address,address).selector }			
 {
 	address qToken; 
@@ -209,6 +227,10 @@ rule validQtoken(method f)
 
 
 rule solvencyUser(uint collateralTokenId, uint pricePerQToken, method f, uint valueOfCollateralTokenIdBefore, uint valueOfQTokenBefore, uint valueOfCollateralTokenIdAfter, uint valueOfQTokenAfter)
+		filtered { f -> f.selector != certorafallback_0().selector &&
+						f.selector != executeMetaTransaction((uint256,uint256,address,(string,address,address,address,uint256,uint256,bytes)[]),bytes32,bytes32,uint8).selector  && 
+						f.selector != initialize(string,string,address,address).selector }	
+
 	{
 	
 	env e;
@@ -280,7 +302,7 @@ rule solvencyUser(uint collateralTokenId, uint pricePerQToken, method f, uint va
 	additivityClaimableCollateral(collateralTokenId, balanceColAfter, balanceColBefore, amount);
 	additivityExercisePayout(qToken, balanceQTokenAfter, balanceQTokenBefore, amount);
 
-	assert (userAssetsBefore == userAssetsAfter);
+	assert (userAssetsBefore == userAssetsAfter );
 }
 
 /* move to funds calculator
@@ -721,7 +743,7 @@ rule zeroCollateralZeroClaim(uint256 collateralTokenId, uint256 amount){
 }
 
 rule InverseMintNeut(uint256 collateralTokenId, uint256 amount){
-
+	assert false;
 }
 
 /*
@@ -758,7 +780,7 @@ rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFact
     // token from calculateClaimableCollateral
 	returnableCollateral,
 	collateralAsset,
-	amountToClaim = quantCalculator.calculateClaimableCollateral(e, collateralTokenId, amount, optionsFactory, e.msg.sender);
+	amountToClaim = quantCalculator.calculateClaimableCollateral(e, collateralTokenId, amount, e.msg.sender);
 
 	// token from getExercisePayout
 	bool isSettled;
@@ -767,7 +789,7 @@ rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFact
 
     isSettled,
     payoutToken,
-    payoutAmount = quantCalculator.getExercisePayout(e, qToken, optionsFactory, amount);
+    payoutAmount = quantCalculator.getExercisePayout(e, qToken, amount);
 
     assert collateralAsset == payoutToken;
 
