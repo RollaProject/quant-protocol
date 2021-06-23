@@ -40,8 +40,7 @@ methods {
                    uint256 _expiryPrice,
                    uint256 _amount,
                    uint8 _expiryDecimals,
-                   uint8 _optionsDecimals,
-                   bool noScaling) envfree;
+                   uint8 _optionsDecimals) envfree;
 
    getPayoutForPutWrapper() returns (int256) envfree;
    getPayoutForCallWrapper() returns (int256) envfree;
@@ -55,6 +54,7 @@ methods {
    checkAgeB(int256 _a, int256 _b) returns (bool) envfree;
    checkAleB(int256 _a, int256 _b) returns (bool) envfree;
    checkAplusBeqC(int256 _a, int256 _b, int256 _c) returns (bool) envfree;
+   AsubB(int256 _a, int256 _b) returns (int256) envfree;
    uintToInt(uint256 x) returns (int256) envfree;
 
    	// QToken methods to be called with one of the tokens (DummyERC20*, DummyWeth)
@@ -272,13 +272,18 @@ rule checkPayoutForPut(uint256 strikePrice,
     require expiryDecimals == 6;
     require optionsDecimals == 18;
 
-    setPayoutInput(strikePrice, expiryPrice, amount, expiryDecimals, optionsDecimals, true);
+    setPayoutInput(strikePrice, expiryPrice, amount, expiryDecimals, optionsDecimals);
 
-    int256 a = uintToInt(strikePrice - expiryPrice);
+    // get scaled ints for above uints
+    int256 strikePriceScaledInt = uintToInt(strikePrice * 1000000000000000000000);
+    int256 expiryPriceScaledInt = uintToInt(expiryPrice * 1000000000000000000000);
+    int256 amountScaledInt = uintToInt(amount * 1000000000);
+
+    int256 a = AsubB(strikePriceScaledInt, expiryPriceScaledInt);
     require expiryPrice == strikePrice => a == 0;
-    require ghost_multiplication(0, uintToInt(amount)) == 0;
+    require ghost_multiplication(0, amountScaledInt) == 0;
     require ghost_multiplication(a, 0) == 0;
-    require a > 0 && amount > 0 <=> ghost_multiplication(a, uintToInt(amount)) > 0;
+    require a > 0 && amount > 0 <=> ghost_multiplication(a, amountScaledInt) > 0;
 
     int256 payoutAmount = getPayoutForPutWrapper();
 
@@ -303,11 +308,16 @@ rule checkPayoutForCall(uint256 strikePrice,
     require expiryDecimals == 6;
     require optionsDecimals == 18;
 
-    setPayoutInput(strikePrice, expiryPrice, amount, expiryDecimals, optionsDecimals, true);
+    setPayoutInput(strikePrice, expiryPrice, amount, expiryDecimals, optionsDecimals);
 
-    int256 a = ghost_division(uintToInt(expiryPrice), uintToInt(strikePrice));
+    // get scaled ints for above uints
+    int256 strikePriceScaledInt = uintToInt(strikePrice * 1000000000000000000000);
+    int256 expiryPriceScaledInt = uintToInt(expiryPrice * 1000000000000000000000);
+    int256 amountScaledInt = uintToInt(amount * 1000000000);
+
+    int256 a = ghost_division(expiryPriceScaledInt, strikePriceScaledInt);
     require expiryPrice == strikePrice => a == 0;
-    require ghost_multiplication(0, uintToInt(amount)) == 0;
+    require ghost_multiplication(0, amountScaledInt) == 0;
     require ghost_multiplication(a, 0) == 0;
 
     int256 payoutAmount = getPayoutForCallWrapper();
@@ -336,9 +346,14 @@ rule checkPayoutAmount(uint256 strikePrice,
     int256 payoutAmount = getPayoutAmountWrapper(_isCall, strikePrice, expiryPrice, amount,
                                                  optionsDecimals, expiryDecimals);
 
-    int256 a = ghost_division(uintToInt(expiryPrice), uintToInt(strikePrice));
+    // get scaled ints for above uints
+    int256 strikePriceScaledInt = uintToInt(strikePrice * 1000000000000000000000);
+    int256 expiryPriceScaledInt = uintToInt(expiryPrice * 1000000000000000000000);
+    int256 amountScaledInt = uintToInt(amount * 1000000000);
+
+    int256 a = ghost_division(expiryPriceScaledInt, strikePriceScaledInt);
     require expiryPrice == strikePrice => a == 0;
-    require ghost_multiplication(0, uintToInt(amount)) == 0;
+    require ghost_multiplication(0, amountScaledInt) == 0;
     require forall int256 x. ghost_multiplication(x, 0) == 0;
 
     assert (expiryPrice == strikePrice) || (amount == 0) => payoutAmount == 0;
@@ -362,18 +377,25 @@ rule checkPayoutAmountAdditiveCall(uint256 strikePrice,
     uint8 optionsDecimals = 18;
 
     require amount1 + amount2 < 2^255;
+    uint256 amount3 = amount1 + amount2;
 
-    setPayoutInput(strikePrice, expiryPrice, amount1, expiryDecimals, optionsDecimals, true);
+    setPayoutInput(strikePrice, expiryPrice, amount1, expiryDecimals, optionsDecimals);
     int256 payoutAmount1 = getPayoutForCallWrapper();
 
-    setPayoutInput(strikePrice, expiryPrice, amount2, expiryDecimals, optionsDecimals, true);
+    setPayoutInput(strikePrice, expiryPrice, amount2, expiryDecimals, optionsDecimals);
     int256 payoutAmount2 = getPayoutForCallWrapper();
 
-    uint256 amount3 = amount1 + amount2;
-    int256 a = ghost_division(uintToInt(expiryPrice), uintToInt(strikePrice));
-    require ghost_multiplication(a, uintToInt(amount3)) == ghost_multiplication(a, uintToInt(amount1)) + ghost_multiplication(a, uintToInt(amount2));
+    // get scaled ints for above uints
+    int256 strikePriceScaledInt = uintToInt(strikePrice * 1000000000000000000000);
+    int256 expiryPriceScaledInt = uintToInt(expiryPrice * 1000000000000000000000);
+    int256 amount1ScaledInt = uintToInt(amount1 * 1000000000);
+    int256 amount2ScaledInt = uintToInt(amount2 * 1000000000);
+    int256 amount3ScaledInt = uintToInt(amount3 * 1000000000);
 
-    setPayoutInput(strikePrice, expiryPrice, amount3, expiryDecimals, optionsDecimals, true);
+    int256 a = ghost_division(expiryPriceScaledInt, strikePriceScaledInt);
+    require ghost_multiplication(a, amount3ScaledInt) == ghost_multiplication(a, amount1ScaledInt) + ghost_multiplication(a, amount2ScaledInt);
+
+    setPayoutInput(strikePrice, expiryPrice, amount3, expiryDecimals, optionsDecimals);
     int256 payoutAmount3 = getPayoutForCallWrapper();
 
     assert checkAplusBeqC(payoutAmount1, payoutAmount2, payoutAmount3);
@@ -397,18 +419,25 @@ rule checkPayoutAmountAdditivePut(uint256 strikePrice,
     uint8 optionsDecimals = 18;
 
     require amount1 + amount2 < 2^255;
+    uint256 amount3 = amount1 + amount2;
 
-    setPayoutInput(strikePrice, expiryPrice, amount1, expiryDecimals, optionsDecimals, true);
+    setPayoutInput(strikePrice, expiryPrice, amount1, expiryDecimals, optionsDecimals);
     int256 payoutAmount1 = getPayoutForPutWrapper();
 
-    setPayoutInput(strikePrice, expiryPrice, amount2, expiryDecimals, optionsDecimals, true);
+    setPayoutInput(strikePrice, expiryPrice, amount2, expiryDecimals, optionsDecimals);
     int256 payoutAmount2 = getPayoutForPutWrapper();
 
-    uint256 amount3 = amount1 + amount2;
-    int256 a = uintToInt(strikePrice - expiryPrice);
-    require ghost_multiplication(a, uintToInt(amount3)) == ghost_multiplication(a, uintToInt(amount1)) + ghost_multiplication(a, uintToInt(amount2));
+    // get scaled ints for above uints
+    int256 strikePriceScaledInt = uintToInt(strikePrice * 1000000000000000000000);
+    int256 expiryPriceScaledInt = uintToInt(expiryPrice * 1000000000000000000000);
+    int256 amount1ScaledInt = uintToInt(amount1 * 1000000000);
+    int256 amount2ScaledInt = uintToInt(amount2 * 1000000000);
+    int256 amount3ScaledInt = uintToInt(amount3 * 1000000000);
 
-    setPayoutInput(strikePrice, expiryPrice, amount3, expiryDecimals, optionsDecimals, true);
+    int256 a = AsubB(strikePriceScaledInt, expiryPriceScaledInt);
+    require ghost_multiplication(a, amount3ScaledInt) == ghost_multiplication(a, amount1ScaledInt) + ghost_multiplication(a, amount2ScaledInt);
+
+    setPayoutInput(strikePrice, expiryPrice, amount3, expiryDecimals, optionsDecimals);
     int256 payoutAmount3 = getPayoutForPutWrapper();
 
     assert checkAplusBeqC(payoutAmount1, payoutAmount2, payoutAmount3);
