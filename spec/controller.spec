@@ -165,15 +165,13 @@ hook Sload uint colReq quantCalculator.(slot 0)[KEY address qToken][KEY address 
 } */
 
 
-ghost ghost_exercisePayout(address, uint256) returns uint; /*{
+	// monotonic
+ghost ghost_exercisePayout(address, uint256) returns uint {
 	axiom forall address p. forall uint256 amount1. forall uint256 amount2.
 	amount1 > amount2 => ghost_exercisePayout(p,amount1) >= ghost_exercisePayout(p,amount2);
-}*/
-	// monotonic
+}
 //	axiom forall address q. forall uint256 x. forall uint256 y. forall uint256 xPlusY.
   //       xPlusY == x + y => ghost_exercisePayout(q, xPlusY) == ghost_exercisePayout(q, x) + ghost_exercisePayout(q, y);
-
-//}
 
 /* exercisePayout 
 hook Sload uint payout quantCalculator.(slot 2)[KEY address qToken][KEY uint amount] STORAGE {
@@ -228,7 +226,33 @@ rule validQtoken(method f)
 	assert totalSupplyBefore != qTokenA.totalSupply() => optionsFactory.isQToken(qToken);   
 }
 
+/* 	Rule: onlyAfterExpiry
+ 	Description: functions that should fail if called before exiry
+	Formula: 
+	Notes: 
+*/
+rule only_after_expiry(method f, bool eitherClaimOrExercise)	
+{
+	env e;
+	env t;
+	address qToken;
+	uint collateralTokenId;
+	qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	uint256 amount;
+	uint256 expiry = getExpiryTime(e,qToken);
+	exercise(e, qToken, amount);
+	claimCollateral(t,collateralTokenId, amount);
 
+	assert e.block.timestamp > expiry;
+}
+
+/* 	Rule: solvencyUser  
+ 	Description:  
+	Formula: 	{ t = qToken.totalSupply() }
+					op
+				{ qToken.totalSupply() != t => qToken.isValid() }
+	Notes: 
+*/
 rule solvencyUser(uint collateralTokenId, uint pricePerQToken, method f, uint valueOfCollateralTokenIdBefore, uint valueOfQTokenBefore, uint valueOfCollateralTokenIdAfter, uint valueOfQTokenAfter)
 		filtered { f -> f.selector != certorafallback_0().selector &&
 						f.selector != executeMetaTransaction((uint256,uint256,address,(string,address,address,address,uint256,uint256,bytes)[]),bytes32,bytes32,uint8).selector  && 
@@ -288,9 +312,9 @@ rule solvencyUser(uint collateralTokenId, uint pricePerQToken, method f, uint va
 	
 	mathint userAssetsBefore = assetBalanceBefore + valueOfCollateralTokenIdBefore + valueOfQTokenBefore + valueOfQTokenLongBefore;
 
-	//callFunctionWithParams(e.msg.sender, qToken, qTokenForCollateral, collateralTokenId, to, amount, f);
+	callFunctionWithParams(e.msg.sender, qToken, qTokenForCollateral, collateralTokenId, to, amount, f);
 	//mintOptionsPosition(e,e.msg.sender,qTokenA,amount);
-	mintSpread(e,qToken, qTokenForCollateral, amount);
+	//mintSpread(e,qToken, qTokenForCollateral, amount);
 	
 	
 	uint assetBalanceAfter = getTokenBalanceOf(e, asset, e.msg.sender);
@@ -312,56 +336,78 @@ rule solvencyUser(uint collateralTokenId, uint pricePerQToken, method f, uint va
 
 	// assume additivity of exercisePayout and claimableCollateral
 	additivityClaimableCollateral(collateralTokenId, balanceColAfter, balanceColBefore, amount);
-	additivityExercisePayout(qToken, balanceQTokenAfter, balanceQTokenBefore, amount);
+	additivityExercisePayout(qToken, amount, balanceQTokenBefore, balanceQTokenAfter);
 
 	assert (userAssetsBefore == userAssetsAfter );
 }
 
-/* move to funds calculator
- rule amount_to_claim_LE_claimable(uint256 collateralTokenId,uint256 amount){
-    env e;
-	uint256 returnableCollateral;
-    address collateralAsset;
-    uint256 amountToClaim;
- 
-	address qtoken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
-            returnableCollateral,
-            collateralAsset,
-            amountToClaim
-         = calculateClaimableCollateral(e,collateralTokenId,amount);
-	assert amountToClaim <= returnableCollateral; 
- }*/
-
-// 1.  _claimCollateral(Actions.ClaimCollateralArgs memory _args)
-//    the more the user claim the less his balance of collateral tokens
-// 2. claim(x) + claim(y) == claim(x+y)
-// 3. claim(x) <= balanceOf(x)
-
-
-
-/* 	Rule: additiveClaim (rule #15)
- 	Description: Claim collateral of x and then of y should produce same result as claim collateral of (x+y)
-	Formula:  claimCollateral(cId, x) + claimCollateral(cId, y) ~ claimCollateral(cID, x+y)
-			with respect to collateralToken.balanceOf(e.msg.sender, cId)
+/* 	Rule: integrityOfTotals 
+ 	Description: User owns all the qTokens IFF user owns all the collateral tokens
+	Formula: 
 	Notes: 
 */
-rule additiveClaim(address qToken, address qTokenForCollateral, 
-				uint256 collateralTokenId, uint256 amount1, uint256 amount2){
+rule integrityOfTotals(uint256 collateralTokenId, uint256 amount, method f){
 	env e;
-	
+	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA;
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+	require asset != qToken;
+	require ghost_claimableCollateral(collateralTokenId, amount) == quantCalculator.claimableCollateral(collateralTokenId, amount);
+	address qTokenForCollateral;
+	address to;
+	require e.msg.sender != currentContract;//check if allowed
+	require to == e.msg.sender;
+
+		//setup qToken, collateralTokenID and underlying asset 
 	setupQtokenCollateralTokenId(qToken, qTokenForCollateral, collateralTokenId);
-	storage init_state = lastStorage;
-	require amount1 != 0 && amount2 != 0; 
-	claimCollateral(e, collateralTokenId, amount1);
-	claimCollateral(e, collateralTokenId, amount2);
-	uint256 sum =  amount1 + amount2;
-	additivityClaimableCollateral(collateralTokenId, sum, amount1 , amount2);
-	uint256 balance1 = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
-	
-	claimCollateral(e, collateralTokenId, amount1 + amount2) at init_state;
-	uint256 balance2 = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
-	assert balance1 == balance2;
+
+	uint userBalanceOfQToken = qTokenA.balanceOf(e.msg.sender);
+	uint userBalanceOfCol = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
+	uint qTokenTotalSupply = qTokenA.totalSupply();
+	uint ColTotalSupply = collateralToken.getTokenSupplies(collateralTokenId);
+	require userBalanceOfQToken == qTokenTotalSupply <=> userBalanceOfCol == ColTotalSupply;
+	callFunctionWithParams(e.msg.sender, qTokenA, qTokenForCollateral, collateralTokenId, to, amount, f);
+
+	assert userBalanceOfQToken == qTokenTotalSupply <=> userBalanceOfCol == ColTotalSupply;
 }
+
+// getExercisePayout, getCollateralRequirement, calculateClaimableCollateral
+// return the same ERC20token for the same qtoken/collateralTokenID
+rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFactory) {
+    env e;
+    uint256 returnableCollateral;
+    address collateralAsset;
+    uint256 amountToClaim;
+
+	//setup qToken, collateralTokenID and asset
+	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA;
+	require collateralToken.getCollateralTokenInfoTokenAsCollateral(collateralTokenId) == 0;
+	require ghost_collateral(qToken,0) == collateralTokenId;
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+
+    // token from calculateClaimableCollateral
+	returnableCollateral,
+	collateralAsset,
+	amountToClaim = quantCalculator.calculateClaimableCollateral(e, collateralTokenId, amount, e.msg.sender);
+
+	// token from getExercisePayout
+	bool isSettled;
+    address payoutToken;
+    uint256 payoutAmount;
+
+    isSettled,
+    payoutToken,
+    payoutAmount = quantCalculator.getExercisePayout(e, qToken, amount);
+
+    assert collateralAsset == payoutToken;
+
+    // get asset from getCollateralRequirement and check for equality.
+}
+
+////////////////////////////////////////////////////////////////////////////
+//                       Neutralize Options Rules                         //
+////////////////////////////////////////////////////////////////////////////
 
 /* 	Rule: ratioAfterNeutralize
  	Description: increase in qTokens equals decrease in collateral tokens
@@ -382,9 +428,51 @@ rule ratioAfterNeutralize(uint256 collateralTokenId, uint256 amount, address qTo
 	
 }
 
+/* 	Rule: neutralizeOptionsInSteps (Rule #17)
+ 	Description: Neutralizing options in steps doesn't yield higher payout than exercising in one go
+	Formula: 
+	Notes: 
+*/
+rule neutralizingOptionsInSteps(uint256 collateralTokenId, uint256 amount1, uint256 amount2){
+	env e;
+	//setup qToken, collateralTokenID and underlying asset 
+	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA;
 
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+	require asset != qToken;
 
+	require e.msg.sender != currentContract;//check if allowed
 
+	storage init_state = lastStorage;
+	neutralizePosition(e, collateralTokenId, amount1);
+	neutralizePosition(e, collateralTokenId, amount2);
+	uint256	balance1 = getTokenBalanceOf(e, asset, e.msg.sender); 
+	neutralizePosition(e, collateralTokenId, amount1 + amount2) at init_state;
+	uint256	balance2 = getTokenBalanceOf(e, asset, e.msg.sender);
+	assert balance1 >= balance2;
+
+}
+/* 	Rule: neutralizeBurnCorectness (Rule #19)
+ 	Description:  Neutralizing options must always burn the amount passed into the function
+	Formula: 
+	Notes: 
+*/
+rule neutralizeBurnCorectness(uint collateralTokenId, uint amount){
+	env e;
+	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
+	require qToken == qTokenA;
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+	require asset != qToken;
+
+	require e.msg.sender != currentContract;//check if allowed
+
+	uint totalSupplyBefore = qTokenA.totalSupply();
+	//require amount == qTokenA.balanceOf(e.msg.sender);
+	neutralizePosition(e, collateralTokenId, amount);
+	uint totalSupplyAfter = qTokenA.totalSupply();
+	assert totalSupplyBefore - amount == totalSupplyAfter;
+}
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Minting Options Rules                            //
@@ -424,19 +512,6 @@ rule integrityMintOptions(uint256 collateralTokenId, uint amount){
 		   totalSupplyColTokenAfter == totalSupplyColTokenBefore + amount);
 }
 
-/* 	Rule: Mint options collateral correctness
-		uint amount1;
-		uint amount2;
-		require amount1 > amount2;
-		uint balance1;
-		uint balance2;
-		storage init_state = lastStorage;
-		mintOptionsPosition(to,qToken,amount1);
-		balance1 = collateral.balanceOf(controller);
-		mintOptionsPosition(to,qToken,amount2) at init_state;
-		balance2 = collateral.balanceOf(controller);
-		assert balance1 - balance2 >= amount1 - amount2;
-*/
 
 /* 	Rule: MintOptionsColCorrectness (Rule #7)
  	Description: increase in user's balance equals decrease in the contract's balance in the respective token
@@ -478,38 +553,51 @@ rule mintingOptionsInSteps(uint256 collateralTokenId, uint256 amount1, uint256 a
 	require e.msg.sender != currentContract;
 
 	storage init_state = lastStorage;
-	require quantCalculator.collateralRequirement(qTokenA,0,amount1) == amount1;
+	//require quantCalculator.collateralRequirement(qTokenA,0,amount1) == amount1;
 	mintOptionsPosition(e,e.msg.sender,qTokenA,amount1);
-	require quantCalculator.collateralRequirement(qTokenA,0,amount2) == amount2;
+	//require quantCalculator.collateralRequirement(qTokenA,0,amount2) == amount2;
 	mintOptionsPosition(e,e.msg.sender,qTokenA,amount2);
-	uint256	balance1 = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
-	require quantCalculator.collateralRequirement(qTokenA,0,amount1 + amount2) == amount1 + amount2;
-	mintOptionsPosition(e,e.msg.sender,qTokenA,amount1 + amount2) at init_state;
+	uint256	balance1 = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
+	uint sum = amount1 + amount2;
+	//require quantCalculator.collateralRequirement(qTokenA,0,sum) == sum;
+	additivityCollateralRequirement(qTokenA, 0, sum, amount1, amount2);
+	mintOptionsPosition(e,e.msg.sender,qTokenA,sum) at init_state;
 	uint256	balance2 = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
 	assert balance1 >= balance2;
 
 }
 
+/* 	Rule: moreOptionsMorePayout (Rule #12)
+ 	Description:  As the optionsAmount to exercise increases, the payout is at least the same as an exercise of options with a lower amount
+	Formula: 
+	Notes: 
+*//*
+rule moreOptionsMorePayout(uint collateralTokenId, uint amount1, uint amount2){
+	env e;
+	//setup qToken, collateralTokenID and underlying asset 
+	address qToken = qTokenA;
+	setupQtokenCollateralTokenId(qToken, 0, collateralTokenId);
+
+	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
+	require asset != qToken;
+	
+
+	require e.msg.sender != currentContract;//check if allowed
+
+	storage init_state = lastStorage;
+	uint	balanceAssetBefore1 = getTokenBalanceOf(e, asset, e.msg.sender);
+	exercise(e,qTokenA, amount1);
+	uint	balanceAssetAfter1 = getTokenBalanceOf(e, asset, e.msg.sender);
+	uint	balanceAssetBefore2 = getTokenBalanceOf(e, asset, e.msg.sender);
+	exercise(e,qTokenA, amount2) at init_state;
+	uint	balanceAssetAfter2 = getTokenBalanceOf(e, asset, e.msg.sender);
+	require balanceAssetAfter1 < 1000 && balanceAssetAfter2 < 1000; // to remove
+	assert amount1 > amount2 => balanceAssetAfter1 >= balanceAssetAfter2;
+}*/
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Exercising Options Rules                         //
 ////////////////////////////////////////////////////////////////////////////
-
-/* 	Rule: onlyAfterExpiry
- 	Description: functions that should fail if called before exiry
-	Formula: 
-	Notes: 
-*/
-rule only_after_expiry(method f, bool eitherClaimOrExercise)	
-{
-	env e;
-	address qToken; 
-	uint256 amount;
-	uint256 expiry = getExpiryTime(e,qToken);
-	exercise(e, qToken, amount);
-
-	assert e.block.timestamp > expiry;
-}
 
 /* 	Rule: exercisingOptionsInSteps (Rule #9)
  	Description: Exercising options in steps doesn't yield higher payout than exercising in one go
@@ -524,41 +612,44 @@ rule exercisingOptionsInSteps(uint256 collateralTokenId, uint256 amount1, uint25
 
 	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
 	require asset != qToken;
-	uint256 sum = amount1 + amount2 ;
-	additivityExercisePayout(qToken, sum, amount1, amount2);
 	require e.msg.sender != currentContract;
-
 	storage init_state = lastStorage;
+	
 	exercise(e,qToken, amount1);
 	exercise(e,qToken, amount2);
 	uint256	balance1 = getTokenBalanceOf(e, asset, e.msg.sender); 
 
-	exercise(e,qToken, amount1 + amount2) at init_state;
-	uint256	balance2 = getTokenBalanceOf(e, asset, e.msg.sender);
-	assert balance1 >= balance2;
+	uint256 sum = amount1 + amount2;
+	additivityExercisePayout(qToken, sum, amount1, amount2);
 
+	exercise(e,qToken, sum) at init_state;
+	uint256	balance2 = getTokenBalanceOf(e, asset, e.msg.sender);
+
+	assert balance1 >= balance2;
 }
 
 /* 	Rule: exerciseLeCollateral (Rule #10)
  	Description:  Options can't be exercised for more collateral than the minter put in
 	Formula: 
 	Notes: 
-*/ // add (if solvency doesn't work)	require quantCalculator.collateralRequirement(qTokenA,0,amount) == amount; but for getExercisePayout
+*/
 rule exerciseLeCollateral(uint collateralTokenId, uint amount){
 	env e;
+	env t;
 	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	require qToken == qTokenA;
 	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
 	require asset != qToken;
-
 	require e.msg.sender != currentContract;//check if allowed
-
-	uint balanceCol = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
-	require balanceCol > 0;
-	uint	balanceAssetBefore = getTokenBalanceOf(e, asset, e.msg.sender);
-	exercise(e,qTokenA, amount);
-	uint	balanceAssetAfter = getTokenBalanceOf(e, asset, e.msg.sender);
-	assert balanceAssetBefore + balanceCol >= balanceAssetAfter;
+	
+	uint	balanceAssetBeforeM = getTokenBalanceOf(e, asset, e.msg.sender);
+	
+	mintOptionsPosition(e,e.msg.sender,qTokenA,amount);
+	exercise(t,qTokenA, amount);
+	
+	uint	balanceAssetAfterE = getTokenBalanceOf(e, asset, e.msg.sender);	
+	
+	assert  balanceAssetBeforeM >= balanceAssetAfterE;
 }
 
 /* 	Rule: exerciseBurnCorectness (Rule #11)
@@ -571,75 +662,42 @@ rule exerciseBurnCorectness(uint collateralTokenId, uint amount){
 	//setup qToken, collateralTokenID and underlying asset 
 	address qToken = qTokenA;
 	setupQtokenCollateralTokenId(qToken, 0, collateralTokenId);
-
 	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
 	require asset != qToken;
-
 	require e.msg.sender != currentContract;//check if allowed
 
 	uint totalSupplyBefore = qTokenA.totalSupply();
 	require amount == qTokenA.balanceOf(e.msg.sender);
+
 	exercise(e,qTokenA, 0);
+
 	uint totalSupplyAfter = qTokenA.totalSupply();
 	assert totalSupplyBefore - amount == totalSupplyAfter;
 }
 
-/* 	Rule: moreOptionsMorePayout (Rule #12)
- 	Description:  As the optionsAmount to exercise increases, the payout is at least the same as an exercise of options with a lower amount
+/* 	Rule: balancesAfterExercise
+ 	Description: increase in user's balance equals decrease in the contract's balance in the respective token
 	Formula: 
 	Notes: 
 */
-rule moreOptionsMorePayout(uint collateralTokenId, uint amount1, uint amount2){
+rule balancesAfterExercise(address qToken, uint256 amount){
 	env e;
-	//setup qToken, collateralTokenID and underlying asset 
-	address qToken = qTokenA;
-	setupQtokenCollateralTokenId(qToken, 0, collateralTokenId);
-
+	require qTokenA == qToken;
 	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
 	require asset != qToken;
-	
-
-	require e.msg.sender != currentContract;//check if allowed
-
-	storage init_state = lastStorage;
-	//monotonicExercisePayout(qToken, amount1, amount2);
-	exercise(e,qTokenA, amount1);
-	uint	balanceAssetAfter1 = getTokenBalanceOf(e, asset, e.msg.sender);
-	exercise(e,qTokenA, amount2) at init_state;
-	uint	balanceAssetAfter2 = getTokenBalanceOf(e, asset, e.msg.sender);
-	require balanceAssetAfter1 < 1000 && balanceAssetAfter2 < 1000; // to remove
-	assert amount1 >= amount2 => balanceAssetAfter1 >= balanceAssetAfter2;
+	uint balanceUserBefore = getTokenBalanceOf(e, asset, e.msg.sender);
+	uint balanceContractBefore = getTokenBalanceOf(e, asset, currentContract);
+	exercise(e,qToken, amount);
+	uint balanceUserAfter = getTokenBalanceOf(e, asset, e.msg.sender);
+	uint balanceContractAfter = getTokenBalanceOf(e, asset, currentContract);
+	assert balanceUserAfter - balanceUserBefore ==
+		   balanceContractBefore - balanceContractAfter;
 }
 
-/* 	Rule: nonameYet 
- 	Description: 
-	Formula: 
-	Notes: 
-*/
-rule nonameYet(uint256 collateralTokenId, uint256 amount, method f){
-	env e;
-	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
-	require qToken == qTokenA;
-	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
-	require asset != qToken;
-	require ghost_claimableCollateral(collateralTokenId, amount) == quantCalculator.claimableCollateral(collateralTokenId, amount);
-	address qTokenForCollateral;
-	address to;
-	require e.msg.sender != currentContract;//check if allowed
-	require to == e.msg.sender;
+////////////////////////////////////////////////////////////////////////////
+//                       Minting Spread Options Rules                      //
+////////////////////////////////////////////////////////////////////////////
 
-		//setup qToken, collateralTokenID and underlying asset 
-	setupQtokenCollateralTokenId(qToken, qTokenForCollateral, collateralTokenId);
-
-	uint userBalanceOfQToken = qTokenA.balanceOf(e.msg.sender);
-	uint userBalanceOfCol = collateralToken.balanceOf(e.msg.sender, collateralTokenId);
-	uint qTokenTotalSupply = qTokenA.totalSupply();
-	uint ColTotalSupply = collateralToken.getTokenSupplies(collateralTokenId);
-	require userBalanceOfQToken == qTokenTotalSupply <=> userBalanceOfCol == ColTotalSupply;
-	callFunctionWithParams(e.msg.sender, qTokenA, qTokenForCollateral, collateralTokenId, to, amount, f);
-
-	assert userBalanceOfQToken == qTokenTotalSupply <=> userBalanceOfCol == ColTotalSupply;
-}
 /* 	Rule: mintSpreadBalancesCorrectness (Rule #13)
  	Description: Minting spreads must burn the qTokens provided as collateral, mint the desired qTokens and also mint collateral tokens representing the spread
 	Formula: 
@@ -696,97 +754,12 @@ rule mintSpreadBalancesCorrectness(address qTokenToMint, address qTokenForCollat
 		   qTokenToMintTotalBefore == qTokenToMintTotalAfter - amount;
 
 }
-/* 	Rule: neutralizeOptionsInSteps (Rule #17)
- 	Description: Neutralizing options in steps doesn't yield higher payout than exercising in one go
-	Formula: 
-	Notes: 
-*/
-rule neutralizingOptionsInSteps(uint256 collateralTokenId, uint256 amount1, uint256 amount2){
-	env e;
-	//setup qToken, collateralTokenID and underlying asset 
-	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
-	require qToken == qTokenA;
-
-	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
-	require asset != qToken;
-
-	require e.msg.sender != currentContract;//check if allowed
-
-	storage init_state = lastStorage;
-	neutralizePosition(e, collateralTokenId, amount1);
-	neutralizePosition(e, collateralTokenId, amount2);
-	uint256	balance1 = getTokenBalanceOf(e, asset, e.msg.sender); 
-	neutralizePosition(e, collateralTokenId, amount1 + amount2) at init_state;
-	uint256	balance2 = getTokenBalanceOf(e, asset, e.msg.sender);
-	assert balance1 >= balance2;
-
-}
-/* 	Rule: neutralizeBurnCorectness (Rule #19)
- 	Description:  Neutralizing options must always burn the amount passed into the function
-	Formula: 
-	Notes: 
-*/
-rule neutralizeBurnCorectness(uint collateralTokenId, uint amount){
-	env e;
-	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
-	require qToken == qTokenA;
-	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
-	require asset != qToken;
-
-	require e.msg.sender != currentContract;//check if allowed
-
-	uint totalSupplyBefore = qTokenA.totalSupply();
-	//require amount == qTokenA.balanceOf(e.msg.sender);
-	neutralizePosition(e, collateralTokenId, amount);
-	uint totalSupplyAfter = qTokenA.totalSupply();
-	assert totalSupplyBefore - amount == totalSupplyAfter;
-}
 
 /*
 rule colToken_Impl_ColDeposited(uint256 collateralTokenId, address user){
 uint colAmount = balanceOfCol(e,collateralTokenId,user);
 }*/
 
-
-
-/* 	Rule: balancesAfterExercise
- 	Description: increase in user's balance equals decrease in the contract's balance in the respective token
-	Formula: 
-	Notes: 
-*/
-rule balancesAfterExercise(address qToken, uint256 amount){
-	env e;
-	require qTokenA == qToken;
-	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
-	require asset != qToken;
-	uint balanceUserBefore = getTokenBalanceOf(e, asset, e.msg.sender);
-	uint balanceContractBefore = getTokenBalanceOf(e, asset, currentContract);
-	exercise(e,qToken, amount);
-	uint balanceUserAfter = getTokenBalanceOf(e, asset, e.msg.sender);
-	uint balanceContractAfter = getTokenBalanceOf(e, asset, currentContract);
-	assert balanceUserAfter - balanceUserBefore ==
-		   balanceContractBefore - balanceContractAfter;
-}
-
-/* 	Rule: zeroCollateralZeroClaim
- 	Description: claiming collateral having Zero collateral should result in Zero claimed
-	Formula: 
-	Notes: 
-*/
-rule zeroCollateralZeroClaim(uint256 collateralTokenId, uint256 amount){
-	env e;
-	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
-	require qToken == qTokenA;
-	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
-	require asset != qToken;
-	require ghost_claimableCollateral(collateralTokenId, amount) == quantCalculator.claimableCollateral(collateralTokenId, amount);
-	
-	uint balanceContractBefore = getTokenBalanceOf(e, asset, currentContract);
-	uint balanceUserColBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
-	claimCollateral(e,collateralTokenId, amount);
-	uint balanceContractAfter = getTokenBalanceOf(e, asset, currentContract);
-	assert balanceUserColBefore == 0 => balanceContractBefore == balanceContractAfter;
-}
 /*
 rule InverseMintNeut(uint256 collateralTokenId, uint256 amount){
 	assert false;
@@ -810,38 +783,52 @@ rule After_mintSpread(address qToken,address qTokenForCollateral,uint256 amount)
 
 */
 
-// getExercisePayout, getCollateralRequirement, calculateClaimableCollateral
-// return the same ERC20token for the same qtoken/collateralTokenID
-rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFactory) {
-    env e;
-    uint256 returnableCollateral;
-    address collateralAsset;
-    uint256 amountToClaim;
+////////////////////////////////////////////////////////////////////////////
+//                       Claiming Collateral Rules                        //
+////////////////////////////////////////////////////////////////////////////
 
-	//setup qToken, collateralTokenID and asset
+/* 	Rule: additiveClaim (rule #15)
+ 	Description: Claim collateral of x and then of y should produce same result as claim collateral of (x+y)
+	Formula:  claimCollateral(cId, x) + claimCollateral(cId, y) ~ claimCollateral(cID, x+y)
+			with respect to collateralToken.balanceOf(e.msg.sender, cId)
+	Notes: 
+*/
+rule additiveClaim(address qToken, address qTokenForCollateral, 
+				uint256 collateralTokenId, uint256 amount1, uint256 amount2){
+	env e;
+	
+	setupQtokenCollateralTokenId(qToken, qTokenForCollateral, collateralTokenId);
+	storage init_state = lastStorage;
+	require amount1 != 0 && amount2 != 0; 
+	claimCollateral(e, collateralTokenId, amount1);
+	claimCollateral(e, collateralTokenId, amount2);
+	uint256 sum =  amount1 + amount2;
+	additivityClaimableCollateral(collateralTokenId, sum, amount1 , amount2);
+	uint256 balance1 = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
+	
+	claimCollateral(e, collateralTokenId, amount1 + amount2) at init_state;
+	uint256 balance2 = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
+	assert balance1 == balance2;
+}
+/* 	Rule: zeroCollateralZeroClaim
+ 	Description: claiming collateral having Zero collateral should result in Zero claimed
+	Formula: 
+	Notes: 
+*/
+
+rule zeroCollateralZeroClaim(uint256 collateralTokenId, uint256 amount){
+	env e;
 	address qToken = collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId);
 	require qToken == qTokenA;
-	require collateralToken.getCollateralTokenInfoTokenAsCollateral(collateralTokenId) == 0;
-	require ghost_collateral(qToken,0) == collateralTokenId;
 	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
-
-    // token from calculateClaimableCollateral
-	returnableCollateral,
-	collateralAsset,
-	amountToClaim = quantCalculator.calculateClaimableCollateral(e, collateralTokenId, amount, e.msg.sender);
-
-	// token from getExercisePayout
-	bool isSettled;
-    address payoutToken;
-    uint256 payoutAmount;
-
-    isSettled,
-    payoutToken,
-    payoutAmount = quantCalculator.getExercisePayout(e, qToken, amount);
-
-    assert collateralAsset == payoutToken;
-
-    // get asset from getCollateralRequirement and check for equality.
+	require asset != qToken;
+	require ghost_claimableCollateral(collateralTokenId, amount) == quantCalculator.claimableCollateral(collateralTokenId, amount);
+	
+	uint balanceContractBefore = getTokenBalanceOf(e, asset, currentContract);
+	uint balanceUserColBefore = collateralToken.balanceOf(e.msg.sender, collateralTokenId); 
+	claimCollateral(e,collateralTokenId, amount);
+	uint balanceContractAfter = getTokenBalanceOf(e, asset, currentContract);
+	assert balanceUserColBefore == 0 => balanceContractBefore == balanceContractAfter;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -849,8 +836,8 @@ rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFact
 ////////////////////////////////////////////////////////////////////////////
     
 
-// easy to use dispatcher
 
+// easy to use dispatcher
 function callFunctionWithParams(address expectedSender, address qToken, address qTokenForCollateral, uint256 collateralTokenId, address to, uint256 amount, method f) {
 	env e;
 	require e.msg.sender == expectedSender;

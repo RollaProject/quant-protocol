@@ -24,14 +24,13 @@ contract FundsCalculatorWrapper {
         uint256 _expiryPrice,
         uint256 _amount,
         uint8 _expiryDecimals,
-        uint8 _optionsDecimals,
-        bool noScaling
+        uint8 _optionsDecimals
     ) public {
         payoutInput =
         FundsCalculator.OptionPayoutInput(
-            _strikePrice.fromScaledUint(noScaling ? _BASE_DECIMALS : 6),
-            _expiryPrice.fromScaledUint(noScaling ? _BASE_DECIMALS : _expiryDecimals),
-            _amount.fromScaledUint(noScaling ? _BASE_DECIMALS : _optionsDecimals)
+            _strikePrice.fromScaledUint(6),
+            _expiryPrice.fromScaledUint(_expiryDecimals),
+            _amount.fromScaledUint(_optionsDecimals)
         );
     }
 
@@ -151,5 +150,9 @@ contract FundsCalculatorWrapper {
         require(a < 2**255, "FundsCalculatorWrapper: out of int range");
 
         return int256(a);
+    }
+
+    function AsubB(int256 _a, int256 _b) public returns (int256) {
+        return _a - _b;
     }
 }
