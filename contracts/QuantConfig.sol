@@ -121,12 +121,7 @@ contract QuantConfig is
         __Ownable_init_unchained();
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(DEFAULT_ADMIN_ROLE, _timelockController);
-        // // On deployment, this role should be transferd to the OptionsFactory as its only admin
-        string memory optionsControllerRole = "OPTIONS_CONTROLLER_ROLE";
-        // quantRoles["OPTIONS_CONTROLLER_ROLE"] = optionsControllerRole;
-        _setProtocolRole(optionsControllerRole, _timelockController);
-        _setProtocolRole(optionsControllerRole, _msgSender());
-        // quantRoles.push(optionsControllerRole);
+
         string memory oracleManagerRole = "ORACLE_MANAGER_ROLE";
         // quantRoles["ORACLE_MANAGER_ROLE"] = oracleManagerRole;
         _setProtocolRole(oracleManagerRole, _timelockController);
