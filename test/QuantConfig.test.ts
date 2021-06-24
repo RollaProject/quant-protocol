@@ -125,7 +125,8 @@ describe("QuantConfig", () => {
   });
 
   it("Should return the correct length for protocol value arrays", async () => {
-    const initialQuantRoles = 2; // there are 2 roles configured in the initialize method
+    // there is 1 role configured in the initialize method (ORACLE_MANAGER_ROLE)
+    const initialQuantRoles = 1;
 
     expect(await quantConfig.protocolAddressesLength()).to.equal(0);
     expect(await quantConfig.protocolUints256Length()).to.equal(0);
