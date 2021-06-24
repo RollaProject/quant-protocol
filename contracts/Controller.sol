@@ -38,9 +38,7 @@ contract Controller is
     address public override quantCalculator;
 
     function operate(ActionArgs[] memory _actions)
-        external
-        override
-        nonReentrant
+        external virtual override nonReentrant
         returns (bool)
     {
         for (uint256 i = 0; i < _actions.length; i++) {
@@ -113,7 +111,7 @@ contract Controller is
             "Controller: Can't mint an options position as the oracle is inactive"
         );
 
-        IERC20(collateral).safeTransferFrom(
+        IERC20(collateral).transferFrom(
             _msgSender(),
             address(this),
             collateralAmount
@@ -169,7 +167,7 @@ contract Controller is
         qTokenForCollateral.burn(_msgSender(), _args.amount);
 
         if (collateralAmount > 0) {
-            IERC20(collateral).safeTransferFrom(
+            IERC20(collateral).transferFrom(
                 _msgSender(),
                 address(this),
                 collateralAmount
@@ -274,7 +272,7 @@ contract Controller is
         );
 
         if (returnableCollateral > 0) {
-            IERC20(collateralAsset).safeTransfer(
+            IERC20(collateralAsset).transfer(
                 _msgSender(),
                 returnableCollateral
             );
@@ -335,7 +333,7 @@ contract Controller is
             amountToNeutralize
         );
 
-        IERC20(collateralType).safeTransfer(_msgSender(), collateralOwed);
+        IERC20(collateralType).transfer(_msgSender(), collateralOwed);
 
         //give the user their long tokens (if any)
         if (qTokenLong != address(0)) {

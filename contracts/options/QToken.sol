@@ -172,9 +172,7 @@ contract QToken is ERC20Permit, IQToken {
     /// @param _asset address of the asset in the AssetsRegistry
     /// @return symbol string stored as the ERC20 token symbol
     function _assetSymbol(address _quantConfig, address _asset)
-        internal
-        view
-        returns (string memory symbol)
+        internal view virtual returns (string memory symbol)
     {
         (, symbol, , ) = IAssetsRegistry(
             IQuantConfig(_quantConfig).protocolAddresses(
@@ -199,7 +197,7 @@ contract QToken is ERC20Permit, IQToken {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) internal view returns (string memory tokenName) {
+    ) internal view virtual returns (string memory tokenName) {
         string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
         string memory strike = _assetSymbol(_quantConfig, _strikeAsset);
         string memory displayStrikePrice = _displayedStrikePrice(_strikePrice);
@@ -251,7 +249,7 @@ contract QToken is ERC20Permit, IQToken {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) internal view returns (string memory tokenSymbol) {
+    ) internal view virtual returns (string memory tokenSymbol) {
         string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
         string memory strike = _assetSymbol(_quantConfig, _strikeAsset);
         string memory displayStrikePrice = _displayedStrikePrice(_strikePrice);
@@ -290,9 +288,7 @@ contract QToken is ERC20Permit, IQToken {
     /// @return a 1 character representation of the option type
     /// @return a full length string of the option type
     function _getOptionType(bool _isCall)
-        internal
-        pure
-        returns (string memory, string memory)
+        internal pure virtual returns (string memory, string memory)
     {
         return _isCall ? ("C", "Call") : ("P", "Put");
     }
@@ -301,9 +297,7 @@ contract QToken is ERC20Permit, IQToken {
     /// @param _strikePrice the option strike price scaled by 1e8
     /// @return strike price string
     function _displayedStrikePrice(uint256 _strikePrice)
-        internal
-        pure
-        returns (string memory)
+        internal pure virtual returns (string memory)
     {
         uint256 remainder = _strikePrice.mod(_STRIKE_PRICE_SCALE);
         uint256 quotient = _strikePrice.div(_STRIKE_PRICE_SCALE);
@@ -332,9 +326,7 @@ contract QToken is ERC20Permit, IQToken {
     /// and two trailing digits if it's a 3 digit number
     /// @return 2 characters that correspond to a number
     function _uintToChars(uint256 _number)
-        internal
-        pure
-        returns (string memory)
+        internal pure virtual returns (string memory)
     {
         if (_number > 99) {
             _number %= 100;
@@ -358,7 +350,7 @@ contract QToken is ERC20Permit, IQToken {
         string memory _s,
         uint256 _start,
         uint256 _end
-    ) internal pure returns (string memory) {
+    ) internal pure virtual returns (string memory) {
         bytes memory slice = new bytes(_end - _start);
         for (uint256 i = 0; i < _end - _start; i++) {
             slice[i] = bytes(_s)[_start + 1];
@@ -371,9 +363,7 @@ contract QToken is ERC20Permit, IQToken {
     /// @return a 3 character representation
     /// @return a full length string representation
     function _getMonth(uint256 _month)
-        internal
-        pure
-        returns (string memory, string memory)
+        internal pure virtual returns (string memory, string memory)
     {
         if (_month == 1) {
             return ("JAN", "January");

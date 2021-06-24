@@ -84,7 +84,7 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
         __EIP712_init(name, version);
     }
 
-    function _msgSender() internal view returns (address sender) {
+    function _msgSender() internal view virtual returns (address sender) {
         if (msg.sender == address(this)) {
             bytes memory array = msg.data;
             uint256 index = msg.data.length;
@@ -107,7 +107,7 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
         bytes32 r,
         bytes32 s,
         uint8 v
-    ) internal view returns (bool) {
+    ) internal view virtual returns (bool) {
         require(metaAction.nonce == _nonces[user], "invalid nonce");
 
         require(metaAction.deadline >= block.timestamp, "expired deadline");
