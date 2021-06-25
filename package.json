@@ -1,6 +1,6 @@
 {
   "name": "@quant-finance/quant-protocol",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "Smart-contracts for Quant. The free, instant, DeFi crypto options trading protocol.",
   "scripts": {
     "build": "hardhat compile",
@@ -11,7 +11,8 @@
     "lint": "yarn eslint && yarn format && yarn solhint",
     "docs": "solidity-docgen --solc-module solc-0.7.6",
     "docs:uml": "node build-scripts/generateDocs.js",
-    "coverage": "hardhat coverage"
+    "coverage": "hardhat coverage",
+    "publishToRegistry": "yarn build && npm publish --registry $REGISTRY_URL"
   },
   "husky": {
     "hooks": {
@@ -91,6 +92,8 @@
     "hardhat-typechain": "^0.3.4"
   },
   "files": [
-    "contracts"
+    "contracts",
+    "artifacts/contracts",
+    "typechain"
   ]
 }
