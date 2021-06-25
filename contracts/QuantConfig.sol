@@ -123,7 +123,6 @@ contract QuantConfig is
         _setupRole(DEFAULT_ADMIN_ROLE, _timelockController);
 
         string memory oracleManagerRole = "ORACLE_MANAGER_ROLE";
-        // quantRoles["ORACLE_MANAGER_ROLE"] = oracleManagerRole;
         _setProtocolRole(oracleManagerRole, _timelockController);
         _setProtocolRole(oracleManagerRole, _msgSender());
         timelockController = _timelockController;
