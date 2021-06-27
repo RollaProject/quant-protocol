@@ -95,10 +95,10 @@ invariant uniqueCollateralTokenId(uint i, uint j)
 
 
 
-/* 	Rule: Integrity of CollateralTokenInfo    
- 	Description:  Creating a new CollateralTokenId creates the collateralTokenInfo
+/* 	Rule: Integrity of collateralTokenInfo    
+ 	Description:  Creating a new pair of QTokens creates the collateralTokenInfo
 	Formula: { } 
-			collateralTokenInfoId = createCollateralToken(qTokenAddress, qTokenAsCollateral);
+			collateralTokenInfoId = createCollateralToken(qTokenAddress, qTokenAsCollateral)
 			{ (qTokenAddress, qTokenAsCollateral) = getCollateralTokenInfo(collateralTokenInfoId) }
 */
 rule integrityOfCollateralTokenInfo(address _qTokenAddress, address _qTokenAsCollateral)
@@ -111,26 +111,12 @@ rule integrityOfCollateralTokenInfo(address _qTokenAddress, address _qTokenAsCol
 	assert(_qTokenAddress == getCollateralTokenInfoTokenAddress(collateralTokenInfoId) && _qTokenAsCollateral == getCollateralTokenInfoTokenAsCollateral(collateralTokenInfoId));
 }
 
-/* 	Rule: Integrity of balanceOf collateralTokenIds    
- 	Description:  On minting to a new collateralToken the balance if as minted
-	Formula: { } 
-			collateralTokenInfoId = createCollateralToken(qTokenAddress, qTokenAsCollateral);
-			mintCollateralToken(e, recipient, collateralTokenInfoId, amount);
-			{ balanceOf(recipient, collateralTokenInfoId) = amount}
+/* 	Rule: Integrity of collateralToken 
+ 	Description:  Each collateralToken has an entry in  the collateralTokenInfo
+	Formula: { i = collateralTokenIds.length } 
+			collateralTokenInfoId = createCollateralToken(qToken, qTokenAsCollateral)
+			{ idToInfo[collateralTokenInfoId].qTokenAddress != 0 && collateralTokenIds[i] == key }
 */
-rule integrityOfCollateralTokenBalance(address _qTokenAddress, address _qTokenAsCollateral, address _recipient, uint256 _amount) {
-	env e;
-	uint collateralTokenInfoId;
-
-	uint256 before = balanceOf(_recipient, collateralTokenInfoId);
-	
-	mintCollateralToken(e, _recipient, collateralTokenInfoId, _amount);
-
-	assert balanceOf(_recipient, collateralTokenInfoId) == before + _amount;
-}
-
-
-
 rule validityOfCollateralToken(address _qTokenAddress, address _qTokenAsCollateral)
 {
 	env e;
@@ -143,7 +129,32 @@ rule validityOfCollateralToken(address _qTokenAddress, address _qTokenAsCollater
 	assert(idToInfoContainsId(collateralTokenInfoId) && collateralTokenIdsContainsId(collateralTokenInfoId, i));
 }
 
-rule validityOfMintedCollateralToken(address _qTokenAddress, address _qTokenAsCollateral, address _recipient, uint256 _amount)
+/* 	Rule: Integrity of minting 
+ 	Description:  On minting x the balance is updated by x
+	Formula: { before = balanceOf(_recipient, collateralTokenInfoId) } 
+			mintCollateralToken(e, recipient, collateralTokenInfoId, amount);
+			{ balanceOf(recipient, collateralTokenInfoId) = amount + b}
+*/
+rule integrityOfMinting(address _qTokenAddress, address _qTokenAsCollateral, address _recipient, uint256 _amount) {
+	env e;
+	uint collateralTokenInfoId;
+
+	uint256 before = balanceOf(_recipient, collateralTokenInfoId);
+	
+	mintCollateralToken(e, _recipient, collateralTokenInfoId, _amount);
+
+	assert balanceOf(_recipient, collateralTokenInfoId) == before + _amount;
+}
+
+
+/* 	Rule: Integrity of token supply on Minting 
+ 	Description:  Once minting, the collateralToken has an entry in the tokenSupplies array
+	Formula: { amount > 0 } 
+			collateralTokenInfoId = createCollateralToken(qToken, qTokenAsCollateral);
+			mintCollateralToken(e, _recipient, collateralTokenInfoId, _amount);
+			{ tokenSupplies[collateralTokenInfoId] != 0 }
+*/
+rule integrityOfTotalSupplyOnMinting(address _qTokenAddress, address _qTokenAsCollateral, address _recipient, uint256 _amount)
 {
 	env e;
 	uint256 collateralTokenInfoId;
@@ -154,6 +165,14 @@ rule validityOfMintedCollateralToken(address _qTokenAddress, address _qTokenAsCo
 	assert(tokenSuppliesContainsCollateralToken(collateralTokenInfoId));
 }
 
+
+/* 	Rule: Burn after mint 
+ 	Description:  Once minting, the collateralToken can be burned
+	Formula: {before = balanceOf(user, collateralTokenInfoId)  } 
+				mintCollateralToken(user, collateralTokenInfoId, _amount);
+				burnCollateralToken(user, collateralTokenInfoId, _amount);
+			{ balanceOf(user, collateralTokenInfoId) = before }
+*/
 rule aMintedCollateralTokenCanBeBurned(address _qTokenAddress, address _qTokenAsCollateral, address _recipient, address _owner, uint256 _amount)
 {
 	env e;
