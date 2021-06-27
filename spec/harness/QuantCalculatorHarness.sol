@@ -38,6 +38,8 @@ contract QuantCalculatorHarness is IQuantCalculator {
     mapping (uint256 => mapping( uint256 => uint256) ) public claimableCollateral;
     // a symbolic mapping form (qToken, amount) to exercisePayout 
     mapping (address => mapping( uint256 => uint256) ) public exercisePayout;
+    // a symbolic mapping form (qToken, qtokenLong, amount) to getNeutralizationPayout
+    mapping (address => mapping( address => mapping( uint256 => uint256) )) public neutralizationPayout;
     
 
     uint8 public constant override OPTIONS_DECIMALS = 0;
@@ -69,6 +71,14 @@ contract QuantCalculatorHarness is IQuantCalculator {
         uint256 _amount
     ) internal view returns (uint256)  {
         return exercisePayout[_qToken][_amount];
+    }
+
+    function getNeutralizationPayoutValue(
+        address _qTokenToMint,
+        address _qTokenForCollateral,
+        uint256 _amount
+    ) internal view returns (uint256) {
+        return neutralizationPayout[_qTokenToMint][_qTokenForCollateral][_amount];
     }
 
 
@@ -111,7 +121,8 @@ contract QuantCalculatorHarness is IQuantCalculator {
         override
         returns (address collateralType, uint256 collateralOwed)
     {
-        return calcOriginal.getNeutralizationPayout(_qTokenLong,_qTokenShort,_amountToNeutralize);
+        collateralOwed = getNeutralizationPayoutValue(_qTokenLong,_qTokenShort,_amountToNeutralize);
+        collateralType = qTokenToCollateralType[_qTokenShort];
     }
 
     function getCollateralRequirement(

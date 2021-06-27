@@ -93,8 +93,4 @@ contract ControllerHarness is Controller {
     function getExpiryTime(address qToken) public view returns (uint256){
         return IQToken(qToken).expiryTime();
     }
-    function thisContract() public view returns (address){
-        return address(this);
-    }
-
 }
