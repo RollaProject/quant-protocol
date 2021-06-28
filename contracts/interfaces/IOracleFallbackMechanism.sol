@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity >=0.7.0 <0.9.0;
 
 interface IOracleFallbackMechanism {
     /// @notice Fallback mechanism to submit price to the registry (should enforce a locking period)
