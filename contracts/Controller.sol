@@ -82,10 +82,10 @@ contract Controller is
         address _quantCalculator
     ) public override initializer {
         __ReentrancyGuard_init();
-        EIP712MetaTransaction.initializeEIP712(_name, _version);
         optionsFactory = _optionsFactory;
-        operateProxy = address(new OperateProxy());
         quantCalculator = _quantCalculator;
+        operateProxy = address(new OperateProxy());
+        EIP712MetaTransaction.initializeEIP712(_name, _version);
     }
 
     function _mintOptionsPosition(Actions.MintOptionArgs memory _args)
