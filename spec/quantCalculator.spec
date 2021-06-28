@@ -113,7 +113,6 @@ rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFact
 
     address qToken;
     address qTokenForCollateral;
-    require qTokenForCollateral == 0;
     setupQtokenCollateralTokenId(qToken, qTokenForCollateral, collateralTokenId);
 
 	require qToken == qTokenA;

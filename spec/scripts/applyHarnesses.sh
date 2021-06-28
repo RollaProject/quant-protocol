@@ -8,6 +8,36 @@ perl -0777 -i -pe 's/internal\s*pure\s*returns/internal pure virtual returns/g' 
 
 perl -0777 -i -pe 's/internal view returns/internal view virtual returns/g' contracts/utils/EIP712MetaTransaction.sol
 
+# QuantCalculator simplification
+perl -0777 -i -pe 's/address public immutable override optionsFactory;/address public immutable override optionsFactory ;\n
+     \/\/ add expiry price
+     IPriceRegistry.PriceWithDecimals expiryPrice;/g' contracts/QuantCalculator.sol
+
+
+perl -0777 -i -pe 's/IPriceRegistry priceRegistry =\s*IPriceRegistry\(\s*IOptionsFactory\(optionsFactory\).quantConfig\(\).protocolAddresses\(\s*ProtocolValue.encode\("priceRegistry"\)\s*\)\s*\);/\/\/ IPriceRegistry priceRegistry =
+            \/\/ IPriceRegistry\(
+            \/\/     IOptionsFactory\(optionsFactory\).quantConfig\(\).protocolAddresses\(
+            \/\/         ProtocolValue.encode\("priceRegistry"\)
+            \/\/     \)
+            \/\/ \);/g' contracts/QuantCalculator.sol
+
+
+perl -0777 -i -pe 's/IPriceRegistry.PriceWithDecimals memory expiryPrice =\s*priceRegistry.getSettlementPriceWithDecimals\(\s*qTokenShort.oracle\(\),\s*qTokenShort.underlyingAsset\(\),\s*qTokenShort.expiryTime\(\)\s*\);/\/\/ IPriceRegistry.PriceWithDecimals memory expiryPrice =
+            \/\/ priceRegistry.getSettlementPriceWithDecimals\(
+            \/\/     qTokenShort.oracle\(\),
+            \/\/     qTokenShort.underlyingAsset\(\),
+            \/\/     qTokenShort.expiryTime\(\)
+            \/\/ \);/g' contracts/QuantCalculator.sol
+
+perl -0777 -i -pe 's/IPriceRegistry.PriceWithDecimals memory expiryPrice =\s*priceRegistry.getSettlementPriceWithDecimals\(\s*qToken.oracle\(\),\s*underlyingAsset,\s*qToken.expiryTime\(\)\s*\);/\/\/ IPriceRegistry.PriceWithDecimals memory expiryPrice =
+            \/\/ priceRegistry.getSettlementPriceWithDecimals\(
+            \/\/     qToken.oracle\(\),
+            \/\/     underlyingAsset,
+            \/\/     qToken.expiryTime\(\)
+            \/\/ \);/g' contracts/QuantCalculator.sol
+
+perl -0777 -i -pe 's/isSettled = qToken.getOptionPriceStatus\(\) == PriceStatus.SETTLED;/isSettled = true;/g' contracts/QuantCalculator.sol
+
 # Decimal simplification
 perl -0777 -i -pe 's/\(\(_a.div\(10\*\*exp\)\).uintToInt\(\)\);\s*} else \{/\(\(_a.div\(10\*\*exp\)\).uintToInt\(\)\);
         } else if (_decimals == 6) {
