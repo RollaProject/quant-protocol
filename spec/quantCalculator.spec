@@ -97,6 +97,17 @@ ghost ghost_multiplication(int256, int256) returns int256;
 
 // getExercisePayout, getCollateralRequirement, calculateClaimableCollateral
 // return the same ERC20token for the same qtoken/collateralTokenID
+/*
+	Rule: Get Same Token
+ 	Description: getExercisePayout, getCollateralRequirement and calculateClaimableCollateral
+ 	             return the same ERC20token for the same qtoken/collateralTokenID.
+	Formula:
+			collateral = getCollateralRequirement(qToken, qTokenForCollateral, amount) =>
+			payoutToken = getExercisePayout(qToken, amount) =>
+			collateralAsset = calculateClaimableCollateral(collateralTokenID, amount) =>
+			
+			    collateral == payoutToken && payoutToken == colaterallAsset
+*/
 rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFactory) {
     env e;
 
@@ -106,14 +117,13 @@ rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFact
     setupQtokenCollateralTokenId(qToken, qTokenForCollateral, collateralTokenId);
 
 	require qToken == qTokenA;
-	address asset = qTokenA.isCall(e) ? qTokenA.underlyingAsset(e) : qTokenA.strikeAsset(e);
 
     // token from getCollateralRequirement
-    // address collateral;
-    // uint256 collateralAmount;
+    address collateral;
+    uint256 collateralAmount;
 
-	// collateral,
-	// collateralAmount = getCollateralRequirement(e, qToken, qTokenForCollateral, amount);
+	collateral,
+	collateralAmount = getCollateralRequirement(e, qToken, qTokenForCollateral, amount);
 
     // token from getExercisePayout
     bool isSettled;
@@ -133,8 +143,8 @@ rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFact
     collateralAsset,
     amountToClaim = calculateClaimableCollateral(e, collateralTokenId, amount, e.msg.sender);
 
-    //assert collateral == payoutToken, "getCollateralRequirement and getExercisePayout return different ERC20 token";
-    assert payoutToken == collateralAsset;
+    assert collateral == payoutToken, "getCollateralRequirement and getExercisePayout return different ERC20 token";
+    assert payoutToken == collateralAsset, "getExercisePayout and calculateClaimableCollateral return different ERC20 token";
 }
 
 ////////////////////////////////////////////////////////////////////////////

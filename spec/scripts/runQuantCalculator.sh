@@ -4,8 +4,7 @@ certoraRun contracts/QuantCalculator.sol spec/harness/DummyERC20A.sol \
             --verify QuantCalculator:spec/quantCalculator.spec --settings -optimisticReturnsize=true,-postProcessCounterExamples=true,-smt_nonLinearArithmetic=true \
             --solc solc7.6 \
             --optimistic_loop \
-            --rule $1 \
-            --staging --msg "optionsFac $1"
+            --staging --msg "QuantCalculatorRun"
 
 
 
