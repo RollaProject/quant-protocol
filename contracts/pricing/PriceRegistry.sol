@@ -100,7 +100,7 @@ contract PriceRegistry is IPriceRegistry {
         address _oracle,
         address _asset,
         uint256 _expiryTimestamp
-    ) public view override returns (bool) {
+    ) external view override returns (bool) {
         return _settlementPrices[_oracle][_asset][_expiryTimestamp].price != 0;
     }
 }
