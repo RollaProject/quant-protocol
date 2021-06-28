@@ -1,5 +1,5 @@
 {
-  "name": "@quant-finance/quant-protocol",
+  "name": "@quant/quant-protocol",
   "version": "0.6.0",
   "description": "Smart-contracts for Quant. The free, instant, DeFi crypto options trading protocol.",
   "scripts": {
