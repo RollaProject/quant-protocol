@@ -4,12 +4,10 @@ pragma abicoder v2;
 
 import "./QuantMath.sol";
 import "../options/QToken.sol";
-import "../interfaces/IPriceRegistry.sol"    ;
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
+import "../interfaces/IPriceRegistry.sol";
 
 library FundsCalculator {
-    using SafeMath for uint256    ;
-    using SignedSafeMath for int256;
+    using SafeMath for uint256;
     using QuantMath for uint256;
     using QuantMath for int256;
     using QuantMath for QuantMath.FixedPointInt;
@@ -66,45 +64,44 @@ library FundsCalculator {
 
         uint256 qTokenForCollateralStrikePrice;
 
-//        if (_qTokenForCollateral != address(0)) {
-//            QToken qTokenForCollateral = QToken(_qTokenForCollateral);
-//            qTokenForCollateralStrikePrice = qTokenForCollateral.strikePrice();
-//
-//            // Check that expiries match
-//            require(
-//                qTokenToMint.expiryTime() == qTokenForCollateral.expiryTime(),
-//                "Controller: Can't create spreads from options with different expiries"
-//            );
-//
-//            // Check that the underlyings match
-//            require(
-//                qTokenToMint.underlyingAsset() ==
-//                    qTokenForCollateral.underlyingAsset(),
-//                "Controller: Can't create spreads from options with different underlying assets"
-//            );
-//
-//            // Check that the option types match
-//            require(
-//                qTokenToMint.isCall() == qTokenForCollateral.isCall(),
-//                "Controller: Can't create spreads from options with different types"
-//            );
-//
-//            // Check that the options have a matching oracle
-//            require(
-//                qTokenToMint.oracle() == qTokenForCollateral.oracle(),
-//                "Controller: Can't create spreads from options with different oracles"
-//            );
-//        }
+        if (_qTokenForCollateral != address(0)) {
+            QToken qTokenForCollateral = QToken(_qTokenForCollateral);
+            qTokenForCollateralStrikePrice = qTokenForCollateral.strikePrice();
 
-        collateralAmount = QuantMath.FixedPointInt(0);
-//        getOptionCollateralRequirement(
-//            qTokenToMintStrikePrice,
-//            qTokenForCollateralStrikePrice,
-//            _optionsAmount,
-//            qTokenToMint.isCall(),
-//            _optionsDecimals,
-//            _underlyingDecimals
-//        );
+            // Check that expiries match
+            require(
+                qTokenToMint.expiryTime() == qTokenForCollateral.expiryTime(),
+                "Controller: Can't create spreads from options with different expiries"
+            );
+
+            // Check that the underlyings match
+            require(
+                qTokenToMint.underlyingAsset() ==
+                    qTokenForCollateral.underlyingAsset(),
+                "Controller: Can't create spreads from options with different underlying assets"
+            );
+
+            // Check that the option types match
+            require(
+                qTokenToMint.isCall() == qTokenForCollateral.isCall(),
+                "Controller: Can't create spreads from options with different types"
+            );
+
+            // Check that the options have a matching oracle
+            require(
+                qTokenToMint.oracle() == qTokenForCollateral.oracle(),
+                "Controller: Can't create spreads from options with different oracles"
+            );
+        }
+
+        collateralAmount = getOptionCollateralRequirement(
+            qTokenToMintStrikePrice,
+            qTokenForCollateralStrikePrice,
+            _optionsAmount,
+            qTokenToMint.isCall(),
+            _optionsDecimals,
+            _underlyingDecimals
+        );
 
         collateral = qTokenToMint.isCall()
             ? qTokenToMint.underlyingAsset()
@@ -135,25 +132,26 @@ library FundsCalculator {
     function getPayoutForCall(
         FundsCalculator.OptionPayoutInput memory payoutInput
     ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
-        QuantMath.FixedPointInt memory divResult = QuantMath.FixedPointInt(computeDivision(payoutInput.expiryPrice.value,
-                                          payoutInput.strikePrice.value));
-
-        payoutAmount = payoutInput.expiryPrice.isGreaterThan (
+        payoutAmount = payoutInput.expiryPrice.isGreaterThan(
             payoutInput.strikePrice
         )
-            ? QuantMath.FixedPointInt(computeMultiplication(divResult.value, payoutInput.amount.value))
+            ? payoutInput
+                .expiryPrice
+                .sub(payoutInput.strikePrice)
+                .mul(payoutInput.amount)
+                .div(payoutInput.expiryPrice)
             : int256(0).fromUnscaledInt();
     }
 
     function getPayoutForPut(
         FundsCalculator.OptionPayoutInput memory payoutInput
     ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
-        QuantMath.FixedPointInt memory subResult = payoutInput.strikePrice.sub(payoutInput.expiryPrice);
-
-        payoutAmount = payoutInput.strikePrice.isGreaterThan (
+        payoutAmount = payoutInput.strikePrice.isGreaterThan(
             payoutInput.expiryPrice
         )
-            ? QuantMath.FixedPointInt(computeMultiplication(subResult.value, payoutInput.amount.value))
+            ? (payoutInput.strikePrice.sub(payoutInput.expiryPrice)).mul(
+                payoutInput.amount
+            )
             : int256(0).fromUnscaledInt();
     }
 
@@ -179,13 +177,9 @@ library FundsCalculator {
             );
         }
 
-        collateralAmount = QuantMath.FixedPointInt(computeMultiplication(
-            _optionsAmount.fromScaledUint(_optionsDecimals).value,
-            collateralPerOption.value
-            ));
-//        _optionsAmount.fromScaledUint(_optionsDecimals).mul(
-//            collateralPerOption
-//        );
+        collateralAmount = _optionsAmount.fromScaledUint(_optionsDecimals).mul(
+            collateralPerOption
+        );
     }
 
     function getPutCollateralRequirement(
@@ -197,9 +191,9 @@ library FundsCalculator {
         returns (QuantMath.FixedPointInt memory collateralPerOption)
     {
         QuantMath.FixedPointInt memory mintStrikePrice =
-            _qTokenToMintStrikePrice.fromScaledUint(27);
+            _qTokenToMintStrikePrice.fromScaledUint(6);
         QuantMath.FixedPointInt memory collateralStrikePrice =
-            _qTokenForCollateralStrikePrice.fromScaledUint(27);
+            _qTokenForCollateralStrikePrice.fromScaledUint(6);
 
         // Initially (non-spread) required collateral is the long strike price
         collateralPerOption = mintStrikePrice;
@@ -223,12 +217,12 @@ library FundsCalculator {
         returns (QuantMath.FixedPointInt memory collateralPerOption)
     {
         QuantMath.FixedPointInt memory mintStrikePrice =
-            _qTokenToMintStrikePrice.fromScaledUint(27);
+            _qTokenToMintStrikePrice.fromScaledUint(6);
         QuantMath.FixedPointInt memory collateralStrikePrice =
-            _qTokenForCollateralStrikePrice.fromScaledUint(27);
+            _qTokenForCollateralStrikePrice.fromScaledUint(6);
 
         // Initially (non-spread) required collateral is the long strike price
-        collateralPerOption = uint256(1000000).fromScaledUint(
+        collateralPerOption = (10**_underlyingDecimals).fromScaledUint(
             _underlyingDecimals
         );
 
@@ -237,29 +231,9 @@ library FundsCalculator {
                 collateralStrikePrice
             )
                 ? int256(0).fromUnscaledInt() // Call Debit Spread
-                : QuantMath.FixedPointInt(computeDivision(collateralStrikePrice.value,
-                  mintStrikePrice.value)); // Call Credit Spread
+                : (collateralStrikePrice.sub(mintStrikePrice)).div(
+                    collateralStrikePrice
+                ); // Call Credit Spread
         }
-   }
-   function computeDivision(
-           int256 _collateralStrikePrice,
-           int256 _mintStrikePrice
-   )
-   internal
-   pure
-   returns (int256 collateralPerOption)    {
-           int256 _SCALING_FACTOR = 1e27;
-           int256 subResult = _collateralStrikePrice.sub(_mintStrikePrice);
-           collateralPerOption = subResult.mul(_SCALING_FACTOR) / _collateralStrikePrice;
-   }
-   function computeMultiplication(
-            int256 _a,
-            int256 _b
-    )
-    internal
-    pure
-    returns (int256) {
-        int256 _SCALING_FACTOR = 1e27;
-        return _a.mul(_b) / _SCALING_FACTOR;
     }
 }
