@@ -8,6 +8,11 @@ perl -0777 -i -pe 's/internal\s*pure\s*returns/internal pure virtual returns/g' 
 
 perl -0777 -i -pe 's/internal view returns/internal view virtual returns/g' contracts/utils/EIP712MetaTransaction.sol
 
+# Controller simplification
+perl -0777 -i -pe 's/require\(\s*IOracleRegistry\(\s*IOptionsFactory\(optionsFactory\).quantConfig\(\).protocolAddresses\(\s*ProtocolValue.encode\("oracleRegistry"\)\s*\)\s*\)\s*.isOracleActive\(qToken.oracle\(\)\)/require\(true/g' contracts/Controller.sol
+
+
+
 # QuantCalculator simplification
 perl -0777 -i -pe 's/address public immutable override optionsFactory;/address public immutable override optionsFactory ;\n
      \/\/ add expiry price
