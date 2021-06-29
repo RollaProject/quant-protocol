@@ -3,4 +3,4 @@ certoraRun spec/harness/FundsCalculatorWrapper.sol contracts/libraries/FundsCalc
             --verify FundsCalculatorWrapper:spec/fundsCalculator.spec \
             --settings -assumeUnwindCond,-postProcessCounterExamples=true,-smt_nonLinearArithmetic=true\
             --solc solc7.6 \
-            --staging --msg "check all successful"
+            --staging --msg "FundsCalculator"

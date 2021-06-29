@@ -64,7 +64,7 @@ hook Sload uint256 balance _balances[KEY uint256 collateralTokenId][KEY address 
 ////////////////////////////////////////////////////////////////////////////
 
 /* 	Rule: TotalSupply is the sum of balances    
- 	Description:  Each entry in collateralTokenIds is unique
+ 	Description:  
 	Formula: totalSupplies[collateralTokenId] = sum _balances[collateralTokenId][x] for all x
 */
 invariant sumBalancesVsTotalSupplies(uint collateralTokenId)

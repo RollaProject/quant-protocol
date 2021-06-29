@@ -2,7 +2,7 @@
     This is a specification file for smart contract verification with the Certora prover.
     For more information, visit: https://www.certora.com/
 
-    This file is run with scripts/...
+    This file is run with spec/scripts/runQuantCalculator.sh
 	Assumptions:
 */
 
@@ -77,18 +77,11 @@ methods {
 ////////////////////////////////////////////////////////////////////////////
 
 // A ghost to represent the uniqueness of collateralTokenId for each pair of qTokens
-ghost ghost_collateral(address , address) returns uint; //`{
-	//axiom forall uint256 p1. forall uint256 q1. forall uint256 p2. forall uint256 q2.
-    //     (p1 != p2 || q1 != q2)  => ghost_collateral(p1,q1) != ghost_collateral(p2,q2);
-//}
+ghost ghost_collateral(address , address) returns uint; 
 
 ghost ghost_division(int256, int256) returns int256;
 
 ghost ghost_multiplication(int256, int256) returns int256;
-
-////////////////////////////////////////////////////////////////////////////
-//                       Invariants                                       //
-////////////////////////////////////////////////////////////////////////////
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -102,9 +95,9 @@ ghost ghost_multiplication(int256, int256) returns int256;
  	Description: getExercisePayout, getCollateralRequirement and calculateClaimableCollateral
  	             return the same ERC20token for the same qtoken/collateralTokenID.
 	Formula:
-			collateral = getCollateralRequirement(qToken, qTokenForCollateral, amount) =>
-			payoutToken = getExercisePayout(qToken, amount) =>
-			collateralAsset = calculateClaimableCollateral(collateralTokenID, amount) =>
+			collateral = getCollateralRequirement(qToken, qTokenForCollateral, amount) &&
+			payoutToken = getExercisePayout(qToken, amount) &&
+			collateralAsset = calculateClaimableCollateral(collateralTokenID, amount)  =>
 			
 			    collateral == payoutToken && payoutToken == colaterallAsset
 */
