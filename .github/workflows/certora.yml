@@ -110,7 +110,7 @@ jobs:
           chmod +x spec/scripts/*.sh
           ./spec/scripts/applyHarnesses.sh
 
-      - name: Verify with Certora - rebase and strategies
+      - name: Verify with Certora - CollateralToken and FundsCalculator
         run: |
           spec/scripts/runCollateralToken.sh
           spec/scripts/runFundsCalculator.sh
