@@ -2,12 +2,13 @@
 pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IOracleRegistry.sol";
 
 /// @title For centrally managing a list of oracle providers
 /// @notice oracle provider registry for holding a list of oracle providers and their id
-contract OracleRegistry is IOracleRegistry {
+contract OracleRegistry is IOracleRegistry, ReentrancyGuard {
     using SafeMath for uint256;
 
     struct OracleInfo {
@@ -30,7 +31,12 @@ contract OracleRegistry is IOracleRegistry {
     }
 
     /// @inheritdoc IOracleRegistry
-    function addOracle(address _oracle) external override returns (uint256) {
+    function addOracle(address _oracle)
+        external
+        override
+        nonReentrant
+        returns (uint256)
+    {
         require(
             config.hasRole(
                 config.quantRoles("ORACLE_MANAGER_ROLE"),
