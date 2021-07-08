@@ -13,7 +13,7 @@ describe("PriceRegistry", () => {
   let admin: Signer;
   let secondAccount: Signer;
   let oracle: string;
-  const assetOne = "0x000000000000000000000000000000000000000B";
+  const assetOne = "0x000000000000000000000000000000000000000b";
 
   beforeEach(async () => {
     [admin, secondAccount] = provider.getWallets();
@@ -45,9 +45,13 @@ describe("PriceRegistry", () => {
       await priceRegistry.hasSettlementPrice(oracle, assetOne, timestamp)
     ).to.equal(false);
 
-    await priceRegistry
-      .connect(admin)
-      .setSettlementPrice(assetOne, timestamp, price, 6);
+    expect(
+      await priceRegistry
+        .connect(admin)
+        .setSettlementPrice(assetOne, timestamp, price, 6)
+    )
+      .to.emit(priceRegistry, "PriceStored")
+      .withArgs(assetOne, timestamp, price, 6);
 
     expect(
       await priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
