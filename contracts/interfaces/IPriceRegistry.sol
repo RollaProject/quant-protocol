@@ -11,6 +11,13 @@ interface IPriceRegistry {
         uint8 decimals;
     }
 
+    event PriceStored(
+        address indexed _asset,
+        uint256 _expiryTimestamp,
+        uint256 _settlementPrice,
+        uint8 _settlementPriceDecimals
+    );
+
     /// @notice Set the price at settlement for a particular asset, expiry
     /// @param _asset asset to set price for
     /// @param _settlementPrice price at settlement
