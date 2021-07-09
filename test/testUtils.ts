@@ -48,7 +48,7 @@ const PERMIT_TYPEHASH = keccak256(
 );
 
 export const name = "Quant Protocol";
-export const version = "0.5.2";
+export const version = "0.6.1";
 
 const mockERC20 = async (
   deployer: Signer,
