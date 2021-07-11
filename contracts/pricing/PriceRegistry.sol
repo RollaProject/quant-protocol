@@ -55,7 +55,13 @@ contract PriceRegistry is IPriceRegistry {
             _expiryTimestamp
         ] = PriceWithDecimals(_settlementPrice, _settlementPriceDecimals);
 
-        emit PriceStored(msg.sender, _asset, _expiryTimestamp, _settlementPrice, _settlementPriceDecimals);
+        emit PriceStored(
+            msg.sender,
+            _asset,
+            _expiryTimestamp,
+            _settlementPrice,
+            _settlementPriceDecimals
+        );
     }
 
     /// @inheritdoc IPriceRegistry
