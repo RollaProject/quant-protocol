@@ -12,7 +12,7 @@ interface IPriceRegistry {
     }
 
     event PriceStored(
-        address indexed oracle,
+        address indexed _oracle,
         address indexed _asset,
         uint256 indexed _expiryTimestamp,
         uint256 _settlementPrice,
