@@ -1,5 +1,5 @@
 {
-  "name": "@quant-finance/quant-protocol",
+  "name": "@quant/quant-protocol",
   "version": "0.6.1",
   "description": "Smart-contracts for Quant. The free, instant, DeFi crypto options trading protocol.",
   "scripts": {
@@ -12,7 +12,7 @@
     "docs": "solidity-docgen --solc-module solc-0.7.6",
     "docs:uml": "node build-scripts/generateDocs.js",
     "coverage": "hardhat coverage",
-    "publishToRegistry": "./envrun yarn build && npm publish --registry $REGISTRY_URL"
+    "publishToRegistry": "yarn build && ./envrun npm publish --registry $REGISTRY_URL"
   },
   "husky": {
     "hooks": {
