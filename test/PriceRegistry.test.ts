@@ -51,7 +51,7 @@ describe("PriceRegistry", () => {
         .setSettlementPrice(assetOne, timestamp, price, 6)
     )
       .to.emit(priceRegistry, "PriceStored")
-      .withArgs(assetOne, timestamp, price, 6);
+      .withArgs(await admin.getAddress(), assetOne, timestamp, price, 6);
 
     expect(
       await priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
