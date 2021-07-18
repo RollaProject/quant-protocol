@@ -124,3 +124,9 @@ coverage.json
 deploy/
 
 deployments/
+.certora_build.json
+
+
+#certora
+.certora*
+last_conf*
