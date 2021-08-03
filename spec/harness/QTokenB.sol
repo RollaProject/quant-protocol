@@ -1,13 +1,11 @@
-
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
 import "./QTokenCore.sol";
 
-contract QTokenB is QTokenCore { 
-
-	constructor(
+contract QTokenB is QTokenCore {
+    constructor(
         address _quantConfig,
         address _underlyingAsset,
         address _strikeAsset,
@@ -15,6 +13,16 @@ contract QTokenB is QTokenCore {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    )  QTokenCore(_quantConfig, _underlyingAsset, _strikeAsset, _oracle, _strikePrice, _expiryTime, _isCall) public {}
-
+    )
+        public
+        QTokenCore(
+            _quantConfig,
+            _underlyingAsset,
+            _strikeAsset,
+            _oracle,
+            _strikePrice,
+            _expiryTime,
+            _isCall
+        )
+    {}
 }
