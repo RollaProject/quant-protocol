@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
@@ -26,7 +26,6 @@ contract ControllerHarness is Controller {
         return IERC20(t).balanceOf(u);
     }
 
-    
     ////////////////////////////////////////////////////////////////////////////
     //                       Each operation wrapper                           //
     ////////////////////////////////////////////////////////////////////////////
@@ -90,7 +89,8 @@ contract ControllerHarness is Controller {
     function _msgSender() internal view override returns (address sender) {
         return msg.sender;
     }
-    function getExpiryTime(address qToken) public view returns (uint256){
+
+    function getExpiryTime(address qToken) public view returns (uint256) {
         return IQToken(qToken).expiryTime();
     }
 }

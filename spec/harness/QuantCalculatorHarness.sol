@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
@@ -7,10 +7,7 @@ import "../../contracts/interfaces/IOptionsFactory.sol";
 import "../../contracts/interfaces/IQToken.sol";
 import "../../contracts/interfaces/IPriceRegistry.sol";
 
-
-
 contract QuantCalculatorHarness is IQuantCalculator {
-
     modifier validQToken(address _qToken) {
         require(
             IOptionsFactory(optionsFactory).isQToken(_qToken),
@@ -32,29 +29,28 @@ contract QuantCalculatorHarness is IQuantCalculator {
         _;
     }
 
-    // a symbolic mapping form (qToken, qtokenLong, amount) to collateralRequirement 
-    mapping (address => mapping( address => mapping( uint256 => uint256) )) public collateralRequirement;
-    // a symbolic mapping form (_collateralTokenId, amount) to claimableCollateral 
-    mapping (uint256 => mapping( uint256 => uint256) ) public claimableCollateral;
-    // a symbolic mapping form (qToken, amount) to exercisePayout 
-    mapping (address => mapping( uint256 => uint256) ) public exercisePayout;
+    // a symbolic mapping form (qToken, qtokenLong, amount) to collateralRequirement
+    mapping(address => mapping(address => mapping(uint256 => uint256)))
+        public collateralRequirement;
+    // a symbolic mapping form (_collateralTokenId, amount) to claimableCollateral
+    mapping(uint256 => mapping(uint256 => uint256)) public claimableCollateral;
+    // a symbolic mapping form (qToken, amount) to exercisePayout
+    mapping(address => mapping(uint256 => uint256)) public exercisePayout;
     // a symbolic mapping form (qToken, qtokenLong, amount) to getNeutralizationPayout
-    mapping (address => mapping( address => mapping( uint256 => uint256) )) public neutralizationPayout;
-    
+    mapping(address => mapping(address => mapping(uint256 => uint256)))
+        public neutralizationPayout;
 
     uint8 public constant override OPTIONS_DECIMALS = 0;
 
     IQuantCalculator calcOriginal;
     address public override optionsFactory;
-    
 
-    mapping (address => address) public qTokenToCollateralType;
-
+    mapping(address => address) public qTokenToCollateralType;
 
     function getClaimableCollateralValue(
         uint256 _collateralTokenId,
         uint256 _amount
-    )  internal view returns (uint256) {
+    ) internal view returns (uint256) {
         return claimableCollateral[_collateralTokenId][_amount];
     }
 
@@ -63,13 +59,15 @@ contract QuantCalculatorHarness is IQuantCalculator {
         address _qTokenForCollateral,
         uint256 _amount
     ) internal view returns (uint256) {
-        return collateralRequirement[_qTokenToMint][_qTokenForCollateral][_amount];
+        return
+            collateralRequirement[_qTokenToMint][_qTokenForCollateral][_amount];
     }
 
-    function getExercisePayoutValue(
-        address _qToken,
-        uint256 _amount
-    ) internal view returns (uint256)  {
+    function getExercisePayoutValue(address _qToken, uint256 _amount)
+        internal
+        view
+        returns (uint256)
+    {
         return exercisePayout[_qToken][_amount];
     }
 
@@ -78,9 +76,9 @@ contract QuantCalculatorHarness is IQuantCalculator {
         address _qTokenForCollateral,
         uint256 _amount
     ) internal view returns (uint256) {
-        return neutralizationPayout[_qTokenToMint][_qTokenForCollateral][_amount];
+        return
+            neutralizationPayout[_qTokenToMint][_qTokenForCollateral][_amount];
     }
-
 
     function calculateClaimableCollateral(
         uint256 _collateralTokenId,
@@ -96,7 +94,6 @@ contract QuantCalculatorHarness is IQuantCalculator {
             uint256 amountToClaim
         )
     {
-
         amountToClaim = _amount == 0
             ? IOptionsFactory(optionsFactory).collateralToken().balanceOf(
                 msgSender,
@@ -105,9 +102,14 @@ contract QuantCalculatorHarness is IQuantCalculator {
             : _amount;
 
         (address _qTokenShort, address qTokenAsCollateral) =
-            IOptionsFactory(optionsFactory).collateralToken().idToInfo(_collateralTokenId);
+            IOptionsFactory(optionsFactory).collateralToken().idToInfo(
+                _collateralTokenId
+            );
 
-        returnableCollateral = getClaimableCollateralValue(_collateralTokenId,amountToClaim);
+        returnableCollateral = getClaimableCollateralValue(
+            _collateralTokenId,
+            amountToClaim
+        );
         collateralAsset = qTokenToCollateralType[_qTokenShort];
     }
 
@@ -121,7 +123,11 @@ contract QuantCalculatorHarness is IQuantCalculator {
         override
         returns (address collateralType, uint256 collateralOwed)
     {
-        collateralOwed = getNeutralizationPayoutValue(_qTokenLong,_qTokenShort,_amountToNeutralize);
+        collateralOwed = getNeutralizationPayoutValue(
+            _qTokenLong,
+            _qTokenShort,
+            _amountToNeutralize
+        );
         collateralType = qTokenToCollateralType[_qTokenShort];
     }
 
@@ -137,18 +143,15 @@ contract QuantCalculatorHarness is IQuantCalculator {
         validQTokenAsCollateral(_qTokenForCollateral)
         returns (address collateral, uint256 collateralAmount)
     {
-        collateralAmount = getCollateralRequirementValue(_qTokenToMint,_qTokenForCollateral,_amount);
-        collateral =  qTokenToCollateralType[_qTokenToMint];
+        collateralAmount = getCollateralRequirementValue(
+            _qTokenToMint,
+            _qTokenForCollateral,
+            _amount
+        );
+        collateral = qTokenToCollateralType[_qTokenToMint];
     }
 
-
-    
-
-
-    function getExercisePayout(
-        address _qToken,
-        uint256 _amount
-    )
+    function getExercisePayout(address _qToken, uint256 _amount)
         external
         view
         override
@@ -161,7 +164,7 @@ contract QuantCalculatorHarness is IQuantCalculator {
     {
         IQToken qToken = IQToken(_qToken);
         isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
-        payoutAmount = getExercisePayoutValue(_qToken,_amount);
+        payoutAmount = getExercisePayoutValue(_qToken, _amount);
         payoutToken = qTokenToCollateralType[_qToken];
     }
 }
