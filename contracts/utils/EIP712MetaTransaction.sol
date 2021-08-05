@@ -32,6 +32,9 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
 
     mapping(address => uint256) private _nonces;
 
+    string public name;
+    string public version;
+
     event MetaTransactionExecuted(
         address indexed userAddress,
         address payable indexed relayerAddress,
@@ -77,11 +80,14 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
         nonce = _nonces[user];
     }
 
-    function initializeEIP712(string memory name, string memory version)
+    function initializeEIP712(string memory _name, string memory _version)
         public
         initializer
     {
-        __EIP712_init(name, version);
+        name = _name;
+        version = _version;
+
+        __EIP712_init(_name, _version);
     }
 
     function _msgSender() internal view returns (address sender) {
