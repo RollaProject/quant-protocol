@@ -154,7 +154,9 @@ contract ControllerV2 is
             _args.to,
             _msgSender(),
             _args.qToken,
-            _args.amount
+            _args.amount,
+            collateral,
+            collateralAmount
         );
 
         return collateralTokenId;
@@ -225,7 +227,9 @@ contract ControllerV2 is
             _msgSender(),
             _args.qTokenToMint,
             _args.qTokenForCollateral,
-            _args.amount
+            _args.amount,
+            collateral,
+            collateralAmount
         );
 
         return collateralTokenId;

@@ -9,14 +9,18 @@ interface IController {
         address indexed mintedTo,
         address indexed minter,
         address indexed qToken,
-        uint256 optionsAmount
+        uint256 optionsAmount,
+        address collateralAsset,
+        uint256 collateralAmount
     );
 
     event SpreadMinted(
         address indexed account,
         address indexed qTokenToMint,
         address indexed qTokenForCollateral,
-        uint256 optionsAmount
+        uint256 optionsAmount,
+        address collateralAsset,
+        uint256 collateralAmount
     );
 
     event OptionsExercised(
