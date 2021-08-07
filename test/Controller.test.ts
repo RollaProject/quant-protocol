@@ -222,7 +222,9 @@ describe("Controller", async () => {
           accountToMintTo,
           secondAccount.address,
           qTokenToMintAddress,
-          optionsAmount
+          optionsAmount,
+          collateralAddress,
+          collateralAmount
         );
 
       // Check that the user received the CollateralToken
@@ -262,7 +264,9 @@ describe("Controller", async () => {
           secondAccount.address,
           qTokenToMintAddress,
           qTokenForCollateralAddress,
-          optionsAmount
+          optionsAmount,
+          collateralAddress,
+          collateralAmount
         );
 
       expect(
