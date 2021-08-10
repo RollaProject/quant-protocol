@@ -149,10 +149,11 @@ contract TimelockController is AccessControl {
         bytes memory data,
         bytes32 predecessor,
         bytes32 salt,
-        uint256 delay
+        uint256 delay,
+        bool ignoreMinDelay
     ) public virtual onlyRole(PROPOSER_ROLE) {
         bytes32 id = hashOperation(target, value, data, predecessor, salt);
-        _schedule(id, delay);
+        _schedule(id, delay, ignoreMinDelay);
         emit CallScheduled(id, 0, target, value, data, predecessor, delay);
     }
 
@@ -180,7 +181,7 @@ contract TimelockController is AccessControl {
 
         bytes32 id =
             hashOperationBatch(targets, values, datas, predecessor, salt);
-        _schedule(id, delay);
+        _schedule(id, delay, false);
         for (uint256 i = 0; i < targets.length; ++i) {
             emit CallScheduled(
                 id,
@@ -371,13 +372,17 @@ contract TimelockController is AccessControl {
     /**
      * @dev Schedule an operation that is to becomes valid after a given delay.
      */
-    function _schedule(bytes32 id, uint256 delay) private {
+    function _schedule(
+        bytes32 id,
+        uint256 delay,
+        bool ignoreMinDelay
+    ) private {
         require(
             !isOperation(id),
             "TimelockController: operation already scheduled"
         );
         require(
-            delay >= getMinDelay(),
+            ignoreMinDelay || delay >= getMinDelay(),
             "TimelockController: insufficient delay"
         );
         // solhint-disable-next-line not-rely-on-time
