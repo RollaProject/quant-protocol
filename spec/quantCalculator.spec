@@ -39,7 +39,8 @@ methods {
 
 	// IERC20 methods to be called with one of the tokens (DummyERC20A, DummyERC20A) or QToken
 	balanceOf(address) => DISPATCHER(true)
-	qTokenA.totalSupply() returns (uint256) envfree => DISPATCHER(true)
+	totalSupply() returns (uint256) => DISPATCHER(true)
+	qTokenA.totalSupply() returns (uint256) envfree
 	transferFrom(address from, address to, uint256 amount) => DISPATCHER(true)
 	transfer(address to, uint256 amount) => DISPATCHER(true)
 
@@ -62,13 +63,15 @@ methods {
 	burnCollateralToken(address,uint256,uint256) => DISPATCHER(true)
 	//balanceOf(address, uint256) => DISPATCHER(true)
 	idToInfo(uint256) => DISPATCHER(true)
-	collateralToken.getCollateralTokenId(address p,address q) returns (uint256) envfree => ghost_collateral(p,q)
+	collateralToken.getCollateralTokenId(address p,address q) returns (uint256) envfree 
+	getCollateralTokenId(address p,address q) returns (uint256) => ghost_collateral(p,q)
+
 	collateralToken.getTokenSupplies(uint) returns (uint) envfree
 	//getCollateralTokenInfoTokenAddress(uint256) returns (address)  => DISPATCHER(true)
     collateralToken.getCollateralTokenInfoTokenAddress(uint) returns (address) envfree
 	collateralToken.getCollateralTokenInfoTokenAsCollateral(uint)returns (address) envfree
-	collateralToken.balanceOf(address, uint256) returns (uint256) envfree => DISPATCHER(true)
-
+	balanceOf(address, uint256) returns (uint256) => DISPATCHER(true)
+	collateralToken.balanceOf(address, uint256) returns (uint256) envfree
 }
 
 
