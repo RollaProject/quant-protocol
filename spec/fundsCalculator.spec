@@ -393,7 +393,7 @@ rule checkPayoutAmountAdditiveCall(uint256 strikePrice,
     int256 amount3ScaledInt = uintToInt(amount3 * 1000000000);
 
     int256 a = ghost_division(expiryPriceScaledInt, strikePriceScaledInt);
-    require ghost_multiplication(a, amount3ScaledInt) == ghost_multiplication(a, amount1ScaledInt) + ghost_multiplication(a, amount2ScaledInt);
+    require to_mathint(ghost_multiplication(a, amount3ScaledInt)) == to_mathint(ghost_multiplication(a, amount1ScaledInt)) + to_mathint(ghost_multiplication(a, amount2ScaledInt));
 
     setPayoutInput(strikePrice, expiryPrice, amount3, expiryDecimals, optionsDecimals);
     int256 payoutAmount3 = getPayoutForCallWrapper();
@@ -435,7 +435,7 @@ rule checkPayoutAmountAdditivePut(uint256 strikePrice,
     int256 amount3ScaledInt = uintToInt(amount3 * 1000000000);
 
     int256 a = AsubB(strikePriceScaledInt, expiryPriceScaledInt);
-    require ghost_multiplication(a, amount3ScaledInt) == ghost_multiplication(a, amount1ScaledInt) + ghost_multiplication(a, amount2ScaledInt);
+    require to_mathint(ghost_multiplication(a, amount3ScaledInt)) == to_mathint(ghost_multiplication(a, amount1ScaledInt)) + to_mathint(ghost_multiplication(a, amount2ScaledInt));
 
     setPayoutInput(strikePrice, expiryPrice, amount3, expiryDecimals, optionsDecimals);
     int256 payoutAmount3 = getPayoutForPutWrapper();

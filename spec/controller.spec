@@ -36,35 +36,44 @@ methods {
 	// QToken methods to be called with one of the tokens (DummyERC20*, DummyWeth)	
 	mint(address account, uint256 amount) => DISPATCHER(true)
 	burn(address account, uint256 amount) => DISPATCHER(true)
-    underlyingAsset() returns (address) envfree => DISPATCHER(true)
-	strikeAsset() returns (address) envfree => DISPATCHER(true)
+    underlyingAsset() returns (address) => DISPATCHER(true)
+	qTokenA.underlyingAsset() returns (address) envfree
+	strikeAsset() returns (address) => DISPATCHER(true)
+	qTokenA.strikeAsset() returns (address) envfree
 	strikePrice() returns (uint256) => DISPATCHER(true)
 	expiryTime() returns (uint256) => DISPATCHER(true)	
-	isCall() returns (bool) envfree => DISPATCHER(true)
+	isCall() returns (bool) => DISPATCHER(true)
+	qTokenA.isCall() returns (bool) envfree
 
 	// IERC20 methods to be called with one of the tokens (DummyERC20A, DummyERC20A) or QToken
-	qTokenA.balanceOf(address) returns (uint256) envfree => DISPATCHER(true) 
-	qTokenA.totalSupply() returns (uint256) envfree => DISPATCHER(true)
-	qTokenB.balanceOf(address) returns (uint256) envfree => DISPATCHER(true) 
-	qTokenB.totalSupply() returns (uint256) envfree => DISPATCHER(true)
+	qTokenA.balanceOf(address) returns (uint256) envfree
+	balanceOf(address) returns (uint256) => DISPATCHER(true) 
+	totalSupply() returns (uint256) => DISPATCHER(true)
+	qTokenA.totalSupply() returns (uint256) envfree
+	qTokenB.balanceOf(address) returns (uint256) envfree
+	qTokenB.totalSupply() returns (uint256) envfree
 	transferFrom(address from, address to, uint256 amount) => DISPATCHER(true)
 	transfer(address to, uint256 amount) => DISPATCHER(true)
 
 
 	// OptionsFactory
-	optionsFactory.isQToken(address _qToken) returns (bool) envfree => DISPATCHER(true)
+	optionsFactory.isQToken(address _qToken) returns (bool) envfree 
+	isQToken(address _qToken) returns (bool) => DISPATCHER(true)
 	collateralToken() => NONDET
 	quantConfig() => NONDET
 	
 	// CollateralToken
 	mintCollateralToken(address,uint256,uint256) => DISPATCHER(true)
 	burnCollateralToken(address,uint256,uint256) => DISPATCHER(true)
-	idToInfo(uint256) envfree => DISPATCHER(true)
-	collateralToken.getCollateralTokenId(address p,address q) returns (uint256) envfree => ghost_collateral(p,q)
+	idToInfo(uint256) => DISPATCHER(true)
+	collateralToken.idToInfo(uint256) returns (address,address) envfree
+	collateralToken.getCollateralTokenId(address p,address q) returns (uint256) envfree 
+	getCollateralTokenId(address p,address q) returns (uint256) => ghost_collateral(p,q)
 	collateralToken.getTokenSupplies(uint) returns (uint) envfree
 	collateralToken.getCollateralTokenInfoTokenAddress(uint) returns (address) envfree
 	collateralToken.getCollateralTokenInfoTokenAsCollateral(uint)returns (address) envfree
-	collateralToken.balanceOf(address, uint256) returns (uint256) envfree => DISPATCHER(true)
+	collateralToken.balanceOf(address, uint256) returns (uint256) envfree
+	balanceOf(address, uint256) returns (uint256) => DISPATCHER(true)
 	createCollateralToken(address,address) => NONDET
 	
 	
@@ -78,13 +87,21 @@ methods {
 
 	quantCalculator.getClaimableCollateralValue(uint256 collateralTokenId,
         uint256 amount
-	) returns (uint256) envfree => ghost_claimableCollateral(collateralTokenId,amount) 
+	) returns (uint256) envfree
+	getClaimableCollateralValue(uint256 collateralTokenId,
+        uint256 amount
+	) returns (uint256) => ghost_claimableCollateral(collateralTokenId,amount) 
 
 	quantCalculator.getCollateralRequirementValue(
         address qTokenToMint,
         address qTokenForCollateral,
         uint256 amount
-    ) returns (uint256) envfree => ghost_collateralRequirement(qTokenToMint,qTokenForCollateral,amount) 
+    ) returns (uint256) envfree 
+	getCollateralRequirementValue(
+        address qTokenToMint,
+        address qTokenForCollateral,
+        uint256 amount
+    ) returns (uint256) => ghost_collateralRequirement(qTokenToMint,qTokenForCollateral,amount) 
 
 	quantCalculator.collateralRequirement(
         address qTokenToMint,
@@ -96,17 +113,29 @@ methods {
 	quantCalculator.getExercisePayoutValue(
 		address qToken,
 		uint amount
-	) returns (uint256) envfree => ghost_exercisePayout(qToken,amount) 
+	) returns (uint256) envfree 
+	getExercisePayoutValue(
+		address qToken,
+		uint amount
+	) returns (uint256) => ghost_exercisePayout(qToken,amount) 
 
 	quantCalculator.exercisePayout(
 		address qToken,
 		uint amount
-	) returns (uint256) envfree => ghost_exercisePayout(qToken,amount)
+	) returns (uint256) envfree
+	exercisePayout(
+		address qToken,
+		uint amount
+	) returns (uint256) => ghost_exercisePayout(qToken,amount)
 
 	quantCalculator.getNeutralizationPayoutValue(address qTokenToMint,
 												 address qTokenForCollateral,
 												 uint256 amount
-	) returns (uint256) envfree => ghost_neutralizationPayout(qTokenToMint, qTokenForCollateral, amount)
+	) returns (uint256) envfree
+	getNeutralizationPayoutValue(address qTokenToMint,
+												 address qTokenForCollateral,
+												 uint256 amount
+	) returns (uint256) => ghost_neutralizationPayout(qTokenToMint, qTokenForCollateral, amount)
 
 	//ERC1155Receiver
 	onERC1155Received(address,address,uint256,uint256,bytes) => NONDET
@@ -620,7 +649,7 @@ rule onlyAfterExpiry()
 */
 rule mintSpreadBalancesCorrectness(address qTokenToMint, address qTokenForCollateral, uint amount){
 	env e;
-	address collateralTokenId;
+	uint collateralTokenId;
 	//setup qToken, collateralTokenID and underlying asset 
 	setupQtokenCollateralTokenId(qTokenToMint, qTokenForCollateral, collateralTokenId);
 	require qTokenToMint == qTokenA;
