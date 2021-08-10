@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.7.0;
 
+import "../libraries/ProtocolValue.sol";
+
 interface ITimelockedConfig {
     function setProtocolAddress(bytes32, address) external;
 
@@ -38,6 +40,11 @@ interface ITimelockedConfig {
         returns (bytes32);
 
     function quantRoles(string calldata) external view returns (bytes32);
+
+    function isProtocolValueSet(bytes32, ProtocolValue.Type)
+        external
+        view
+        returns (bool);
 
     function configuredQuantRoles(uint256) external view returns (bytes32);
 

@@ -29,6 +29,10 @@ contract QuantConfigV2 is
     mapping(string => bytes32) public override quantRoles;
     bytes32[] public override configuredQuantRoles;
 
+    mapping(bytes32 => mapping(ProtocolValue.Type => bool))
+        public
+        override isProtocolValueSet;
+
     uint256 public newV2StateVariable;
 
     function setProtocolAddress(bytes32 _protocolAddress, address _newValue)

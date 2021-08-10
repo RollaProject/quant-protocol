@@ -5,6 +5,7 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./TimelockController.sol";
 import "../interfaces/IQuantConfig.sol";
+import "../libraries/ProtocolValue.sol";
 
 contract ConfigTimelockController is TimelockController {
     using SafeMath for uint256;
@@ -39,14 +40,15 @@ contract ConfigTimelockController is TimelockController {
         bytes memory data,
         bytes32 predecessor,
         bytes32 salt,
-        uint256 delay
+        uint256 delay,
+        bool
     ) public virtual override onlyRole(PROPOSER_ROLE) {
         require(
             !_isProtocoValueSetter(data),
             "ConfigTimelockController: Can not schedule changes to a protocol value with an arbitrary delay"
         );
 
-        super.schedule(target, value, data, predecessor, salt, delay);
+        super.schedule(target, value, data, predecessor, salt, delay, false);
     }
 
     function scheduleSetProtocolAddress(
@@ -58,14 +60,27 @@ contract ConfigTimelockController is TimelockController {
         bytes memory data =
             _encodeSetProtocolAddress(protocolAddress, newAddress, quantConfig);
 
-        uint256 delay = _getProtocolValueDelay(protocolAddress);
+        uint256 delay =
+            _getProtocolValueDelay(
+                quantConfig,
+                protocolAddress,
+                ProtocolValue.Type.Address
+            );
 
         require(
             eta >= delay.add(block.timestamp),
             "ConfigTimelockController: Estimated execution block must satisfy delay"
         );
 
-        super.schedule(quantConfig, 0, data, bytes32(0), bytes32(eta), delay);
+        super.schedule(
+            quantConfig,
+            0,
+            data,
+            bytes32(0),
+            bytes32(eta),
+            delay,
+            true
+        );
     }
 
     function scheduleSetProtocolUint256(
@@ -77,14 +92,27 @@ contract ConfigTimelockController is TimelockController {
         bytes memory data =
             _encodeSetProtocolUint256(protocolUint256, newUint256, quantConfig);
 
-        uint256 delay = _getProtocolValueDelay(protocolUint256);
+        uint256 delay =
+            _getProtocolValueDelay(
+                quantConfig,
+                protocolUint256,
+                ProtocolValue.Type.Uint256
+            );
 
         require(
             eta >= delay.add(block.timestamp),
             "ConfigTimelockController: Estimated execution block must satisfy delay"
         );
 
-        super.schedule(quantConfig, 0, data, bytes32(0), bytes32(eta), delay);
+        super.schedule(
+            quantConfig,
+            0,
+            data,
+            bytes32(0),
+            bytes32(eta),
+            delay,
+            true
+        );
     }
 
     function scheduleSetProtocolBoolean(
@@ -96,13 +124,26 @@ contract ConfigTimelockController is TimelockController {
         bytes memory data =
             _encodeSetProtocolBoolean(protocolBoolean, newBoolean, quantConfig);
 
-        uint256 delay = _getProtocolValueDelay(protocolBoolean);
+        uint256 delay =
+            _getProtocolValueDelay(
+                quantConfig,
+                protocolBoolean,
+                ProtocolValue.Type.Bool
+            );
 
         require(
             eta >= delay.add(block.timestamp),
             "ConfigTimelockController: Estimated execution block must satisfy delay"
         );
-        super.schedule(quantConfig, 0, data, bytes32(0), bytes32(eta), delay);
+        super.schedule(
+            quantConfig,
+            0,
+            data,
+            bytes32(0),
+            bytes32(eta),
+            delay,
+            true
+        );
     }
 
     function scheduleSetProtocolRole(
@@ -115,14 +156,26 @@ contract ConfigTimelockController is TimelockController {
             _encodeSetProtocolRole(protocolRole, roleAdmin, quantConfig);
 
         uint256 delay =
-            _getProtocolValueDelay(keccak256(abi.encodePacked(protocolRole)));
+            _getProtocolValueDelay(
+                quantConfig,
+                keccak256(abi.encodePacked(protocolRole)),
+                ProtocolValue.Type.Role
+            );
 
         require(
             eta >= delay.add(block.timestamp),
             "ConfigTimelockController: Estimated execution block must satisfy delay"
         );
 
-        super.schedule(quantConfig, 0, data, bytes32(0), bytes32(eta), delay);
+        super.schedule(
+            quantConfig,
+            0,
+            data,
+            bytes32(0),
+            bytes32(eta),
+            delay,
+            true
+        );
     }
 
     function scheduleBatch(
@@ -407,11 +460,21 @@ contract ConfigTimelockController is TimelockController {
         }
     }
 
-    function _getProtocolValueDelay(bytes32 protocolValue)
-        internal
-        view
-        returns (uint256)
-    {
+    function _getProtocolValueDelay(
+        address quantConfig,
+        bytes32 protocolValue,
+        ProtocolValue.Type protocolValueType
+    ) internal view returns (uint256) {
+        // There shouldn't be a delay when setting a protocol value for the first time
+        if (
+            !IQuantConfig(quantConfig).isProtocolValueSet(
+                protocolValue,
+                protocolValueType
+            )
+        ) {
+            return 0;
+        }
+
         uint256 storedDelay = delays[protocolValue];
         return storedDelay != 0 ? storedDelay : minDelay;
     }

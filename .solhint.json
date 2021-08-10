@@ -6,7 +6,7 @@
     "code-complexity": ["error", 12],
     "function-max-lines": ["error", 120],
     "max-line-length": ["error", 120],
-    "max-states-count": ["error", 10],
+    "max-states-count": ["error", 12],
     "no-empty-blocks": "error",
     "no-unused-vars": "error",
     "payable-fallback": "off",
