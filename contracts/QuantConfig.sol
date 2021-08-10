@@ -29,6 +29,10 @@ contract QuantConfig is
     mapping(string => bytes32) public override quantRoles;
     bytes32[] public override configuredQuantRoles;
 
+    mapping(bytes32 => mapping(ProtocolValue.Type => bool))
+        public
+        override isProtocolValueSet;
+
     function setProtocolAddress(bytes32 _protocolAddress, address _newValue)
         external
         override
@@ -42,6 +46,7 @@ contract QuantConfig is
 
         protocolAddresses[_protocolAddress] = _newValue;
         configuredProtocolAddresses.push(_protocolAddress);
+        isProtocolValueSet[_protocolAddress][ProtocolValue.Type.Address] = true;
 
         if (_protocolAddress == ProtocolValue.encode("priceRegistry")) {
             protocolBooleans[ProtocolValue.encode("isPriceRegistrySet")] = true;
@@ -55,6 +60,7 @@ contract QuantConfig is
     {
         protocolUints256[_protocolUint256] = _newValue;
         configuredProtocolUints256.push(_protocolUint256);
+        isProtocolValueSet[_protocolUint256][ProtocolValue.Type.Uint256] = true;
     }
 
     function setProtocolBoolean(bytes32 _protocolBoolean, bool _newValue)
@@ -70,6 +76,7 @@ contract QuantConfig is
 
         protocolBooleans[_protocolBoolean] = _newValue;
         configuredProtocolBooleans.push(_protocolBoolean);
+        isProtocolValueSet[_protocolBoolean][ProtocolValue.Type.Bool] = true;
     }
 
     function setProtocolRole(string calldata _protocolRole, address _roleAdmin)
@@ -136,6 +143,7 @@ contract QuantConfig is
         if (quantRoles[_protocolRole] == bytes32(0)) {
             quantRoles[_protocolRole] = role;
             configuredQuantRoles.push(role);
+            isProtocolValueSet[role][ProtocolValue.Type.Role] = true;
         }
     }
 }

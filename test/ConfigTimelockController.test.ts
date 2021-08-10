@@ -11,7 +11,8 @@ type scheduleParams = [
   BytesLike,
   BytesLike,
   BytesLike,
-  BigNumberish
+  BigNumberish,
+  boolean
 ];
 
 describe("ConfigTimelockController", () => {
@@ -31,6 +32,7 @@ describe("ConfigTimelockController", () => {
   const value = 0;
   const data = "0x00";
   const protocolFee = ethers.utils.id("PROTOCOL_FEE");
+  const newValueDelay = ethers.constants.Zero;
 
   const uintToBytes32 = (value: number): string => {
     return ethers.utils.hexZeroPad(
@@ -55,7 +57,7 @@ describe("ConfigTimelockController", () => {
 
     salt = uintToBytes32(futureETA);
 
-    scheduleCallData = [target, value, data, predecessor, salt, delay];
+    scheduleCallData = [target, value, data, predecessor, salt, delay, false];
 
     id = await configTimelockController.hashOperation(
       target,
@@ -123,7 +125,8 @@ describe("ConfigTimelockController", () => {
             ]),
             predecessor,
             salt,
-            delay
+            delay,
+            false
           )
       ).to.be.revertedWith(
         "ConfigTimelockController: Can not schedule changes to a protocol value with an arbitrary delay"
@@ -190,7 +193,15 @@ describe("ConfigTimelockController", () => {
           )
       )
         .to.emit(configTimelockController, "CallScheduled")
-        .withArgs(id, 0, quantConfig.address, 0, callData, predecessor, delay);
+        .withArgs(
+          id,
+          0,
+          quantConfig.address,
+          0,
+          callData,
+          predecessor,
+          newValueDelay
+        );
     });
   });
 
@@ -235,7 +246,15 @@ describe("ConfigTimelockController", () => {
           )
       )
         .to.emit(configTimelockController, "CallScheduled")
-        .withArgs(id, 0, quantConfig.address, 0, callData, predecessor, delay);
+        .withArgs(
+          id,
+          0,
+          quantConfig.address,
+          0,
+          callData,
+          predecessor,
+          newValueDelay
+        );
     });
   });
 
@@ -280,7 +299,15 @@ describe("ConfigTimelockController", () => {
           )
       )
         .to.emit(configTimelockController, "CallScheduled")
-        .withArgs(id, 0, quantConfig.address, 0, callData, predecessor, delay);
+        .withArgs(
+          id,
+          0,
+          quantConfig.address,
+          0,
+          callData,
+          predecessor,
+          newValueDelay
+        );
     });
   });
 
@@ -444,7 +471,7 @@ describe("ConfigTimelockController", () => {
           0,
           registryCallData,
           predecessor,
-          delay
+          newValueDelay
         )
         .emit(configTimelockController, "CallScheduled")
         .withArgs(
@@ -454,7 +481,7 @@ describe("ConfigTimelockController", () => {
           0,
           feeCollectorCallData,
           predecessor,
-          delay
+          newValueDelay
         );
     });
   });
@@ -535,7 +562,7 @@ describe("ConfigTimelockController", () => {
           0,
           protocolFeeCalldata,
           predecessor,
-          delay
+          newValueDelay
         )
         .emit(configTimelockController, "CallScheduled")
         .withArgs(
@@ -545,7 +572,7 @@ describe("ConfigTimelockController", () => {
           0,
           maxOptionsDurationCallData,
           predecessor,
-          delay
+          newValueDelay
         );
     });
   });
@@ -628,7 +655,7 @@ describe("ConfigTimelockController", () => {
           0,
           isPausedCallData,
           predecessor,
-          delay
+          newValueDelay
         )
         .emit(configTimelockController, "CallScheduled")
         .withArgs(
@@ -638,7 +665,7 @@ describe("ConfigTimelockController", () => {
           0,
           isDeprecatedCallData,
           predecessor,
-          delay
+          newValueDelay
         );
     });
   });
