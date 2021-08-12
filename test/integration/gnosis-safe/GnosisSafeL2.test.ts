@@ -44,7 +44,9 @@ describe("GnosisSafeL2 integration tests", () => {
 
   const aDay = 24 * 3600; // in seconds
 
-  const mnemonic = process.env.MNEMONIC || "";
+  const mnemonic =
+    process.env.MNEMONIC ||
+    "word soft garden squirrel this lift object foot someone boost certain provide";
 
   before(async () => {
     const signers = ([deployer, user1, user2, user3] = [...Array(5).keys()].map(
@@ -52,7 +54,9 @@ describe("GnosisSafeL2 integration tests", () => {
     ));
 
     owners = signers.slice(1).map((signer) => signer.address);
+    console.log(owners);
 
+    console.log(deployer.address);
     QuantConfigV2Factory = await ethers.getContractFactory("QuantConfigV2");
   });
 
