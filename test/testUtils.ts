@@ -4,6 +4,7 @@ import {
   BigNumberish,
   BytesLike,
   Contract,
+  providers,
   Signer,
   Wallet,
 } from "ethers";
@@ -473,6 +474,30 @@ export const getReferralActionSignedData = (
     s,
     v,
   };
+};
+
+export const getWalletFromMnemonic = (
+  mnemonic: string,
+  accountNumber = 0,
+  provider?: providers.BaseProvider
+): Wallet => {
+  let wallet = ethers.Wallet.fromMnemonic(
+    mnemonic,
+    `m/44'/60'/0'/0/${accountNumber}`
+  );
+
+  if (provider) {
+    wallet = wallet.connect(provider);
+  }
+
+  return wallet;
+};
+
+export const uintToBytes32 = (value: number): string => {
+  return ethers.utils.hexZeroPad(
+    ethers.BigNumber.from(value).toHexString(),
+    32
+  );
 };
 
 export {
