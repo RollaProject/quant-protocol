@@ -8,6 +8,7 @@ import { ethers, upgrades } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import {
   ConfigTimelockController,
+  Controller,
   ControllerV2,
   QuantConfig,
   QuantConfigV2,
@@ -38,6 +39,8 @@ describe("GnosisSafeL2 integration tests", () => {
   let configTimelockController: ConfigTimelockController;
   let quantConfig: QuantConfig;
   let QuantConfigV2Factory: ContractFactory;
+  let controller: Controller;
+  let ControllerV2Factory: ContractFactory;
 
   const confirmationThreshold = ethers.BigNumber.from("2"); // 2/3 confirmations/signatures required for a transaction
   const gnosisSafeVersion = "1.3.0";
@@ -54,10 +57,6 @@ describe("GnosisSafeL2 integration tests", () => {
     ));
 
     owners = signers.slice(1).map((signer) => signer.address);
-    console.log(owners);
-
-    console.log(deployer.address);
-    QuantConfigV2Factory = await ethers.getContractFactory("QuantConfigV2");
   });
 
   beforeEach(async () => {
@@ -144,10 +143,18 @@ describe("GnosisSafeL2 integration tests", () => {
       .connect(deployer)
       .transferOwnership(configTimelockController.address);
 
-    // Make the timelock the owner of the QuantConfig upgrade ProxyAdmin contract
-    // await upgrades.admin.transferProxyAdminOwnership(
-    //   configTimelockController.address
-    // );
+    const Controller = await ethers.getContractFactory("Controller");
+    controller = <Controller>(
+      await upgrades.deployProxy(Controller, [
+        name,
+        version,
+        ethers.constants.AddressZero,
+        ethers.constants.AddressZero,
+      ])
+    );
+
+    QuantConfigV2Factory = await ethers.getContractFactory("QuantConfigV2");
+    ControllerV2Factory = await ethers.getContractFactory("ControllerV2");
   });
 
   it("Should create the Safe correctly", async () => {
@@ -247,10 +254,27 @@ describe("GnosisSafeL2 integration tests", () => {
     const snapshotId = await takeSnapshot();
 
     // Transfer ownership of the ProxyAdmin contract to the timelock
-    await upgrades.admin.transferProxyAdminOwnership(quantMultisig.address);
+    await upgrades.admin.transferProxyAdminOwnership(
+      configTimelockController.address
+    );
 
     await expect(
       upgrades.upgradeProxy(quantConfig, QuantConfigV2Factory)
+    ).to.be.revertedWith("Ownable: caller is not the owner");
+
+    await revertToSnapshot(snapshotId);
+  });
+
+  it("Should revert when an account other than the timelock tries to upgrade the Controller", async () => {
+    const snapshotId = await takeSnapshot();
+
+    // Transfer ownership of the ProxyAdmin contract to the timelock
+    await upgrades.admin.transferProxyAdminOwnership(
+      configTimelockController.address
+    );
+
+    await expect(
+      upgrades.upgradeProxy(controller, ControllerV2Factory)
     ).to.be.revertedWith("Ownable: caller is not the owner");
 
     await revertToSnapshot(snapshotId);
@@ -324,20 +348,10 @@ describe("GnosisSafeL2 integration tests", () => {
   it("The multisig (Safe) should be able to upgrade the Controller", async () => {
     const snapshotId = await takeSnapshot();
 
-    const Controller = await ethers.getContractFactory("Controller");
-    const controller = await upgrades.deployProxy(Controller, [
-      name,
-      version,
-      ethers.constants.AddressZero,
-      ethers.constants.AddressZero,
-    ]);
-
     // Transfer ownership of the ProxyAdmin contract to the timelock
     await upgrades.admin.transferProxyAdminOwnership(
       configTimelockController.address
     );
-
-    const ControllerV2Factory = await ethers.getContractFactory("ControllerV2");
 
     const controllerV2ImplAddr = await upgrades.prepareUpgrade(
       controller,
