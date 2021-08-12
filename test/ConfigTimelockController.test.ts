@@ -3,7 +3,11 @@ import { ethers } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import { ConfigTimelockController, QuantConfig } from "../typechain";
 import { expect } from "./setup";
-import { deployConfigTimelockController, deployQuantConfig } from "./testUtils";
+import {
+  deployConfigTimelockController,
+  deployQuantConfig,
+  uintToBytes32,
+} from "./testUtils";
 
 type scheduleParams = [
   string,
@@ -33,13 +37,6 @@ describe("ConfigTimelockController", () => {
   const data = "0x00";
   const protocolFee = ethers.utils.id("PROTOCOL_FEE");
   const newValueDelay = ethers.constants.Zero;
-
-  const uintToBytes32 = (value: number): string => {
-    return ethers.utils.hexZeroPad(
-      ethers.BigNumber.from(value).toHexString(),
-      32
-    );
-  };
 
   beforeEach(async () => {
     [admin, secondAccount] = await ethers.getSigners();
