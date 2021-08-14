@@ -4,23 +4,6 @@
 
 This is a public view function which calculates the amount of collateral required to mint an option or a spread. This method allows a relevant qToken to be used as collateral to mint another qToken to alleviate some of the collateral needed - known as a spread.
 
-1. If the user is using another option as collateral (not the 0 address) check the following:
-
-- Expiry of collateral qToken matches qToken to mint.
-- Underlying asset of collateral qToken matches qToken to mint.
-- Option type (Call or Put) of collateral qToken matches qToken to mint.
-- Oracle of collateral qToken matches qToken to mint.
-
-2. a) If the qToken being minted is a call (otherwise skip to 2b)
-
-//TODO
-
-- return { collateral: underlyingAsset, collateralAmount: }
-
-2. b) If the qToken being minted is a put:
-
-//TODO
-
 ### getPayout:
 
 This is a public view function which calculates the payout an option (qToken) will receive if exercised.
@@ -48,7 +31,12 @@ The mint options position flow allows a user to mint an option (not a spread).
 
 ### mintSpread
 
-//TODO
+The mint spread function allows you to mint an option and use another (suitable) option as collateral. By suitable option we mean the following parameters on both options must be the same:
+
+- Expiry
+- Type (CALL or PUT)
+- Underlying Asset
+- Oracle
 
 ### exercise
 
@@ -66,11 +54,6 @@ The claim collateral flow allows an option minter (owner of CollateralToken) to 
 
 Note: If the `amount` param passed to this method is 0, it will exercise all the user's collateral tokens.
 
-//TODO
-
 ### neutralizePosition:
 
 The neutralize position flow allows a user to "neutralize" some position in the following scenarios:
-
-1. They have a qToken and the corresponding collateralToken with no option as collateral. In this scenario, they can receive all the collateral which was used to get the collateralToken since they have both sides of the position.
-2. They have a qToken and a corresponding spread token (collateralToken with a long token as collateral). In this scenario //TODO
