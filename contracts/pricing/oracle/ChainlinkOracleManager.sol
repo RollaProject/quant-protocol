@@ -115,10 +115,22 @@ contract ChainlinkOracleManager is
     {
         address assetOracle = getAssetOracle(_asset);
         IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
-        int256 answer = aggregator.latestAnswer();
+        (
+            uint80 roundId,
+            int256 answer,
+            ,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        ) = aggregator.latestRoundData();
+
         require(
             answer > 0,
             "ChainlinkOracleManager: No pricing data available"
+        );
+        require(updatedAt != 0, "ChainlinkOracleManager: Incomplete round");
+        require(
+            answeredInRound >= roundId,
+            "ChainlinkOracleManager: Stale price"
         );
 
         return

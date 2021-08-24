@@ -287,9 +287,25 @@ export const testChainlinkOracleManager = async (
     });
 
     it("Should fetch the current price of the asset provided correctly", async function () {
-      await mockAggregator.mock.latestAnswer.returns(0);
-      await mockAggregatorTwo.mock.latestAnswer.returns(
-        ethers.utils.parseUnits("2", 8)
+      const roundId = ethers.BigNumber.from("92233720368547767264");
+      const answerOne = ethers.BigNumber.from("0");
+      const answerTwo = ethers.utils.parseUnits("2", 8);
+      const startedAt = ethers.BigNumber.from("1629780934");
+      const updatedAt = startedAt;
+      const answeredInRound = roundId;
+      await mockAggregator.mock.latestRoundData.returns(
+        roundId,
+        answerOne,
+        startedAt,
+        updatedAt,
+        answeredInRound
+      );
+      await mockAggregatorTwo.mock.latestRoundData.returns(
+        roundId,
+        answerTwo,
+        startedAt,
+        updatedAt,
+        answeredInRound
       );
 
       await expect(
