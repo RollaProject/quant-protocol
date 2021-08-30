@@ -66,6 +66,20 @@ contract TimelockController is AccessControl {
     event MinDelayChange(uint256 oldDuration, uint256 newDuration);
 
     /**
+     * @dev Modifier to make a function callable only by a certain role. In
+     * addition to checking the sender's role, `address(0)` 's role is also
+     * considered. Granting a role to `address(0)` is equivalent to enabling
+     * this role for everyone.
+     */
+    modifier onlyRole(bytes32 role) {
+        require(
+            hasRole(role, _msgSender()) || hasRole(role, address(0)),
+            "TimelockController: sender requires permission"
+        );
+        _;
+    }
+
+    /**
      * @dev Initializes the contract with a given `minDelay`.
      */
     constructor(
@@ -96,23 +110,167 @@ contract TimelockController is AccessControl {
     }
 
     /**
-     * @dev Modifier to make a function callable only by a certain role. In
-     * addition to checking the sender's role, `address(0)` 's role is also
-     * considered. Granting a role to `address(0)` is equivalent to enabling
-     * this role for everyone.
+     * @dev Contract might receive/hold ETH as part of the maintenance process.
      */
-    modifier onlyRole(bytes32 role) {
+    // solhint-disable-next-line no-empty-blocks
+    receive() external payable {}
+
+    /**
+     * @dev Changes the minimum timelock duration for future operations.
+     *
+     * Emits a {MinDelayChange} event.
+     *
+     * Requirements:
+     *
+     * - the caller must be the timelock itself. This can only be achieved by scheduling and later executing
+     * an operation where the timelock is the target and the data is the ABI-encoded call to this function.
+     */
+    function updateDelay(uint256 newDelay) external virtual {
         require(
-            hasRole(role, _msgSender()) || hasRole(role, address(0)),
-            "TimelockController: sender requires permission"
+            msg.sender == address(this),
+            "TimelockController: caller must be timelock"
         );
-        _;
+        emit MinDelayChange(_minDelay, newDelay);
+        _minDelay = newDelay;
     }
 
     /**
-     * @dev Contract might receive/hold ETH as part of the maintenance process.
+     * @dev Schedule an operation containing a single transaction.
+     *
+     * Emits a {CallScheduled} event.
+     *
+     * Requirements:
+     *
+     * - the caller must have the 'proposer' role.
      */
-    receive() external payable {}
+    function schedule(
+        address target,
+        uint256 value,
+        bytes memory data,
+        bytes32 predecessor,
+        bytes32 salt,
+        uint256 delay,
+        bool ignoreMinDelay
+    ) public virtual onlyRole(PROPOSER_ROLE) {
+        bytes32 id = hashOperation(target, value, data, predecessor, salt);
+        _schedule(id, delay, ignoreMinDelay);
+        emit CallScheduled(id, 0, target, value, data, predecessor, delay);
+    }
+
+    /**
+     * @dev Schedule an operation containing a batch of transactions.
+     *
+     * Emits one {CallScheduled} event per transaction in the batch.
+     *
+     * Requirements:
+     *
+     * - the caller must have the 'proposer' role.
+     */
+    function scheduleBatch(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory datas,
+        bytes32 predecessor,
+        bytes32 salt,
+        uint256 delay
+    ) public virtual onlyRole(PROPOSER_ROLE) {
+        require(
+            targets.length == values.length,
+            "TimelockController: length mismatch"
+        );
+        require(
+            targets.length == datas.length,
+            "TimelockController: length mismatch"
+        );
+
+        bytes32 id =
+            hashOperationBatch(targets, values, datas, predecessor, salt);
+        _schedule(id, delay, false);
+        for (uint256 i = 0; i < targets.length; ++i) {
+            emit CallScheduled(
+                id,
+                i,
+                targets[i],
+                values[i],
+                datas[i],
+                predecessor,
+                delay
+            );
+        }
+    }
+
+    /**
+     * @dev Cancel an operation.
+     *
+     * Requirements:
+     *
+     * - the caller must have the 'proposer' role.
+     */
+    function cancel(bytes32 id) public virtual onlyRole(PROPOSER_ROLE) {
+        require(
+            isOperationPending(id),
+            "TimelockController: operation cannot be cancelled"
+        );
+        delete _timestamps[id];
+
+        emit Cancelled(id);
+    }
+
+    /**
+     * @dev Execute an (ready) operation containing a single transaction.
+     *
+     * Emits a {CallExecuted} event.
+     *
+     * Requirements:
+     *
+     * - the caller must have the 'executor' role.
+     */
+    function execute(
+        address target,
+        uint256 value,
+        bytes memory data,
+        bytes32 predecessor,
+        bytes32 salt
+    ) public payable virtual onlyRole(EXECUTOR_ROLE) {
+        bytes32 id = hashOperation(target, value, data, predecessor, salt);
+        _beforeCall(id, predecessor);
+        _call(id, 0, target, value, data);
+        _afterCall(id);
+    }
+
+    /**
+     * @dev Execute an (ready) operation containing a batch of transactions.
+     *
+     * Emits one {CallExecuted} event per transaction in the batch.
+     *
+     * Requirements:
+     *
+     * - the caller must have the 'executor' role.
+     */
+    function executeBatch(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory datas,
+        bytes32 predecessor,
+        bytes32 salt
+    ) public payable virtual onlyRole(EXECUTOR_ROLE) {
+        require(
+            targets.length == values.length,
+            "TimelockController: length mismatch"
+        );
+        require(
+            targets.length == datas.length,
+            "TimelockController: length mismatch"
+        );
+
+        bytes32 id =
+            hashOperationBatch(targets, values, datas, predecessor, salt);
+        _beforeCall(id, predecessor);
+        for (uint256 i = 0; i < targets.length; ++i) {
+            _call(id, i, targets[i], values[i], datas[i]);
+        }
+        _afterCall(id);
+    }
 
     /**
      * @dev Returns whether an id correspond to a registered operation. This
@@ -216,71 +374,6 @@ contract TimelockController is AccessControl {
     }
 
     /**
-     * @dev Schedule an operation containing a single transaction.
-     *
-     * Emits a {CallScheduled} event.
-     *
-     * Requirements:
-     *
-     * - the caller must have the 'proposer' role.
-     */
-    function schedule(
-        address target,
-        uint256 value,
-        bytes memory data,
-        bytes32 predecessor,
-        bytes32 salt,
-        uint256 delay,
-        bool ignoreMinDelay
-    ) public virtual onlyRole(PROPOSER_ROLE) {
-        bytes32 id = hashOperation(target, value, data, predecessor, salt);
-        _schedule(id, delay, ignoreMinDelay);
-        emit CallScheduled(id, 0, target, value, data, predecessor, delay);
-    }
-
-    /**
-     * @dev Schedule an operation containing a batch of transactions.
-     *
-     * Emits one {CallScheduled} event per transaction in the batch.
-     *
-     * Requirements:
-     *
-     * - the caller must have the 'proposer' role.
-     */
-    function scheduleBatch(
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory datas,
-        bytes32 predecessor,
-        bytes32 salt,
-        uint256 delay
-    ) public virtual onlyRole(PROPOSER_ROLE) {
-        require(
-            targets.length == values.length,
-            "TimelockController: length mismatch"
-        );
-        require(
-            targets.length == datas.length,
-            "TimelockController: length mismatch"
-        );
-
-        bytes32 id =
-            hashOperationBatch(targets, values, datas, predecessor, salt);
-        _schedule(id, delay, false);
-        for (uint256 i = 0; i < targets.length; ++i) {
-            emit CallScheduled(
-                id,
-                i,
-                targets[i],
-                values[i],
-                datas[i],
-                predecessor,
-                delay
-            );
-        }
-    }
-
-    /**
      * @dev Schedule an operation that is to becomes valid after a given delay.
      */
     function _schedule(
@@ -298,93 +391,6 @@ contract TimelockController is AccessControl {
         );
         // solhint-disable-next-line not-rely-on-time
         _timestamps[id] = SafeMath.add(block.timestamp, delay);
-    }
-
-    /**
-     * @dev Cancel an operation.
-     *
-     * Requirements:
-     *
-     * - the caller must have the 'proposer' role.
-     */
-    function cancel(bytes32 id) public virtual onlyRole(PROPOSER_ROLE) {
-        require(
-            isOperationPending(id),
-            "TimelockController: operation cannot be cancelled"
-        );
-        delete _timestamps[id];
-
-        emit Cancelled(id);
-    }
-
-    /**
-     * @dev Execute an (ready) operation containing a single transaction.
-     *
-     * Emits a {CallExecuted} event.
-     *
-     * Requirements:
-     *
-     * - the caller must have the 'executor' role.
-     */
-    function execute(
-        address target,
-        uint256 value,
-        bytes memory data,
-        bytes32 predecessor,
-        bytes32 salt
-    ) public payable virtual onlyRole(EXECUTOR_ROLE) {
-        bytes32 id = hashOperation(target, value, data, predecessor, salt);
-        _beforeCall(id, predecessor);
-        _call(id, 0, target, value, data);
-        _afterCall(id);
-    }
-
-    /**
-     * @dev Execute an (ready) operation containing a batch of transactions.
-     *
-     * Emits one {CallExecuted} event per transaction in the batch.
-     *
-     * Requirements:
-     *
-     * - the caller must have the 'executor' role.
-     */
-    function executeBatch(
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory datas,
-        bytes32 predecessor,
-        bytes32 salt
-    ) public payable virtual onlyRole(EXECUTOR_ROLE) {
-        require(
-            targets.length == values.length,
-            "TimelockController: length mismatch"
-        );
-        require(
-            targets.length == datas.length,
-            "TimelockController: length mismatch"
-        );
-
-        bytes32 id =
-            hashOperationBatch(targets, values, datas, predecessor, salt);
-        _beforeCall(id, predecessor);
-        for (uint256 i = 0; i < targets.length; ++i) {
-            _call(id, i, targets[i], values[i], datas[i]);
-        }
-        _afterCall(id);
-    }
-
-    /**
-     * @dev Checks before execution of an operation's calls.
-     */
-    function _beforeCall(bytes32 id, bytes32 predecessor) private view {
-        require(
-            isOperationReady(id),
-            "TimelockController: operation is not ready"
-        );
-        require(
-            predecessor == bytes32(0) || isOperationDone(predecessor),
-            "TimelockController: missing dependency"
-        );
     }
 
     /**
@@ -418,21 +424,16 @@ contract TimelockController is AccessControl {
     }
 
     /**
-     * @dev Changes the minimum timelock duration for future operations.
-     *
-     * Emits a {MinDelayChange} event.
-     *
-     * Requirements:
-     *
-     * - the caller must be the timelock itself. This can only be achieved by scheduling and later executing
-     * an operation where the timelock is the target and the data is the ABI-encoded call to this function.
+     * @dev Checks before execution of an operation's calls.
      */
-    function updateDelay(uint256 newDelay) external virtual {
+    function _beforeCall(bytes32 id, bytes32 predecessor) private view {
         require(
-            msg.sender == address(this),
-            "TimelockController: caller must be timelock"
+            isOperationReady(id),
+            "TimelockController: operation is not ready"
         );
-        emit MinDelayChange(_minDelay, newDelay);
-        _minDelay = newDelay;
+        require(
+            predecessor == bytes32(0) || isOperationDone(predecessor),
+            "TimelockController: missing dependency"
+        );
     }
 }
