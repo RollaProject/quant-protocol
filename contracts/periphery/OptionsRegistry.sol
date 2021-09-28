@@ -50,7 +50,7 @@ contract OptionsRegistry is AccessControl, IOptionsRegistry {
 
         options[underlyingAsset].push(OptionDetails(_qToken, false));
         _registryDetails[_qToken].underlying = underlyingAsset;
-        _registryDetails[_qToken].index = options[underlyingAsset].length -1;
+        _registryDetails[_qToken].index = options[underlyingAsset].length - 1;
 
         emit NewOption(
             underlyingAsset,
@@ -123,9 +123,9 @@ contract OptionsRegistry is AccessControl, IOptionsRegistry {
         return options[_underlying].length;
     }
 
-    function getRegistryDetails(address qTokenAddress) 
-        external 
-        view 
+    function getRegistryDetails(address qTokenAddress)
+        external
+        view
         returns (RegistryDetails memory)
     {
         RegistryDetails memory qTokenDetails = _registryDetails[qTokenAddress];
