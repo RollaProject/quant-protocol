@@ -10,11 +10,17 @@ import "../interfaces/IOptionsRegistry.sol";
 /// @title A registry of options that can be added to by priveleged users
 /// @notice An options registry which anyone can deploy a version of. This is independent from the Quant protocol.
 contract OptionsRegistry is AccessControl, IOptionsRegistry {
+    struct RegistryDetails {
+        address underlying;
+        uint256 index;
+    }
+
     bytes32 public constant OPTION_MANAGER_ROLE =
         keccak256("OPTION_MANAGER_ROLE");
 
     /// @notice underlying => list of options
     mapping(address => OptionDetails[]) public options;
+    mapping(address => RegistryDetails) private _registryDetails;
 
     /// @notice exhaustive list of underlying assets in registry
     address[] public underlyingAssets;
@@ -30,6 +36,10 @@ contract OptionsRegistry is AccessControl, IOptionsRegistry {
             hasRole(OPTION_MANAGER_ROLE, msg.sender),
             "OptionsRegistry: Only an option manager can add an option"
         );
+        require(
+            _registryDetails[_qToken].underlying == address(0),
+            "OptionsRegistry: qToken address already added"
+        );
 
         address underlyingAsset = QToken(_qToken).underlyingAsset();
 
@@ -39,6 +49,8 @@ contract OptionsRegistry is AccessControl, IOptionsRegistry {
         }
 
         options[underlyingAsset].push(OptionDetails(_qToken, false));
+        _registryDetails[_qToken].underlying = underlyingAsset;
+        _registryDetails[_qToken].index = options[underlyingAsset].length -1;
 
         emit NewOption(
             underlyingAsset,
@@ -109,5 +121,18 @@ contract OptionsRegistry is AccessControl, IOptionsRegistry {
         returns (uint256)
     {
         return options[_underlying].length;
+    }
+
+    function getRegistryDetails(address qTokenAddress) 
+        external 
+        view 
+        returns (RegistryDetails memory)
+    {
+        RegistryDetails memory qTokenDetails = _registryDetails[qTokenAddress];
+        require(
+            qTokenDetails.underlying != address(0),
+            "qToken not registered"
+        );
+        return qTokenDetails;
     }
 }
