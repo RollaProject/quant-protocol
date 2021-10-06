@@ -16,6 +16,7 @@ describe("OptionsRegistry", () => {
   let admin: Signer;
   let secondAccount: Signer;
   const mockUnderlyingAsset = "0x000000000000000000000000000000000000000A";
+  const mockQTokenAddress = "0x000000000000000000000000000000000000000B";
 
   beforeEach(async () => {
     [admin, secondAccount] = provider.getWallets();
@@ -58,6 +59,21 @@ describe("OptionsRegistry", () => {
     expect(
       (await optionsRegistry.getOptionDetails(mockUnderlyingAsset, 1))[0]
     ).to.equal(qTokenTwo.address);
+    expect(
+      (await optionsRegistry.getRegistryDetails(qToken.address)).index
+    ).to.equal(0);
+    expect(
+      (await optionsRegistry.getRegistryDetails(qTokenTwo.address)).index
+    ).to.equal(1);
+    expect(
+      (await optionsRegistry.getRegistryDetails(qToken.address)).underlying
+    ).to.equal(mockUnderlyingAsset);
+    expect(
+      (await optionsRegistry.getRegistryDetails(qTokenTwo.address)).underlying
+    ).to.equal(mockUnderlyingAsset);
+    await expect(
+      optionsRegistry.getRegistryDetails(mockQTokenAddress)
+    ).to.be.revertedWith("qToken not registered");
   });
 
   it("Should allow the non-default admin to call restricted methods when granted role", async () => {
@@ -137,5 +153,13 @@ describe("OptionsRegistry", () => {
     ).to.be.revertedWith(
       "OptionsRegistry: Only an option manager can change visibility of an option"
     );
+  });
+
+  it("Should revert when trying to add the same option twice", async () => {
+    await qToken.mock.underlyingAsset.returns(mockUnderlyingAsset);
+    await optionsRegistry.connect(admin).addOption(qToken.address);
+    await expect(
+      optionsRegistry.connect(admin).addOption(qToken.address)
+    ).to.be.revertedWith("OptionsRegistry: qToken address already added");
   });
 });
