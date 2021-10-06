@@ -154,4 +154,12 @@ describe("OptionsRegistry", () => {
       "OptionsRegistry: Only an option manager can change visibility of an option"
     );
   });
+
+  it("Should revert when trying to add the same option twice", async () => {
+    await qToken.mock.underlyingAsset.returns(mockUnderlyingAsset);
+    await optionsRegistry.connect(admin).addOption(qToken.address);
+    await expect(
+      optionsRegistry.connect(admin).addOption(qToken.address)
+    ).to.be.revertedWith("OptionsRegistry: qToken address already added");
+  });
 });
