@@ -82,7 +82,7 @@ contract ChainlinkOracleManager is
         );
 
         require(
-            block.timestamp >= _expiryTimestamp + fallbackPeriodSeconds,
+            block.timestamp >= _expiryTimestamp.add(fallbackPeriodSeconds),
             "ChainlinkOracleManager: The fallback price period has not passed since the timestamp"
         );
 

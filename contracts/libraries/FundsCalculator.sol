@@ -222,9 +222,8 @@ library FundsCalculator {
             _qTokenForCollateralStrikePrice.fromScaledUint(6);
 
         // Initially (non-spread) required collateral is the long strike price
-        collateralPerOption = (10**_underlyingDecimals).fromScaledUint(
-            _underlyingDecimals
-        );
+        collateralPerOption = (uint256(10).pow(_underlyingDecimals))
+            .fromScaledUint(_underlyingDecimals);
 
         if (_qTokenForCollateralStrikePrice > 0) {
             collateralPerOption = mintStrikePrice.isGreaterThanOrEqual(
