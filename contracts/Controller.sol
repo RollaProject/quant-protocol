@@ -245,7 +245,7 @@ contract Controller is
         qToken.burn(_msgSender(), amountToExercise);
 
         if (exerciseTotal > 0) {
-            IERC20(payoutToken).transfer(_msgSender(), exerciseTotal);
+            IERC20(payoutToken).safeTransfer(_msgSender(), exerciseTotal);
         }
 
         emit OptionsExercised(
