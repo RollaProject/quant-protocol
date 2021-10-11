@@ -57,7 +57,7 @@ import {
 const { deployMockContract } = waffle;
 const { AddressZero, Zero } = constants;
 
-type optionParameters = [string, string, string, BigNumber, BigNumber, boolean];
+type optionParameters = [string, string, BigNumber, BigNumber, boolean];
 
 describe("Controller", async () => {
   let controller: Controller;
@@ -624,6 +624,7 @@ describe("Controller", async () => {
 
     optionsFactory = await deployOptionsFactory(
       deployer,
+      USDC.address,
       quantConfig,
       collateralToken
     );
@@ -633,7 +634,6 @@ describe("Controller", async () => {
 
     samplePutOptionParameters = [
       WETH.address,
-      USDC.address,
       mockOracleManager.address,
       ethers.utils.parseUnits("1400", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
@@ -702,7 +702,6 @@ describe("Controller", async () => {
 
     sampleCallOptionParameters = [
       WETH.address,
-      USDC.address,
       mockOracleManager.address,
       ethers.utils.parseUnits("2000", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
@@ -723,7 +722,6 @@ describe("Controller", async () => {
 
     const qTokenCall2880Parameters: optionParameters = [
       WETH.address,
-      USDC.address,
       mockOracleManager.address,
       ethers.utils.parseUnits("2880", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
@@ -746,7 +744,6 @@ describe("Controller", async () => {
 
     const qTokenCall3520Parameters: optionParameters = [
       WETH.address,
-      USDC.address,
       mockOracleManager.address,
       ethers.utils.parseUnits("3520", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
@@ -769,7 +766,6 @@ describe("Controller", async () => {
 
     const qTokenPut400Parameters: optionParameters = [
       WETH.address,
-      USDC.address,
       mockOracleManager.address,
       ethers.utils.parseUnits("400", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
@@ -1433,7 +1429,6 @@ describe("Controller", async () => {
     it("Should revert when trying to create spreads from options with different oracles", async () => {
       const qTokenParams: optionParameters = [
         WETH.address,
-        USDC.address,
         mockOracleManager.address,
         ethers.utils.parseUnits("1400", await USDC.decimals()),
         ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
@@ -1442,7 +1437,7 @@ describe("Controller", async () => {
 
       const qTokenParamsDifferentOracle: optionParameters = [...qTokenParams];
 
-      qTokenParamsDifferentOracle[2] = mockOracleManagerTwo.address;
+      qTokenParamsDifferentOracle[1] = mockOracleManagerTwo.address;
 
       const qTokenOracleOne = await optionsFactory.getTargetQTokenAddress(
         ...qTokenParams
@@ -1474,7 +1469,6 @@ describe("Controller", async () => {
     it("Should revert when trying to create spreads from options with different expiries", async () => {
       const qTokenParams: optionParameters = [
         WETH.address,
-        USDC.address,
         mockOracleManager.address,
         ethers.utils.parseUnits("1400", await USDC.decimals()),
         ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
@@ -1501,7 +1495,6 @@ describe("Controller", async () => {
     it("Should revert when trying to create spreads from options with different underlying assets", async () => {
       const qTokenParams: optionParameters = [
         USDC.address,
-        WETH.address,
         mockOracleManager.address,
         ethers.utils.parseUnits("5000", await USDC.decimals()),
         ethers.BigNumber.from(futureTimestamp),
@@ -3025,7 +3018,6 @@ describe("Controller", async () => {
     it("Users should be able to call external functions through meta transactions", async () => {
       const newQTokenParams: optionParameters = [
         WETH.address,
-        USDC.address,
         mockOracleManager.address,
         ethers.utils.parseUnits("1000", 6),
         ethers.BigNumber.from(futureTimestamp),

@@ -142,11 +142,13 @@ const deployCollateralToken = async (
 
 const deployOptionsFactory = async (
   deployer: Signer,
+  strikeAsset: string,
   quantConfig: QuantConfig,
   collateralToken: CollateralToken
 ): Promise<OptionsFactory> => {
   const optionsFactory = <OptionsFactory>(
     await deployContract(deployer, OptionsFactoryJSON, [
+      strikeAsset,
       quantConfig.address,
       collateralToken.address,
     ])

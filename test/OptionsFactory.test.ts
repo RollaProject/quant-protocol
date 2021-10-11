@@ -35,13 +35,11 @@ describe("OptionsFactory", () => {
   let samplePutOptionParameters: [
     string,
     string,
-    string,
     BigNumber,
     BigNumber,
     boolean
   ];
   let sampleCollateralTokenParameters: [
-    string,
     string,
     string,
     string,
@@ -104,6 +102,7 @@ describe("OptionsFactory", () => {
 
     optionsFactory = await deployOptionsFactory(
       timelockController,
+      USDC.address,
       quantConfig,
       collateralToken
     );
@@ -147,7 +146,6 @@ describe("OptionsFactory", () => {
 
     samplePutOptionParameters = [
       WETH.address,
-      USDC.address,
       mockOracleManager.address,
       ethers.utils.parseUnits("1400", await USDC.decimals()),
       ethers.BigNumber.from(futureTimestamp),
@@ -156,7 +154,6 @@ describe("OptionsFactory", () => {
 
     sampleCollateralTokenParameters = [
       WETH.address,
-      USDC.address,
       mockOracleManager.address,
       ethers.constants.AddressZero,
       ethers.utils.parseUnits("1400", await USDC.decimals()),
@@ -188,7 +185,7 @@ describe("OptionsFactory", () => {
         .withArgs(
           qTokenAddress,
           await secondAccount.getAddress(),
-          ...samplePutOptionParameters.slice(0, 5),
+          ...samplePutOptionParameters.slice(0, 4),
           collateralTokenId,
           ethers.BigNumber.from("1"),
           false
@@ -209,7 +206,6 @@ describe("OptionsFactory", () => {
           .connect(secondAccount)
           .createOption(
             WETH.address,
-            USDC.address,
             ethers.constants.AddressZero,
             ethers.utils.parseUnits("1400", await USDC.decimals()),
             ethers.BigNumber.from(futureTimestamp),
@@ -231,7 +227,6 @@ describe("OptionsFactory", () => {
           .connect(secondAccount)
           .createOption(
             WETH.address,
-            USDC.address,
             mockOracleManager.address,
             ethers.utils.parseUnits("1400", await USDC.decimals()),
             ethers.BigNumber.from(futureTimestamp),
@@ -251,7 +246,6 @@ describe("OptionsFactory", () => {
           .connect(secondAccount)
           .createOption(
             WETH.address,
-            USDC.address,
             mockOracleManager.address,
             ethers.utils.parseUnits("1400", await USDC.decimals()),
             ethers.BigNumber.from(futureTimestamp),
@@ -267,7 +261,6 @@ describe("OptionsFactory", () => {
       await expect(
         optionsFactory.createOption(
           WETH.address,
-          USDC.address,
           ethers.constants.AddressZero,
           ethers.utils.parseUnits("1400", await USDC.decimals()),
           ethers.BigNumber.from(pastTimestamp),
@@ -294,7 +287,6 @@ describe("OptionsFactory", () => {
           .connect(secondAccount)
           .createOption(
             WETH.address,
-            USDC.address,
             mockOracleManager.address,
             ethers.BigNumber.from("0"),
             futureTimestamp,
@@ -309,7 +301,6 @@ describe("OptionsFactory", () => {
           .connect(secondAccount)
           .createOption(
             WETH.address,
-            USDC.address,
             mockOracleManager.address,
             ethers.BigNumber.from("0"),
             futureTimestamp,
@@ -324,7 +315,6 @@ describe("OptionsFactory", () => {
           .connect(secondAccount)
           .createOption(
             ethers.constants.AddressZero,
-            USDC.address,
             mockOracleManager.address,
             ethers.utils.parseUnits("1400", await USDC.decimals()),
             futureTimestamp,
@@ -340,7 +330,6 @@ describe("OptionsFactory", () => {
           .connect(secondAccount)
           .createOption(
             ethers.constants.AddressZero,
-            WETH.address,
             mockOracleManager.address,
             ethers.utils.parseUnits("1400", await USDC.decimals()),
             futureTimestamp,
