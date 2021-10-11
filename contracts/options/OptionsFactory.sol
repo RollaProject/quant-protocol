@@ -21,6 +21,9 @@ contract OptionsFactory is IOptionsFactory {
     /// @inheritdoc IOptionsFactory
     address[] public override qTokens;
 
+    /// @inheritdoc IOptionsFactory
+    address public override strikeAsset;
+
     IQuantConfig public override quantConfig;
 
     ICollateralToken public override collateralToken;
@@ -33,9 +36,16 @@ contract OptionsFactory is IOptionsFactory {
         override qTokenAddressToCollateralTokenId;
 
     /// @notice Initializes a new options factory
+    /// @param _strikeAsset address of the asset used to denominate strike prices
+    /// for options created through this factory
     /// @param _quantConfig the address of the Quant system configuration contract
     /// @param _collateralToken address of the CollateralToken contract
-    constructor(address _quantConfig, address _collateralToken) {
+    constructor(
+        address _strikeAsset,
+        address _quantConfig,
+        address _collateralToken
+    ) {
+        strikeAsset = _strikeAsset;
         quantConfig = IQuantConfig(_quantConfig);
         collateralToken = ICollateralToken(_collateralToken);
     }
@@ -43,7 +53,6 @@ contract OptionsFactory is IOptionsFactory {
     /// @inheritdoc IOptionsFactory
     function createOption(
         address _underlyingAsset,
-        address _strikeAsset,
         address _oracle,
         uint256 _strikePrice,
         uint256 _expiryTime,
@@ -62,7 +71,7 @@ contract OptionsFactory is IOptionsFactory {
                 collateralToken,
                 address(quantConfig),
                 _underlyingAsset,
-                _strikeAsset,
+                strikeAsset,
                 _oracle,
                 address(0),
                 _strikePrice,
@@ -81,7 +90,7 @@ contract OptionsFactory is IOptionsFactory {
                 new QToken{salt: OptionsUtils.SALT}(
                     address(quantConfig),
                     _underlyingAsset,
-                    _strikeAsset,
+                    strikeAsset,
                     _oracle,
                     _strikePrice,
                     _expiryTime,
@@ -98,7 +107,6 @@ contract OptionsFactory is IOptionsFactory {
             newQToken,
             msg.sender,
             _underlyingAsset,
-            _strikeAsset,
             _oracle,
             _strikePrice,
             _expiryTime,
@@ -113,7 +121,6 @@ contract OptionsFactory is IOptionsFactory {
     /// @inheritdoc IOptionsFactory
     function getTargetCollateralTokenId(
         address _underlyingAsset,
-        address _strikeAsset,
         address _oracle,
         address _qTokenAsCollateral,
         uint256 _strikePrice,
@@ -125,7 +132,7 @@ contract OptionsFactory is IOptionsFactory {
                 collateralToken,
                 address(quantConfig),
                 _underlyingAsset,
-                _strikeAsset,
+                strikeAsset,
                 _oracle,
                 _qTokenAsCollateral,
                 _strikePrice,
@@ -137,7 +144,6 @@ contract OptionsFactory is IOptionsFactory {
     /// @inheritdoc IOptionsFactory
     function getTargetQTokenAddress(
         address _underlyingAsset,
-        address _strikeAsset,
         address _oracle,
         uint256 _strikePrice,
         uint256 _expiryTime,
@@ -147,7 +153,7 @@ contract OptionsFactory is IOptionsFactory {
             OptionsUtils.getTargetQTokenAddress(
                 address(quantConfig),
                 _underlyingAsset,
-                _strikeAsset,
+                strikeAsset,
                 _oracle,
                 _strikePrice,
                 _expiryTime,
@@ -158,7 +164,6 @@ contract OptionsFactory is IOptionsFactory {
     /// @inheritdoc IOptionsFactory
     function getCollateralToken(
         address _underlyingAsset,
-        address _strikeAsset,
         address _oracle,
         address _qTokenAsCollateral,
         uint256 _strikePrice,
@@ -168,7 +173,6 @@ contract OptionsFactory is IOptionsFactory {
         address qToken =
             getQToken(
                 _underlyingAsset,
-                _strikeAsset,
                 _oracle,
                 _strikePrice,
                 _expiryTime,
@@ -195,7 +199,6 @@ contract OptionsFactory is IOptionsFactory {
     /// @inheritdoc IOptionsFactory
     function getQToken(
         address _underlyingAsset,
-        address _strikeAsset,
         address _oracle,
         uint256 _strikePrice,
         uint256 _expiryTime,
@@ -206,7 +209,7 @@ contract OptionsFactory is IOptionsFactory {
                 collateralToken,
                 address(quantConfig),
                 _underlyingAsset,
-                _strikeAsset,
+                strikeAsset,
                 _oracle,
                 address(0),
                 _strikePrice,
