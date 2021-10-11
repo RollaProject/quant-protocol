@@ -36,6 +36,15 @@ contract OptionsFactory is IOptionsFactory {
     /// @param _quantConfig the address of the Quant system configuration contract
     /// @param _collateralToken address of the CollateralToken contract
     constructor(address _quantConfig, address _collateralToken) {
+        require(
+            _quantConfig != address(0),
+            "OptionsFactory: invalid QuantConfig address"
+        );
+        require(
+            _collateralToken != address(0),
+            "OptionsFactory: invalid CollateralToken address"
+        );
+
         quantConfig = IQuantConfig(_quantConfig);
         collateralToken = ICollateralToken(_collateralToken);
     }

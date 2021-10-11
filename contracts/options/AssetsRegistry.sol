@@ -21,6 +21,11 @@ contract AssetsRegistry is IAssetsRegistry {
     address[] public override registeredAssets;
 
     constructor(address quantConfig_) {
+        require(
+            quantConfig_ != address(0),
+            "AssetsRegistry: invalid QuantConfig address"
+        );
+
         _quantConfig = IQuantConfig(quantConfig_);
     }
 
