@@ -201,11 +201,15 @@ contract Controller is
                 collateralTokenId
             );
         if (qTokenAsCollateral == address(0)) {
-            IOptionsFactory(optionsFactory)
-                .collateralToken()
-                .createCollateralToken(
-                _args.qTokenToMint,
-                _args.qTokenForCollateral
+            require(
+                collateralTokenId ==
+                    IOptionsFactory(optionsFactory)
+                        .collateralToken()
+                        .createCollateralToken(
+                        _args.qTokenToMint,
+                        _args.qTokenForCollateral
+                    ),
+                "Controller: failed creating the collateral token to represent the spread"
             );
         }
 
