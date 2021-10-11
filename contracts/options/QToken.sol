@@ -65,7 +65,6 @@ contract QToken is ERC20Permit, IQToken {
             _qTokenName(
                 _quantConfig,
                 _underlyingAsset,
-                _strikeAsset,
                 _strikePrice,
                 _expiryTime,
                 _isCall
@@ -73,7 +72,6 @@ contract QToken is ERC20Permit, IQToken {
             _qTokenSymbol(
                 _quantConfig,
                 _underlyingAsset,
-                _strikeAsset,
                 _strikePrice,
                 _expiryTime,
                 _isCall
@@ -83,7 +81,6 @@ contract QToken is ERC20Permit, IQToken {
             _qTokenName(
                 _quantConfig,
                 _underlyingAsset,
-                _strikeAsset,
                 _strikePrice,
                 _expiryTime,
                 _isCall
@@ -187,7 +184,6 @@ contract QToken is ERC20Permit, IQToken {
     /// @notice generates the name for an option
     /// @param _quantConfig address of the Quant system configuration contract
     /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
@@ -195,13 +191,11 @@ contract QToken is ERC20Permit, IQToken {
     function _qTokenName(
         address _quantConfig,
         address _underlyingAsset,
-        address _strikeAsset,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
     ) internal view returns (string memory tokenName) {
         string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
-        string memory strike = _assetSymbol(_quantConfig, _strikeAsset);
         string memory displayStrikePrice = _displayedStrikePrice(_strikePrice);
 
         // convert the expiry to a readable string
@@ -217,11 +211,9 @@ contract QToken is ERC20Permit, IQToken {
         /// concatenated name string
         tokenName = string(
             abi.encodePacked(
-                "QUANT",
+                "ROLLA",
                 " ",
                 underlying,
-                "-",
-                strike,
                 " ",
                 _uintToChars(day),
                 "-",
@@ -239,7 +231,6 @@ contract QToken is ERC20Permit, IQToken {
     /// @notice generates the symbol for an option
     /// @param _underlyingAsset asset that the option references
     /// @param _quantConfig address of the Quant system configuration contract
-    /// @param _strikeAsset asset that the strike is denominated in
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
@@ -247,13 +238,11 @@ contract QToken is ERC20Permit, IQToken {
     function _qTokenSymbol(
         address _quantConfig,
         address _underlyingAsset,
-        address _strikeAsset,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
     ) internal view returns (string memory tokenSymbol) {
         string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
-        string memory strike = _assetSymbol(_quantConfig, _strikeAsset);
         string memory displayStrikePrice = _displayedStrikePrice(_strikePrice);
 
         // convert the expiry to a readable string
@@ -269,11 +258,9 @@ contract QToken is ERC20Permit, IQToken {
         /// concatenated symbol string
         tokenSymbol = string(
             abi.encodePacked(
-                "QUANT",
+                "ROLLA",
                 "-",
                 underlying,
-                "-",
-                strike,
                 "-",
                 _uintToChars(day),
                 monthSymbol,

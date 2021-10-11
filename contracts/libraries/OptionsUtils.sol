@@ -17,7 +17,7 @@ import "../interfaces/IAssetsRegistry.sol";
 /// @dev This library must be deployed and linked while deploying contracts that use it
 library OptionsUtils {
     /// @notice constant salt because options will only be deployed with the same parameters once
-    bytes32 public constant SALT = bytes32("QUANT.FINANCE");
+    bytes32 public constant SALT = bytes32("ROLLA.FINANCE");
 
     /// @notice get the address at which a new QToken with the given parameters would be deployed
     /// @notice return the exact address the QToken will be deployed at with OpenZeppelin's Create2
