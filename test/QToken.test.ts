@@ -112,10 +112,8 @@ describe("QToken", async () => {
   });
 
   it("Should be able to create a new option", async () => {
-    expect(await qToken.symbol()).to.equal("QUANT-WETH-USDC-16APR21-1400-P");
-    expect(await qToken.name()).to.equal(
-      "QUANT WETH-USDC 16-April-2021 1400 Put"
-    );
+    expect(await qToken.symbol()).to.equal("ROLLA-WETH-16APR21-1400-P");
+    expect(await qToken.name()).to.equal("ROLLA WETH 16-April-2021 1400 Put");
     expect(await qToken.quantConfig()).to.equal(quantConfig.address);
     expect(await qToken.underlyingAsset()).to.equal(WETH.address);
     expect(await qToken.strikeAsset()).to.equal(USDC.address);
@@ -183,9 +181,9 @@ describe("QToken", async () => {
       ethers.BigNumber.from("1630768904"),
       true,
     ]);
-    expect(await qToken.symbol()).to.equal("QUANT-WETH-USDC-04SEP21-1912.44-C");
+    expect(await qToken.symbol()).to.equal("ROLLA-WETH-04SEP21-1912.44-C");
     expect(await qToken.name()).to.equal(
-      "QUANT WETH-USDC 04-September-2021 1912.44 Call"
+      "ROLLA WETH 04-September-2021 1912.44 Call"
     );
   });
 
@@ -215,7 +213,7 @@ describe("QToken", async () => {
         return (await optionToken.name()).split(" ")[2].split("-")[1];
       }
       // it's a string like JAN
-      return (await optionToken.symbol()).split("-", 4)[3].slice(2, 5);
+      return (await optionToken.symbol()).split("-", 4)[2].slice(2, 5);
     };
 
     let optionexpiryTime = 1609773704;
