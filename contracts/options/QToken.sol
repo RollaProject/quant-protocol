@@ -89,6 +89,20 @@ contract QToken is ERC20Permit, IQToken {
             )
         )
     {
+        require(
+            _quantConfig != address(0),
+            "QToken: invalid QuantConfig address"
+        );
+        require(
+            _underlyingAsset != address(0),
+            "QToken: invalid underlying asset address"
+        );
+        require(
+            _strikeAsset != address(0),
+            "QToken: invalid strike asset address"
+        );
+        require(_oracle != address(0), "QToken: invalid oracle address");
+
         quantConfig = IQuantConfig(_quantConfig);
         underlyingAsset = _underlyingAsset;
         strikeAsset = _strikeAsset;

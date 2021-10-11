@@ -37,7 +37,7 @@ describe("QToken", async () => {
   let qTokenParams: [string, string, string, BigNumber, BigNumber, boolean];
   const strikePrice = ethers.utils.parseUnits("1400", 6);
   const expiryTime = ethers.BigNumber.from("1618592400"); // April 16th, 2021
-  const oracle = ethers.constants.AddressZero;
+  const oracle = ethers.Wallet.createRandom().address;
 
   const mintOptionsToAccount = async (account: string, amount: number) => {
     await qToken
@@ -262,7 +262,7 @@ describe("QToken", async () => {
       quantConfig,
       WETH.address,
       USDC.address,
-      ethers.constants.AddressZero,
+      ethers.Wallet.createRandom().address,
       strikePrice,
       ethers.BigNumber.from(
         (Math.round(Date.now() / 1000) + 30 * 24 * 3600).toString()

@@ -45,6 +45,19 @@ contract OptionsFactory is IOptionsFactory {
         address _quantConfig,
         address _collateralToken
     ) {
+        require(
+            _strikeAsset != address(0),
+            "OptionsFactory: invalid strike asset address"
+        );
+        require(
+            _quantConfig != address(0),
+            "OptionsFactory: invalid QuantConfig address"
+        );
+        require(
+            _collateralToken != address(0),
+            "OptionsFactory: invalid CollateralToken address"
+        );
+
         strikeAsset = _strikeAsset;
         quantConfig = IQuantConfig(_quantConfig);
         collateralToken = ICollateralToken(_collateralToken);

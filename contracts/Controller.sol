@@ -81,6 +81,15 @@ contract Controller is
         address _optionsFactory,
         address _quantCalculator
     ) public override initializer {
+        require(
+            _optionsFactory != address(0),
+            "Controller: invalid OptionsFactory address"
+        );
+        require(
+            _quantCalculator != address(0),
+            "Controller: invalid QuantCalculator address"
+        );
+
         __ReentrancyGuard_init();
         EIP712MetaTransaction.initializeEIP712(_name, _version);
         optionsFactory = _optionsFactory;
