@@ -93,9 +93,6 @@ library FundsCalculator {
                 qTokenToMint.oracle() == qTokenForCollateral.oracle(),
                 "Controller: Can't create spreads from options with different oracles"
             );
-        } else {
-            // we're not getting the collateral requirement for a spread
-            qTokenForCollateralStrikePrice = 0;
         }
 
         collateralAmount = getOptionCollateralRequirement(
