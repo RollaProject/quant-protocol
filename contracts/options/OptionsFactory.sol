@@ -70,7 +70,11 @@ contract OptionsFactory is IOptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) external override {
+    )
+        external
+        override
+        returns (address newQToken, uint256 newCollateralTokenId)
+    {
         OptionsUtils.validateOptionParameters(
             _underlyingAsset,
             _oracle,
@@ -79,18 +83,17 @@ contract OptionsFactory is IOptionsFactory {
             _strikePrice
         );
 
-        uint256 newCollateralTokenId =
-            OptionsUtils.getTargetCollateralTokenId(
-                collateralToken,
-                address(quantConfig),
-                _underlyingAsset,
-                strikeAsset,
-                _oracle,
-                address(0),
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            );
+        newCollateralTokenId = OptionsUtils.getTargetCollateralTokenId(
+            collateralToken,
+            address(quantConfig),
+            _underlyingAsset,
+            strikeAsset,
+            _oracle,
+            address(0),
+            _strikePrice,
+            _expiryTime,
+            _isCall
+        );
 
         require(
             _collateralTokenIdToQTokenAddress[newCollateralTokenId] ==
@@ -98,18 +101,17 @@ contract OptionsFactory is IOptionsFactory {
             "option already created"
         );
 
-        address newQToken =
-            address(
-                new QToken{salt: OptionsUtils.SALT}(
-                    address(quantConfig),
-                    _underlyingAsset,
-                    strikeAsset,
-                    _oracle,
-                    _strikePrice,
-                    _expiryTime,
-                    _isCall
-                )
-            );
+        newQToken = address(
+            new QToken{salt: OptionsUtils.SALT}(
+                address(quantConfig),
+                _underlyingAsset,
+                strikeAsset,
+                _oracle,
+                _strikePrice,
+                _expiryTime,
+                _isCall
+            )
+        );
 
         _collateralTokenIdToQTokenAddress[newCollateralTokenId] = newQToken;
         qTokens.push(newQToken);
