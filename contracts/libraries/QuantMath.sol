@@ -250,4 +250,26 @@ library QuantMath {
     {
         return a.value <= b.value;
     }
+
+    /**
+     * @notice power function safe from overflows
+     * @dev this function uses a recursive exponentiation by squaring
+     * @param b base for the exponentiation
+     * @param n exponent for the exponentiation
+     * @return b^n
+     */
+    function pow(uint256 b, uint256 n) internal pure returns (uint256) {
+        if (n == 0) {
+            return 1;
+        } else if (n == 1) {
+            return b;
+        } else {
+            uint256 p = pow(b, n.div(2));
+            p = p.mul(p);
+            if (n.mod(2) == 1) {
+                p = p.mul(b);
+            }
+            return p;
+        }
+    }
 }
