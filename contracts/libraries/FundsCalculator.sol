@@ -62,7 +62,7 @@ library FundsCalculator {
         QToken qTokenToMint = QToken(_qTokenToMint);
         uint256 qTokenToMintStrikePrice = qTokenToMint.strikePrice();
 
-        uint256 qTokenForCollateralStrikePrice;
+        uint256 qTokenForCollateralStrikePrice = 0;
 
         // check if we're getting the collateral requirement for a spread
         if (_qTokenForCollateral != address(0)) {
