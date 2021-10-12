@@ -57,10 +57,10 @@ library QuantMath {
             fixedPoint = FixedPointInt(_a.uintToInt());
         } else if (_decimals > _BASE_DECIMALS) {
             uint256 exp = _decimals.sub(_BASE_DECIMALS);
-            fixedPoint = FixedPointInt((_a.div(pow(10, exp))).uintToInt());
+            fixedPoint = FixedPointInt((_a.div(10**exp)).uintToInt());
         } else {
             uint256 exp = _BASE_DECIMALS - _decimals;
-            fixedPoint = FixedPointInt((_a.mul(pow(10, exp))).uintToInt());
+            fixedPoint = FixedPointInt((_a.mul(10**exp)).uintToInt());
         }
 
         return fixedPoint;
@@ -84,15 +84,15 @@ library QuantMath {
             scaledUint = _a.value.intToUint();
         } else if (_decimals > _BASE_DECIMALS) {
             uint256 exp = _decimals - _BASE_DECIMALS;
-            scaledUint = (_a.value).intToUint().mul(pow(10, exp));
+            scaledUint = (_a.value).intToUint().mul(10**exp);
         } else {
             uint256 exp = _BASE_DECIMALS - _decimals;
             uint256 tailing;
             if (!_roundDown) {
-                uint256 remainer = (_a.value).intToUint().mod(pow(10, exp));
+                uint256 remainer = (_a.value).intToUint().mod(10**exp);
                 if (remainer > 0) tailing = 1;
             }
-            scaledUint = (_a.value).intToUint().div(pow(10, exp)).add(tailing);
+            scaledUint = (_a.value).intToUint().div(10**exp).add(tailing);
         }
 
         return scaledUint;
@@ -249,27 +249,5 @@ library QuantMath {
         returns (bool)
     {
         return a.value <= b.value;
-    }
-
-    /**
-     * @notice power function safe from overflows
-     * @dev this function uses a recursive exponentiation by squaring
-     * @param b base for the exponentiation
-     * @param n exponent for the exponentiation
-     * @return b^n
-     */
-    function pow(uint256 b, uint256 n) internal pure returns (uint256) {
-        if (n == 0) {
-            return 1;
-        } else if (n == 1) {
-            return b;
-        } else {
-            uint256 p = pow(b, n.div(2));
-            p = p.mul(p);
-            if (n.mod(2) == 1) {
-                p = p.mul(b);
-            }
-            return p;
-        }
     }
 }
