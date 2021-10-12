@@ -324,7 +324,7 @@ contract QToken is ERC20Permit, IQToken {
 
         // pad the number with "1 + starting zeroes"
         remainder = remainder.add(
-            uint256(10).pow(_STRIKE_PRICE_DIGITS.sub(trailingZeroes))
+            10**(_STRIKE_PRICE_DIGITS.sub(trailingZeroes))
         );
 
         string memory tmp = Strings.toString(remainder);
