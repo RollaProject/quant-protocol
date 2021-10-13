@@ -103,7 +103,7 @@ const deployQToken = async (
   quantConfig: QuantConfig,
   underlyingAsset: string,
   strikeAsset: string,
-  oracle: string = ethers.constants.AddressZero,
+  oracle: string = ethers.Wallet.createRandom().address,
   strikePrice = ethers.BigNumber.from("1400000000"),
   expiryTime: BigNumber = ethers.BigNumber.from(
     Math.floor(Date.now() / 1000) + 30 * 24 * 3600

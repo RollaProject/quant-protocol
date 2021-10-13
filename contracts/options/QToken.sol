@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.7.0;
+pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/drafts/ERC20Permit.sol";
@@ -12,6 +12,7 @@ import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IQToken.sol";
 import "../libraries/ProtocolValue.sol";
 import "../libraries/OptionsUtils.sol";
+import "../libraries/QuantMath.sol";
 
 /// @title Token that represents a user's long position
 /// @author Quant Finance
@@ -19,6 +20,7 @@ import "../libraries/OptionsUtils.sol";
 /// @dev Every option long position is an ERC20 token: https://eips.ethereum.org/EIPS/eip-20
 contract QToken is ERC20Permit, IQToken {
     using SafeMath for uint256;
+    using QuantMath for uint256;
 
     /// @inheritdoc IQToken
     IQuantConfig public override quantConfig;
@@ -87,6 +89,20 @@ contract QToken is ERC20Permit, IQToken {
             )
         )
     {
+        require(
+            _quantConfig != address(0),
+            "QToken: invalid QuantConfig address"
+        );
+        require(
+            _underlyingAsset != address(0),
+            "QToken: invalid underlying asset address"
+        );
+        require(
+            _strikeAsset != address(0),
+            "QToken: invalid strike asset address"
+        );
+        require(_oracle != address(0), "QToken: invalid oracle address");
+
         quantConfig = IQuantConfig(_quantConfig);
         underlyingAsset = _underlyingAsset;
         strikeAsset = _strikeAsset;
@@ -302,15 +318,21 @@ contract QToken is ERC20Permit, IQToken {
 
         uint256 trailingZeroes;
         while (remainder.mod(10) == 0) {
-            remainder /= 10;
-            trailingZeroes += 1;
+            remainder = remainder.div(10);
+            trailingZeroes = trailingZeroes.add(1);
         }
 
         // pad the number with "1 + starting zeroes"
-        remainder += 10**(_STRIKE_PRICE_DIGITS - trailingZeroes);
+        remainder = remainder.add(
+            10**(_STRIKE_PRICE_DIGITS.sub(trailingZeroes))
+        );
 
         string memory tmp = Strings.toString(remainder);
-        tmp = _slice(tmp, 1, 1 + _STRIKE_PRICE_DIGITS - trailingZeroes);
+        tmp = _slice(
+            tmp,
+            1,
+            uint256(1).add(_STRIKE_PRICE_DIGITS).sub(trailingZeroes)
+        );
 
         return string(abi.encodePacked(quotientStr, ".", tmp));
     }
@@ -324,7 +346,7 @@ contract QToken is ERC20Permit, IQToken {
         returns (string memory)
     {
         if (_number > 99) {
-            _number %= 100;
+            _number = _number.mod(100);
         }
 
         string memory str = Strings.toString(_number);
@@ -346,9 +368,9 @@ contract QToken is ERC20Permit, IQToken {
         uint256 _start,
         uint256 _end
     ) internal pure returns (string memory) {
-        bytes memory slice = new bytes(_end - _start);
-        for (uint256 i = 0; i < _end - _start; i++) {
-            slice[i] = bytes(_s)[_start + 1];
+        bytes memory slice = new bytes(_end.sub(_start));
+        for (uint256 i = 0; i < _end.sub(_start); i = i.add(1)) {
+            slice[i] = bytes(_s)[_start.add(1)];
         }
 
         return string(slice);

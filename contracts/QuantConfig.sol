@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.7.0;
+pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -124,6 +124,11 @@ contract QuantConfig is
         override
         initializer
     {
+        require(
+            _timelockController != address(0),
+            "QuantConfig: invalid TimelockController address"
+        );
+
         __AccessControl_init();
         __Ownable_init_unchained();
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
