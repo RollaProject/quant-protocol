@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.7.0;
+pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -58,6 +58,11 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         ERC1155("https://tokens.quant.finance/{id}.json")
         EIP712(_name, _version)
     {
+        require(
+            _quantConfig != address(0),
+            "CollateralToken: invalid QuantConfig address"
+        );
+
         quantConfig = IQuantConfig(_quantConfig);
     }
 

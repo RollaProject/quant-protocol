@@ -59,6 +59,15 @@ const { AddressZero, Zero } = constants;
 
 type optionParameters = [string, string, BigNumber, BigNumber, boolean];
 
+type CollateralTokenParameters = [
+  string,
+  string,
+  string,
+  BigNumber,
+  BigNumber,
+  boolean
+];
+
 describe("Controller", async () => {
   let controller: Controller;
   let quantConfig: QuantConfig;
@@ -3059,6 +3068,25 @@ describe("Controller", async () => {
       );
       const operateProxy = OperateProxy.attach(await controller.operateProxy());
 
+      const newQTokenAddress = await optionsFactory.getTargetQTokenAddress(
+        ...newQTokenParams
+      );
+
+      const collateralTokenParams = [...newQTokenParams];
+
+      collateralTokenParams.splice(2, 0, AddressZero);
+
+      const newCollateralTokenId =
+        await optionsFactory.getTargetCollateralTokenId(
+          ...(collateralTokenParams as CollateralTokenParameters)
+        );
+
+      const createOptionReturnData =
+        optionsFactory.interface.encodeFunctionResult("createOption", [
+          newQTokenAddress,
+          newCollateralTokenId,
+        ]);
+
       await expect(
         controller
           .connect(secondAccount)
@@ -3070,7 +3098,7 @@ describe("Controller", async () => {
           )
       )
         .to.emit(operateProxy, "FunctionCallExecuted")
-        .withArgs(secondAccount.address, "0x");
+        .withArgs(secondAccount.address, createOptionReturnData);
 
       expect(await optionsFactory.getOptionsLength()).to.equal(
         optionsLength.add(1)

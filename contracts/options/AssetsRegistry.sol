@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.7.0;
+pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -21,6 +21,11 @@ contract AssetsRegistry is IAssetsRegistry {
     address[] public override registeredAssets;
 
     constructor(address quantConfig_) {
+        require(
+            quantConfig_ != address(0),
+            "AssetsRegistry: invalid QuantConfig address"
+        );
+
         _quantConfig = IQuantConfig(quantConfig_);
     }
 

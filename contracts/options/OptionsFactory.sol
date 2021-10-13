@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.7.0;
+pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -45,6 +45,19 @@ contract OptionsFactory is IOptionsFactory {
         address _quantConfig,
         address _collateralToken
     ) {
+        require(
+            _strikeAsset != address(0),
+            "OptionsFactory: invalid strike asset address"
+        );
+        require(
+            _quantConfig != address(0),
+            "OptionsFactory: invalid QuantConfig address"
+        );
+        require(
+            _collateralToken != address(0),
+            "OptionsFactory: invalid CollateralToken address"
+        );
+
         strikeAsset = _strikeAsset;
         quantConfig = IQuantConfig(_quantConfig);
         collateralToken = ICollateralToken(_collateralToken);
@@ -57,7 +70,11 @@ contract OptionsFactory is IOptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) external override {
+    )
+        external
+        override
+        returns (address newQToken, uint256 newCollateralTokenId)
+    {
         OptionsUtils.validateOptionParameters(
             _underlyingAsset,
             _oracle,
@@ -66,18 +83,17 @@ contract OptionsFactory is IOptionsFactory {
             _strikePrice
         );
 
-        uint256 newCollateralTokenId =
-            OptionsUtils.getTargetCollateralTokenId(
-                collateralToken,
-                address(quantConfig),
-                _underlyingAsset,
-                strikeAsset,
-                _oracle,
-                address(0),
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            );
+        newCollateralTokenId = OptionsUtils.getTargetCollateralTokenId(
+            collateralToken,
+            address(quantConfig),
+            _underlyingAsset,
+            strikeAsset,
+            _oracle,
+            address(0),
+            _strikePrice,
+            _expiryTime,
+            _isCall
+        );
 
         require(
             _collateralTokenIdToQTokenAddress[newCollateralTokenId] ==
@@ -85,18 +101,17 @@ contract OptionsFactory is IOptionsFactory {
             "option already created"
         );
 
-        address newQToken =
-            address(
-                new QToken{salt: OptionsUtils.SALT}(
-                    address(quantConfig),
-                    _underlyingAsset,
-                    strikeAsset,
-                    _oracle,
-                    _strikePrice,
-                    _expiryTime,
-                    _isCall
-                )
-            );
+        newQToken = address(
+            new QToken{salt: OptionsUtils.SALT}(
+                address(quantConfig),
+                _underlyingAsset,
+                strikeAsset,
+                _oracle,
+                _strikePrice,
+                _expiryTime,
+                _isCall
+            )
+        );
 
         _collateralTokenIdToQTokenAddress[newCollateralTokenId] = newQToken;
         qTokens.push(newQToken);
