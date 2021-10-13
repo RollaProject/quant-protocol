@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.7.0;
+pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -260,7 +260,7 @@ contract ControllerV2 is
         qToken.burn(_msgSender(), amountToExercise);
 
         if (exerciseTotal > 0) {
-            IERC20(payoutToken).transfer(_msgSender(), exerciseTotal);
+            IERC20(payoutToken).safeTransfer(_msgSender(), exerciseTotal);
         }
 
         emit OptionsExercised(

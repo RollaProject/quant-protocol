@@ -148,8 +148,8 @@ describe("GnosisSafeL2 integration tests", () => {
       await upgrades.deployProxy(Controller, [
         name,
         version,
-        ethers.constants.AddressZero,
-        ethers.constants.AddressZero,
+        ethers.Wallet.createRandom().address,
+        ethers.Wallet.createRandom().address,
       ])
     );
 

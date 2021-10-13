@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.7.0;
+pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
@@ -82,7 +82,7 @@ contract ChainlinkOracleManager is
         );
 
         require(
-            block.timestamp >= _expiryTimestamp + fallbackPeriodSeconds,
+            block.timestamp >= _expiryTimestamp.add(fallbackPeriodSeconds),
             "ChainlinkOracleManager: The fallback price period has not passed since the timestamp"
         );
 

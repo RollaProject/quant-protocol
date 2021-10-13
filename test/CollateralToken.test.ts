@@ -116,7 +116,7 @@ describe("CollateralToken", () => {
       quantConfig,
       WETH.address,
       USDC.address,
-      ethers.constants.AddressZero,
+      ethers.Wallet.createRandom().address,
       ethers.utils.parseUnits("2000", await USDC.decimals()),
       ethers.BigNumber.from("1618592400"),
       true
@@ -755,7 +755,7 @@ describe("CollateralToken", () => {
         quantConfig,
         WETH.address,
         USDC.address,
-        ethers.constants.AddressZero,
+        ethers.Wallet.createRandom().address,
         ethers.utils.parseUnits("10000", await USDC.decimals()),
         ethers.BigNumber.from("1653285356"),
         false
