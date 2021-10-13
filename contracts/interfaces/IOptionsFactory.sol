@@ -31,7 +31,7 @@ interface IOptionsFactory {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) external;
+    ) external returns (address, uint256);
 
     /// @notice array of all the created QTokens
     function qTokens(uint256) external view returns (address);
