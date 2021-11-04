@@ -55,7 +55,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         string memory _name,
         string memory _version
     )
-        ERC1155("https://tokens.quant.finance/{id}.json")
+        ERC1155("https://tokens.rolla.finance/{id}.json")
         EIP712(_name, _version)
     {
         require(
