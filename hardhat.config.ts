@@ -5,6 +5,7 @@ import * as dotenv from "dotenv";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
+import "hardhat-gas-reporter";
 import "hardhat-typechain";
 import { HardhatUserConfig } from "hardhat/config";
 import "solidity-coverage";
@@ -59,6 +60,11 @@ const config: HardhatUserConfig = {
 
   typechain: {
     target: "ethers-v5",
+  },
+
+  gasReporter: {
+    enabled: process.env.REPORT_GAS ? true : false,
+    gasPrice: parseInt(process.env.GAS_PRICE || "30"),
   },
 };
 
