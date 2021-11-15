@@ -1011,6 +1011,36 @@
   resolved "https://registry.yarnpkg.com/@quant-finance/solidity-datetime/-/solidity-datetime-2.0.0.tgz#9f89c2d919f54f038c4560d117e7e546a02d1ce7"
   integrity sha512-1phdoJRCV4mBtpDfotN1oFJF8p6BS4KEAqhiPfRJuhSvBr73nrptwwIG8lrhj1vFWhasF79aZMzV782qhll0ag==
 
+"@quant/eth-gas-reporter@^0.2.20":
+  version "0.2.22"
+  resolved "https://registry.rolla.finance/@quant%2feth-gas-reporter/-/eth-gas-reporter-0.2.22.tgz#24a8f33fc46b0f6562dd59d85f84625b5c4395ba"
+  integrity sha512-4adbEe4PkAyTSm27YTDsKJ4KQ++cvTJ3Bhmd89OvSHuUNTw7SXpqAiAu5+xJwOkGc4joC2k7Vb2NnVOGPk+G+w==
+  dependencies:
+    "@ethersproject/abi" "^5.0.0-beta.146"
+    "@solidity-parser/parser" "^0.12.0"
+    cli-table3 "^0.5.0"
+    colors "^1.1.2"
+    ethereumjs-util "6.2.0"
+    ethers "^4.0.40"
+    fs-readdir-recursive "^1.1.0"
+    lodash "^4.17.14"
+    markdown-table "^1.1.3"
+    mocha "^7.1.1"
+    req-cwd "^2.0.0"
+    request "^2.88.0"
+    request-promise-native "^1.0.5"
+    sha1 "^1.1.1"
+    sync-request "^6.0.0"
+
+"@quant/hardhat-gas-reporter@^1.0.7":
+  version "1.0.7"
+  resolved "https://registry.rolla.finance/@quant%2fhardhat-gas-reporter/-/hardhat-gas-reporter-1.0.7.tgz#85688a17ff71524fb6a935bec36a62dd863545f8"
+  integrity sha512-bgew3s+FUtVpNocI90ZetY8Tp6SLPExYhYDx/qWwy56y+c6P22DZnPPxi048llYbS9pWmCkWVtKzqYhx0g/kqw==
+  dependencies:
+    "@quant/eth-gas-reporter" "^0.2.20"
+    array-uniq "1.0.3"
+    sha1 "^1.1.1"
+
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
   resolved "https://registry.yarnpkg.com/@resolver-engine/core/-/core-0.3.3.tgz#590f77d85d45bc7ecc4e06c654f41345db6ca967"
@@ -1741,6 +1771,11 @@ array-union@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/array-union/-/array-union-2.1.0.tgz#b798420adbeb1de828d84acd8a2e23d3efe85e8d"
   integrity sha512-HGyxoOTYUyCM6stUe6EJgnd4EoewAI7zMdfqO+kGjnlZmBDz/cR5pf8r/cR4Wq60sL/p0IkcjUEEPwS3GFrIyw==
+
+array-uniq@1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/array-uniq/-/array-uniq-1.0.3.tgz#af6ac877a25cc7f74e058894753858dfdb24fdb6"
+  integrity sha1-r2rId6Jcx/dOBYiUdThY39sk/bY=
 
 array-unique@^0.3.2:
   version "0.3.2"
@@ -4083,27 +4118,6 @@ eth-ens-namehash@2.0.8, eth-ens-namehash@^2.0.8:
     idna-uts46-hx "^2.3.1"
     js-sha3 "^0.5.7"
 
-eth-gas-reporter@^0.2.20:
-  version "0.2.22"
-  resolved "https://registry.yarnpkg.com/eth-gas-reporter/-/eth-gas-reporter-0.2.22.tgz#bbe91f5d7b22433d26f099eeb5b20118ced0e575"
-  integrity sha512-L1FlC792aTf3j/j+gGzSNlGrXKSxNPXQNk6TnV5NNZ2w3jnQCRyJjDl0zUo25Cq2t90IS5vGdbkwqFQK7Ce+kw==
-  dependencies:
-    "@ethersproject/abi" "^5.0.0-beta.146"
-    "@solidity-parser/parser" "^0.12.0"
-    cli-table3 "^0.5.0"
-    colors "^1.1.2"
-    ethereumjs-util "6.2.0"
-    ethers "^4.0.40"
-    fs-readdir-recursive "^1.1.0"
-    lodash "^4.17.14"
-    markdown-table "^1.1.3"
-    mocha "^7.1.1"
-    req-cwd "^2.0.0"
-    request "^2.88.0"
-    request-promise-native "^1.0.5"
-    sha1 "^1.1.1"
-    sync-request "^6.0.0"
-
 eth-json-rpc-infura@^3.1.0:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/eth-json-rpc-infura/-/eth-json-rpc-infura-3.2.1.tgz#26702a821067862b72d979c016fd611502c6057f"
@@ -5481,14 +5495,6 @@ hardhat-deploy@^0.7.7:
     match-all "^1.2.6"
     murmur-128 "^0.2.1"
     qs "^6.9.4"
-
-hardhat-gas-reporter@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/hardhat-gas-reporter/-/hardhat-gas-reporter-1.0.4.tgz#59e3137e38e0dfeac2e4f90d5c74160b50ad4829"
-  integrity sha512-G376zKh81G3K9WtDA+SoTLWsoygikH++tD1E7llx+X7J+GbIqfwhDKKgvJjcnEesMrtR9UqQHK02lJuXY1RTxw==
-  dependencies:
-    eth-gas-reporter "^0.2.20"
-    sha1 "^1.1.1"
 
 hardhat-typechain@^0.3.4:
   version "0.3.5"
