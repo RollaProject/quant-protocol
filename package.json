@@ -1,5 +1,5 @@
 {
-  "name": "@quant/quant-protocol",
+  "name": "@rolla-contracts/quant-protocol",
   "version": "0.7.0",
   "description": "Smart-contracts for Quant. The free, instant, DeFi crypto options trading protocol.",
   "scripts": {
