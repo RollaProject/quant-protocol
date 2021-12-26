@@ -639,9 +639,9 @@
     "@ethersproject/logger" "^5.2.0"
 
 "@ethersproject/networks@^5.5.0":
-  version "5.5.0"
-  resolved "https://registry.yarnpkg.com/@ethersproject/networks/-/networks-5.5.0.tgz#babec47cab892c51f8dd652ce7f2e3e14283981a"
-  integrity sha512-KWfP3xOnJeF89Uf/FCJdV1a2aDJe5XTN2N52p4fcQ34QhDqQFkgQKZ39VGtiqUgHcLI8DfT0l9azC3KFTunqtA==
+  version "5.5.1"
+  resolved "https://registry.yarnpkg.com/@ethersproject/networks/-/networks-5.5.1.tgz#b7f7b9fb88dec1ea48f739b7fb9621311aa8ce6c"
+  integrity sha512-tYRDM4zZtSUcKnD4UMuAlj7SeXH/k5WC4SP2u1Pn57++JdXHkRu2zwNkgNogZoxHzhm9Q6qqurDBVptHOsW49Q==
   dependencies:
     "@ethersproject/logger" "^5.5.0"
 
@@ -849,9 +849,9 @@
     "@ethersproject/strings" "^5.2.0"
 
 "@ethersproject/web@^5.5.0":
-  version "5.5.0"
-  resolved "https://registry.yarnpkg.com/@ethersproject/web/-/web-5.5.0.tgz#0e5bb21a2b58fb4960a705bfc6522a6acf461e28"
-  integrity sha512-BEgY0eL5oH4mAo37TNYVrFeHsIXLRxggCRG/ksRIxI2X5uj5IsjGmcNiRN/VirQOlBxcUhCgHhaDLG4m6XAVoA==
+  version "5.5.1"
+  resolved "https://registry.yarnpkg.com/@ethersproject/web/-/web-5.5.1.tgz#cfcc4a074a6936c657878ac58917a61341681316"
+  integrity sha512-olvLvc1CB12sREc1ROPSHTdFCdvMh0J5GSJYiQg2D0hdD4QmJDy8QYDb1CvoqD/bF1c++aeKv2sR5uduuG9dQg==
   dependencies:
     "@ethersproject/base64" "^5.5.0"
     "@ethersproject/bytes" "^5.5.0"
@@ -1011,36 +1011,6 @@
   resolved "https://registry.yarnpkg.com/@quant-finance/solidity-datetime/-/solidity-datetime-2.0.0.tgz#9f89c2d919f54f038c4560d117e7e546a02d1ce7"
   integrity sha512-1phdoJRCV4mBtpDfotN1oFJF8p6BS4KEAqhiPfRJuhSvBr73nrptwwIG8lrhj1vFWhasF79aZMzV782qhll0ag==
 
-"@quant/eth-gas-reporter@^0.2.20":
-  version "0.2.22"
-  resolved "https://registry.rolla.finance/@quant%2feth-gas-reporter/-/eth-gas-reporter-0.2.22.tgz#24a8f33fc46b0f6562dd59d85f84625b5c4395ba"
-  integrity sha512-4adbEe4PkAyTSm27YTDsKJ4KQ++cvTJ3Bhmd89OvSHuUNTw7SXpqAiAu5+xJwOkGc4joC2k7Vb2NnVOGPk+G+w==
-  dependencies:
-    "@ethersproject/abi" "^5.0.0-beta.146"
-    "@solidity-parser/parser" "^0.12.0"
-    cli-table3 "^0.5.0"
-    colors "^1.1.2"
-    ethereumjs-util "6.2.0"
-    ethers "^4.0.40"
-    fs-readdir-recursive "^1.1.0"
-    lodash "^4.17.14"
-    markdown-table "^1.1.3"
-    mocha "^7.1.1"
-    req-cwd "^2.0.0"
-    request "^2.88.0"
-    request-promise-native "^1.0.5"
-    sha1 "^1.1.1"
-    sync-request "^6.0.0"
-
-"@quant/hardhat-gas-reporter@^1.0.7":
-  version "1.0.7"
-  resolved "https://registry.rolla.finance/@quant%2fhardhat-gas-reporter/-/hardhat-gas-reporter-1.0.7.tgz#85688a17ff71524fb6a935bec36a62dd863545f8"
-  integrity sha512-bgew3s+FUtVpNocI90ZetY8Tp6SLPExYhYDx/qWwy56y+c6P22DZnPPxi048llYbS9pWmCkWVtKzqYhx0g/kqw==
-  dependencies:
-    "@quant/eth-gas-reporter" "^0.2.20"
-    array-uniq "1.0.3"
-    sha1 "^1.1.1"
-
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
   resolved "https://registry.yarnpkg.com/@resolver-engine/core/-/core-0.3.3.tgz#590f77d85d45bc7ecc4e06c654f41345db6ca967"
@@ -1174,6 +1144,13 @@
   version "0.12.2"
   resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.12.2.tgz#1afad367cb29a2ed8cdd4a3a62701c2821fb578f"
   integrity sha512-d7VS7PxgMosm5NyaiyDJRNID5pK4AWj1l64Dbz0147hJgy5k2C0/ZiKK/9u5c5K+HRUVHmp+RMvGEjGh84oA5Q==
+
+"@solidity-parser/parser@^0.14.0":
+  version "0.14.0"
+  resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.14.0.tgz#d51f074efb0acce0e953ec48133561ed710cebc0"
+  integrity sha512-cX0JJRcmPtNUJpzD2K7FdA7qQsTOk1UZnFx2k7qAg9ZRvuaH5NBe5IEdBMXGlmf2+FmjhqbygJ26H8l2SV7aKQ==
+  dependencies:
+    antlr4ts "^0.5.0-alpha.4"
 
 "@szmarczak/http-timer@^1.1.2":
   version "1.1.2"
@@ -1707,6 +1684,11 @@ antlr4@4.7.1:
   version "4.7.1"
   resolved "https://registry.yarnpkg.com/antlr4/-/antlr4-4.7.1.tgz#69984014f096e9e775f53dd9744bf994d8959773"
   integrity sha512-haHyTW7Y9joE5MVs37P2lNYfU2RWBLfcRDD8OWldcdZm5TiCE91B5Xl1oWSwiDUSd4rlExpt2pu1fksYQjRBYQ==
+
+antlr4ts@^0.5.0-alpha.4:
+  version "0.5.0-alpha.4"
+  resolved "https://registry.yarnpkg.com/antlr4ts/-/antlr4ts-0.5.0-alpha.4.tgz#71702865a87478ed0b40c0709f422cf14d51652a"
+  integrity sha512-WPQDt1B74OfPv/IMS2ekXAKkTZIHl88uMetg6q3OTqgFxZ/dxDXI0EWLyZid/1Pe6hTftyg5N7gel5wNAGxXyQ==
 
 anymatch@~3.1.1:
   version "3.1.2"
@@ -4118,6 +4100,27 @@ eth-ens-namehash@2.0.8, eth-ens-namehash@^2.0.8:
     idna-uts46-hx "^2.3.1"
     js-sha3 "^0.5.7"
 
+eth-gas-reporter@^0.2.23:
+  version "0.2.23"
+  resolved "https://registry.yarnpkg.com/eth-gas-reporter/-/eth-gas-reporter-0.2.23.tgz#7a2a412b41285298cdad810cf54adac11d406208"
+  integrity sha512-T8KsVakDEupvQxW3MfFfHDfJ7y8zl2+XhyEQk4hZ3qQsAh/FE27BfFHM9UhqNQvrJLz8zVWnPZWNcARwLT/lsA==
+  dependencies:
+    "@ethersproject/abi" "^5.0.0-beta.146"
+    "@solidity-parser/parser" "^0.14.0"
+    cli-table3 "^0.5.0"
+    colors "^1.1.2"
+    ethereumjs-util "6.2.0"
+    ethers "^4.0.40"
+    fs-readdir-recursive "^1.1.0"
+    lodash "^4.17.14"
+    markdown-table "^1.1.3"
+    mocha "^7.1.1"
+    req-cwd "^2.0.0"
+    request "^2.88.0"
+    request-promise-native "^1.0.5"
+    sha1 "^1.1.1"
+    sync-request "^6.0.0"
+
 eth-json-rpc-infura@^3.1.0:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/eth-json-rpc-infura/-/eth-json-rpc-infura-3.2.1.tgz#26702a821067862b72d979c016fd611502c6057f"
@@ -5495,6 +5498,15 @@ hardhat-deploy@^0.7.7:
     match-all "^1.2.6"
     murmur-128 "^0.2.1"
     qs "^6.9.4"
+
+hardhat-gas-reporter@^1.0.6:
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/hardhat-gas-reporter/-/hardhat-gas-reporter-1.0.6.tgz#699bc0bb96e8c962c7f136a1c1f29cd3c32d569e"
+  integrity sha512-LlCEmSx1dZpnxKmODb2hmP5eJ1IAM5It3NnBNTUpBTxn9g9qPPI3JQTxj8AbGEiNc3r6V+w/mXYCmiC8pWvnoQ==
+  dependencies:
+    array-uniq "1.0.3"
+    eth-gas-reporter "^0.2.23"
+    sha1 "^1.1.1"
 
 hardhat-typechain@^0.3.4:
   version "0.3.5"
@@ -8292,7 +8304,14 @@ qs@6.7.0:
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.7.0.tgz#41dc1a015e3d581f1621776be31afb2876a9b1bc"
   integrity sha512-VCdBRNFTX1fyE7Nb6FYoURo/SPe62QCaAyzJvUjwRaIsc+NePBEniHlvxFmmX56+HZphIGtV0XeCirBtpDrTyQ==
 
-qs@^6.4.0, qs@^6.7.0, qs@^6.9.4:
+qs@^6.4.0:
+  version "6.10.2"
+  resolved "https://registry.yarnpkg.com/qs/-/qs-6.10.2.tgz#c1431bea37fc5b24c5bdbafa20f16bdf2a4b9ffe"
+  integrity sha512-mSIdjzqznWgfd4pMii7sHtaYF8rx8861hBO80SraY5GT0XQibWZWJSid0avzHGkDIZLImux2S5mXO0Hfct2QCw==
+  dependencies:
+    side-channel "^1.0.4"
+
+qs@^6.7.0, qs@^6.9.4:
   version "6.10.1"
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.10.1.tgz#4931482fa8d647a5aab799c5271d2133b981fb6a"
   integrity sha512-M528Hph6wsSVOBiYUnGf+K/7w0hNshs/duGsNXPUCLH5XAqjEtiPGwNONLV0tBH8NoGb0mvD5JubnUTrujKDTg==

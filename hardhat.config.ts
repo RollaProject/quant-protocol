@@ -1,11 +1,11 @@
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@openzeppelin/hardhat-upgrades";
-import "@quant/hardhat-gas-reporter";
 import * as dotenv from "dotenv";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
+import "hardhat-gas-reporter";
 import "hardhat-typechain";
 import { HardhatUserConfig } from "hardhat/config";
 import "solidity-coverage";
@@ -64,10 +64,12 @@ const config: HardhatUserConfig = {
 
   gasReporter: {
     enabled: process.env.REPORT_GAS ? true : false,
-    gasPrice: parseInt(process.env.GAS_PRICE || "30"),
     currency: "USD",
     coinmarketcap: process.env.CMC_API_KEY || "",
-    ethPrice: process.env.ETH_PRICE || "",
+    token: process.env.GAS_TOKEN || "BNB",
+    gasPriceApi:
+      process.env.GAS_PRICE_API ||
+      `https://api.bscscan.com/api?module=proxy&action=eth_gasPrice&apikey=${process.env.BSCSCAN_API_KEY}`,
   },
 };
 
