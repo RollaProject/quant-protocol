@@ -183,13 +183,13 @@ contract QToken is ERC20Permit, IQToken {
     /// must be created through the OptionsFactory, which performs that check
     /// @param _quantConfig address of the Quant system configuration contract
     /// @param _asset address of the asset in the AssetsRegistry
-    /// @return symbol string stored as the ERC20 token symbol
+    /// @return assetSymbol string stored as the ERC20 token symbol
     function _assetSymbol(address _quantConfig, address _asset)
         internal
         view
-        returns (string memory symbol)
+        returns (string memory assetSymbol)
     {
-        (, symbol, , ) = IAssetsRegistry(
+        (, assetSymbol, , ) = IAssetsRegistry(
             IQuantConfig(_quantConfig).protocolAddresses(
                 ProtocolValue.encode("assetsRegistry")
             )
