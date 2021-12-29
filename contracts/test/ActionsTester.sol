@@ -8,7 +8,11 @@ contract ActionsTester {
     function testParseMintOptionArgs(ActionArgs memory args)
         external
         pure
-        returns (Actions.MintOptionArgs memory)
+        returns (
+            address,
+            address,
+            uint256
+        )
     {
         return Actions.parseMintOptionArgs(args);
     }
@@ -16,7 +20,11 @@ contract ActionsTester {
     function testParseMintSpreadArgs(ActionArgs memory args)
         external
         pure
-        returns (Actions.MintSpreadArgs memory)
+        returns (
+            address,
+            address,
+            uint256
+        )
     {
         return Actions.parseMintSpreadArgs(args);
     }
@@ -24,7 +32,7 @@ contract ActionsTester {
     function testParseExerciseArgs(ActionArgs memory args)
         external
         pure
-        returns (Actions.ExerciseArgs memory)
+        returns (address, uint256)
     {
         return Actions.parseExerciseArgs(args);
     }
@@ -32,7 +40,7 @@ contract ActionsTester {
     function testParseClaimCollateralArgs(ActionArgs memory args)
         external
         pure
-        returns (Actions.ClaimCollateralArgs memory)
+        returns (uint256, uint256)
     {
         return Actions.parseClaimCollateralArgs(args);
     }
@@ -40,7 +48,7 @@ contract ActionsTester {
     function testParseNeutralizeArgs(ActionArgs memory args)
         external
         pure
-        returns (Actions.NeutralizeArgs memory)
+        returns (uint256, uint256)
     {
         return Actions.parseNeutralizeArgs(args);
     }
@@ -48,7 +56,16 @@ contract ActionsTester {
     function testParseQTokenPermitArgs(ActionArgs memory args)
         external
         pure
-        returns (Actions.QTokenPermitArgs memory)
+        returns (
+            address,
+            address,
+            address,
+            uint256,
+            uint256,
+            uint8,
+            bytes32,
+            bytes32
+        )
     {
         return Actions.parseQTokenPermitArgs(args);
     }
@@ -56,7 +73,16 @@ contract ActionsTester {
     function testParseCollateralTokenApprovalArgs(ActionArgs memory args)
         external
         pure
-        returns (Actions.CollateralTokenApprovalArgs memory)
+        returns (
+            address,
+            address,
+            bool,
+            uint256,
+            uint256,
+            uint8,
+            bytes32,
+            bytes32
+        )
     {
         return Actions.parseCollateralTokenApprovalArgs(args);
     }
@@ -64,7 +90,7 @@ contract ActionsTester {
     function testParseCallArgs(ActionArgs memory args)
         external
         pure
-        returns (Actions.CallArgs memory)
+        returns (address, bytes memory)
     {
         return Actions.parseCallArgs(args);
     }
