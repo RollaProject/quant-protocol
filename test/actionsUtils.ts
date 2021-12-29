@@ -1,6 +1,6 @@
 import { BigNumberish, BytesLike, constants } from "ethers";
 import { defaultAbiCoder } from "ethers/lib/utils";
-import { ActionArgs } from "./testUtils";
+import { ActionArgs, ActionType } from "./testUtils";
 
 const { Zero, AddressZero } = constants;
 
@@ -47,7 +47,7 @@ type CallArgs = { callee: string; data: BytesLike };
 
 export const encodeMintOptionArgs = (args: MintOptionArgs): ActionArgs => {
   return {
-    actionType: "MINT_OPTION",
+    actionType: ActionType.MintOption,
     qToken: args.qToken,
     secondaryAddress: AddressZero,
     receiver: args.to,
@@ -59,7 +59,7 @@ export const encodeMintOptionArgs = (args: MintOptionArgs): ActionArgs => {
 
 export const encodeMintSpreadArgs = (args: MintSpreadArgs): ActionArgs => {
   return {
-    actionType: "MINT_SPREAD",
+    actionType: ActionType.MintSpread,
     qToken: args.qTokenToMint,
     secondaryAddress: args.qTokenForCollateral,
     receiver: AddressZero,
@@ -71,7 +71,7 @@ export const encodeMintSpreadArgs = (args: MintSpreadArgs): ActionArgs => {
 
 export const encodeExerciseArgs = (args: ExerciseArgs): ActionArgs => {
   return {
-    actionType: "EXERCISE",
+    actionType: ActionType.Exercise,
     qToken: args.qToken,
     secondaryAddress: AddressZero,
     receiver: AddressZero,
@@ -85,7 +85,7 @@ export const encodeClaimCollateralArgs = (
   args: ClaimCollateralArgs
 ): ActionArgs => {
   return {
-    actionType: "CLAIM_COLLATERAL",
+    actionType: ActionType.ClaimCollateral,
     qToken: AddressZero,
     secondaryAddress: AddressZero,
     receiver: AddressZero,
@@ -97,7 +97,7 @@ export const encodeClaimCollateralArgs = (
 
 export const encodeNeutralizeArgs = (args: NeutralizeArgs): ActionArgs => {
   return {
-    actionType: "NEUTRALIZE",
+    actionType: ActionType.Neutralize,
     qToken: AddressZero,
     secondaryAddress: AddressZero,
     receiver: AddressZero,
@@ -109,7 +109,7 @@ export const encodeNeutralizeArgs = (args: NeutralizeArgs): ActionArgs => {
 
 export const encodeQTokenPermitArgs = (args: QTokenPermitArgs): ActionArgs => {
   return {
-    actionType: "QTOKEN_PERMIT",
+    actionType: ActionType.QTokenPermit,
     qToken: args.qToken,
     secondaryAddress: args.owner,
     receiver: args.spender,
@@ -126,7 +126,7 @@ export const encodeCollateralTokenApprovalArgs = (
   args: CollateralTokenApprovalArgs
 ): ActionArgs => {
   return {
-    actionType: "COLLATERAL_TOKEN_APPROVAL",
+    actionType: ActionType.CollateralTokenApproval,
     qToken: AddressZero,
     secondaryAddress: args.owner,
     receiver: args.operator,
@@ -141,7 +141,7 @@ export const encodeCollateralTokenApprovalArgs = (
 
 export const encodeCallArgs = (args: CallArgs): ActionArgs => {
   return {
-    actionType: "CALL",
+    actionType: ActionType.Call,
     qToken: AddressZero,
     secondaryAddress: AddressZero,
     receiver: args.callee,

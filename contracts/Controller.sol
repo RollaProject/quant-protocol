@@ -19,7 +19,6 @@ import "./libraries/ProtocolValue.sol";
 import "./libraries/QuantMath.sol";
 import "./libraries/OptionsUtils.sol";
 import "./libraries/Actions.sol";
-import "./libraries/external/strings.sol";
 
 contract Controller is
     IController,
@@ -29,7 +28,6 @@ contract Controller is
     using SafeERC20 for IERC20;
     using QuantMath for QuantMath.FixedPointInt;
     using Actions for ActionArgs;
-    using strings for *;
 
     address public override optionsFactory;
 
@@ -45,31 +43,30 @@ contract Controller is
     {
         for (uint256 i = 0; i < _actions.length; i++) {
             ActionArgs memory action = _actions[i];
-            string memory actionType = action.actionType;
 
-            if (_equalStrings(actionType, "MINT_OPTION")) {
+            if (action.actionType == ActionType.MintOption) {
                 (address to, address qToken, uint256 amount) =
                     action.parseMintOptionArgs();
                 _mintOptionsPosition(to, qToken, amount);
-            } else if (_equalStrings(actionType, "MINT_SPREAD")) {
+            } else if (action.actionType == ActionType.MintSpread) {
                 (
                     address qTokenToMint,
                     address qTokenForCollateral,
                     uint256 amount
                 ) = action.parseMintSpreadArgs();
                 _mintSpread(qTokenToMint, qTokenForCollateral, amount);
-            } else if (_equalStrings(actionType, "EXERCISE")) {
+            } else if (action.actionType == ActionType.Exercise) {
                 (address qToken, uint256 amount) = action.parseExerciseArgs();
                 _exercise(qToken, amount);
-            } else if (_equalStrings(actionType, "CLAIM_COLLATERAL")) {
+            } else if (action.actionType == ActionType.ClaimCollateral) {
                 (uint256 collateralTokenId, uint256 amount) =
                     action.parseClaimCollateralArgs();
                 _claimCollateral(collateralTokenId, amount);
-            } else if (_equalStrings(actionType, "NEUTRALIZE")) {
+            } else if (action.actionType == ActionType.Neutralize) {
                 (uint256 collateralTokenId, uint256 amount) =
                     action.parseNeutralizeArgs();
                 _neutralizePosition(collateralTokenId, amount);
-            } else if (_equalStrings(actionType, "QTOKEN_PERMIT")) {
+            } else if (action.actionType == ActionType.QTokenPermit) {
                 (
                     address qToken,
                     address owner,
@@ -81,7 +78,9 @@ contract Controller is
                     bytes32 s
                 ) = action.parseQTokenPermitArgs();
                 _qTokenPermit(qToken, owner, spender, value, deadline, v, r, s);
-            } else if (_equalStrings(actionType, "COLLATERAL_TOKEN_APPROVAL")) {
+            } else if (
+                action.actionType == ActionType.CollateralTokenApproval
+            ) {
                 (
                     address owner,
                     address operator,
@@ -104,7 +103,7 @@ contract Controller is
                 );
             } else {
                 require(
-                    _equalStrings(actionType, "CALL"),
+                    action.actionType == ActionType.Call,
                     "Controller: Invalid action type"
                 );
                 (address callee, bytes memory data) = action.parseCallArgs();
@@ -462,13 +461,5 @@ contract Controller is
             IQToken(_qToken).expiryTime() > block.timestamp,
             "Controller: Cannot mint expired options"
         );
-    }
-
-    function _equalStrings(string memory str1, string memory str2)
-        internal
-        pure
-        returns (bool)
-    {
-        return str1.toSlice().equals(str2.toSlice());
     }
 }

@@ -5,6 +5,7 @@ import {
   encodeCollateralTokenApprovalArgs,
   encodeQTokenPermitArgs,
 } from "./actionsUtils";
+import { ActionType } from "./testUtils";
 const { AddressZero, Zero, HashZero } = ethers.constants;
 
 describe("Actions lib", () => {
@@ -19,26 +20,10 @@ describe("Actions lib", () => {
   });
 
   describe("Test parseMintOptionArgs", () => {
-    it("Should revert when passing a wrong action type", async () => {
-      await expect(
-        lib.testParseMintOptionArgs({
-          actionType: "SOME_ACTION",
-          qToken: AddressZero,
-          secondaryAddress: AddressZero,
-          receiver: AddressZero,
-          amount,
-          collateralTokenId: 0,
-          data: "0x",
-        })
-      ).to.be.revertedWith(
-        "Actions: can only parse arguments for the minting of options"
-      );
-    });
-
     it("Should revert when passing 0 as the amount", async () => {
       await expect(
         lib.testParseMintOptionArgs({
-          actionType: "MINT_OPTION",
+          actionType: ActionType.MintOption,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
           receiver: AddressZero,
@@ -52,7 +37,7 @@ describe("Actions lib", () => {
     it("Should parse valid parameters correctly", async () => {
       expect(
         await lib.testParseMintOptionArgs({
-          actionType: "MINT_OPTION",
+          actionType: ActionType.MintOption,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
           receiver: AddressZero,
@@ -65,26 +50,10 @@ describe("Actions lib", () => {
   });
 
   describe("Test parseMintSpreadArgs", () => {
-    it("Should revert when passing a wrong action type", async () => {
-      await expect(
-        lib.testParseMintSpreadArgs({
-          actionType: "SOME_ACTION",
-          qToken: AddressZero,
-          secondaryAddress: AddressZero,
-          receiver: AddressZero,
-          amount,
-          collateralTokenId: 0,
-          data: "0x",
-        })
-      ).to.be.revertedWith(
-        "Actions: can only parse arguments for the minting of spreads"
-      );
-    });
-
     it("Should revert when passing 0 as the amount", async () => {
       await expect(
         lib.testParseMintSpreadArgs({
-          actionType: "MINT_SPREAD",
+          actionType: ActionType.MintSpread,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
           receiver: AddressZero,
@@ -98,7 +67,7 @@ describe("Actions lib", () => {
     it("Should parse valid parameters correctly", async () => {
       expect(
         await lib.testParseMintSpreadArgs({
-          actionType: "MINT_SPREAD",
+          actionType: ActionType.MintSpread,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
           receiver: AddressZero,
@@ -111,24 +80,10 @@ describe("Actions lib", () => {
   });
 
   describe("Test parseExerciseArgs", () => {
-    it("Should revert when passing a wrong action type", async () => {
-      await expect(
-        lib.testParseExerciseArgs({
-          actionType: "SOME_ACTION",
-          qToken: AddressZero,
-          secondaryAddress: AddressZero,
-          receiver: AddressZero,
-          amount,
-          collateralTokenId: 0,
-          data: "0x",
-        })
-      ).to.be.revertedWith("Actions: can only parse arguments for exercise");
-    });
-
     it("Should parse valid parameters correctly", async () => {
       expect(
         await lib.testParseExerciseArgs({
-          actionType: "EXERCISE",
+          actionType: ActionType.Exercise,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
           receiver: AddressZero,
@@ -141,26 +96,10 @@ describe("Actions lib", () => {
   });
 
   describe("Test parseClaimCollateralArgs", () => {
-    it("Should revert when passing a wrong action type", async () => {
-      await expect(
-        lib.testParseClaimCollateralArgs({
-          actionType: "SOME_ACTION",
-          qToken: AddressZero,
-          secondaryAddress: AddressZero,
-          receiver: AddressZero,
-          amount,
-          collateralTokenId: 0,
-          data: "0x",
-        })
-      ).to.be.revertedWith(
-        "Actions: can only parse arguments for claimCollateral"
-      );
-    });
-
     it("Should parse valid parameters correctly", async () => {
       expect(
         await lib.testParseClaimCollateralArgs({
-          actionType: "CLAIM_COLLATERAL",
+          actionType: ActionType.ClaimCollateral,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
           receiver: AddressZero,
@@ -173,26 +112,10 @@ describe("Actions lib", () => {
   });
 
   describe("Test parseNeutralizeArgs", () => {
-    it("Should revert when passing a wrong action type", async () => {
-      await expect(
-        lib.testParseNeutralizeArgs({
-          actionType: "SOME_ACTION",
-          qToken: AddressZero,
-          secondaryAddress: AddressZero,
-          receiver: AddressZero,
-          amount,
-          collateralTokenId: 0,
-          data: "0x",
-        })
-      ).to.be.revertedWith(
-        "Actions: can only parse arguments for neutralizePosition"
-      );
-    });
-
     it("Should parse valid parameters correctly", async () => {
       expect(
         await lib.testParseNeutralizeArgs({
-          actionType: "NEUTRALIZE",
+          actionType: ActionType.Neutralize,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
           receiver: AddressZero,
@@ -205,22 +128,6 @@ describe("Actions lib", () => {
   });
 
   describe("Test parseQTokenPermitArgs", () => {
-    it("Should revert when passing a wrong action type", async () => {
-      await expect(
-        lib.testParseQTokenPermitArgs({
-          actionType: "SOME_ACTION",
-          qToken: AddressZero,
-          secondaryAddress: AddressZero,
-          receiver: AddressZero,
-          amount,
-          collateralTokenId: 0,
-          data: "0x",
-        })
-      ).to.be.revertedWith(
-        "Actions: can only parse arguments for QToken.permit"
-      );
-    });
-
     it("Should parse valid parameters correctly", async () => {
       expect(
         await lib.testParseQTokenPermitArgs(
@@ -249,22 +156,6 @@ describe("Actions lib", () => {
   });
 
   describe("Test parseCollateralTokenApprovalArgs", () => {
-    it("Should revert when passing a wrong action type", async () => {
-      await expect(
-        lib.testParseCollateralTokenApprovalArgs({
-          actionType: "SOME_ACTION",
-          qToken: AddressZero,
-          secondaryAddress: AddressZero,
-          receiver: AddressZero,
-          amount,
-          collateralTokenId: 0,
-          data: "0x",
-        })
-      ).to.be.revertedWith(
-        "Actions: can only parse arguments for CollateralToken.metaSetApprovalForAll"
-      );
-    });
-
     it("Should parse valid parameters correctly", async () => {
       expect(
         await lib.testParseCollateralTokenApprovalArgs(
@@ -293,26 +184,10 @@ describe("Actions lib", () => {
   });
 
   describe("Test parseCallArgs", () => {
-    it("Should revert when passing a wrong action type", async () => {
-      await expect(
-        lib.testParseCallArgs({
-          actionType: "SOME_ACTION",
-          qToken: AddressZero,
-          secondaryAddress: AddressZero,
-          receiver: AddressZero,
-          amount,
-          collateralTokenId: 0,
-          data: "0x",
-        })
-      ).to.be.revertedWith(
-        "Actions: can only parse arguments for generic function calls"
-      );
-    });
-
     it("Should revert when passing the zero address as the receiver (callee)", async () => {
       await expect(
         lib.testParseCallArgs({
-          actionType: "CALL",
+          actionType: ActionType.Call,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
           receiver: AddressZero,
@@ -328,7 +203,7 @@ describe("Actions lib", () => {
       const data = "0xd6cafe";
       expect(
         await lib.testParseCallArgs({
-          actionType: "CALL",
+          actionType: ActionType.Call,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
           receiver: callee,

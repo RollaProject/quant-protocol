@@ -393,8 +393,19 @@ const deployQuantCalculator = async (
   return quantCalculator;
 };
 
+export enum ActionType {
+  MintOption,
+  MintSpread,
+  Exercise,
+  ClaimCollateral,
+  Neutralize,
+  QTokenPermit,
+  CollateralTokenApproval,
+  Call,
+}
+
 export type ActionArgs = {
-  actionType: string;
+  actionType: ActionType;
   qToken: string;
   secondaryAddress: string;
   receiver: string;
