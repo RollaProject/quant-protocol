@@ -53,33 +53,33 @@ contract QTokenCore is QToken {
         internal
         pure
         override
-        returns (string memory, string memory)
+        returns (string memory chr, string memory str)
     {}
 
     function _displayedStrikePrice(uint256 _strikePrice)
         internal
         pure
         override
-        returns (string memory)
+        returns (string memory strikePrice)
     {}
 
     function _uintToChars(uint256 _number)
         internal
         pure
         override
-        returns (string memory)
+        returns (string memory chars)
     {}
 
     function _slice(
         string memory _s,
         uint256 _start,
         uint256 _end
-    ) internal pure override returns (string memory) {}
+    ) internal pure override returns (string memory slice) {}
 
     function _getMonth(uint256 _month)
         internal
         pure
         override
-        returns (string memory, string memory)
+        returns (string memory monthAbbrev, string memory monthName)
     {}
 }

@@ -34,9 +34,7 @@ contract ControllerHarness is Controller {
         address qToken,
         uint256 amount
     ) public {
-        Actions.MintOptionArgs memory args =
-            Actions.MintOptionArgs({to: to, qToken: qToken, amount: amount});
-        _mintOptionsPosition(args);
+        _mintOptionsPosition(to, qToken, amount);
     }
 
     function mintSpread(
@@ -44,39 +42,21 @@ contract ControllerHarness is Controller {
         address qTokenForCollateral,
         uint256 amount
     ) public {
-        Actions.MintSpreadArgs memory args =
-            Actions.MintSpreadArgs({
-                qTokenToMint: qToken,
-                qTokenForCollateral: qTokenForCollateral,
-                amount: amount
-            });
-        _mintSpread(args);
+        _mintSpread(qToken, qTokenForCollateral, amount);
     }
 
     function exercise(address qToken, uint256 amount) public {
-        Actions.ExerciseArgs memory args =
-            Actions.ExerciseArgs({qToken: qToken, amount: amount});
-        _exercise(args);
+        _exercise(qToken, amount);
     }
 
     function claimCollateral(uint256 collateralTokenId, uint256 amount) public {
-        Actions.ClaimCollateralArgs memory args =
-            Actions.ClaimCollateralArgs({
-                collateralTokenId: collateralTokenId,
-                amount: amount
-            });
-        _claimCollateral(args);
+        _claimCollateral(collateralTokenId, amount);
     }
 
     function neutralizePosition(uint256 collateralTokenId, uint256 amount)
         public
     {
-        Actions.NeutralizeArgs memory args =
-            Actions.NeutralizeArgs({
-                collateralTokenId: collateralTokenId,
-                amount: amount
-            });
-        _neutralizePosition(args);
+        _neutralizePosition(collateralTokenId, amount);
     }
 
     function operate(ActionArgs[] memory _actions)

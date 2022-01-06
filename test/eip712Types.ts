@@ -25,7 +25,7 @@ export const metaActionType = [
 ];
 
 export const actionType = [
-  { name: "actionType", type: "string" },
+  { name: "actionType", type: "uint8" },
   { name: "qToken", type: "address" },
   { name: "secondaryAddress", type: "address" },
   { name: "receiver", type: "address" },
