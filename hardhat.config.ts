@@ -30,6 +30,15 @@ const config: HardhatUserConfig = {
           "word soft garden squirrel this lift object foot someone boost certain provide",
       },
     },
+
+    bscTestnet: {
+      url: process.env.BSC_TESTNET_URL || "",
+      accounts: {
+        mnemonic:
+          process.env.MNEMONIC ||
+          "word soft garden squirrel this lift object foot someone boost certain provide",
+      },
+    },
   },
   solidity: {
     version: "0.7.6",

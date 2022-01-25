@@ -36,6 +36,7 @@ contract QTokenCore is QToken {
     function _qTokenName(
         address _quantConfig,
         address _underlyingAsset,
+        address _strikeAsset,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
@@ -44,6 +45,7 @@ contract QTokenCore is QToken {
     function _qTokenSymbol(
         address _quantConfig,
         address _underlyingAsset,
+        address _strikeAsset,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
@@ -56,7 +58,7 @@ contract QTokenCore is QToken {
         returns (string memory chr, string memory str)
     {}
 
-    function _displayedStrikePrice(uint256 _strikePrice)
+    function _displayedStrikePrice(uint256 _strikePrice, address _strikeAsset)
         internal
         pure
         override
