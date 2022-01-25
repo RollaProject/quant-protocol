@@ -58,7 +58,7 @@ contract QTokenCore is QToken {
         returns (string memory chr, string memory str)
     {}
 
-    function _displayedStrikePrice(uint256 _strikePrice)
+    function _displayedStrikePrice(uint256 _strikePrice, address _strikeAsset)
         internal
         pure
         override
