@@ -5,6 +5,7 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/drafts/ERC20Permit.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
 import "../pricing/PriceRegistry.sol";
 import "../interfaces/IAssetsRegistry.sol";
@@ -43,9 +44,6 @@ contract QToken is ERC20Permit, IQToken {
     /// @inheritdoc IQToken
     bool public override isCall;
 
-    uint256 private constant _STRIKE_PRICE_SCALE = 1e6;
-    uint256 private constant _STRIKE_PRICE_DIGITS = 6;
-
     /// @notice Configures the parameters of a new option token
     /// @param _quantConfig the address of the Quant system configuration contract
     /// @param _underlyingAsset asset that the option references
@@ -67,6 +65,7 @@ contract QToken is ERC20Permit, IQToken {
             _qTokenName(
                 _quantConfig,
                 _underlyingAsset,
+                _strikeAsset,
                 _strikePrice,
                 _expiryTime,
                 _isCall
@@ -74,6 +73,7 @@ contract QToken is ERC20Permit, IQToken {
             _qTokenSymbol(
                 _quantConfig,
                 _underlyingAsset,
+                _strikeAsset,
                 _strikePrice,
                 _expiryTime,
                 _isCall
@@ -83,6 +83,7 @@ contract QToken is ERC20Permit, IQToken {
             _qTokenName(
                 _quantConfig,
                 _underlyingAsset,
+                _strikeAsset,
                 _strikePrice,
                 _expiryTime,
                 _isCall
@@ -207,12 +208,14 @@ contract QToken is ERC20Permit, IQToken {
     function _qTokenName(
         address _quantConfig,
         address _underlyingAsset,
+        address _strikeAsset,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
     ) internal view returns (string memory tokenName) {
         string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
-        string memory displayStrikePrice = _displayedStrikePrice(_strikePrice);
+        string memory displayStrikePrice =
+            _displayedStrikePrice(_strikePrice, _strikeAsset);
 
         // convert the expiry to a readable string
         (uint256 year, uint256 month, uint256 day) =
@@ -254,12 +257,14 @@ contract QToken is ERC20Permit, IQToken {
     function _qTokenSymbol(
         address _quantConfig,
         address _underlyingAsset,
+        address _strikeAsset,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
     ) internal view returns (string memory tokenSymbol) {
         string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
-        string memory displayStrikePrice = _displayedStrikePrice(_strikePrice);
+        string memory displayStrikePrice =
+            _displayedStrikePrice(_strikePrice, _strikeAsset);
 
         // convert the expiry to a readable string
         (uint256 year, uint256 month, uint256 day) =
@@ -289,27 +294,18 @@ contract QToken is ERC20Permit, IQToken {
         );
     }
 
-    /// @dev get the string representation of the option type
-    /// @return a 1 character representation of the option type
-    /// @return a full length string of the option type
-    function _getOptionType(bool _isCall)
-        internal
-        pure
-        returns (string memory, string memory)
-    {
-        return _isCall ? ("C", "Call") : ("P", "Put");
-    }
-
     /// @dev convert the option strike price scaled to a human readable value
     /// @param _strikePrice the option strike price scaled by 1e8
     /// @return strike price string
-    function _displayedStrikePrice(uint256 _strikePrice)
+    function _displayedStrikePrice(uint256 _strikePrice, address _strikeAsset)
         internal
-        pure
+        view
         returns (string memory)
     {
-        uint256 remainder = _strikePrice.mod(_STRIKE_PRICE_SCALE);
-        uint256 quotient = _strikePrice.div(_STRIKE_PRICE_SCALE);
+        uint256 strikePriceDigits = ERC20(_strikeAsset).decimals();
+        uint256 strikePriceScale = 10**strikePriceDigits;
+        uint256 remainder = _strikePrice.mod(strikePriceScale);
+        uint256 quotient = _strikePrice.div(strikePriceScale);
         string memory quotientStr = Strings.toString(quotient);
 
         if (remainder == 0) {
@@ -323,18 +319,27 @@ contract QToken is ERC20Permit, IQToken {
         }
 
         // pad the number with "1 + starting zeroes"
-        remainder = remainder.add(
-            10**(_STRIKE_PRICE_DIGITS.sub(trailingZeroes))
-        );
+        remainder = remainder.add(10**(strikePriceDigits.sub(trailingZeroes)));
 
         string memory tmp = Strings.toString(remainder);
         tmp = _slice(
             tmp,
             1,
-            uint256(1).add(_STRIKE_PRICE_DIGITS).sub(trailingZeroes)
+            uint256(1).add(strikePriceDigits).sub(trailingZeroes)
         );
 
         return string(abi.encodePacked(quotientStr, ".", tmp));
+    }
+
+    /// @dev get the string representation of the option type
+    /// @return a 1 character representation of the option type
+    /// @return a full length string of the option type
+    function _getOptionType(bool _isCall)
+        internal
+        pure
+        returns (string memory, string memory)
+    {
+        return _isCall ? ("C", "Call") : ("P", "Put");
     }
 
     /// @dev get the representation of a number using 2 characters, adding a leading 0 if it's one digit,
