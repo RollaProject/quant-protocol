@@ -1,6 +1,5 @@
 <p align="center">
   <img src="https://ipfs.io/ipfs/QmQy8H8BD9FqEGYnrTapu1Y41gi3iureVYeJbjgZiwK7Zt#gh-light-mode-only" width="200" alt="Rolla Finance" />
-  <img src="https://ipfs.io/ipfs/QmYvKWQo84KBTod3YPBpM8L8rRr3mZT8E2UNbPQpSQwAr3#gh-dark-mode-only width="200" alt="Rolla Finance" />
 </p>
 
 <p align="center">
