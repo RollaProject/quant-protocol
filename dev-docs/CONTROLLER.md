@@ -12,12 +12,12 @@ This is a public view function which calculates the payout an option (qToken) wi
 2. a) If the qToken to check payout for is a call (otherwise skip to 2b)
 
 - If expiry price was lower than strike price, `payout = 0`
-- Otherwise: `{payout = ((expiryPrice - strikePrice) / expiry) * optionsAmount, payoutToken = underlyingAsset}`
+- Otherwise: `{payout = ((expiryPrice - strikePrice) / expiryPrice) * optionsAmount, payoutToken = underlyingAsset}`
 
 2. b) If the qToken to check payout for is a put
 
 - If expiry price was higher than strike price `payout = 0`
-- Otherwise: `{payout = ((strikePrice - strikePrice) * optionsAmount), payoutToken = strikeAsset}`
+- Otherwise: `{payout = ((strikePrice - expiryPrice) * optionsAmount), payoutToken = strikeAsset}`
 
 ### mintOptionsPosition
 
