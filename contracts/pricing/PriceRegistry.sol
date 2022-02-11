@@ -14,13 +14,16 @@ contract PriceRegistry is IPriceRegistry {
     /// @inheritdoc IPriceRegistry
     IQuantConfig public override config;
 
+    uint8 private immutable _strikeAssetDecimals;
+
     /// @dev oracle => asset => expiry => price
     mapping(address => mapping(address => mapping(uint256 => PriceWithDecimals)))
         private _settlementPrices;
 
     /// @param _config address of quant central configuration
-    constructor(address _config) {
+    constructor(address _config, uint8 strikeAssetDecimals_) {
         config = IQuantConfig(_config);
+        _strikeAssetDecimals = strikeAssetDecimals_;
     }
 
     /// @inheritdoc IPriceRegistry
@@ -100,7 +103,7 @@ contract PriceRegistry is IPriceRegistry {
             settlementPrice
                 .price
                 .fromScaledUint(settlementPrice.decimals)
-                .toScaledUint(6, true);
+                .toScaledUint(_strikeAssetDecimals, true);
     }
 
     /// @inheritdoc IPriceRegistry

@@ -12,8 +12,16 @@ contract ChainlinkFixedTimeOracleManager is ChainlinkOracleManager {
 
     /// @param _config address of quant central configuration
     /// @param _fallbackPeriodSeconds amount of seconds before fallback price submitter can submit
-    constructor(address _config, uint256 _fallbackPeriodSeconds)
-        ChainlinkOracleManager(_config, _fallbackPeriodSeconds)
+    constructor(
+        address _config,
+        uint8 _strikeAssetDecimals,
+        uint256 _fallbackPeriodSeconds
+    )
+        ChainlinkOracleManager(
+            _config,
+            _strikeAssetDecimals,
+            _fallbackPeriodSeconds
+        )
     // solhint-disable-next-line no-empty-blocks
     {
 

@@ -24,7 +24,7 @@ describe("PriceRegistry", () => {
       await upgrades.deployProxy(QuantConfig, [await admin.getAddress()])
     );
     priceRegistry = <PriceRegistry>(
-      await deployContract(admin, PriceRegistryJSON, [quantConfig.address])
+      await deployContract(admin, PriceRegistryJSON, [quantConfig.address, 6])
     );
     oracle = await admin.getAddress(); //this is the oracle since its the price submitter
 

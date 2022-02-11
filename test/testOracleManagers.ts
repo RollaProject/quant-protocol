@@ -19,6 +19,7 @@ export const testProviderOracleManager = async (
   testDescription: string,
   deployOracleManager: (
     mockConfig: MockContract,
+    strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
   ) => Promise<ProviderOracleManager>
 ): Promise<void> => {
@@ -40,7 +41,7 @@ export const testProviderOracleManager = async (
 
     mockConfig = await deployMockContract(owner, CONFIG.abi);
 
-    oracleManager = await deployOracleManager(mockConfig, 0);
+    oracleManager = await deployOracleManager(mockConfig, 6, 0);
 
     mockPriceRegistry = await deployMockContract(owner, PRICE_REGISTRY.abi);
 
@@ -133,6 +134,7 @@ export const testChainlinkOracleManager = async (
   testDescription: string,
   deployOracleManager: (
     mockConfig: MockContract,
+    strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
   ) => Promise<ChainlinkOracleManager>
 ): Promise<void> => {
@@ -161,7 +163,7 @@ export const testChainlinkOracleManager = async (
 
     mockConfig = await deployMockContract(owner, CONFIG.abi);
 
-    oracleManager = await deployOracleManager(mockConfig, 0);
+    oracleManager = await deployOracleManager(mockConfig, 6, 0);
 
     mockAggregator = await deployMockContract(owner, AGGREGATOR.abi);
     mockAggregatorTwo = await deployMockContract(owner, AGGREGATOR.abi);
@@ -194,7 +196,7 @@ export const testChainlinkOracleManager = async (
     PriceRegistry = await ethers.getContractFactory("PriceRegistry");
 
     priceRegistry = <PriceRegistry>(
-      await PriceRegistry.deploy(mockConfig.address)
+      await PriceRegistry.deploy(mockConfig.address, 6)
     );
   }
 
@@ -252,7 +254,7 @@ export const testChainlinkOracleManager = async (
     });
 
     it("Fallback method should not allow a fallback submitter to submit before the fallback period", async function () {
-      const oracleManager = await deployOracleManager(mockConfig, 5000);
+      const oracleManager = await deployOracleManager(mockConfig, 6, 5000);
       await oracleManager.deployed();
 
       await mockConfig.mock.protocolAddresses

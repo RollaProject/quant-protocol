@@ -63,7 +63,7 @@ describe("Chainlink Oracle Manager", async function () {
     );
 
     chainlinkOracleManager = <ChainlinkOracleManager>(
-      await ChainlinkOracleManager.deploy(mockConfig.address, 0)
+      await ChainlinkOracleManager.deploy(mockConfig.address, 6, 0)
     );
 
     MockAggregatorProxy = await ethers.getContractFactory(
@@ -77,7 +77,7 @@ describe("Chainlink Oracle Manager", async function () {
     PriceRegistry = await ethers.getContractFactory("PriceRegistry");
 
     priceRegistry = <PriceRegistry>(
-      await PriceRegistry.deploy(mockConfig.address)
+      await PriceRegistry.deploy(mockConfig.address, 6)
     );
   }
 
@@ -87,6 +87,7 @@ describe("Chainlink Oracle Manager", async function () {
 
   const deployChainlinkOracleManager = async (
     mockConfig: MockContract,
+    strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
   ): Promise<ChainlinkOracleManager> => {
     ChainlinkOracleManager = await ethers.getContractFactory(
@@ -96,6 +97,7 @@ describe("Chainlink Oracle Manager", async function () {
     chainlinkOracleManager = <ChainlinkOracleManager>(
       await ChainlinkOracleManager.deploy(
         mockConfig.address,
+        strikeAssetDecimals,
         fallBackPriceInSeconds
       )
     );
@@ -105,6 +107,7 @@ describe("Chainlink Oracle Manager", async function () {
 
   const deployChainlinkFixedTimeOracleManager = async (
     mockConfig: MockContract,
+    strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
   ): Promise<ChainlinkOracleManager> => {
     const ChainlinkFixedTimeOracleManager = await ethers.getContractFactory(
@@ -114,6 +117,7 @@ describe("Chainlink Oracle Manager", async function () {
     const chainlinkFixedTimeOracleManager = <ChainlinkFixedTimeOracleManager>(
       await ChainlinkFixedTimeOracleManager.deploy(
         mockConfig.address,
+        strikeAssetDecimals,
         fallBackPriceInSeconds
       )
     );
@@ -124,13 +128,16 @@ describe("Chainlink Oracle Manager", async function () {
   const setUpTestWithMockAggregator = async (
     deployOracleManager: (
       mockConfig: MockContract,
+      strikeAssetDecimals: number,
       fallBackPriceInSeconds: number
     ) => Promise<ChainlinkOracleManager>,
     mockConfig: MockContract,
+    strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
   ): Promise<ChainlinkOracleManager> => {
     const oracleManager = await deployOracleManager(
       mockConfig,
+      strikeAssetDecimals,
       fallBackPriceInSeconds
     );
     await mockConfig.mock.hasRole.returns(true);
@@ -168,6 +175,7 @@ describe("Chainlink Oracle Manager", async function () {
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkOracleManager,
         mockConfig,
+        6,
         0
       );
 
@@ -189,6 +197,7 @@ describe("Chainlink Oracle Manager", async function () {
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkOracleManager,
         mockConfig,
+        6,
         0
       );
 
@@ -235,6 +244,7 @@ describe("Chainlink Oracle Manager", async function () {
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkOracleManager,
         mockConfig,
+        6,
         0
       );
 
@@ -297,6 +307,7 @@ describe("Chainlink Oracle Manager", async function () {
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkOracleManager,
         mockConfig,
+        6,
         0
       );
 
@@ -318,6 +329,7 @@ describe("Chainlink Oracle Manager", async function () {
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkOracleManager,
         mockConfig,
+        6,
         0
       );
 
@@ -375,6 +387,7 @@ describe("Chainlink Oracle Manager", async function () {
           await setUpTestWithMockAggregator(
             deployChainlinkOracleManager,
             mockConfig,
+            6,
             0
           )
         );
@@ -403,6 +416,7 @@ describe("Chainlink Oracle Manager", async function () {
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkFixedTimeOracleManager,
         mockConfig,
+        6,
         0
       );
 
@@ -423,6 +437,7 @@ describe("Chainlink Oracle Manager", async function () {
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkFixedTimeOracleManager,
         mockConfig,
+        6,
         0
       );
 
@@ -469,6 +484,7 @@ describe("Chainlink Oracle Manager", async function () {
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkFixedTimeOracleManager,
         mockConfig,
+        6,
         0
       );
 
@@ -531,6 +547,7 @@ describe("Chainlink Oracle Manager", async function () {
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkFixedTimeOracleManager,
         mockConfig,
+        6,
         0
       );
 
@@ -552,6 +569,7 @@ describe("Chainlink Oracle Manager", async function () {
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkFixedTimeOracleManager,
         mockConfig,
+        6,
         0
       );
 
@@ -599,6 +617,7 @@ describe("Chainlink Oracle Manager", async function () {
           await setUpTestWithMockAggregator(
             deployChainlinkFixedTimeOracleManager,
             mockConfig,
+            6,
             0
           )
         );

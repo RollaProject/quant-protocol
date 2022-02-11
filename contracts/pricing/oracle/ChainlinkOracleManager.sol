@@ -27,14 +27,18 @@ contract ChainlinkOracleManager is
     }
 
     uint256 public immutable override fallbackPeriodSeconds;
+    uint8 public immutable override strikeAssetDecimals;
     uint8 public constant CHAINLINK_ORACLE_DECIMALS = 8;
 
     /// @param _config address of quant central configuration
     /// @param _fallbackPeriodSeconds amount of seconds before fallback price submitter can submit
-    constructor(address _config, uint256 _fallbackPeriodSeconds)
-        ProviderOracleManager(_config)
-    {
+    constructor(
+        address _config,
+        uint8 _strikeAssetDecimals,
+        uint256 _fallbackPeriodSeconds
+    ) ProviderOracleManager(_config) {
         fallbackPeriodSeconds = _fallbackPeriodSeconds;
+        strikeAssetDecimals = _strikeAssetDecimals;
     }
 
     /// @inheritdoc IChainlinkOracleManager
@@ -124,7 +128,7 @@ contract ChainlinkOracleManager is
         return
             uint256(answer)
                 .fromScaledUint(CHAINLINK_ORACLE_DECIMALS)
-                .toScaledUint(6, true);
+                .toScaledUint(strikeAssetDecimals, true);
     }
 
     function isValidOption(

@@ -33,4 +33,7 @@ interface IChainlinkOracleManager is IOracleFallbackMechanism {
         external
         view
         returns (uint80);
+
+    /// @notice The amount of decimals the strike asset has
+    function strikeAssetDecimals() external view returns (uint8);
 }
