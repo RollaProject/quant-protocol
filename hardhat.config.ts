@@ -9,6 +9,7 @@ import "hardhat-gas-reporter";
 import "hardhat-typechain";
 import { HardhatUserConfig } from "hardhat/config";
 import "solidity-coverage";
+import "@tenderly/hardhat-tenderly";
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ const config: HardhatUserConfig = {
 
     bscTestnet: {
       url: process.env.BSC_TESTNET_URL || "",
+      chainId: 97,
       accounts: {
         mnemonic:
           process.env.MNEMONIC ||
