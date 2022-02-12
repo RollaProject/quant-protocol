@@ -43,7 +43,7 @@ contract QuantConfig is
                 !protocolBooleans[ProtocolValue.encode("isPriceRegistrySet")],
             "QuantConfig: priceRegistry can only be set once"
         );
-
+        address previousValue = protocolAddresses[_protocolAddress];
         protocolAddresses[_protocolAddress] = _newValue;
         configuredProtocolAddresses.push(_protocolAddress);
         isProtocolValueSet[_protocolAddress][ProtocolValue.Type.Address] = true;
@@ -52,10 +52,7 @@ contract QuantConfig is
             protocolBooleans[ProtocolValue.encode("isPriceRegistrySet")] = true;
         }
 
-        emit SetProtocolAddress(
-            _protocolAddress,
-            _newValue
-        );
+        emit SetProtocolAddress(_protocolAddress, previousValue, _newValue);
     }
 
     function setProtocolUint256(bytes32 _protocolUint256, uint256 _newValue)
@@ -63,14 +60,12 @@ contract QuantConfig is
         override
         onlyOwner()
     {
+        uint256 previousValue = protocolUints256[_protocolUint256];
         protocolUints256[_protocolUint256] = _newValue;
         configuredProtocolUints256.push(_protocolUint256);
         isProtocolValueSet[_protocolUint256][ProtocolValue.Type.Uint256] = true;
 
-        emit SetProtocolUint256(
-            _protocolUint256,
-            _newValue
-        );
+        emit SetProtocolUint256(_protocolUint256, previousValue, _newValue);
     }
 
     function setProtocolBoolean(bytes32 _protocolBoolean, bool _newValue)
@@ -83,15 +78,12 @@ contract QuantConfig is
                 !protocolBooleans[ProtocolValue.encode("isPriceRegistrySet")],
             "QuantConfig: can only change isPriceRegistrySet once"
         );
-
+        bool previousValue = protocolBooleans[_protocolBoolean];
         protocolBooleans[_protocolBoolean] = _newValue;
         configuredProtocolBooleans.push(_protocolBoolean);
         isProtocolValueSet[_protocolBoolean][ProtocolValue.Type.Bool] = true;
 
-        emit SetProtocolBoolean(
-            _protocolBoolean,
-            _newValue
-        );
+        emit SetProtocolBoolean(_protocolBoolean, previousValue, _newValue);
     }
 
     function setProtocolRole(string calldata _protocolRole, address _roleAdmin)
@@ -108,7 +100,7 @@ contract QuantConfig is
         onlyOwner()
     {
         _setRoleAdmin(role, adminRole);
-        
+
         emit SetRoleAdmin(role, adminRole);
     }
 
