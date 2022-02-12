@@ -4,6 +4,16 @@ pragma solidity ^0.7.0;
 import "../libraries/ProtocolValue.sol";
 
 interface ITimelockedConfig {
+    event SetProtocolAddress(bytes32 protocolAddress, address newValue);
+
+    event SetProtocolUint256(bytes32 protocolAddress, uint256 newValue);
+
+    event SetProtocolBoolean(bytes32 protocolBoolean, bool newValue);
+
+    event SetProtocolRole(string protocolRole, bytes32 role, address roleAdmin);
+    
+    event SetRoleAdmin(bytes32 role, bytes32 adminRole);
+
     function setProtocolAddress(bytes32, address) external;
 
     function setProtocolUint256(bytes32, uint256) external;

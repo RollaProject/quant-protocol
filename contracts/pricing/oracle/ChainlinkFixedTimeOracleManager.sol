@@ -4,11 +4,12 @@ pragma solidity 0.7.6;
 import "./ChainlinkOracleManager.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
+import "../../interfaces/IChainlinkFixedTimeOracleManager.sol";
 
-contract ChainlinkFixedTimeOracleManager is ChainlinkOracleManager {
+contract ChainlinkFixedTimeOracleManager is ChainlinkOracleManager, IChainlinkFixedTimeOracleManager {
     using SafeMath for uint256;
 
-    mapping(uint256 => bool) public chainlinkFixedTimeUpdates;
+    mapping(uint256 => bool) public override chainlinkFixedTimeUpdates;
 
     /// @param _config address of quant central configuration
     /// @param _fallbackPeriodSeconds amount of seconds before fallback price submitter can submit
@@ -27,7 +28,7 @@ contract ChainlinkFixedTimeOracleManager is ChainlinkOracleManager {
 
     }
 
-    function setFixedTimeUpdate(uint256 fixedTime, bool isValidTime) external {
+    function setFixedTimeUpdate(uint256 fixedTime, bool isValidTime) external override {
         require(
             config.hasRole(
                 config.quantRoles("ORACLE_MANAGER_ROLE"),
@@ -37,13 +38,18 @@ contract ChainlinkFixedTimeOracleManager is ChainlinkOracleManager {
         );
 
         chainlinkFixedTimeUpdates[fixedTime] = isValidTime;
+
+        emit FixedTimeUpdate(
+            fixedTime,
+            isValidTime
+        );
     }
 
     function isValidOption(
         address,
         uint256 _expiryTime,
         uint256
-    ) public view override returns (bool) {
+    ) public view override(ChainlinkOracleManager, IProviderOracleManager) returns (bool) {
         uint256 timeInSeconds = _expiryTime.mod(86400);
         return chainlinkFixedTimeUpdates[timeInSeconds];
     }

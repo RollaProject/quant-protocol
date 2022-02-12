@@ -59,7 +59,7 @@ contract ChainlinkOracleManager is
         address _asset,
         uint256 _expiryTimestamp,
         bytes memory
-    ) external override {
+    ) external override(ProviderOracleManager, IProviderOracleManager) {
         //search and get round
         uint80 roundAfterExpiry = searchRoundToSubmit(_asset, _expiryTimestamp);
 
@@ -114,7 +114,7 @@ contract ChainlinkOracleManager is
     function getCurrentPrice(address _asset)
         external
         view
-        override
+        override(ProviderOracleManager, IProviderOracleManager)
         returns (uint256)
     {
         address assetOracle = getAssetOracle(_asset);
@@ -135,7 +135,7 @@ contract ChainlinkOracleManager is
         address,
         uint256,
         uint256
-    ) public view virtual override returns (bool) {
+    ) public view virtual override(ProviderOracleManager, IProviderOracleManager) returns (bool) {
         return true;
     }
 

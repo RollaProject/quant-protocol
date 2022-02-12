@@ -51,6 +51,11 @@ contract QuantConfig is
         if (_protocolAddress == ProtocolValue.encode("priceRegistry")) {
             protocolBooleans[ProtocolValue.encode("isPriceRegistrySet")] = true;
         }
+
+        emit SetProtocolAddress(
+            _protocolAddress,
+            _newValue
+        );
     }
 
     function setProtocolUint256(bytes32 _protocolUint256, uint256 _newValue)
@@ -61,6 +66,11 @@ contract QuantConfig is
         protocolUints256[_protocolUint256] = _newValue;
         configuredProtocolUints256.push(_protocolUint256);
         isProtocolValueSet[_protocolUint256][ProtocolValue.Type.Uint256] = true;
+
+        emit SetProtocolUint256(
+            _protocolUint256,
+            _newValue
+        );
     }
 
     function setProtocolBoolean(bytes32 _protocolBoolean, bool _newValue)
@@ -77,6 +87,11 @@ contract QuantConfig is
         protocolBooleans[_protocolBoolean] = _newValue;
         configuredProtocolBooleans.push(_protocolBoolean);
         isProtocolValueSet[_protocolBoolean][ProtocolValue.Type.Bool] = true;
+
+        emit SetProtocolBoolean(
+            _protocolBoolean,
+            _newValue
+        );
     }
 
     function setProtocolRole(string calldata _protocolRole, address _roleAdmin)
@@ -93,6 +108,8 @@ contract QuantConfig is
         onlyOwner()
     {
         _setRoleAdmin(role, adminRole);
+        
+        emit SetRoleAdmin(role, adminRole);
     }
 
     function protocolAddressesLength()
@@ -150,5 +167,7 @@ contract QuantConfig is
             configuredQuantRoles.push(role);
             isProtocolValueSet[role][ProtocolValue.Type.Role] = true;
         }
+
+        emit SetProtocolRole(_protocolRole, role, _roleAdmin);
     }
 }

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.7.0;
 
+import "./IProviderOracleManager.sol";
 import "./IOracleFallbackMechanism.sol";
 
-interface IChainlinkOracleManager is IOracleFallbackMechanism {
+interface IChainlinkOracleManager is IProviderOracleManager, IOracleFallbackMechanism {
     event PriceRegistrySubmission(
         address asset,
         uint256 expiryTimestamp,
