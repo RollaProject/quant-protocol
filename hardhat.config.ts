@@ -82,6 +82,13 @@ const config: HardhatUserConfig = {
       process.env.GAS_PRICE_API ||
       `https://api.bscscan.com/api?module=proxy&action=eth_gasPrice&apikey=${process.env.BSCSCAN_API_KEY}`,
   },
+
+  tenderly: {
+    project: process.env.ETH_NETWORK
+      ? `rolla-v1-${process.env.ETH_NETWORK}`
+      : "rolla-v1-hardhat",
+    username: process.env.TENDERLY_USERNAME || "",
+  },
 };
 
 export default config;
