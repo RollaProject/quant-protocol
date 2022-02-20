@@ -4,10 +4,7 @@ pragma solidity ^0.7.0;
 import "./IChainlinkOracleManager.sol";
 
 interface IChainlinkFixedTimeOracleManager is IChainlinkOracleManager {
-    event FixedTimeUpdate(
-        uint256 fixedTime,
-        bool isValidTime
-    );
+    event FixedTimeUpdate(uint256 fixedTime, bool isValidTime);
 
     function setFixedTimeUpdate(uint256 fixedTime, bool isValidTime) external;
 

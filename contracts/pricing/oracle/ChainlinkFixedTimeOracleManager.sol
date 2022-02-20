@@ -6,7 +6,10 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
 import "../../interfaces/IChainlinkFixedTimeOracleManager.sol";
 
-contract ChainlinkFixedTimeOracleManager is ChainlinkOracleManager, IChainlinkFixedTimeOracleManager {
+contract ChainlinkFixedTimeOracleManager is
+    ChainlinkOracleManager,
+    IChainlinkFixedTimeOracleManager
+{
     using SafeMath for uint256;
 
     mapping(uint256 => bool) public override chainlinkFixedTimeUpdates;
@@ -28,7 +31,10 @@ contract ChainlinkFixedTimeOracleManager is ChainlinkOracleManager, IChainlinkFi
 
     }
 
-    function setFixedTimeUpdate(uint256 fixedTime, bool isValidTime) external override {
+    function setFixedTimeUpdate(uint256 fixedTime, bool isValidTime)
+        external
+        override
+    {
         require(
             config.hasRole(
                 config.quantRoles("ORACLE_MANAGER_ROLE"),
@@ -39,17 +45,19 @@ contract ChainlinkFixedTimeOracleManager is ChainlinkOracleManager, IChainlinkFi
 
         chainlinkFixedTimeUpdates[fixedTime] = isValidTime;
 
-        emit FixedTimeUpdate(
-            fixedTime,
-            isValidTime
-        );
+        emit FixedTimeUpdate(fixedTime, isValidTime);
     }
 
     function isValidOption(
         address,
         uint256 _expiryTime,
         uint256
-    ) public view override(ChainlinkOracleManager, IProviderOracleManager) returns (bool) {
+    )
+        public
+        view
+        override(ChainlinkOracleManager, IProviderOracleManager)
+        returns (bool)
+    {
         uint256 timeInSeconds = _expiryTime.mod(86400);
         return chainlinkFixedTimeUpdates[timeInSeconds];
     }

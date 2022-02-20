@@ -4,7 +4,10 @@ pragma solidity ^0.7.0;
 import "./IProviderOracleManager.sol";
 import "./IOracleFallbackMechanism.sol";
 
-interface IChainlinkOracleManager is IProviderOracleManager, IOracleFallbackMechanism {
+interface IChainlinkOracleManager is
+    IProviderOracleManager,
+    IOracleFallbackMechanism
+{
     event PriceRegistrySubmission(
         address asset,
         uint256 expiryTimestamp,

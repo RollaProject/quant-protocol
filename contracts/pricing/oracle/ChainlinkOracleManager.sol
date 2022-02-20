@@ -135,7 +135,13 @@ contract ChainlinkOracleManager is
         address,
         uint256,
         uint256
-    ) public view virtual override(ProviderOracleManager, IProviderOracleManager) returns (bool) {
+    )
+        public
+        view
+        virtual
+        override(ProviderOracleManager, IProviderOracleManager)
+        returns (bool)
+    {
         return true;
     }
 
