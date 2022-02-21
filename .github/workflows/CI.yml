@@ -23,7 +23,9 @@ jobs:
       SECOND_ACC_PRIV_KEY: ${{ secrets.SECOND_ACC_PRIV_KEY }}
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node }}

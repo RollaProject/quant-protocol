@@ -4,7 +4,7 @@
   "description": "Smart-contracts for Quant. The free, instant, DeFi crypto options trading protocol.",
   "scripts": {
     "build": "hardhat compile",
-    "test": "yarn build && hardhat test && forge test",
+    "test": "yarn build && hardhat test && forge test -vvv",
     "eslint": "eslint . --ext ts --fix",
     "format": "prettier --write .",
     "solhint": "solhint 'contracts/**/*.sol'",
