@@ -14,11 +14,34 @@ contract AssetsRegistry is IAssetsRegistry {
         uint256 quantityTickSize;
     }
 
+    struct OptionalERC20Methods {
+        bool isNameImplemented;
+        bool isSymbolImplemented;
+        bool isDecimalsImplemented;
+    }
+
     IQuantConfig private _quantConfig;
 
     mapping(address => AssetProperties) public override assetProperties;
 
     address[] public override registeredAssets;
+
+    modifier validAsset(address _underlying) {
+        require(
+            _quantConfig.hasRole(
+                _quantConfig.quantRoles("ASSETS_REGISTRY_MANAGER_ROLE"),
+                msg.sender
+            ),
+            "AssetsRegistry: only asset registry managers can add assets"
+        );
+
+        require(
+            bytes(assetProperties[_underlying].symbol).length == 0,
+            "AssetsRegistry: asset already added"
+        );
+
+        _;
+    }
 
     constructor(address quantConfig_) {
         require(
@@ -35,40 +58,42 @@ contract AssetsRegistry is IAssetsRegistry {
         string calldata _symbol,
         uint8 _decimals,
         uint256 _quantityTickSize
-    ) external override {
-        require(
-            _quantConfig.hasRole(
-                _quantConfig.quantRoles("ASSETS_REGISTRY_MANAGER_ROLE"),
-                msg.sender
-            ),
-            "AssetsRegistry: only asset registry managers can add assets"
+    ) external override validAsset(_underlying) {
+        assetProperties[_underlying] = AssetProperties(
+            _name,
+            _symbol,
+            _decimals,
+            _quantityTickSize
         );
 
-        require(
-            bytes(assetProperties[_underlying].symbol).length == 0,
-            "AssetsRegistry: asset already added"
+        registeredAssets.push(_underlying);
+
+        emit AssetAdded(
+            _underlying,
+            _name,
+            _symbol,
+            _decimals,
+            _quantityTickSize
         );
 
-        string memory name;
-        try ERC20(_underlying).name() returns (string memory contractName) {
-            name = contractName;
-        } catch {
-            name = _name;
-        }
+        emit QuantityTickSizeUpdated(_underlying, 0, _quantityTickSize);
+    }
 
-        string memory symbol;
-        try ERC20(_underlying).symbol() returns (string memory contractSymbol) {
-            symbol = contractSymbol;
-        } catch {
-            symbol = _symbol;
-        }
+    function addAssetWithOptionalERC20Methods(
+        address _underlying,
+        uint256 _quantityTickSize
+    ) external override validAsset(_underlying) {
+        string memory name = ERC20(_underlying).name();
+        require(bytes(name).length > 0, "AssetsRegistry: invalid empty name");
 
-        uint8 decimals;
-        try ERC20(_underlying).decimals() returns (uint8 contractDecimals) {
-            decimals = contractDecimals;
-        } catch {
-            decimals = _decimals;
-        }
+        string memory symbol = ERC20(_underlying).symbol();
+        require(
+            bytes(symbol).length > 0,
+            "AssetsRegistry: invalid empty symbol"
+        );
+
+        uint8 decimals = ERC20(_underlying).decimals();
+        require(decimals > 0, "AssetsRegistry: invalid zero decimals");
 
         assetProperties[_underlying] = AssetProperties(
             name,
@@ -115,5 +140,30 @@ contract AssetsRegistry is IAssetsRegistry {
 
     function getAssetsLength() external view override returns (uint256) {
         return registeredAssets.length;
+    }
+
+    function _resultBytesToString(bytes memory result)
+        internal
+        pure
+        returns (string memory stringResult)
+    {
+        uint8 startPos = 62;
+        // skip empty bytes and special UTF-8 characters and escape sequences before '!'(0x21)
+        while (result[startPos] == 0 || uint8(result[startPos]) < 21) {
+            startPos++;
+        }
+        uint8 endPos = startPos;
+        while (result[endPos] != 0) {
+            endPos++;
+        }
+
+        bytes memory resultBytes = new bytes(endPos - startPos);
+        for (uint8 i = startPos; i < endPos; i++) {
+            resultBytes[i - startPos] = result[i];
+        }
+
+        require(resultBytes.length > 0, "AssetsRegistry: invalid result bytes");
+
+        stringResult = string(resultBytes);
     }
 }
