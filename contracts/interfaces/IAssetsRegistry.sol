@@ -24,6 +24,8 @@ interface IAssetsRegistry {
         uint256
     ) external;
 
+    function addAssetWithOptionalERC20Methods(address, uint256) external;
+
     function setQuantityTickSize(address, uint256) external;
 
     function assetProperties(address)
