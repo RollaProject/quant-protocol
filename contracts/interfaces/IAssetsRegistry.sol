@@ -6,27 +6,17 @@ interface IAssetsRegistry {
         address indexed underlying,
         string name,
         string symbol,
-        uint8 decimals,
-        uint256 quantityTickSize
-    );
-
-    event QuantityTickSizeUpdated(
-        address indexed underlying,
-        uint256 previousQuantityTickSize,
-        uint256 newQuantityTickSize
+        uint8 decimals
     );
 
     function addAsset(
         address,
         string calldata,
         string calldata,
-        uint8,
-        uint256
+        uint8
     ) external;
 
-    function addAssetWithOptionalERC20Methods(address, uint256) external;
-
-    function setQuantityTickSize(address, uint256) external;
+    function addAssetWithOptionalERC20Methods(address) external;
 
     function assetProperties(address)
         external
@@ -34,8 +24,7 @@ interface IAssetsRegistry {
         returns (
             string memory,
             string memory,
-            uint8,
-            uint256
+            uint8
         );
 
     function registeredAssets(uint256) external view returns (address);

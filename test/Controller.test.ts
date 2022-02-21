@@ -612,8 +612,7 @@ describe("Controller", async () => {
         WETH.address,
         await WETH.name(),
         await WETH.symbol(),
-        await WETH.decimals(),
-        ethers.BigNumber.from("1000")
+        await WETH.decimals()
       );
 
     await assetsRegistry
@@ -622,8 +621,7 @@ describe("Controller", async () => {
         USDC.address,
         await USDC.name(),
         await USDC.symbol(),
-        await USDC.decimals(),
-        ethers.BigNumber.from("1000")
+        await USDC.decimals()
       );
 
     QTokenInterface = (await ethers.getContractFactory("QToken")).interface;

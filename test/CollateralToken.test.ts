@@ -99,10 +99,10 @@ describe("CollateralToken", () => {
 
     await assetsRegistry
       .connect(assetRegistryManager)
-      .addAssetWithOptionalERC20Methods(WETH.address, 1000);
+      .addAssetWithOptionalERC20Methods(WETH.address);
     await assetsRegistry
       .connect(assetRegistryManager)
-      .addAssetWithOptionalERC20Methods(USDC.address, 1000);
+      .addAssetWithOptionalERC20Methods(USDC.address);
 
     qToken = await deployQToken(
       deployer,

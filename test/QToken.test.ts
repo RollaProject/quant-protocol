@@ -88,10 +88,10 @@ describe("QToken", async () => {
 
     await assetsRegistry
       .connect(assetsRegistryManager)
-      .addAssetWithOptionalERC20Methods(WETH.address, 1000);
+      .addAssetWithOptionalERC20Methods(WETH.address);
     await assetsRegistry
       .connect(assetsRegistryManager)
-      .addAssetWithOptionalERC20Methods(USDC.address, 1000);
+      .addAssetWithOptionalERC20Methods(USDC.address);
 
     scaledStrikePrice = ethers.utils.parseUnits("1400", await USDC.decimals());
 

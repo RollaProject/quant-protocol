@@ -40,8 +40,7 @@ contract AssetsRegistryTest is DSTest {
         address indexed underlying,
         string name,
         string symbol,
-        uint8 decimals,
-        uint256 quantityTickSize
+        uint8 decimals
     );
 
     function setUp() public {
@@ -58,7 +57,6 @@ contract AssetsRegistryTest is DSTest {
         string memory name = "BTCB Token";
         string memory symbol = "BTCB";
         uint8 decimals = 18;
-        uint256 quantityTickSize = 1e18;
 
         ERC20WithDecimals asset = new ERC20WithDecimals(name, symbol, decimals);
 
@@ -68,18 +66,9 @@ contract AssetsRegistryTest is DSTest {
 
         vm.expectEmit(true, false, false, true);
 
-        emit AssetAdded(
-            address(asset),
-            name,
-            symbol,
-            decimals,
-            quantityTickSize
-        );
+        emit AssetAdded(address(asset), name, symbol, decimals);
 
-        assetsRegistry.addAssetWithOptionalERC20Methods(
-            address(asset),
-            quantityTickSize
-        );
+        assetsRegistry.addAssetWithOptionalERC20Methods(address(asset));
 
         address registeredAsset = assetsRegistry.registeredAssets(0);
         assertEq(registeredAsset, address(asset));
@@ -87,14 +76,12 @@ contract AssetsRegistryTest is DSTest {
         (
             string memory registerdName,
             string memory registeredSymbol,
-            uint8 registeredDecimals,
-            uint256 registeredQuantityTickSize
+            uint8 registeredDecimals
         ) = assetsRegistry.assetProperties(registeredAsset);
 
         assertEq(registerdName, name);
         assertEq(registeredSymbol, symbol);
         assertEq(uint256(registeredDecimals), uint256(decimals));
-        assertEq(registeredQuantityTickSize, quantityTickSize);
     }
 
     function testAddAssetWithoutOptionalERC20Methods(
@@ -102,15 +89,11 @@ contract AssetsRegistryTest is DSTest {
         string memory symbol
     ) public {
         SimpleERC20 asset = new SimpleERC20(name, symbol);
-        uint256 quantityTickSize = 1e18;
 
         // Should revert when trying to call asset.name()
         vm.expectRevert(bytes(""));
 
-        assetsRegistry.addAssetWithOptionalERC20Methods(
-            address(asset),
-            quantityTickSize
-        );
+        assetsRegistry.addAssetWithOptionalERC20Methods(address(asset));
     }
 
     function testAddAssetAsNotRegistryMananger() public {
@@ -119,7 +102,6 @@ contract AssetsRegistryTest is DSTest {
         string memory name = "USD Coin";
         string memory symbol = "USDC";
         uint8 decimals = 6;
-        uint256 quantityTickSize = 1e6;
 
         ERC20WithDecimals asset = new ERC20WithDecimals(name, symbol, decimals);
 
@@ -127,30 +109,20 @@ contract AssetsRegistryTest is DSTest {
             bytes("AssetsRegistry: only asset registry managers can add assets")
         );
 
-        assetsRegistry.addAssetWithOptionalERC20Methods(
-            address(asset),
-            quantityTickSize
-        );
+        assetsRegistry.addAssetWithOptionalERC20Methods(address(asset));
     }
 
     function testAddSameAssetTwice() public {
         string memory name = "Wrapped Ether";
         string memory symbol = "WETH";
         uint8 decimals = 18;
-        uint256 quantityTickSize = 1e18;
 
         ERC20WithDecimals asset = new ERC20WithDecimals(name, symbol, decimals);
 
-        assetsRegistry.addAssetWithOptionalERC20Methods(
-            address(asset),
-            quantityTickSize
-        );
+        assetsRegistry.addAssetWithOptionalERC20Methods(address(asset));
 
         vm.expectRevert(bytes("AssetsRegistry: asset already added"));
 
-        assetsRegistry.addAssetWithOptionalERC20Methods(
-            address(asset),
-            quantityTickSize
-        );
+        assetsRegistry.addAssetWithOptionalERC20Methods(address(asset));
     }
 }

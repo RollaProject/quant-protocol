@@ -1,5 +1,5 @@
 import { deployContract } from "ethereum-waffle";
-import { BigNumber, Signer } from "ethers";
+import { Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import BasicTokenJSON from "../artifacts/contracts/test/BasicERC20.sol/BasicERC20.json";
@@ -11,7 +11,7 @@ import {
   mockERC20,
 } from "./testUtils";
 
-type AssetProperties = [string, string, string, number, BigNumber];
+type AssetProperties = [string, string, string, number];
 
 describe("AssetsRegistry", () => {
   let quantConfig: QuantConfig;
@@ -22,8 +22,6 @@ describe("AssetsRegistry", () => {
   let USDC: MockERC20;
   let WETHProperties: AssetProperties;
   let USDCProperties: AssetProperties;
-
-  const quantityTickSize = ethers.BigNumber.from("1000");
 
   beforeEach(async () => {
     [deployer, secondAccount] = await provider.getWallets();
@@ -36,7 +34,6 @@ describe("AssetsRegistry", () => {
       await WETH.name(),
       await WETH.symbol(),
       await WETH.decimals(),
-      quantityTickSize,
     ];
 
     USDCProperties = [
@@ -44,7 +41,6 @@ describe("AssetsRegistry", () => {
       await USDC.name(),
       await USDC.symbol(),
       await USDC.decimals(),
-      quantityTickSize,
     ];
 
     quantConfig = await deployQuantConfig(deployer, [
@@ -86,19 +82,12 @@ describe("AssetsRegistry", () => {
       const basicToken = await deployContract(deployer, BasicTokenJSON);
       await assetsRegistry
         .connect(deployer)
-        .addAsset(
-          basicToken.address,
-          "Basic Token",
-          "BASIC",
-          14,
-          quantityTickSize
-        );
+        .addAsset(basicToken.address, "Basic Token", "BASIC", 14);
 
       expect(await assetsRegistry.assetProperties(basicToken.address)).to.eql([
         "Basic Token",
         "BASIC",
         14,
-        quantityTickSize,
       ]);
     });
 
@@ -120,62 +109,6 @@ describe("AssetsRegistry", () => {
       );
 
       expect(await assetsRegistry.registeredAssets(0)).to.equal(WETH.address);
-    });
-
-    it("Should emit the QuantityTickSizeUpdated event when adding assets to the registry", async () => {
-      await expect(assetsRegistry.connect(deployer).addAsset(...USDCProperties))
-        .to.emit(assetsRegistry, "QuantityTickSizeUpdated")
-        .withArgs(USDC.address, ethers.BigNumber.from("0"), quantityTickSize);
-    });
-  });
-
-  describe("setQuantityTickSize", () => {
-    const newQuantityTickSize = ethers.BigNumber.from("100000");
-
-    it("Should revert when an unauthorized account tries to change the quantity tick size of a registered asset", async () => {
-      await expect(
-        assetsRegistry
-          .connect(secondAccount)
-          .setQuantityTickSize(WETH.address, ethers.BigNumber.from("0"))
-      ).to.be.revertedWith(
-        "AssetsRegistry: only asset registry managers can change assets' quantity tick sizes"
-      );
-    });
-
-    it("Should revert when trying to set the quantity tick size for an unregistered asset", async () => {
-      await expect(
-        assetsRegistry
-          .connect(deployer)
-          .setQuantityTickSize(WETH.address, quantityTickSize)
-      ).to.be.revertedWith("AssetsRegistry: asset not in the registry yet");
-    });
-
-    it("AssetsRegistry managers should be able to change the quantity tick size of assets in the registry", async () => {
-      await assetsRegistry.connect(deployer).addAsset(...WETHProperties);
-
-      expect((await assetsRegistry.assetProperties(WETH.address))[3]).to.equal(
-        quantityTickSize
-      );
-
-      await assetsRegistry
-        .connect(deployer)
-        .setQuantityTickSize(WETH.address, newQuantityTickSize);
-
-      expect((await assetsRegistry.assetProperties(WETH.address))[3]).to.equal(
-        newQuantityTickSize
-      );
-    });
-
-    it("Should emit the QuantityTickSizeUpdated event", async () => {
-      await assetsRegistry.connect(deployer).addAsset(...WETHProperties);
-
-      await expect(
-        assetsRegistry
-          .connect(deployer)
-          .setQuantityTickSize(WETH.address, newQuantityTickSize)
-      )
-        .to.emit(assetsRegistry, "QuantityTickSizeUpdated")
-        .withArgs(WETH.address, quantityTickSize, newQuantityTickSize);
     });
   });
 });

@@ -190,7 +190,7 @@ contract QToken is ERC20Permit, IQToken {
         view
         returns (string memory assetSymbol)
     {
-        (, assetSymbol, , ) = IAssetsRegistry(
+        (, assetSymbol, ) = IAssetsRegistry(
             IQuantConfig(_quantConfig).protocolAddresses(
                 ProtocolValue.encode("assetsRegistry")
             )
