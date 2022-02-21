@@ -149,7 +149,7 @@ library OptionsUtils {
         returns (bool)
     {
         string memory symbol;
-        (, symbol, , ) = IAssetsRegistry(
+        (, symbol, ) = IAssetsRegistry(
             IQuantConfig(_quantConfig).protocolAddresses(
                 ProtocolValue.encode("assetsRegistry")
             )
@@ -172,7 +172,7 @@ library OptionsUtils {
             );
 
         if (_qToken.isCall()) {
-            (, , payoutDecimals, ) = assetsRegistry.assetProperties(
+            (, , payoutDecimals) = assetsRegistry.assetProperties(
                 _qToken.underlyingAsset()
             );
         } else {

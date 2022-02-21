@@ -96,8 +96,7 @@ describe("OptionsFactory", () => {
         WETH.address,
         await WETH.name(),
         await WETH.symbol(),
-        await WETH.decimals(),
-        ethers.BigNumber.from("1000")
+        await WETH.decimals()
       );
 
     optionsFactory = await deployOptionsFactory(
