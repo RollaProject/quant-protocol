@@ -39,6 +39,10 @@ jobs:
           restore-keys: |
             ${{ matrix.os }}-yarn-
 
+      - uses: onbjerg/foundry-toolchain@v1
+        with:
+          version: nightly
+
       - run: yarn
 
       - run: yarn lint
