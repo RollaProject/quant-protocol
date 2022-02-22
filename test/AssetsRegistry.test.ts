@@ -24,7 +24,7 @@ describe("AssetsRegistry", () => {
   let USDCProperties: AssetProperties;
 
   beforeEach(async () => {
-    [deployer, secondAccount] = await provider.getWallets();
+    [deployer, secondAccount] = provider.getWallets();
 
     WETH = await mockERC20(deployer, "WETH", "Wrapped Ether");
     USDC = await mockERC20(deployer, "USDC", "USD Coin", 6);

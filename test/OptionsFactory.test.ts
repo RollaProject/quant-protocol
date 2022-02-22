@@ -54,7 +54,7 @@ describe("OptionsFactory", () => {
       oracleManagerAccount,
       secondAccount,
       assetsRegistryManager,
-    ] = await provider.getWallets();
+    ] = provider.getWallets();
 
     quantConfig = await deployQuantConfig(timelockController, [
       {

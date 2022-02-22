@@ -8,6 +8,7 @@ import AGGREGATOR from "../artifacts/contracts/interfaces/external/chainlink/IEA
 import PRICE_REGISTRY from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
 import CONFIG from "../artifacts/contracts/QuantConfig.sol/QuantConfig.json";
 import {
+  ChainlinkFixedTimeOracleManager,
   ChainlinkOracleManager,
   MockAggregatorProxy,
   PriceRegistry,
@@ -21,14 +22,14 @@ export const testProviderOracleManager = async (
     mockConfig: MockContract,
     strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
-  ) => Promise<ProviderOracleManager>
+  ) => Promise<ChainlinkOracleManager | ChainlinkFixedTimeOracleManager>
 ): Promise<void> => {
   let mockConfig: MockContract;
   let mockPriceRegistry: MockContract;
   let owner: Signer;
   let oracleManagerAccount: Signer;
   let normalUserAccount: Signer;
-  let oracleManager: ProviderOracleManager;
+  let oracleManager: ChainlinkOracleManager | ChainlinkFixedTimeOracleManager;
 
   const assetOne = "0x0000000000000000000000000000000000000001";
   const assetTwo = "0x0000000000000000000000000000000000000002";
@@ -136,7 +137,7 @@ export const testChainlinkOracleManager = async (
     mockConfig: MockContract,
     strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
-  ) => Promise<ChainlinkOracleManager>
+  ) => Promise<ChainlinkOracleManager | ChainlinkFixedTimeOracleManager>
 ): Promise<void> => {
   let MockAggregatorProxy: ContractFactory;
   let mockAggregatorProxy: MockAggregatorProxy;
@@ -151,7 +152,7 @@ export const testChainlinkOracleManager = async (
   let fallbackPriceAccount: Signer;
   let normalUserAccount: Signer;
   let fallbackPriceAccountAddress: Address;
-  let oracleManager: ProviderOracleManager;
+  let oracleManager: ChainlinkOracleManager | ChainlinkFixedTimeOracleManager;
 
   const assetOne = "0x0000000000000000000000000000000000000001";
   const assetTwo = "0x0000000000000000000000000000000000000002";

@@ -199,7 +199,7 @@ describe("GnosisSafeL2 integration tests", () => {
         [priceRegistryVariable, priceRegistryAddr, quantConfig.address, eta],
         [user1]
       )
-    ).to.be.revertedWith("revert GS020");
+    ).to.be.revertedWith("GS020");
 
     revertToSnapshot(snapshotId);
   });

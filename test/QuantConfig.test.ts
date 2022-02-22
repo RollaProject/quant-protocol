@@ -1,6 +1,7 @@
 import { Signer } from "ethers";
 import { ethers, upgrades } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
+import { QuantConfigV2 } from "../typechain";
 import { QuantConfig } from "../typechain/QuantConfig";
 import { expect } from "./setup";
 
@@ -67,10 +68,10 @@ describe("QuantConfig", () => {
 
   it("Should be able to add new state variables through upgrades", async () => {
     const QuantConfigV2 = await ethers.getContractFactory("QuantConfigV2");
-    quantConfig = <QuantConfig>(
+    const quantConfigv2 = <QuantConfigV2>(
       await upgrades.upgradeProxy(quantConfig.address, QuantConfigV2)
     );
-    expect(await quantConfig.newV2StateVariable()).to.equal(
+    expect(await quantConfigv2.newV2StateVariable()).to.equal(
       ethers.BigNumber.from("0")
     );
   });

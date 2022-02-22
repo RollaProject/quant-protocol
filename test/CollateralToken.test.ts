@@ -70,7 +70,7 @@ describe("CollateralToken", () => {
       collateralCreator,
       collateralMinter,
       collateralBurner,
-    ] = await provider.getWallets();
+    ] = provider.getWallets();
     userAddress = await secondAccount.getAddress();
 
     quantConfig = await deployQuantConfig(deployer, [

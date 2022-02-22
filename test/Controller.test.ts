@@ -563,7 +563,7 @@ describe("Controller", async () => {
       optionsMinter,
       collateralCreator,
       oracleManagerAccount,
-    ] = await provider.getWallets();
+    ] = provider.getWallets();
 
     quantConfig = await deployQuantConfig(deployer, [
       {

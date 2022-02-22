@@ -109,7 +109,7 @@ describe("Chainlink Oracle Manager", async function () {
     mockConfig: MockContract,
     strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
-  ): Promise<ChainlinkOracleManager> => {
+  ): Promise<ChainlinkFixedTimeOracleManager> => {
     const ChainlinkFixedTimeOracleManager = await ethers.getContractFactory(
       "ChainlinkFixedTimeOracleManager"
     );
@@ -130,11 +130,11 @@ describe("Chainlink Oracle Manager", async function () {
       mockConfig: MockContract,
       strikeAssetDecimals: number,
       fallBackPriceInSeconds: number
-    ) => Promise<ChainlinkOracleManager>,
+    ) => Promise<ChainlinkOracleManager | ChainlinkFixedTimeOracleManager>,
     mockConfig: MockContract,
     strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
-  ): Promise<ChainlinkOracleManager> => {
+  ): Promise<ChainlinkOracleManager | ChainlinkFixedTimeOracleManager> => {
     const oracleManager = await deployOracleManager(
       mockConfig,
       strikeAssetDecimals,

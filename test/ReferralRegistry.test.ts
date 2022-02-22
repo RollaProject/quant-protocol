@@ -28,8 +28,7 @@ describe("Referral Registry", () => {
   const dummyCode3 = "test3";
 
   before(async function () {
-    [deployer, signer, signerTwo, defaultReferrer] =
-      await provider.getWallets();
+    [deployer, signer, signerTwo, defaultReferrer] = provider.getWallets();
   });
 
   describe("ReferralRegistry", () => {
