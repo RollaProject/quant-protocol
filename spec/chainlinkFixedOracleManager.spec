@@ -6,8 +6,7 @@
 	Assumptions:
 */
 
-using DummyERC20A as erc20A
-using DummyERC20A as erc20B
+using IEACAggregatorProxy as ieacAggregatorProxy
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -22,12 +21,15 @@ using DummyERC20A as erc20B
 */
 
 methods {
-//    getOptionCollateralRequirementWrapper(uint256 _qTokenToMintStrikePrice,
-//                                        uint256 _qTokenForCollateralStrikePrice,
-//                                        uint256 _optionsAmount,
-//                                        bool _qTokenToMintIsCall,
-//                                        uint8 _optionsDecimals,
-//                                        uint8 _underlyingDecimals) returns (int256) envfree;
+
+    getExpiryPrice(
+        IEACAggregatorProxy _aggregator,
+        uint256 _expiryTimestamp,
+        uint256 _roundIdAfterExpiry,
+        uint256 _expiryRoundId
+    ) returns (uint256, uint256) envfree;
+
+    getAssetOracle(address _asset) returns (address) envfree;
 
     setExpiryPriceInRegistryByRound(
         address _asset,
@@ -35,17 +37,17 @@ methods {
         uint256 _roundIdAfterExpiry
     ) envfree;
 
-    setExpiryPriceInRegistry(
-        address _asset,
-        uint256 _expiryTimestamp,
-        bytes memory
-    ) envfree;
+    // setExpiryPriceInRegistry(
+    //     address _asset,
+    //     uint256 _expiryTimestamp,
+    //     bytes memory
+    // ) envfree;
 
-    setExpiryPriceInRegistryFallback(
-        address _asset,
-        uint256 _expiryTimestamp,
-        uint256 _price
-    ) envfree;
+    ieacAggregatorProxy() => NONDET
+    ieacAggregatorProxy.latestTimestamp() returns (uint256) envfree;
+    ieacAggregatorProxy.latestRound() returns (uint256) envfree;
+    ieacAggregatorProxy.latestAnswer() returns (int256) envfree;
+    ieacAggregatorProxy.getTimestamp(uint256 _roundId) returns (uint256) envfree;
 
 }
 
@@ -57,36 +59,63 @@ methods {
 /* 	Rule: roundVsTimestamps
  	Description:  iff r1 < r2 < r3 < rN then t1 <= t2 <= t3 <= t4
 	Formula: 	  For every {rX, rY} if X<Y then tX<tY
-	Notes: 
 */
 invariant roundVsTimestamps(uint80 roundId, uint256 timestamp, env e)
-		qToken == collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId) &&
-		qToken == qTokenA &&
-		qToken != quantCalculator.qTokenToCollateralType(qToken) &&
-		qToken != collateralToken.getCollateralTokenInfoTokenAddress(collateralTokenId)
-		=> qTokenA.totalSupply() >= qTokenA.balanceOf(e.msg.sender)
 
+/* 	Rule: assetOracle
+ 	Description:  asset oracle cannot be a null address
+*/		
+invariant assetOracle(address asset)
+    getAssetOracle(asset) != address(0)
 
 
 ////////////////////////////////////////////////////////////////////////////
 //                       General Rules                                   //
 ////////////////////////////////////////////////////////////////////////////
 
-/* 	Rule: Valid chainlink manager oracle round rule  
- 	Description: searchRoundToSubmit for expiryTimestamp will always return the round rX corresponding to timestamp tX 
+/* 	Rule: integrityOfSetExpiryPriceInRegistryByRound 
+ 	Description: Checks the integrity of setExpiryPriceInRegistryByRound
+*/
+rule integrityOfSetExpiryPriceInRegistryByRound (
+        address _asset,
+        uint256 _expiryTimestamp,
+        uint256 _roundIdAfterExpiry) {
+    require _asset != address(0) && _expiryTimestamp > 0 && _roundIdAfterExpiry >= 2;
+	setExpiryPriceInRegistryByRound(_asset, _expiryTimestamp, _roundIdAfterExpiry);
+    address assetOracle = getAssetOracle(_asset);
+
+    // TODO: Check for this
+    // IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
+
+    // Get expiry round id from _roundIdAfterExpiry
+    uint16 phaseOffset = 64; // constant phaseOffset value
+    uint16 phaseId = uint16(_roundIdAfterExpiry >> phaseOffset);
+    uint64 expiryRound = uint64(_roundIdAfterExpiry) - 1;
+    uint80 expiryRoundId = uint80((uint256(phaseId) << phaseOffset) | expiryRound);
+
+    // get expiry price for the expiryRoundId
+    (uint256 expiryPrice, ) = getExpiryPrice(
+        assetOracle, // Should be of type IEACAggregatorProxy instead of address (ieacAggregatorProxy)?
+        _expiryTimestamp,
+        _roundIdAfterExpiry,
+        expiryRoundId
+    );
+	assert expiryPrice>0, "Incorrect action of setExpiryPriceInRegistryByRound";
+}
+
+/* 	Rule: Rule for valid chainlink manager oracle round  
+ 	Description:  searchRoundToSubmit for expiryTimestamp will always return the round rX corresponding to timestamp tX 
     such that tX is less than or equal to expiryTimestamp and there exists a r(X+1) such that t(X + 1) > expiryTimestamp
 	Notes: 
 */
+rule checkSearchRoundToSubmit(address _asset, uint256 _expiryTimestamp) {
+    require aggregator.latestTimestamp() > _expiryTimestamp
 
-/// @notice Searches for the round in the asset oracle immediately after the expiry timestamp
-/// @param _asset address of asset to search price for
-/// @param _expiryTimestamp expiry timestamp to find the price at or before
-/// @return the round id immediately after the timestamp submitted
-function searchRoundToSubmit(address _asset, uint256 _expiryTimestamp)
-    external
-    view
-    returns (uint80);
+}
 
-// require the asset is added to the registered oracle (optional)
+// TODO: Write rules for below
+// require the asset is added to the active oracle
+
 // require that aggregator.latestTimestamp() exists and is greater than or equal to 2
 // require that the rounds aren't increased monotonically
+// require

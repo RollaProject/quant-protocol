@@ -16,21 +16,19 @@ contract ChainlinkOracleManagerWrapper is ChainlinkOracleManager {
     //                        Getters for The Internals                       //
     ////////////////////////////////////////////////////////////////////////////
 
-    function getLatestTimestampOfAsset(address _asset, address u)
+    function getAssetOracle(address _asset)
         public
         view
-        returns (uint256)
+        override
+        returns (address)
     {
-        address assetOracle = getAssetOracle(_asset);
-        IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
-    }
-
-    function getLatestRoundOfAsset(
-        address to,
-        address qToken,
-        uint256 amount
-    ) public {
-       address assetOracle = getAssetOracle(_asset);
+        address assetOracle = assetOracles[_asset];
+        // Assuming that this require is true
+        // require(
+        //     assetOracles[_asset] != address(0),
+        //     "ProviderOracleManager: Oracle doesn't exist for that asset"
+        // );
+        return assetOracle;
     }
     
     ////////////////////////////////////////////////////////////////////////////
@@ -50,18 +48,4 @@ contract ChainlinkOracleManagerWrapper is ChainlinkOracleManager {
         );
     }
 
-    function getAssetOracle(address _asset)
-        public
-        view
-        override
-        returns (address)
-    {
-        address assetOracle = assetOracles[_asset];
-        // Assuming that this require is true
-        // require(
-        //     assetOracles[_asset] != address(0),
-        //     "ProviderOracleManager: Oracle doesn't exist for that asset"
-        // );
-        return assetOracle;
-    }
 }

@@ -44,13 +44,11 @@ methods {
     //     bytes memory
     // ) envfree;
 
-    // setExpiryPriceInRegistryFallback(
-    //     address _asset,
-    //     uint256 _expiryTimestamp,
-    //     uint256 _price
-    // );
-
     ieacAggregatorProxy() => NONDET
+    ieacAggregatorProxy.latestTimestamp() returns (uint256) envfree;
+    ieacAggregatorProxy.latestRound() returns (uint256) envfree;
+    ieacAggregatorProxy.latestAnswer() returns (int256) envfree;
+    ieacAggregatorProxy.getTimestamp(uint256 _roundId) returns (uint256) envfree;
 
 }
 
@@ -63,7 +61,8 @@ methods {
  	Description:  iff r1 < r2 < r3 < rN then t1 <= t2 <= t3 <= t4
 	Formula: 	  For every {rX, rY} if X<Y then tX<tY
 */
-invariant roundVsTimestamps(uint80 roundId, uint256 timestamp, env e)
+invariant roundVsTimestamps(uint80 roundId1, uint80 roundId2)
+    roundId2 > roundId1 && aggregator.getTimestamp(roundId2) > aggregator.getTimestamp(roundId1)
 
 /* 	Rule: assetOracle
  	Description:  asset oracle cannot be a null address
@@ -83,6 +82,7 @@ rule integrityOfSetExpiryPriceInRegistryByRound (
         address _asset,
         uint256 _expiryTimestamp,
         uint256 _roundIdAfterExpiry) {
+    requireInvariant assetOracle(asset);
     require _asset != address(0) && _expiryTimestamp > 0 && _roundIdAfterExpiry >= 2;
 	setExpiryPriceInRegistryByRound(_asset, _expiryTimestamp, _roundIdAfterExpiry);
     address assetOracle = getAssetOracle(_asset);
@@ -112,7 +112,8 @@ rule integrityOfSetExpiryPriceInRegistryByRound (
 	Notes: 
 */
 rule checkSearchRoundToSubmit(address _asset, uint256 _expiryTimestamp) {
-    searchRoundToSubmit
+    requireInvariant assetOracle(asset);
+
 }
 
 // TODO: Write rules for below

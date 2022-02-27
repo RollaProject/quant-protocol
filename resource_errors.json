@@ -1,0 +1,13 @@
+{
+    "topics": [
+        {
+            "name": "type_check",
+            "messages": [
+                {
+                    "message": "spec/chainlinkOracleManager.spec:27:9: Syntax error: unexpected token near ID(IEACAggregatorProxy)",
+                    "location": []
+                }
+            ]
+        }
+    ]
+}
