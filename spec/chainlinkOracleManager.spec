@@ -7,7 +7,6 @@
 */
 
 using IEACAggregatorProxy as ieacAggregatorProxy
-// using DummyERC20A as erc20B
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -24,7 +23,7 @@ using IEACAggregatorProxy as ieacAggregatorProxy
 methods {
 
     getExpiryPrice(
-        IEACAggregatorProxy _aggregator,
+        address _aggregator,
         uint256 _expiryTimestamp,
         uint256 _roundIdAfterExpiry,
         uint256 _expiryRoundId
@@ -44,14 +43,25 @@ methods {
     //     bytes memory
     // ) envfree;
 
+    getAggregator(address) returns (address) envfree => DISPATCHER(true);
+
     ieacAggregatorProxy() => NONDET
     ieacAggregatorProxy.latestTimestamp() returns (uint256) envfree;
     ieacAggregatorProxy.latestRound() returns (uint256) envfree;
-    ieacAggregatorProxy.latestAnswer() returns (int256) envfree;
-    ieacAggregatorProxy.getTimestamp(uint256 _roundId) returns (uint256) envfree;
+    ieacAggregatorProxy.getTimestamp(uint80) returns (uint256) => ghost_roundTimestamp(uint80);
 
 }
 
+////////////////////////////////////////////////////////////////////////////
+//                       Ghost                                            //
+////////////////////////////////////////////////////////////////////////////
+
+
+// The axiom assumes monotonicity 
+ghost ghost_roundTimestamp(uint80) returns uint {
+    axiom forall uint80 roundId1. forall uint80 roundId2.
+	roundId2 > roundId1 => ieacAggregatorProxy.getTimestamp(roundId2) >= ieacAggregatorProxy.getTimestamp(roundId1);
+}
 
 ////////////////////////////////////////////////////////////////////////////
 //                       Invariants                                       //
@@ -62,13 +72,13 @@ methods {
 	Formula: 	  For every {rX, rY} if X<Y then tX<tY
 */
 invariant roundVsTimestamps(uint80 roundId1, uint80 roundId2)
-    roundId2 > roundId1 && aggregator.getTimestamp(roundId2) > aggregator.getTimestamp(roundId1)
+    roundId2 > roundId1 && aggregator.getTimestamp(roundId2) >= aggregator.getTimestamp(roundId1)
 
 /* 	Rule: assetOracle
  	Description:  asset oracle cannot be a null address
 */		
 invariant assetOracle(address asset)
-    getAssetOracle(asset) != address(0)
+    getAssetOracle(asset) != 0
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -83,25 +93,30 @@ rule integrityOfSetExpiryPriceInRegistryByRound (
         uint256 _expiryTimestamp,
         uint256 _roundIdAfterExpiry) {
     requireInvariant assetOracle(asset);
-    require _asset != address(0) && _expiryTimestamp > 0 && _roundIdAfterExpiry >= 2;
+    require _asset != 0;
+    require _expiryTimestamp > 0;
+    require _roundIdAfterExpiry >= 1;
 	setExpiryPriceInRegistryByRound(_asset, _expiryTimestamp, _roundIdAfterExpiry);
     address assetOracle = getAssetOracle(_asset);
 
     // TODO: Check for this
     // IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
+    address aggregator = getAggregator(assetOracle);
 
     // Get expiry round id from _roundIdAfterExpiry
     uint16 phaseOffset = 64; // constant phaseOffset value
-    uint16 phaseId = uint16(_roundIdAfterExpiry >> phaseOffset);
-    uint64 expiryRound = uint64(_roundIdAfterExpiry) - 1;
-    uint80 expiryRoundId = uint80((uint256(phaseId) << phaseOffset) | expiryRound);
+    uint16 phaseId = to_uint16(_roundIdAfterExpiry >> phaseOffset);
+    uint64 expiryRound = to_uint64(_roundIdAfterExpiry) - 1;
+    uint80 expiryRoundId = to_uint80((to_uint256(phaseId) << phaseOffset) | expiryRound);
 
     // get expiry price for the expiryRoundId
-    (uint256 expiryPrice, ) = getExpiryPrice(
+    uint256 expiryPrice;
+    uint256 expiryRoundId;
+    expiryPrice, expiryRoundId = getExpiryPrice(
         assetOracle, // Should be of type IEACAggregatorProxy instead of address (ieacAggregatorProxy)?
         _expiryTimestamp,
         _roundIdAfterExpiry,
-        expiryRoundId
+        _roundIdAfterExpiry - 1
     );
 	assert expiryPrice>0, "Incorrect action of setExpiryPriceInRegistryByRound";
 }
@@ -113,7 +128,7 @@ rule integrityOfSetExpiryPriceInRegistryByRound (
 */
 rule checkSearchRoundToSubmit(address _asset, uint256 _expiryTimestamp) {
     requireInvariant assetOracle(asset);
-
+    
 }
 
 // TODO: Write rules for below

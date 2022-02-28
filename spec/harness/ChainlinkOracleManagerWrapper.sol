@@ -7,10 +7,19 @@ import "../../contracts/interfaces/external/chainlink/IEACAggregatorProxy.sol";
 
 
 contract ChainlinkOracleManagerWrapper is ChainlinkOracleManager {
+
+    address aggregatorAddress;
+
     ////////////////////////////////////////////////////////////////////////////
     //                         Constructors and inits                         //
     ////////////////////////////////////////////////////////////////////////////
-    //constructor( ) .. public { }
+    constructor(
+        address _config,
+        uint8 _strikeAssetDecimals,
+        uint256 _fallbackPeriodSeconds
+    ) ChainlinkOracleManager(_config, _strikeAssetDecimals, _fallbackPeriodSeconds) {
+
+    }
 
     ////////////////////////////////////////////////////////////////////////////
     //                        Getters for The Internals                       //
@@ -20,6 +29,7 @@ contract ChainlinkOracleManagerWrapper is ChainlinkOracleManager {
         public
         view
         override
+        virtual
         returns (address)
     {
         address assetOracle = assetOracles[_asset];
@@ -48,4 +58,7 @@ contract ChainlinkOracleManagerWrapper is ChainlinkOracleManager {
         );
     }
 
+    function getAggregator(address assetOracle) public view returns (address) {
+        return aggregatorAddress;
+    }
 }

@@ -70,6 +70,7 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
         public
         view
         override
+        virtual
         returns (address)
     {
         address assetOracle = assetOracles[_asset];
