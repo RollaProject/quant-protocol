@@ -94,6 +94,9 @@
     "@openzeppelin/contracts-upgradeable": "^3.4.1-solc-0.7-2",
     "@quant-finance/solidity-datetime": "^2.0.0"
   },
+  "resolutions": {
+    "@openzeppelin/hardhat-upgrades/@openzeppelin/upgrades-core": "1.7.3"
+  },
   "files": [
     "contracts",
     "artifacts/contracts",

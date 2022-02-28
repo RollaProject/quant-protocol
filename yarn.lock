@@ -870,7 +870,7 @@
   dependencies:
     "@openzeppelin/upgrades-core" "^1.7.3"
 
-"@openzeppelin/upgrades-core@1.7.3":
+"@openzeppelin/upgrades-core@1.7.3", "@openzeppelin/upgrades-core@^1.7.3":
   version "1.7.3"
   resolved "https://registry.yarnpkg.com/@openzeppelin/upgrades-core/-/upgrades-core-1.7.3.tgz#5c25b83362bfbc954b55630c76715a5774d747be"
   integrity sha512-DYeAYhsU5m27hNwLYo7+4LYRf9xeNT9+ZMdOZUR9VNPW/6SKlIHEzUXSXi6h6nomP2ChsMiR4pYkWTwJhcDrVg==
