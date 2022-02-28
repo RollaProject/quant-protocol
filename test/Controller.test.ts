@@ -2412,6 +2412,39 @@ describe("Controller", async () => {
       ).to.be.revertedWith("signer and signature don't match");
     });
 
+    it("Should revert when v is neither 27 nor 28", async () => {
+      const amount = ethers.utils.parseEther("1");
+
+      const actions = [
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: qTokenCall2000.address,
+          amount: amount.toString(),
+        }),
+      ];
+
+      const txData = await getSignedTransactionData(
+        nonce,
+        deadline,
+        deployer,
+        actions,
+        controller.address
+      );
+
+      const invalidV = 21;
+
+      await expect(
+        controller
+          .connect(secondAccount)
+          .executeMetaTransaction(
+            { nonce, deadline, from: deployer.address, actions },
+            txData.r,
+            txData.s,
+            invalidV
+          )
+      ).to.be.revertedWith("ECDSA: invalid signature 'v' value");
+    });
+
     it("Should revert when an invalid signature is provided", async () => {
       const amount = ethers.utils.parseEther("1");
 
@@ -2432,7 +2465,7 @@ describe("Controller", async () => {
             ethers.constants.HashZero,
             0
           )
-      ).to.be.revertedWith("invalid signature");
+      ).to.be.revertedWith("ECDSA: invalid signature");
     });
 
     it("Should revert when an invalid nonce is provided", async () => {

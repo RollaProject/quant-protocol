@@ -4,6 +4,7 @@ pragma abicoder v2;
 
 import "@openzeppelin/contracts-upgradeable/drafts/EIP712Upgradeable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "../interfaces/IEIP712MetaTransaction.sol";
 import "../interfaces/IController.sol";
 import "../libraries/Actions.sol";
@@ -11,6 +12,7 @@ import {ActionArgs} from "../libraries/Actions.sol";
 
 contract EIP712MetaTransaction is EIP712Upgradeable {
     using SafeMath for uint256;
+    using ECDSA for bytes32;
 
     struct MetaAction {
         uint256 nonce;
@@ -117,14 +119,11 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
 
         require(metaAction.deadline >= block.timestamp, "expired deadline");
 
-        address signer = ecrecover(
-            _hashTypedDataV4(_hashMetaAction(metaAction)),
+        address signer = _hashTypedDataV4(_hashMetaAction(metaAction)).recover(
             v,
             r,
             s
         );
-
-        require(signer != address(0), "invalid signature");
 
         return signer == user;
     }
