@@ -34,7 +34,7 @@ library ReferralCodeValidator {
             // if its uppercase A-Z
             if (inputBytes[i] > 0x40 && inputBytes[i] < 0x5b) {
                 // convert to lower case a-z
-                inputBytes[i] = byte(uint8(inputBytes[i]) + 32);
+                inputBytes[i] = bytes1(uint8(inputBytes[i]) + 32);
             } else {
                 //allow lower case a-z or 0-9
                 require(

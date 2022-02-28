@@ -7,7 +7,11 @@ import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 import "./IQuantConfig.sol";
 
 /// @dev Current pricing status of option. Only SETTLED options can be exercised
-enum PriceStatus {ACTIVE, AWAITING_SETTLEMENT_PRICE, SETTLED}
+enum PriceStatus {
+    ACTIVE,
+    AWAITING_SETTLEMENT_PRICE,
+    SETTLED
+}
 
 /// @title Token that represents a user's long position
 /// @author Quant Finance

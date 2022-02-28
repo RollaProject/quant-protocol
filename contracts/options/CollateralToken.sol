@@ -213,17 +213,16 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
 
         require(nonce == nonces[owner], "CollateralToken: invalid nonce");
 
-        bytes32 structHash =
-            keccak256(
-                abi.encode(
-                    _META_APPROVAL_TYPEHASH,
-                    owner,
-                    operator,
-                    approved,
-                    nonce,
-                    deadline
-                )
-            );
+        bytes32 structHash = keccak256(
+            abi.encode(
+                _META_APPROVAL_TYPEHASH,
+                owner,
+                operator,
+                approved,
+                nonce,
+                deadline
+            )
+        );
 
         bytes32 hash = _hashTypedDataV4(structHash);
 
@@ -257,8 +256,8 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
             "CollateralToken: Invalid id"
         );
 
-        IQToken.QTokenInfo memory shortDetails =
-            IQToken(info.qTokenAddress).getQTokenInfo();
+        IQToken.QTokenInfo memory shortDetails = IQToken(info.qTokenAddress)
+            .getQTokenInfo();
 
         qTokensDetails.underlyingAsset = shortDetails.underlyingAsset;
         qTokensDetails.strikeAsset = shortDetails.strikeAsset;

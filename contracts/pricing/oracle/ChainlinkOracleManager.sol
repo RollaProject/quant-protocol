@@ -101,13 +101,12 @@ contract ChainlinkOracleManager is
 
         PriceRegistry(
             config.protocolAddresses(ProtocolValue.encode("priceRegistry"))
-        )
-            .setSettlementPrice(
-            _asset,
-            _expiryTimestamp,
-            _price,
-            CHAINLINK_ORACLE_DECIMALS
-        );
+        ).setSettlementPrice(
+                _asset,
+                _expiryTimestamp,
+                _price,
+                CHAINLINK_ORACLE_DECIMALS
+            );
     }
 
     /// @inheritdoc IProviderOracleManager
@@ -178,13 +177,12 @@ contract ChainlinkOracleManager is
 
         //binary search until we find two values our desired timestamp lies between
         while (lastId - firstId != 1) {
-            BinarySearchResult memory result =
-                _binarySearchStep(
-                    aggregator,
-                    _expiryTimestamp,
-                    lowestPossibleRound,
-                    highestPossibleRound
-                );
+            BinarySearchResult memory result = _binarySearchStep(
+                aggregator,
+                _expiryTimestamp,
+                lowestPossibleRound,
+                highestPossibleRound
+            );
 
             lowestPossibleRound = result.firstRound;
             highestPossibleRound = result.lastRound;
@@ -218,21 +216,21 @@ contract ChainlinkOracleManager is
         uint16 phaseId = uint16(_roundIdAfterExpiry >> phaseOffset);
 
         uint64 expiryRound = uint64(_roundIdAfterExpiry) - 1;
-        uint80 expiryRoundId =
-            uint80((uint256(phaseId) << phaseOffset) | expiryRound);
+        uint80 expiryRoundId = uint80(
+            (uint256(phaseId) << phaseOffset) | expiryRound
+        );
 
         require(
             aggregator.getTimestamp(uint256(expiryRoundId)) <= _expiryTimestamp,
             "ChainlinkOracleManager: Expiry round prior to the one posted is after the expiry timestamp"
         );
 
-        (uint256 price, uint256 roundId) =
-            _getExpiryPrice(
-                aggregator,
-                _expiryTimestamp,
-                _roundIdAfterExpiry,
-                expiryRoundId
-            );
+        (uint256 price, uint256 roundId) = _getExpiryPrice(
+            aggregator,
+            _expiryTimestamp,
+            _roundIdAfterExpiry,
+            expiryRoundId
+        );
 
         emit PriceRegistrySubmission(
             _asset,
@@ -245,13 +243,12 @@ contract ChainlinkOracleManager is
 
         PriceRegistry(
             config.protocolAddresses(ProtocolValue.encode("priceRegistry"))
-        )
-            .setSettlementPrice(
-            _asset,
-            _expiryTimestamp,
-            price,
-            CHAINLINK_ORACLE_DECIMALS
-        );
+        ).setSettlementPrice(
+                _asset,
+                _expiryTimestamp,
+                price,
+                CHAINLINK_ORACLE_DECIMALS
+            );
     }
 
     function _getExpiryPrice(
@@ -280,13 +277,16 @@ contract ChainlinkOracleManager is
         uint64 lastRoundId = uint64(_lastRoundProxy);
         uint64 firstRoundId = uint64(_firstRoundProxy);
 
-        uint80 roundToCheck =
-            uint80(uint256(firstRoundId).add(uint256(lastRoundId)).div(2));
-        uint80 roundToCheckProxy =
-            uint80((uint256(phaseId) << phaseOffset) | roundToCheck);
+        uint80 roundToCheck = uint80(
+            uint256(firstRoundId).add(uint256(lastRoundId)).div(2)
+        );
+        uint80 roundToCheckProxy = uint80(
+            (uint256(phaseId) << phaseOffset) | roundToCheck
+        );
 
-        uint256 roundToCheckTimestamp =
-            aggregator.getTimestamp(uint256(roundToCheckProxy));
+        uint256 roundToCheckTimestamp = aggregator.getTimestamp(
+            uint256(roundToCheckProxy)
+        );
 
         if (roundToCheckTimestamp <= _expiryTimestamp) {
             return

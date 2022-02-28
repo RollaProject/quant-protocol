@@ -56,16 +56,15 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
 
         // Append the metaAction.from at the end so that it can be extracted later
         // from the calling context (see _msgSender() below)
-        (bool success, bytes memory returnData) =
-            address(this).call(
-                abi.encodePacked(
-                    abi.encodeWithSelector(
-                        IController(address(this)).operate.selector,
-                        metaAction.actions
-                    ),
-                    metaAction.from
-                )
-            );
+        (bool success, bytes memory returnData) = address(this).call(
+            abi.encodePacked(
+                abi.encodeWithSelector(
+                    IController(address(this)).operate.selector,
+                    metaAction.actions
+                ),
+                metaAction.from
+            )
+        );
 
         require(success, "unsuccessful function call");
         emit MetaTransactionExecuted(
@@ -118,8 +117,12 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
 
         require(metaAction.deadline >= block.timestamp, "expired deadline");
 
-        address signer =
-            ecrecover(_hashTypedDataV4(_hashMetaAction(metaAction)), v, r, s);
+        address signer = ecrecover(
+            _hashTypedDataV4(_hashMetaAction(metaAction)),
+            v,
+            r,
+            s
+        );
 
         require(signer != address(0), "invalid signature");
 

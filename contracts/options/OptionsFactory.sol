@@ -185,17 +185,18 @@ contract OptionsFactory is IOptionsFactory {
         uint256 _expiryTime,
         bool _isCall
     ) external view override returns (uint256) {
-        address qToken =
-            getQToken(
-                _underlyingAsset,
-                _oracle,
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            );
+        address qToken = getQToken(
+            _underlyingAsset,
+            _oracle,
+            _strikePrice,
+            _expiryTime,
+            _isCall
+        );
 
-        uint256 id =
-            collateralToken.getCollateralTokenId(qToken, _qTokenAsCollateral);
+        uint256 id = collateralToken.getCollateralTokenId(
+            qToken,
+            _qTokenAsCollateral
+        );
 
         (address storedQToken, ) = collateralToken.idToInfo(id);
         return storedQToken != address(0) ? id : 0;
@@ -219,18 +220,17 @@ contract OptionsFactory is IOptionsFactory {
         uint256 _expiryTime,
         bool _isCall
     ) public view override returns (address) {
-        uint256 collateralTokenId =
-            OptionsUtils.getTargetCollateralTokenId(
-                collateralToken,
-                address(quantConfig),
-                _underlyingAsset,
-                strikeAsset,
-                _oracle,
-                address(0),
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            );
+        uint256 collateralTokenId = OptionsUtils.getTargetCollateralTokenId(
+            collateralToken,
+            address(quantConfig),
+            _underlyingAsset,
+            strikeAsset,
+            _oracle,
+            address(0),
+            _strikePrice,
+            _expiryTime,
+            _isCall
+        );
 
         return _collateralTokenIdToQTokenAddress[collateralTokenId];
     }

@@ -147,12 +147,11 @@ contract QToken is ERC20Permit, IQToken {
         returns (PriceStatus)
     {
         if (block.timestamp > expiryTime) {
-            PriceRegistry priceRegistry =
-                PriceRegistry(
-                    quantConfig.protocolAddresses(
-                        ProtocolValue.encode("priceRegistry")
-                    )
-                );
+            PriceRegistry priceRegistry = PriceRegistry(
+                quantConfig.protocolAddresses(
+                    ProtocolValue.encode("priceRegistry")
+                )
+            );
 
             if (
                 priceRegistry.hasSettlementPrice(
@@ -194,8 +193,7 @@ contract QToken is ERC20Permit, IQToken {
             IQuantConfig(_quantConfig).protocolAddresses(
                 ProtocolValue.encode("assetsRegistry")
             )
-        )
-            .assetProperties(_asset);
+        ).assetProperties(_asset);
     }
 
     /// @notice generates the name for an option
@@ -214,12 +212,15 @@ contract QToken is ERC20Permit, IQToken {
         bool _isCall
     ) internal view returns (string memory tokenName) {
         string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
-        string memory displayStrikePrice =
-            _displayedStrikePrice(_strikePrice, _strikeAsset);
+        string memory displayStrikePrice = _displayedStrikePrice(
+            _strikePrice,
+            _strikeAsset
+        );
 
         // convert the expiry to a readable string
-        (uint256 year, uint256 month, uint256 day) =
-            DateTime.timestampToDate(_expiryTime);
+        (uint256 year, uint256 month, uint256 day) = DateTime.timestampToDate(
+            _expiryTime
+        );
 
         // get option type string
         (, string memory typeFull) = _getOptionType(_isCall);
@@ -263,12 +264,15 @@ contract QToken is ERC20Permit, IQToken {
         bool _isCall
     ) internal view returns (string memory tokenSymbol) {
         string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
-        string memory displayStrikePrice =
-            _displayedStrikePrice(_strikePrice, _strikeAsset);
+        string memory displayStrikePrice = _displayedStrikePrice(
+            _strikePrice,
+            _strikeAsset
+        );
 
         // convert the expiry to a readable string
-        (uint256 year, uint256 month, uint256 day) =
-            DateTime.timestampToDate(_expiryTime);
+        (uint256 year, uint256 month, uint256 day) = DateTime.timestampToDate(
+            _expiryTime
+        );
 
         // get option type string
         (string memory typeSymbol, ) = _getOptionType(_isCall);

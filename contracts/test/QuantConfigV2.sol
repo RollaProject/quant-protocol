@@ -38,7 +38,7 @@ contract QuantConfigV2 is
     function setProtocolAddress(bytes32 _protocolAddress, address _newValue)
         external
         override
-        onlyOwner()
+        onlyOwner
     {
         require(
             _protocolAddress != ProtocolValue.encode("priceRegistry") ||
@@ -53,7 +53,7 @@ contract QuantConfigV2 is
     function setProtocolUint256(bytes32 _protocolUint256, uint256 _newValue)
         external
         override
-        onlyOwner()
+        onlyOwner
     {
         protocolUints256[_protocolUint256] = _newValue;
         configuredProtocolUints256.push(_protocolUint256);
@@ -62,7 +62,7 @@ contract QuantConfigV2 is
     function setProtocolBoolean(bytes32 _protocolBoolean, bool _newValue)
         external
         override
-        onlyOwner()
+        onlyOwner
     {
         require(
             _protocolBoolean != ProtocolValue.encode("isPriceRegistrySet") ||
@@ -77,7 +77,7 @@ contract QuantConfigV2 is
     function setProtocolRole(string calldata _protocolRole, address _roleAdmin)
         external
         override
-        onlyOwner()
+        onlyOwner
     {
         bytes32 role = keccak256(abi.encodePacked(_protocolRole));
         grantRole(role, _roleAdmin);
@@ -88,7 +88,7 @@ contract QuantConfigV2 is
     function setRoleAdmin(bytes32 role, bytes32 adminRole)
         external
         override
-        onlyOwner()
+        onlyOwner
     {
         require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
         _setRoleAdmin(role, adminRole);

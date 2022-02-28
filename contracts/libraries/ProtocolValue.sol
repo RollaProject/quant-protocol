@@ -2,7 +2,12 @@
 pragma solidity 0.7.6;
 
 library ProtocolValue {
-    enum Type {Address, Uint256, Bool, Role}
+    enum Type {
+        Address,
+        Uint256,
+        Bool,
+        Role
+    }
 
     function encode(string memory _protocolValue)
         internal

@@ -48,8 +48,8 @@ contract ControllerV2 is
             ActionArgs memory action = _actions[i];
 
             if (action.actionType == ActionType.MintOption) {
-                (address to, address qToken, uint256 amount) =
-                    action.parseMintOptionArgs();
+                (address to, address qToken, uint256 amount) = action
+                    .parseMintOptionArgs();
                 _mintOptionsPosition(to, qToken, amount);
             } else if (action.actionType == ActionType.MintSpread) {
                 (
@@ -62,12 +62,12 @@ contract ControllerV2 is
                 (address qToken, uint256 amount) = action.parseExerciseArgs();
                 _exercise(qToken, amount);
             } else if (action.actionType == ActionType.ClaimCollateral) {
-                (uint256 collateralTokenId, uint256 amount) =
-                    action.parseClaimCollateralArgs();
+                (uint256 collateralTokenId, uint256 amount) = action
+                    .parseClaimCollateralArgs();
                 _claimCollateral(collateralTokenId, amount);
             } else if (action.actionType == ActionType.Neutralize) {
-                (uint256 collateralTokenId, uint256 amount) =
-                    action.parseNeutralizeArgs();
+                (uint256 collateralTokenId, uint256 amount) = action
+                    .parseNeutralizeArgs();
                 _neutralizePosition(collateralTokenId, amount);
             } else if (action.actionType == ActionType.QTokenPermit) {
                 (
@@ -150,12 +150,9 @@ contract ControllerV2 is
     ) internal returns (uint256) {
         IQToken qToken = IQToken(_qToken);
 
-        (address collateral, uint256 collateralAmount) =
-            IQuantCalculator(quantCalculator).getCollateralRequirement(
-                _qToken,
-                address(0),
-                _amount
-            );
+        (address collateral, uint256 collateralAmount) = IQuantCalculator(
+            quantCalculator
+        ).getCollateralRequirement(_qToken, address(0), _amount);
 
         _checkIfUnexpiredQToken(_qToken);
 
@@ -164,8 +161,7 @@ contract ControllerV2 is
                 IOptionsFactory(optionsFactory).quantConfig().protocolAddresses(
                     ProtocolValue.encode("oracleRegistry")
                 )
-            )
-                .isOracleActive(qToken.oracle()),
+            ).isOracleActive(qToken.oracle()),
             "Controller: Can't mint an options position as the oracle is inactive"
         );
 
@@ -175,13 +171,15 @@ contract ControllerV2 is
             collateralAmount
         );
 
-        ICollateralToken collateralToken =
-            IOptionsFactory(optionsFactory).collateralToken();
+        ICollateralToken collateralToken = IOptionsFactory(optionsFactory)
+            .collateralToken();
 
         // Mint the options to the sender's address
         qToken.mint(_to, _amount);
-        uint256 collateralTokenId =
-            collateralToken.getCollateralTokenId(_qToken, address(0));
+        uint256 collateralTokenId = collateralToken.getCollateralTokenId(
+            _qToken,
+            address(0)
+        );
 
         // There's no need to check if the collateralTokenId exists before minting because if the QToken is valid,
         // then it's guaranteed that the respective CollateralToken has already also been created by the OptionsFactory
@@ -212,8 +210,9 @@ contract ControllerV2 is
         IQToken qTokenToMint = IQToken(_qTokenToMint);
         IQToken qTokenForCollateral = IQToken(_qTokenForCollateral);
 
-        (address collateral, uint256 collateralAmount) =
-            IQuantCalculator(quantCalculator).getCollateralRequirement(
+        (address collateral, uint256 collateralAmount) = IQuantCalculator(
+            quantCalculator
+        ).getCollateralRequirement(
                 _qTokenToMint,
                 _qTokenForCollateral,
                 _amount
@@ -232,18 +231,18 @@ contract ControllerV2 is
             );
         }
 
-        ICollateralToken collateralToken =
-            IOptionsFactory(optionsFactory).collateralToken();
+        ICollateralToken collateralToken = IOptionsFactory(optionsFactory)
+            .collateralToken();
 
         // Check if the corresponding CollateralToken has already been created
         // Create it if it hasn't
-        uint256 collateralTokenId =
-            collateralToken.getCollateralTokenId(
-                _qTokenToMint,
-                _qTokenForCollateral
-            );
-        (, address qTokenAsCollateral) =
-            collateralToken.idToInfo(collateralTokenId);
+        uint256 collateralTokenId = collateralToken.getCollateralTokenId(
+            _qTokenToMint,
+            _qTokenForCollateral
+        );
+        (, address qTokenAsCollateral) = collateralToken.idToInfo(
+            collateralTokenId
+        );
         if (qTokenAsCollateral == address(0)) {
             require(
                 collateralTokenId ==
@@ -287,8 +286,11 @@ contract ControllerV2 is
             amountToExercise = qToken.balanceOf(_msgSender());
         }
 
-        (bool isSettled, address payoutToken, uint256 exerciseTotal) =
-            IQuantCalculator(quantCalculator).getExercisePayout(
+        (
+            bool isSettled,
+            address payoutToken,
+            uint256 exerciseTotal
+        ) = IQuantCalculator(quantCalculator).getExercisePayout(
                 address(qToken),
                 amountToExercise
             );
@@ -319,8 +321,7 @@ contract ControllerV2 is
             uint256 returnableCollateral,
             address collateralAsset,
             uint256 amountToClaim
-        ) =
-            IQuantCalculator(quantCalculator).calculateClaimableCollateral(
+        ) = IQuantCalculator(quantCalculator).calculateClaimableCollateral(
                 collateralTokenId,
                 _amount,
                 _msgSender()
@@ -351,26 +352,30 @@ contract ControllerV2 is
     function _neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
         internal
     {
-        (uint256 collateralTokenId, uint256 amount) =
-            (_collateralTokenId, _amount);
+        (uint256 collateralTokenId, uint256 amount) = (
+            _collateralTokenId,
+            _amount
+        );
 
-        ICollateralToken collateralToken =
-            IOptionsFactory(optionsFactory).collateralToken();
-        (address qTokenShort, address qTokenLong) =
-            collateralToken.idToInfo(collateralTokenId);
+        ICollateralToken collateralToken = IOptionsFactory(optionsFactory)
+            .collateralToken();
+        (address qTokenShort, address qTokenLong) = collateralToken.idToInfo(
+            collateralTokenId
+        );
 
         //get the amount of collateral tokens owned
-        uint256 collateralTokensOwned =
-            collateralToken.balanceOf(_msgSender(), collateralTokenId);
+        uint256 collateralTokensOwned = collateralToken.balanceOf(
+            _msgSender(),
+            collateralTokenId
+        );
 
         //get the amount of qTokens owned
         uint256 qTokensOwned = IQToken(qTokenShort).balanceOf(_msgSender());
 
         //the amount of position that can be neutralized
-        uint256 maxNeutralizable =
-            qTokensOwned < collateralTokensOwned
-                ? qTokensOwned
-                : collateralTokensOwned;
+        uint256 maxNeutralizable = qTokensOwned < collateralTokensOwned
+            ? qTokensOwned
+            : collateralTokensOwned;
 
         uint256 amountToNeutralize;
 
@@ -384,12 +389,9 @@ contract ControllerV2 is
             amountToNeutralize = maxNeutralizable;
         }
 
-        (address collateralType, uint256 collateralOwed) =
-            IQuantCalculator(quantCalculator).getNeutralizationPayout(
-                qTokenShort,
-                qTokenLong,
-                amountToNeutralize
-            );
+        (address collateralType, uint256 collateralOwed) = IQuantCalculator(
+            quantCalculator
+        ).getNeutralizationPayout(qTokenShort, qTokenLong, amountToNeutralize);
 
         IQToken(qTokenShort).burn(_msgSender(), amountToNeutralize);
 
@@ -448,15 +450,15 @@ contract ControllerV2 is
         bytes32 _s
     ) internal {
         IOptionsFactory(optionsFactory).collateralToken().metaSetApprovalForAll(
-            _owner,
-            _operator,
-            _approved,
-            _nonce,
-            _deadline,
-            _v,
-            _r,
-            _s
-        );
+                _owner,
+                _operator,
+                _approved,
+                _nonce,
+                _deadline,
+                _v,
+                _r,
+                _s
+            );
     }
 
     function _call(address _callee, bytes memory _data) internal {

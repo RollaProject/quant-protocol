@@ -101,10 +101,9 @@ contract QuantCalculatorHarness is IQuantCalculator {
             )
             : _amount;
 
-        (address _qTokenShort, address qTokenAsCollateral) =
-            IOptionsFactory(optionsFactory).collateralToken().idToInfo(
-                _collateralTokenId
-            );
+        (address _qTokenShort, address qTokenAsCollateral) = IOptionsFactory(
+            optionsFactory
+        ).collateralToken().idToInfo(_collateralTokenId);
 
         returnableCollateral = getClaimableCollateralValue(
             _collateralTokenId,

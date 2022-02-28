@@ -36,7 +36,7 @@ contract QuantConfig is
     function setProtocolAddress(bytes32 _protocolAddress, address _newValue)
         external
         override
-        onlyOwner()
+        onlyOwner
     {
         require(
             _protocolAddress != ProtocolValue.encode("priceRegistry") ||
@@ -58,7 +58,7 @@ contract QuantConfig is
     function setProtocolUint256(bytes32 _protocolUint256, uint256 _newValue)
         external
         override
-        onlyOwner()
+        onlyOwner
     {
         uint256 previousValue = protocolUints256[_protocolUint256];
         protocolUints256[_protocolUint256] = _newValue;
@@ -71,7 +71,7 @@ contract QuantConfig is
     function setProtocolBoolean(bytes32 _protocolBoolean, bool _newValue)
         external
         override
-        onlyOwner()
+        onlyOwner
     {
         require(
             _protocolBoolean != ProtocolValue.encode("isPriceRegistrySet") ||
@@ -89,7 +89,7 @@ contract QuantConfig is
     function setProtocolRole(string calldata _protocolRole, address _roleAdmin)
         external
         override
-        onlyOwner()
+        onlyOwner
     {
         _setProtocolRole(_protocolRole, _roleAdmin);
     }
@@ -97,7 +97,7 @@ contract QuantConfig is
     function setRoleAdmin(bytes32 role, bytes32 adminRole)
         external
         override
-        onlyOwner()
+        onlyOwner
     {
         _setRoleAdmin(role, adminRole);
 

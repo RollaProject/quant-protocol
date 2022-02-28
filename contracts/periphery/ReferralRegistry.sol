@@ -10,7 +10,11 @@ contract ReferralRegistry is EIP712 {
     using SafeMath for uint256;
     using ReferralCodeValidator for string;
 
-    enum ReferralAction {CLAIM_CODE, REGISTER_BY_CODE, REGISTER_BY_REFERRER}
+    enum ReferralAction {
+        CLAIM_CODE,
+        REGISTER_BY_CODE,
+        REGISTER_BY_REFERRER
+    }
 
     bytes32 public constant DEFAULT_CODE = "0";
 
@@ -91,17 +95,16 @@ contract ReferralRegistry is EIP712 {
 
         require(nonce == nonces[user], "ReferralRegistry: invalid nonce");
 
-        bytes32 structHash =
-            keccak256(
-                abi.encode(
-                    _META_REFERRAL_ACTION_TYPEHASH,
-                    user,
-                    action,
-                    keccak256(actionData),
-                    nonce,
-                    deadline
-                )
-            );
+        bytes32 structHash = keccak256(
+            abi.encode(
+                _META_REFERRAL_ACTION_TYPEHASH,
+                user,
+                action,
+                keccak256(actionData),
+                nonce,
+                deadline
+            )
+        );
 
         bytes32 hash = _hashTypedDataV4(structHash);
 

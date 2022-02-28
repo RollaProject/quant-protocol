@@ -83,14 +83,14 @@ contract FundsCalculatorWrapper {
     }
 
     function getPayoutForPutWrapper() public returns (int256 payoutAmount) {
-        QuantMath.FixedPointInt memory payoutAmountStruct =
-            FundsCalculator.getPayoutForPut(payoutInput);
+        QuantMath.FixedPointInt memory payoutAmountStruct = FundsCalculator
+            .getPayoutForPut(payoutInput);
         payoutAmount = payoutAmountStruct.value;
     }
 
     function getPayoutForCallWrapper() public returns (int256 payoutAmount) {
-        QuantMath.FixedPointInt memory payoutAmountStruct =
-            FundsCalculator.getPayoutForCall(payoutInput);
+        QuantMath.FixedPointInt memory payoutAmountStruct = FundsCalculator
+            .getPayoutForCall(payoutInput);
         payoutAmount = payoutAmountStruct.value;
     }
 
@@ -103,8 +103,8 @@ contract FundsCalculatorWrapper {
         uint8 _expiryDecimals
     ) public returns (int256 payoutAmount) {
         QuantMath.FixedPointInt memory payoutAmountStruct;
-        IPriceRegistry.PriceWithDecimals memory expiryPrice =
-            IPriceRegistry.PriceWithDecimals(_expiryPrice, _expiryDecimals);
+        IPriceRegistry.PriceWithDecimals memory expiryPrice = IPriceRegistry
+            .PriceWithDecimals(_expiryPrice, _expiryDecimals);
 
         payoutAmountStruct = FundsCalculator.getPayoutAmount(
             _isCall,

@@ -57,15 +57,17 @@ contract ConfigTimelockController is TimelockController {
         address quantConfig,
         uint256 eta
     ) public onlyRole(PROPOSER_ROLE) {
-        bytes memory data =
-            _encodeSetProtocolAddress(protocolAddress, newAddress, quantConfig);
+        bytes memory data = _encodeSetProtocolAddress(
+            protocolAddress,
+            newAddress,
+            quantConfig
+        );
 
-        uint256 delay =
-            _getProtocolValueDelay(
-                quantConfig,
-                protocolAddress,
-                ProtocolValue.Type.Address
-            );
+        uint256 delay = _getProtocolValueDelay(
+            quantConfig,
+            protocolAddress,
+            ProtocolValue.Type.Address
+        );
 
         require(
             eta >= delay.add(block.timestamp),
@@ -89,15 +91,17 @@ contract ConfigTimelockController is TimelockController {
         address quantConfig,
         uint256 eta
     ) public onlyRole(PROPOSER_ROLE) {
-        bytes memory data =
-            _encodeSetProtocolUint256(protocolUint256, newUint256, quantConfig);
+        bytes memory data = _encodeSetProtocolUint256(
+            protocolUint256,
+            newUint256,
+            quantConfig
+        );
 
-        uint256 delay =
-            _getProtocolValueDelay(
-                quantConfig,
-                protocolUint256,
-                ProtocolValue.Type.Uint256
-            );
+        uint256 delay = _getProtocolValueDelay(
+            quantConfig,
+            protocolUint256,
+            ProtocolValue.Type.Uint256
+        );
 
         require(
             eta >= delay.add(block.timestamp),
@@ -121,15 +125,17 @@ contract ConfigTimelockController is TimelockController {
         address quantConfig,
         uint256 eta
     ) public onlyRole(PROPOSER_ROLE) {
-        bytes memory data =
-            _encodeSetProtocolBoolean(protocolBoolean, newBoolean, quantConfig);
+        bytes memory data = _encodeSetProtocolBoolean(
+            protocolBoolean,
+            newBoolean,
+            quantConfig
+        );
 
-        uint256 delay =
-            _getProtocolValueDelay(
-                quantConfig,
-                protocolBoolean,
-                ProtocolValue.Type.Bool
-            );
+        uint256 delay = _getProtocolValueDelay(
+            quantConfig,
+            protocolBoolean,
+            ProtocolValue.Type.Bool
+        );
 
         require(
             eta >= delay.add(block.timestamp),
@@ -152,15 +158,17 @@ contract ConfigTimelockController is TimelockController {
         address quantConfig,
         uint256 eta
     ) public onlyRole(PROPOSER_ROLE) {
-        bytes memory data =
-            _encodeSetProtocolRole(protocolRole, roleAdmin, quantConfig);
+        bytes memory data = _encodeSetProtocolRole(
+            protocolRole,
+            roleAdmin,
+            quantConfig
+        );
 
-        uint256 delay =
-            _getProtocolValueDelay(
-                quantConfig,
-                keccak256(abi.encodePacked(protocolRole)),
-                ProtocolValue.Type.Role
-            );
+        uint256 delay = _getProtocolValueDelay(
+            quantConfig,
+            keccak256(abi.encodePacked(protocolRole)),
+            ProtocolValue.Type.Role
+        );
 
         require(
             eta >= delay.add(block.timestamp),

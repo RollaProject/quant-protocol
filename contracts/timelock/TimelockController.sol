@@ -183,8 +183,13 @@ contract TimelockController is AccessControl {
             "TimelockController: length mismatch"
         );
 
-        bytes32 id =
-            hashOperationBatch(targets, values, datas, predecessor, salt);
+        bytes32 id = hashOperationBatch(
+            targets,
+            values,
+            datas,
+            predecessor,
+            salt
+        );
         _schedule(id, delay, false);
         for (uint256 i = 0; i < targets.length; ++i) {
             emit CallScheduled(
@@ -263,8 +268,13 @@ contract TimelockController is AccessControl {
             "TimelockController: length mismatch"
         );
 
-        bytes32 id =
-            hashOperationBatch(targets, values, datas, predecessor, salt);
+        bytes32 id = hashOperationBatch(
+            targets,
+            values,
+            datas,
+            predecessor,
+            salt
+        );
         _beforeCall(id, predecessor);
         for (uint256 i = 0; i < targets.length; ++i) {
             _call(id, i, targets[i], values[i], datas[i]);

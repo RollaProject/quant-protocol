@@ -41,8 +41,9 @@ contract PriceRegistry is IPriceRegistry {
             "PriceRegistry: Price submitter is not an oracle"
         );
 
-        uint256 currentSettlementPrice =
-            _settlementPrices[msg.sender][_asset][_expiryTimestamp].price;
+        uint256 currentSettlementPrice = _settlementPrices[msg.sender][_asset][
+            _expiryTimestamp
+        ].price;
 
         require(
             currentSettlementPrice == 0,
@@ -91,8 +92,9 @@ contract PriceRegistry is IPriceRegistry {
         address _asset,
         uint256 _expiryTimestamp
     ) external view override returns (uint256) {
-        PriceWithDecimals memory settlementPrice =
-            _settlementPrices[_oracle][_asset][_expiryTimestamp];
+        PriceWithDecimals memory settlementPrice = _settlementPrices[_oracle][
+            _asset
+        ][_expiryTimestamp];
         require(
             settlementPrice.price != 0,
             "PriceRegistry: No settlement price has been set"

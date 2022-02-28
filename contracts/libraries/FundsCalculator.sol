@@ -119,8 +119,8 @@ library FundsCalculator {
         uint256 _optionsDecimals,
         IPriceRegistry.PriceWithDecimals memory _expiryPrice
     ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
-        FundsCalculator.OptionPayoutInput memory payoutInput =
-            FundsCalculator.OptionPayoutInput(
+        FundsCalculator.OptionPayoutInput memory payoutInput = FundsCalculator
+            .OptionPayoutInput(
                 _strikePrice.fromScaledUint(6),
                 _expiryPrice.price.fromScaledUint(_expiryPrice.decimals),
                 _amount.fromScaledUint(_optionsDecimals)
@@ -194,10 +194,11 @@ library FundsCalculator {
         pure
         returns (QuantMath.FixedPointInt memory collateralPerOption)
     {
-        QuantMath.FixedPointInt memory mintStrikePrice =
-            _qTokenToMintStrikePrice.fromScaledUint(6);
-        QuantMath.FixedPointInt memory collateralStrikePrice =
-            _qTokenForCollateralStrikePrice.fromScaledUint(6);
+        QuantMath.FixedPointInt
+            memory mintStrikePrice = _qTokenToMintStrikePrice.fromScaledUint(6);
+        QuantMath.FixedPointInt
+            memory collateralStrikePrice = _qTokenForCollateralStrikePrice
+                .fromScaledUint(6);
 
         // Initially (non-spread) required collateral is the long strike price
         collateralPerOption = mintStrikePrice;
@@ -220,10 +221,11 @@ library FundsCalculator {
         pure
         returns (QuantMath.FixedPointInt memory collateralPerOption)
     {
-        QuantMath.FixedPointInt memory mintStrikePrice =
-            _qTokenToMintStrikePrice.fromScaledUint(6);
-        QuantMath.FixedPointInt memory collateralStrikePrice =
-            _qTokenForCollateralStrikePrice.fromScaledUint(6);
+        QuantMath.FixedPointInt
+            memory mintStrikePrice = _qTokenToMintStrikePrice.fromScaledUint(6);
+        QuantMath.FixedPointInt
+            memory collateralStrikePrice = _qTokenForCollateralStrikePrice
+                .fromScaledUint(6);
 
         // Initially (non-spread) required collateral is the long strike price
         collateralPerOption = (10**_underlyingDecimals).fromScaledUint(

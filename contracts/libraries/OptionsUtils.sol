@@ -38,21 +38,20 @@ library OptionsUtils {
         uint256 _expiryTime,
         bool _isCall
     ) internal view returns (address) {
-        bytes32 bytecodeHash =
-            keccak256(
-                abi.encodePacked(
-                    type(QToken).creationCode,
-                    abi.encode(
-                        _quantConfig,
-                        _underlyingAsset,
-                        _strikeAsset,
-                        _oracle,
-                        _strikePrice,
-                        _expiryTime,
-                        _isCall
-                    )
+        bytes32 bytecodeHash = keccak256(
+            abi.encodePacked(
+                type(QToken).creationCode,
+                abi.encode(
+                    _quantConfig,
+                    _underlyingAsset,
+                    _strikeAsset,
+                    _oracle,
+                    _strikePrice,
+                    _expiryTime,
+                    _isCall
                 )
-            );
+            )
+        );
 
         return Create2.computeAddress(SALT, bytecodeHash);
     }
@@ -77,16 +76,15 @@ library OptionsUtils {
         uint256 _expiryTime,
         bool _isCall
     ) internal view returns (uint256) {
-        address qToken =
-            getTargetQTokenAddress(
-                _quantConfig,
-                _underlyingAsset,
-                _strikeAsset,
-                _oracle,
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            );
+        address qToken = getTargetQTokenAddress(
+            _quantConfig,
+            _underlyingAsset,
+            _strikeAsset,
+            _oracle,
+            _strikePrice,
+            _expiryTime,
+            _isCall
+        );
         return
             _collateralToken.getCollateralTokenId(qToken, _qTokenAsCollateral);
     }
@@ -103,12 +101,11 @@ library OptionsUtils {
             "OptionsFactory: given expiry time is in the past"
         );
 
-        IOracleRegistry oracleRegistry =
-            IOracleRegistry(
-                IQuantConfig(_quantConfig).protocolAddresses(
-                    ProtocolValue.encode("oracleRegistry")
-                )
-            );
+        IOracleRegistry oracleRegistry = IOracleRegistry(
+            IQuantConfig(_quantConfig).protocolAddresses(
+                ProtocolValue.encode("oracleRegistry")
+            )
+        );
 
         require(
             oracleRegistry.isOracleRegistered(_oracle),
@@ -153,8 +150,7 @@ library OptionsUtils {
             IQuantConfig(_quantConfig).protocolAddresses(
                 ProtocolValue.encode("assetsRegistry")
             )
-        )
-            .assetProperties(_asset);
+        ).assetProperties(_asset);
 
         return bytes(symbol).length != 0;
     }
@@ -164,12 +160,11 @@ library OptionsUtils {
         view
         returns (uint8 payoutDecimals)
     {
-        IAssetsRegistry assetsRegistry =
-            IAssetsRegistry(
-                _quantConfig.protocolAddresses(
-                    ProtocolValue.encode("assetsRegistry")
-                )
-            );
+        IAssetsRegistry assetsRegistry = IAssetsRegistry(
+            _quantConfig.protocolAddresses(
+                ProtocolValue.encode("assetsRegistry")
+            )
+        );
 
         if (_qToken.isCall()) {
             (, , payoutDecimals) = assetsRegistry.assetProperties(
