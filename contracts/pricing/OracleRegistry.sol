@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.7.6;
+pragma solidity 0.8.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IOracleRegistry.sol";
 
 /// @title For centrally managing a list of oracle providers
 /// @notice oracle provider registry for holding a list of oracle providers and their id
 contract OracleRegistry is IOracleRegistry {
-    using SafeMath for uint256;
-
     struct OracleInfo {
         bool isActive;
         uint256 oracleId;

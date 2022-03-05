@@ -1,9 +1,7 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /**
@@ -64,20 +62,6 @@ contract TimelockController is AccessControl {
      * @dev Emitted when the minimum delay for future operations is modified.
      */
     event MinDelayChange(uint256 oldDuration, uint256 newDuration);
-
-    /**
-     * @dev Modifier to make a function callable only by a certain role. In
-     * addition to checking the sender's role, `address(0)` 's role is also
-     * considered. Granting a role to `address(0)` is equivalent to enabling
-     * this role for everyone.
-     */
-    modifier onlyRole(bytes32 role) {
-        require(
-            hasRole(role, _msgSender()) || hasRole(role, address(0)),
-            "TimelockController: sender requires permission"
-        );
-        _;
-    }
 
     /**
      * @dev Initializes the contract with a given `minDelay`.
@@ -400,7 +384,7 @@ contract TimelockController is AccessControl {
             "TimelockController: insufficient delay"
         );
         // solhint-disable-next-line not-rely-on-time
-        _timestamps[id] = SafeMath.add(block.timestamp, delay);
+        _timestamps[id] = block.timestamp + delay;
     }
 
     /**

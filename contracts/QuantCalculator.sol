@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/IQuantCalculator.sol";
 import "./interfaces/IOptionsFactory.sol";
 import "./interfaces/IQToken.sol";
@@ -12,7 +10,6 @@ import "./libraries/OptionsUtils.sol";
 import "./libraries/QuantMath.sol";
 
 contract QuantCalculator is IQuantCalculator {
-    using SafeMath for uint256;
     using QuantMath for uint256;
     using QuantMath for int256;
     using QuantMath for QuantMath.FixedPointInt;

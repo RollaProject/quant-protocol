@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.12;
 
 import "./QuantMath.sol";
 import "../options/QToken.sol";
 import "../interfaces/IPriceRegistry.sol";
 
 library FundsCalculator {
-    using SafeMath for uint256;
     using QuantMath for uint256;
     using QuantMath for int256;
     using QuantMath for QuantMath.FixedPointInt;

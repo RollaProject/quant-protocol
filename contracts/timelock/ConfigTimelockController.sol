@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./TimelockController.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../libraries/ProtocolValue.sol";
 
 contract ConfigTimelockController is TimelockController {
-    using SafeMath for uint256;
-
     mapping(bytes32 => uint256) public delays;
 
     mapping(bytes32 => uint256) private _timestamps;
@@ -70,7 +66,7 @@ contract ConfigTimelockController is TimelockController {
         );
 
         require(
-            eta >= delay.add(block.timestamp),
+            eta >= delay + block.timestamp,
             "ConfigTimelockController: Estimated execution block must satisfy delay"
         );
 
@@ -104,7 +100,7 @@ contract ConfigTimelockController is TimelockController {
         );
 
         require(
-            eta >= delay.add(block.timestamp),
+            eta >= delay + block.timestamp,
             "ConfigTimelockController: Estimated execution block must satisfy delay"
         );
 
@@ -138,7 +134,7 @@ contract ConfigTimelockController is TimelockController {
         );
 
         require(
-            eta >= delay.add(block.timestamp),
+            eta >= delay + block.timestamp,
             "ConfigTimelockController: Estimated execution block must satisfy delay"
         );
         super.schedule(
@@ -171,7 +167,7 @@ contract ConfigTimelockController is TimelockController {
         );
 
         require(
-            eta >= delay.add(block.timestamp),
+            eta >= delay + block.timestamp,
             "ConfigTimelockController: Estimated execution block must satisfy delay"
         );
 

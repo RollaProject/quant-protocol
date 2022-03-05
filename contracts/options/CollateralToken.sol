@@ -1,14 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.12;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/drafts/EIP712.sol";
+import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "../external/openzeppelin/ERC1155.sol";
-import "../interfaces/IQuantConfig.sol";
 import "../interfaces/ICollateralToken.sol";
-import "../interfaces/IQToken.sol";
 
 /// @title Tokens representing a Quant user's short positions
 /// @author Quant Finance
@@ -16,8 +11,6 @@ import "../interfaces/IQToken.sol";
 /// @dev This is a multi-token contract that implements the ERC1155 token standard:
 /// https://eips.ethereum.org/EIPS/eip-1155
 contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
-    using SafeMath for uint256;
-
     /// @dev stores metadata for a CollateralToken with an specific id
     /// @param qTokenAddress address of the corresponding QToken
     /// @param qTokenAsCollateral QToken address of an option used as collateral in a spread
@@ -120,9 +113,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
             "CollateralToken: Only a collateral minter can mint CollateralTokens"
         );
 
-        tokenSupplies[collateralTokenId] = tokenSupplies[collateralTokenId].add(
-            amount
-        );
+        tokenSupplies[collateralTokenId] += amount;
 
         emit CollateralTokenMinted(recipient, collateralTokenId, amount);
 
@@ -144,9 +135,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         );
         _burn(owner, collateralTokenId, amount);
 
-        tokenSupplies[collateralTokenId] = tokenSupplies[collateralTokenId].sub(
-            amount
-        );
+        tokenSupplies[collateralTokenId] -= amount;
 
         emit CollateralTokenBurned(owner, collateralTokenId, amount);
     }
@@ -166,7 +155,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         );
 
         for (uint256 i = 0; i < ids.length; i++) {
-            tokenSupplies[ids[i]] = tokenSupplies[ids[i]].add(amounts[i]);
+            tokenSupplies[ids[i]] += amounts[i];
             emit CollateralTokenMinted(recipient, ids[i], amounts[i]);
         }
 
@@ -189,7 +178,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         _burnBatch(owner, ids, amounts);
 
         for (uint256 i = 0; i < ids.length; i++) {
-            tokenSupplies[ids[i]] = tokenSupplies[ids[i]].sub(amounts[i]);
+            tokenSupplies[ids[i]] -= amounts[i];
             emit CollateralTokenBurned(owner, ids[i], amounts[i]);
         }
     }
@@ -229,7 +218,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         address signer = ecrecover(hash, v, r, s);
         require(signer == owner, "CollateralToken: invalid signature");
 
-        nonces[owner] = nonces[owner].add(1);
+        nonces[owner]++;
         _operatorApprovals[owner][operator] = approved;
         emit ApprovalForAll(owner, operator, approved);
     }

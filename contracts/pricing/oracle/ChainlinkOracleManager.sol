@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.7.6;
+pragma solidity 0.8.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
 import "../PriceRegistry.sol";
 import "./ProviderOracleManager.sol";
@@ -15,7 +14,6 @@ contract ChainlinkOracleManager is
     ProviderOracleManager,
     IChainlinkOracleManager
 {
-    using SafeMath for uint256;
     using QuantMath for uint256;
     using QuantMath for QuantMath.FixedPointInt;
 
@@ -86,7 +84,7 @@ contract ChainlinkOracleManager is
         );
 
         require(
-            block.timestamp >= _expiryTimestamp.add(fallbackPeriodSeconds),
+            block.timestamp >= _expiryTimestamp + fallbackPeriodSeconds,
             "ChainlinkOracleManager: The fallback price period has not passed since the timestamp"
         );
 
@@ -278,7 +276,7 @@ contract ChainlinkOracleManager is
         uint64 firstRoundId = uint64(_firstRoundProxy);
 
         uint80 roundToCheck = uint80(
-            uint256(firstRoundId).add(uint256(lastRoundId)).div(2)
+            (uint256(firstRoundId) + uint256(lastRoundId)) / 2
         );
         uint80 roundToCheckProxy = uint80(
             (uint256(phaseId) << phaseOffset) | roundToCheck

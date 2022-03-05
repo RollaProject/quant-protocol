@@ -164,7 +164,7 @@ describe("QuantMath lib", () => {
       const c = { value: ethers.utils.parseUnits("3", "40") };
       // this should overflow because 6e+76 > Max Int
       await expect(lib.testMul(b, c)).to.be.revertedWith(
-        "SignedSafeMath: multiplication overflow"
+        "reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)"
       );
     });
   });

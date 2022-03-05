@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.7.6;
+pragma solidity 0.8.12;
 
 import "ds-test/test.sol";
 import "contracts/options/AssetsRegistry.sol";
@@ -10,12 +10,18 @@ import "forge-std/Vm.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract ERC20WithDecimals is ERC20 {
+    uint8 private _decimals;
+
     constructor(
         string memory _name,
         string memory _symbol,
-        uint8 _decimals
+        uint8 decimals_
     ) ERC20(_name, _symbol) {
-        _setupDecimals(_decimals);
+        _decimals = decimals_;
+    }
+
+    function decimals() public view virtual override returns (uint8) {
+        return _decimals;
     }
 }
 

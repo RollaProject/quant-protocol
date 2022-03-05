@@ -1,18 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.7.6;
+pragma solidity 0.8.12;
 
 import "./SignedConverter.sol";
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
 
 /**
  * @title QuantMath
  * @notice FixedPoint library
  */
 library QuantMath {
-    using SignedSafeMath for int256;
     using SignedConverter for int256;
-    using SafeMath for uint256;
     using SignedConverter for uint256;
 
     struct FixedPointInt {
@@ -32,7 +28,7 @@ library QuantMath {
         pure
         returns (FixedPointInt memory)
     {
-        return FixedPointInt(a.mul(_SCALING_FACTOR));
+        return FixedPointInt(a * _SCALING_FACTOR);
     }
 
     /**
@@ -56,11 +52,11 @@ library QuantMath {
         if (_decimals == _BASE_DECIMALS) {
             fixedPoint = FixedPointInt(_a.uintToInt());
         } else if (_decimals > _BASE_DECIMALS) {
-            uint256 exp = _decimals.sub(_BASE_DECIMALS);
-            fixedPoint = FixedPointInt((_a.div(10**exp)).uintToInt());
+            uint256 exp = _decimals - _BASE_DECIMALS;
+            fixedPoint = FixedPointInt((_a / 10**exp).uintToInt());
         } else {
             uint256 exp = _BASE_DECIMALS - _decimals;
-            fixedPoint = FixedPointInt((_a.mul(10**exp)).uintToInt());
+            fixedPoint = FixedPointInt((_a * 10**exp).uintToInt());
         }
 
         return fixedPoint;
@@ -84,15 +80,15 @@ library QuantMath {
             scaledUint = _a.value.intToUint();
         } else if (_decimals > _BASE_DECIMALS) {
             uint256 exp = _decimals - _BASE_DECIMALS;
-            scaledUint = (_a.value).intToUint().mul(10**exp);
+            scaledUint = (_a.value).intToUint() * 10**exp;
         } else {
             uint256 exp = _BASE_DECIMALS - _decimals;
             uint256 tailing;
             if (!_roundDown) {
-                uint256 remainer = (_a.value).intToUint().mod(10**exp);
+                uint256 remainer = (_a.value).intToUint() % 10**exp;
                 if (remainer > 0) tailing = 1;
             }
-            scaledUint = (_a.value).intToUint().div(10**exp).add(tailing);
+            scaledUint = (_a.value).intToUint() / 10**exp + tailing;
         }
 
         return scaledUint;
@@ -109,7 +105,7 @@ library QuantMath {
         pure
         returns (FixedPointInt memory)
     {
-        return FixedPointInt(a.value.add(b.value));
+        return FixedPointInt(a.value + b.value);
     }
 
     /**
@@ -123,7 +119,7 @@ library QuantMath {
         pure
         returns (FixedPointInt memory)
     {
-        return FixedPointInt(a.value.sub(b.value));
+        return FixedPointInt(a.value - b.value);
     }
 
     /**
@@ -137,7 +133,7 @@ library QuantMath {
         pure
         returns (FixedPointInt memory)
     {
-        return FixedPointInt((a.value.mul(b.value)) / _SCALING_FACTOR);
+        return FixedPointInt((a.value * b.value) / _SCALING_FACTOR);
     }
 
     /**
@@ -151,7 +147,7 @@ library QuantMath {
         pure
         returns (FixedPointInt memory)
     {
-        return FixedPointInt((a.value.mul(_SCALING_FACTOR)) / b.value);
+        return FixedPointInt((a.value * _SCALING_FACTOR) / b.value);
     }
 
     /**

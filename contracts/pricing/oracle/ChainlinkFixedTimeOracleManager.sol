@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.7.6;
+pragma solidity 0.8.12;
 
 import "./ChainlinkOracleManager.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
 import "../../interfaces/IChainlinkFixedTimeOracleManager.sol";
 
@@ -10,8 +9,6 @@ contract ChainlinkFixedTimeOracleManager is
     ChainlinkOracleManager,
     IChainlinkFixedTimeOracleManager
 {
-    using SafeMath for uint256;
-
     mapping(uint256 => bool) public override chainlinkFixedTimeUpdates;
 
     /// @param _config address of quant central configuration
@@ -58,7 +55,7 @@ contract ChainlinkFixedTimeOracleManager is
         override(ChainlinkOracleManager, IProviderOracleManager)
         returns (bool)
     {
-        uint256 timeInSeconds = _expiryTime.mod(86400);
+        uint256 timeInSeconds = _expiryTime % 86400;
         return chainlinkFixedTimeUpdates[timeInSeconds];
     }
 
