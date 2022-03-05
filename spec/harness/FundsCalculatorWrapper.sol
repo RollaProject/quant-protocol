@@ -1,17 +1,14 @@
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.12;
 
 import {FundsCalculator} from "../../contracts/libraries/FundsCalculator.sol";
 import {QuantMath} from "../../contracts/libraries/QuantMath.sol";
 import {SignedConverter} from "../../contracts/libraries/SignedConverter.sol";
 import {IPriceRegistry} from "../../contracts/interfaces/IPriceRegistry.sol";
-import {SignedSafeMath} from "@openzeppelin/contracts/math/SignedSafeMath.sol";
 
 contract FundsCalculatorWrapper {
     using QuantMath for uint256;
     using QuantMath for int256;
     using QuantMath for QuantMath.FixedPointInt;
-    using SignedSafeMath for int256;
     using SignedConverter for uint256;
 
     QuantMath.FixedPointInt internal collateralAmount;

@@ -29,6 +29,8 @@ describe("ConfigTimelockController", () => {
   let salt: BytesLike;
   let scheduleCallData: scheduleParams;
   let id: string;
+  let executorRevertMsg: string;
+  let proposerRevertMsg: string;
 
   const futureETA = 4774204800; // Wed Apr 16 2121 00:00:00 GMT+0000
 
@@ -40,6 +42,14 @@ describe("ConfigTimelockController", () => {
 
   beforeEach(async () => {
     [admin, secondAccount] = await ethers.getSigners();
+
+    const secondAccountAddress = (
+      await secondAccount.getAddress()
+    ).toLowerCase();
+    const executorRole = ethers.utils.id("EXECUTOR_ROLE");
+    const proposerRole = ethers.utils.id("PROPOSER_ROLE");
+    executorRevertMsg = `AccessControl: account ${secondAccountAddress} is missing role ${executorRole}`;
+    proposerRevertMsg = `AccessControl: account ${secondAccountAddress} is missing role ${proposerRole}`;
 
     delay = ethers.BigNumber.from(3600);
 
@@ -104,7 +114,7 @@ describe("ConfigTimelockController", () => {
         configTimelockController
           .connect(secondAccount)
           .setDelay(protocolFee, ethers.BigNumber.from(24 * 3600))
-      ).to.be.revertedWith("TimelockController: sender requires permission");
+      ).to.be.revertedWith(executorRevertMsg);
     });
   });
 
@@ -135,7 +145,7 @@ describe("ConfigTimelockController", () => {
         configTimelockController
           .connect(secondAccount)
           .schedule(...scheduleCallData)
-      ).to.be.revertedWith("TimelockController: sender requires permission");
+      ).to.be.revertedWith(proposerRevertMsg);
     });
 
     it("Proposers should be able to schedule function calls", async () => {
@@ -158,7 +168,7 @@ describe("ConfigTimelockController", () => {
             quantConfig.address,
             futureETA
           )
-      ).to.be.revertedWith("TimelockController: sender requires permission");
+      ).to.be.revertedWith(proposerRevertMsg);
     });
 
     it("Proposers should be able to schedule calls to setProtocolAddress in the QuantConfig", async () => {
@@ -213,7 +223,7 @@ describe("ConfigTimelockController", () => {
             quantConfig.address,
             futureETA
           )
-      ).to.be.revertedWith("TimelockController: sender requires permission");
+      ).to.be.revertedWith(proposerRevertMsg);
     });
 
     it("Proposers should be able to schedule calls to setProtocolUint256 in the QuantConfig", async () => {
@@ -266,7 +276,7 @@ describe("ConfigTimelockController", () => {
             quantConfig.address,
             futureETA
           )
-      ).to.be.revertedWith("TimelockController: sender requires permission");
+      ).to.be.revertedWith(proposerRevertMsg);
     });
 
     it("Proposers should be able to schedule calls to setProtocolBoolean in the QuantConfig", async () => {
@@ -321,7 +331,7 @@ describe("ConfigTimelockController", () => {
             salt,
             delay
           )
-      ).to.be.revertedWith("TimelockController: sender requires permission");
+      ).to.be.revertedWith(proposerRevertMsg);
     });
 
     it("Should revert when trying to schedule a batch with less values than targets", async () => {
@@ -398,7 +408,7 @@ describe("ConfigTimelockController", () => {
             quantConfig.address,
             futureETA
           )
-      ).to.be.revertedWith("TimelockController: sender requires permission");
+      ).to.be.revertedWith(proposerRevertMsg);
     });
 
     it("Should revert when a different number of addresses and protocol values is passed", async () => {
@@ -494,7 +504,7 @@ describe("ConfigTimelockController", () => {
             quantConfig.address,
             futureETA
           )
-      ).to.be.revertedWith("TimelockController: sender requires permission");
+      ).to.be.revertedWith(proposerRevertMsg);
     });
 
     it("Should revert when a different number of addresses and protocol values is passed", async () => {
@@ -588,7 +598,7 @@ describe("ConfigTimelockController", () => {
             quantConfig.address,
             futureETA
           )
-      ).to.be.revertedWith("TimelockController: sender requires permission");
+      ).to.be.revertedWith(proposerRevertMsg);
     });
 
     it("Should revert when a different number of booleans and protocol values is passed", async () => {

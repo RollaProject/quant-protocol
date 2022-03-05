@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.12;
 
-import "@openzeppelin/contracts-upgradeable/drafts/EIP712Upgradeable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../interfaces/IEIP712MetaTransaction.sol";
 import "../interfaces/IController.sol";
 import "../libraries/Actions.sol";
 import {ActionArgs} from "../libraries/Actions.sol";
 
 contract EIP712MetaTransaction is EIP712Upgradeable {
-    using SafeMath for uint256;
     using ECDSA for bytes32;
 
     struct MetaAction {
@@ -54,7 +51,13 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
             "signer and signature don't match"
         );
 
-        _nonces[metaAction.from] = _nonces[metaAction.from].add(1);
+        uint256 currentNonce = _nonces[metaAction.from];
+
+        // intentionally allow this to overflow to save gas,
+        // and it's impossible for someone to do 2 ^ 256 - 1 meta txs
+        unchecked {
+            _nonces[metaAction.from] = currentNonce + 1;
+        }
 
         // Append the metaAction.from at the end so that it can be extracted later
         // from the calling context (see _msgSender() below)
@@ -71,8 +74,8 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
         require(success, "unsuccessful function call");
         emit MetaTransactionExecuted(
             metaAction.from,
-            msg.sender,
-            _nonces[metaAction.from]
+            payable(msg.sender),
+            currentNonce
         );
         return returnData;
     }
