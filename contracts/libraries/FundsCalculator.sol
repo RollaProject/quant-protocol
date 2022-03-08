@@ -21,7 +21,8 @@ library FundsCalculator {
     function getPayout(
         address _qToken,
         uint256 _amount,
-        uint256 _optionsDecimals,
+        uint8 _optionsDecimals,
+        uint8 _strikeAssetDecimals,
         IPriceRegistry.PriceWithDecimals memory _expiryPrice
     )
         internal
@@ -41,6 +42,7 @@ library FundsCalculator {
             qToken.strikePrice(),
             _amount,
             _optionsDecimals,
+            _strikeAssetDecimals,
             _expiryPrice
         );
     }
@@ -50,7 +52,8 @@ library FundsCalculator {
         address _qTokenForCollateral,
         uint256 _optionsAmount,
         uint8 _optionsDecimals,
-        uint8 _underlyingDecimals
+        uint8 _underlyingDecimals,
+        uint8 _strikeAssetDecimals
     )
         internal
         view
@@ -104,7 +107,8 @@ library FundsCalculator {
             _optionsAmount,
             qTokenToMint.isCall(),
             _optionsDecimals,
-            _underlyingDecimals
+            _underlyingDecimals,
+            _strikeAssetDecimals
         );
 
         collateral = qTokenToMint.isCall()
@@ -116,12 +120,13 @@ library FundsCalculator {
         bool _isCall,
         uint256 _strikePrice,
         uint256 _amount,
-        uint256 _optionsDecimals,
+        uint8 _optionsDecimals,
+        uint8 _strikeAssetDecimals,
         IPriceRegistry.PriceWithDecimals memory _expiryPrice
     ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
         FundsCalculator.OptionPayoutInput memory payoutInput = FundsCalculator
             .OptionPayoutInput(
-                _strikePrice.fromScaledUint(6),
+                _strikePrice.fromScaledUint(_strikeAssetDecimals),
                 _expiryPrice.price.fromScaledUint(_expiryPrice.decimals),
                 _amount.fromScaledUint(_optionsDecimals)
             );
@@ -165,19 +170,22 @@ library FundsCalculator {
         uint256 _optionsAmount,
         bool _qTokenToMintIsCall,
         uint8 _optionsDecimals,
-        uint8 _underlyingDecimals
+        uint8 _underlyingDecimals,
+        uint8 _strikeAssetDecimals
     ) internal pure returns (QuantMath.FixedPointInt memory collateralAmount) {
         QuantMath.FixedPointInt memory collateralPerOption;
         if (_qTokenToMintIsCall) {
             collateralPerOption = getCallCollateralRequirement(
                 _qTokenToMintStrikePrice,
                 _qTokenForCollateralStrikePrice,
-                _underlyingDecimals
+                _underlyingDecimals,
+                _strikeAssetDecimals
             );
         } else {
             collateralPerOption = getPutCollateralRequirement(
                 _qTokenToMintStrikePrice,
-                _qTokenForCollateralStrikePrice
+                _qTokenForCollateralStrikePrice,
+                _strikeAssetDecimals
             );
         }
 
@@ -188,17 +196,20 @@ library FundsCalculator {
 
     function getPutCollateralRequirement(
         uint256 _qTokenToMintStrikePrice,
-        uint256 _qTokenForCollateralStrikePrice
+        uint256 _qTokenForCollateralStrikePrice,
+        uint8 _strikeAssetDecimals
     )
         internal
         pure
         returns (QuantMath.FixedPointInt memory collateralPerOption)
     {
         QuantMath.FixedPointInt
-            memory mintStrikePrice = _qTokenToMintStrikePrice.fromScaledUint(6);
+            memory mintStrikePrice = _qTokenToMintStrikePrice.fromScaledUint(
+                _strikeAssetDecimals
+            );
         QuantMath.FixedPointInt
             memory collateralStrikePrice = _qTokenForCollateralStrikePrice
-                .fromScaledUint(6);
+                .fromScaledUint(_strikeAssetDecimals);
 
         // Initially (non-spread) required collateral is the long strike price
         collateralPerOption = mintStrikePrice;
@@ -215,17 +226,20 @@ library FundsCalculator {
     function getCallCollateralRequirement(
         uint256 _qTokenToMintStrikePrice,
         uint256 _qTokenForCollateralStrikePrice,
-        uint8 _underlyingDecimals
+        uint8 _underlyingDecimals,
+        uint8 _strikeAssetDecimals
     )
         internal
         pure
         returns (QuantMath.FixedPointInt memory collateralPerOption)
     {
         QuantMath.FixedPointInt
-            memory mintStrikePrice = _qTokenToMintStrikePrice.fromScaledUint(6);
+            memory mintStrikePrice = _qTokenToMintStrikePrice.fromScaledUint(
+                _strikeAssetDecimals
+            );
         QuantMath.FixedPointInt
             memory collateralStrikePrice = _qTokenForCollateralStrikePrice
-                .fromScaledUint(6);
+                .fromScaledUint(_strikeAssetDecimals);
 
         // Initially (non-spread) required collateral is the long strike price
         collateralPerOption = (10**_underlyingDecimals).fromScaledUint(

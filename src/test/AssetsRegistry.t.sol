@@ -99,9 +99,9 @@ contract AssetsRegistryTest is DSTest {
     function testAddAssetAsNotRegistryMananger() public {
         vm.clearMockedCalls();
 
-        string memory name = "USD Coin";
-        string memory symbol = "USDC";
-        uint8 decimals = 6;
+        string memory name = "BUSD Token";
+        string memory symbol = "BUSD";
+        uint8 decimals = 18;
 
         ERC20WithDecimals asset = new ERC20WithDecimals(name, symbol, decimals);
 

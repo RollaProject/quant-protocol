@@ -24,7 +24,7 @@ describe("PriceRegistry", () => {
       await upgrades.deployProxy(QuantConfig, [await admin.getAddress()])
     );
     priceRegistry = <PriceRegistry>(
-      await deployContract(admin, PriceRegistryJSON, [quantConfig.address, 6])
+      await deployContract(admin, PriceRegistryJSON, [quantConfig.address, 18])
     );
     oracle = await admin.getAddress(); //this is the oracle since its the price submitter
 
@@ -36,7 +36,7 @@ describe("PriceRegistry", () => {
 
   it("Should allow a price to be set only once", async () => {
     const timestamp = 1;
-    const price = ethers.utils.parseUnits("10", 6);
+    const price = ethers.utils.parseUnits("10", 18);
 
     expect(
       priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
@@ -48,10 +48,10 @@ describe("PriceRegistry", () => {
     expect(
       await priceRegistry
         .connect(admin)
-        .setSettlementPrice(assetOne, timestamp, price, 6)
+        .setSettlementPrice(assetOne, timestamp, price, 18)
     )
       .to.emit(priceRegistry, "PriceStored")
-      .withArgs(await admin.getAddress(), assetOne, timestamp, price, 6);
+      .withArgs(await admin.getAddress(), assetOne, timestamp, price, 18);
 
     expect(
       await priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
@@ -62,13 +62,13 @@ describe("PriceRegistry", () => {
     expect(
       priceRegistry
         .connect(admin)
-        .setSettlementPrice(assetOne, timestamp, 40, 6)
+        .setSettlementPrice(assetOne, timestamp, 40, 18)
     ).to.be.revertedWith(
       "PriceRegistry: Settlement price has already been set"
     );
   });
 
-  it("Should return the correct values when a price with less than 6 decimals is set", async () => {
+  it("Should return the correct values when a price with less than 18 decimals is set", async () => {
     const timestamp = 1;
     const price = ethers.utils.parseUnits("10", 2);
 
@@ -85,12 +85,12 @@ describe("PriceRegistry", () => {
 
     expect(
       await priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
-    ).to.equal(ethers.utils.parseUnits("10", 6));
+    ).to.equal(ethers.utils.parseUnits("10", 18));
   });
 
-  it("Should return the correct values when a price with more than 6 decimals is set", async () => {
+  it("Should return the correct values when a price with more than 18 decimals is set", async () => {
     const timestamp = 1;
-    const price = ethers.utils.parseUnits("10", 12);
+    const price = ethers.utils.parseUnits("10", 24);
 
     expect(
       priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
@@ -101,11 +101,11 @@ describe("PriceRegistry", () => {
 
     await priceRegistry
       .connect(admin)
-      .setSettlementPrice(assetOne, timestamp, price, 12);
+      .setSettlementPrice(assetOne, timestamp, price, 24);
 
     expect(
       await priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
-    ).to.equal(ethers.utils.parseUnits("10", 6));
+    ).to.equal(ethers.utils.parseUnits("10", 18));
   });
 
   it("Should not allow a price to be set for a future timestamp", async () => {
@@ -116,7 +116,7 @@ describe("PriceRegistry", () => {
           assetOne,
           Math.round(Date.now() / 1000) + 100000,
           40,
-          6
+          18
         )
     ).to.be.revertedWith(
       "PriceRegistry: Can't set a price for a time in the future"
@@ -127,7 +127,7 @@ describe("PriceRegistry", () => {
     await expect(
       priceRegistry
         .connect(secondAccount)
-        .setSettlementPrice(assetOne, 1, 40, 6)
+        .setSettlementPrice(assetOne, 1, 40, 18)
     ).to.be.revertedWith("PriceRegistry: Price submitter is not an oracle");
   });
 });

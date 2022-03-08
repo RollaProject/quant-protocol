@@ -39,5 +39,7 @@ interface IQuantCalculator {
     // solhint-disable-next-line func-name-mixedcase
     function OPTIONS_DECIMALS() external view returns (uint8);
 
+    function strikeAssetDecimals() external view returns (uint8);
+
     function optionsFactory() external view returns (address);
 }

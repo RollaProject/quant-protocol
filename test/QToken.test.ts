@@ -29,13 +29,13 @@ describe("QToken", async () => {
   let optionsMinter: Signer;
   let optionsBurner: Signer;
   let otherAccount: Signer;
-  let USDC: MockERC20;
+  let BUSD: MockERC20;
   let WETH: MockERC20;
   let userAddress: string;
   let otherUserAddress: string;
   let scaledStrikePrice: BigNumber;
   let qTokenParams: [string, string, string, BigNumber, BigNumber, boolean];
-  const strikePrice = ethers.utils.parseUnits("1400", 6);
+  const strikePrice = ethers.utils.parseUnits("1400", 18);
   const expiryTime = ethers.BigNumber.from("1618592400"); // April 16th, 2021
   const oracle = ethers.Wallet.createRandom().address;
 
@@ -79,7 +79,7 @@ describe("QToken", async () => {
     ]);
 
     WETH = await mockERC20(timelockController, "WETH", "Wrapped Ether");
-    USDC = await mockERC20(timelockController, "USDC", "USD Coin", 6);
+    BUSD = await mockERC20(timelockController, "BUSD", "BUSD Token", 18);
 
     const assetsRegistry = await deployAssetsRegistry(
       timelockController,
@@ -91,13 +91,13 @@ describe("QToken", async () => {
       .addAssetWithOptionalERC20Methods(WETH.address);
     await assetsRegistry
       .connect(assetsRegistryManager)
-      .addAssetWithOptionalERC20Methods(USDC.address);
+      .addAssetWithOptionalERC20Methods(BUSD.address);
 
-    scaledStrikePrice = ethers.utils.parseUnits("1400", await USDC.decimals());
+    scaledStrikePrice = ethers.utils.parseUnits("1400", await BUSD.decimals());
 
     qTokenParams = [
       WETH.address,
-      USDC.address,
+      BUSD.address,
       oracle,
       strikePrice,
       expiryTime,
@@ -116,7 +116,7 @@ describe("QToken", async () => {
     expect(await qToken.name()).to.equal("ROLLA WETH 16-April-2021 1400 Put");
     expect(await qToken.quantConfig()).to.equal(quantConfig.address);
     expect(await qToken.underlyingAsset()).to.equal(WETH.address);
-    expect(await qToken.strikeAsset()).to.equal(USDC.address);
+    expect(await qToken.strikeAsset()).to.equal(BUSD.address);
     expect(await qToken.oracle()).to.equal(oracle);
     expect(await qToken.strikePrice()).to.equal(scaledStrikePrice);
     expect(await qToken.expiryTime()).to.equal(expiryTime);
@@ -175,9 +175,9 @@ describe("QToken", async () => {
     qToken = <QToken>await deployContract(timelockController, QTokenJSON, [
       quantConfig.address,
       WETH.address,
-      USDC.address,
+      BUSD.address,
       oracle,
-      ethers.BigNumber.from("1912340000"), // USDC has 6 decimals
+      ethers.BigNumber.from("1912340000000000000000"), // BUSD has 18 decimals
       ethers.BigNumber.from("1630768904"),
       true,
     ]);
@@ -223,7 +223,7 @@ describe("QToken", async () => {
         await deployContract(timelockController, QTokenJSON, [
           quantConfig.address,
           WETH.address,
-          USDC.address,
+          BUSD.address,
           oracle,
           strikePrice,
           ethers.BigNumber.from(optionexpiryTime.toString()),
@@ -261,7 +261,7 @@ describe("QToken", async () => {
       timelockController,
       quantConfig,
       WETH.address,
-      USDC.address,
+      BUSD.address,
       ethers.Wallet.createRandom().address,
       strikePrice,
       ethers.BigNumber.from(

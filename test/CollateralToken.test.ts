@@ -28,7 +28,7 @@ describe("CollateralToken", () => {
   let collateralBurner: Signer;
   let userAddress: string;
   let WETH: MockERC20;
-  let USDC: MockERC20;
+  let BUSD: MockERC20;
 
   const createCollateralToken = async (
     account: Signer,
@@ -93,7 +93,7 @@ describe("CollateralToken", () => {
     ]);
 
     WETH = await mockERC20(deployer, "WETH");
-    USDC = await mockERC20(deployer, "USDC");
+    BUSD = await mockERC20(deployer, "BUSD");
 
     const assetsRegistry = await deployAssetsRegistry(deployer, quantConfig);
 
@@ -102,22 +102,22 @@ describe("CollateralToken", () => {
       .addAssetWithOptionalERC20Methods(WETH.address);
     await assetsRegistry
       .connect(assetRegistryManager)
-      .addAssetWithOptionalERC20Methods(USDC.address);
+      .addAssetWithOptionalERC20Methods(BUSD.address);
 
     qToken = await deployQToken(
       deployer,
       quantConfig,
       WETH.address,
-      USDC.address
+      BUSD.address
     );
 
     secondQToken = await deployQToken(
       deployer,
       quantConfig,
       WETH.address,
-      USDC.address,
+      BUSD.address,
       ethers.Wallet.createRandom().address,
-      ethers.utils.parseUnits("2000", await USDC.decimals()),
+      ethers.utils.parseUnits("2000", await BUSD.decimals()),
       ethers.BigNumber.from("1618592400"),
       true
     );
@@ -754,9 +754,9 @@ describe("CollateralToken", () => {
         deployer,
         quantConfig,
         WETH.address,
-        USDC.address,
+        BUSD.address,
         ethers.Wallet.createRandom().address,
-        ethers.utils.parseUnits("10000", await USDC.decimals()),
+        ethers.utils.parseUnits("10000", await BUSD.decimals()),
         ethers.BigNumber.from("1653285356"),
         false
       );

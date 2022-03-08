@@ -155,11 +155,11 @@ library OptionsUtils {
         return bytes(symbol).length != 0;
     }
 
-    function getPayoutDecimals(IQToken _qToken, IQuantConfig _quantConfig)
-        internal
-        view
-        returns (uint8 payoutDecimals)
-    {
+    function getPayoutDecimals(
+        uint8 _strikeAssetDecimals,
+        IQToken _qToken,
+        IQuantConfig _quantConfig
+    ) internal view returns (uint8 payoutDecimals) {
         IAssetsRegistry assetsRegistry = IAssetsRegistry(
             _quantConfig.protocolAddresses(
                 ProtocolValue.encode("assetsRegistry")
@@ -171,7 +171,7 @@ library OptionsUtils {
                 _qToken.underlyingAsset()
             );
         } else {
-            payoutDecimals = 6;
+            payoutDecimals = _strikeAssetDecimals;
         }
     }
 

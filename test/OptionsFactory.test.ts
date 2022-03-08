@@ -26,7 +26,7 @@ describe("OptionsFactory", () => {
   let secondAccount: Signer;
   let assetsRegistryManager: Signer;
   let WETH: MockERC20;
-  let USDC: MockERC20;
+  let BUSD: MockERC20;
   let optionsFactory: OptionsFactory;
   let assetsRegistry: AssetsRegistry;
   let oracleRegistry: OracleRegistry;
@@ -68,7 +68,7 @@ describe("OptionsFactory", () => {
     ]);
 
     WETH = await mockERC20(timelockController, "WETH", "Wrapped Ether");
-    USDC = await mockERC20(timelockController, "USDC", "USD Coin", 6);
+    BUSD = await mockERC20(timelockController, "BUSD", "BUSD Token", 18);
 
     collateralToken = await deployCollateralToken(
       timelockController,
@@ -101,7 +101,7 @@ describe("OptionsFactory", () => {
 
     optionsFactory = await deployOptionsFactory(
       timelockController,
-      USDC.address,
+      BUSD.address,
       quantConfig,
       collateralToken
     );
@@ -146,7 +146,7 @@ describe("OptionsFactory", () => {
     samplePutOptionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("1400", await USDC.decimals()),
+      ethers.utils.parseUnits("1400", await BUSD.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       false,
     ];
@@ -155,7 +155,7 @@ describe("OptionsFactory", () => {
       WETH.address,
       mockOracleManager.address,
       ethers.constants.AddressZero,
-      ethers.utils.parseUnits("1400", await USDC.decimals()),
+      ethers.utils.parseUnits("1400", await BUSD.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       false,
     ];
@@ -206,7 +206,7 @@ describe("OptionsFactory", () => {
           .createOption(
             WETH.address,
             ethers.constants.AddressZero,
-            ethers.utils.parseUnits("1400", await USDC.decimals()),
+            ethers.utils.parseUnits("1400", await BUSD.decimals()),
             ethers.BigNumber.from(futureTimestamp),
             false
           )
@@ -227,7 +227,7 @@ describe("OptionsFactory", () => {
           .createOption(
             WETH.address,
             mockOracleManager.address,
-            ethers.utils.parseUnits("1400", await USDC.decimals()),
+            ethers.utils.parseUnits("1400", await BUSD.decimals()),
             ethers.BigNumber.from(futureTimestamp),
             false
           )
@@ -246,7 +246,7 @@ describe("OptionsFactory", () => {
           .createOption(
             WETH.address,
             mockOracleManager.address,
-            ethers.utils.parseUnits("1400", await USDC.decimals()),
+            ethers.utils.parseUnits("1400", await BUSD.decimals()),
             ethers.BigNumber.from(futureTimestamp),
             false
           )
@@ -261,7 +261,7 @@ describe("OptionsFactory", () => {
         optionsFactory.createOption(
           WETH.address,
           ethers.constants.AddressZero,
-          ethers.utils.parseUnits("1400", await USDC.decimals()),
+          ethers.utils.parseUnits("1400", await BUSD.decimals()),
           ethers.BigNumber.from(pastTimestamp),
           false
         )
@@ -315,7 +315,7 @@ describe("OptionsFactory", () => {
           .createOption(
             ethers.constants.AddressZero,
             mockOracleManager.address,
-            ethers.utils.parseUnits("1400", await USDC.decimals()),
+            ethers.utils.parseUnits("1400", await BUSD.decimals()),
             futureTimestamp,
             false
           )
@@ -330,7 +330,7 @@ describe("OptionsFactory", () => {
           .createOption(
             ethers.constants.AddressZero,
             mockOracleManager.address,
-            ethers.utils.parseUnits("1400", await USDC.decimals()),
+            ethers.utils.parseUnits("1400", await BUSD.decimals()),
             futureTimestamp,
             false
           )
