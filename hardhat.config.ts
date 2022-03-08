@@ -1,15 +1,15 @@
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "@openzeppelin/hardhat-upgrades";
+import "@tenderly/hardhat-tenderly";
+import "@typechain/hardhat";
 import * as dotenv from "dotenv";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
 import "hardhat-gas-reporter";
-import "@typechain/hardhat";
 import { HardhatUserConfig } from "hardhat/config";
 import "solidity-coverage";
-import "@tenderly/hardhat-tenderly";
 
 dotenv.config();
 

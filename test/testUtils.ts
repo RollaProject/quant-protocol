@@ -385,10 +385,14 @@ const getApprovalForAllSignedData = (
 
 const deployQuantCalculator = async (
   deployer: Signer,
+  strikeAssetDecimals: number,
   optionsFactory: string
 ): Promise<QuantCalculator> => {
   const quantCalculator = <QuantCalculator>(
-    await deployContract(deployer, QuantCalculatorJSON, [optionsFactory])
+    await deployContract(deployer, QuantCalculatorJSON, [
+      strikeAssetDecimals,
+      optionsFactory,
+    ])
   );
   return quantCalculator;
 };

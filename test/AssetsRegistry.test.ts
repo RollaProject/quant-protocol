@@ -19,15 +19,15 @@ describe("AssetsRegistry", () => {
   let deployer: Signer;
   let secondAccount: Signer;
   let WETH: MockERC20;
-  let USDC: MockERC20;
+  let BUSD: MockERC20;
   let WETHProperties: AssetProperties;
-  let USDCProperties: AssetProperties;
+  let BUSDProperties: AssetProperties;
 
   beforeEach(async () => {
     [deployer, secondAccount] = provider.getWallets();
 
     WETH = await mockERC20(deployer, "WETH", "Wrapped Ether");
-    USDC = await mockERC20(deployer, "USDC", "USD Coin", 6);
+    BUSD = await mockERC20(deployer, "BUSD", "BUSD Token", 18);
 
     WETHProperties = [
       WETH.address,
@@ -36,11 +36,11 @@ describe("AssetsRegistry", () => {
       await WETH.decimals(),
     ];
 
-    USDCProperties = [
-      USDC.address,
-      await USDC.name(),
-      await USDC.symbol(),
-      await USDC.decimals(),
+    BUSDProperties = [
+      BUSD.address,
+      await BUSD.name(),
+      await BUSD.symbol(),
+      await BUSD.decimals(),
     ];
 
     quantConfig = await deployQuantConfig(deployer, [
@@ -64,7 +64,7 @@ describe("AssetsRegistry", () => {
 
     it("Should revert when an unauthorized account tries to add an asset", async () => {
       await expect(
-        assetsRegistry.connect(secondAccount).addAsset(...USDCProperties)
+        assetsRegistry.connect(secondAccount).addAsset(...BUSDProperties)
       ).to.be.revertedWith(
         "AssetsRegistry: only asset registry managers can add assets"
       );
@@ -92,9 +92,9 @@ describe("AssetsRegistry", () => {
     });
 
     it("Should emit the AssetAdded event", async () => {
-      await expect(assetsRegistry.connect(deployer).addAsset(...USDCProperties))
+      await expect(assetsRegistry.connect(deployer).addAsset(...BUSDProperties))
         .to.emit(assetsRegistry, "AssetAdded")
-        .withArgs(...USDCProperties);
+        .withArgs(...BUSDProperties);
     });
 
     it("Should add assets to the registeredAssets array", async () => {

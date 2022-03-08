@@ -18,6 +18,7 @@ contract QuantCalculator is IQuantCalculator {
     using QuantMath for QuantMath.FixedPointInt;
 
     uint8 public constant override OPTIONS_DECIMALS = 18;
+    uint8 public immutable override strikeAssetDecimals;
     address public immutable override optionsFactory;
 
     modifier validQToken(address _qToken) {
@@ -41,7 +42,8 @@ contract QuantCalculator is IQuantCalculator {
         _;
     }
 
-    constructor(address _optionsFactory) {
+    constructor(uint8 _strikeAssetDecimals, address _optionsFactory) {
+        strikeAssetDecimals = _strikeAssetDecimals;
         optionsFactory = _optionsFactory;
     }
 
@@ -109,6 +111,7 @@ contract QuantCalculator is IQuantCalculator {
                 qTokenLong,
                 amountToClaim,
                 OPTIONS_DECIMALS,
+                strikeAssetDecimals,
                 expiryPrice
             );
         } else {
@@ -117,6 +120,7 @@ contract QuantCalculator is IQuantCalculator {
         }
 
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
+            strikeAssetDecimals,
             qTokenShort,
             quantConfig
         );
@@ -128,7 +132,8 @@ contract QuantCalculator is IQuantCalculator {
                 qTokenLong,
                 amountToClaim,
                 OPTIONS_DECIMALS,
-                payoutDecimals
+                payoutDecimals,
+                strikeAssetDecimals
             );
 
         (, QuantMath.FixedPointInt memory payoutFromShort) = FundsCalculator
@@ -136,6 +141,7 @@ contract QuantCalculator is IQuantCalculator {
                 _qTokenShort,
                 amountToClaim,
                 OPTIONS_DECIMALS,
+                strikeAssetDecimals,
                 expiryPrice
             );
 
@@ -156,6 +162,7 @@ contract QuantCalculator is IQuantCalculator {
         returns (address collateralType, uint256 collateralOwed)
     {
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
+            strikeAssetDecimals,
             IQToken(_qTokenShort),
             IOptionsFactory(optionsFactory).quantConfig()
         );
@@ -167,7 +174,8 @@ contract QuantCalculator is IQuantCalculator {
                 _qTokenLong,
                 _amountToNeutralize,
                 OPTIONS_DECIMALS,
-                payoutDecimals
+                payoutDecimals,
+                strikeAssetDecimals
             );
 
         collateralOwed = collateralOwedFP.toScaledUint(payoutDecimals, true);
@@ -187,6 +195,7 @@ contract QuantCalculator is IQuantCalculator {
     {
         QuantMath.FixedPointInt memory collateralAmountFP;
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
+            strikeAssetDecimals,
             IQToken(_qTokenToMint),
             IOptionsFactory(optionsFactory).quantConfig()
         );
@@ -197,7 +206,8 @@ contract QuantCalculator is IQuantCalculator {
                 _qTokenForCollateral,
                 _amount,
                 OPTIONS_DECIMALS,
-                payoutDecimals
+                payoutDecimals,
+                strikeAssetDecimals
             );
 
         collateralAmount = collateralAmountFP.toScaledUint(
@@ -235,6 +245,7 @@ contract QuantCalculator is IQuantCalculator {
         );
 
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
+            strikeAssetDecimals,
             qToken,
             quantConfig
         );
@@ -252,6 +263,7 @@ contract QuantCalculator is IQuantCalculator {
             _qToken,
             _amount,
             OPTIONS_DECIMALS,
+            strikeAssetDecimals,
             expiryPrice
         );
 

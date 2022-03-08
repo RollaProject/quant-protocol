@@ -12,7 +12,6 @@ import {
   ChainlinkOracleManager,
   MockAggregatorProxy,
   PriceRegistry,
-  ProviderOracleManager,
 } from "../typechain";
 import { expect, provider } from "./setup";
 
@@ -42,7 +41,7 @@ export const testProviderOracleManager = async (
 
     mockConfig = await deployMockContract(owner, CONFIG.abi);
 
-    oracleManager = await deployOracleManager(mockConfig, 6, 0);
+    oracleManager = await deployOracleManager(mockConfig, 18, 0);
 
     mockPriceRegistry = await deployMockContract(owner, PRICE_REGISTRY.abi);
 
@@ -164,7 +163,7 @@ export const testChainlinkOracleManager = async (
 
     mockConfig = await deployMockContract(owner, CONFIG.abi);
 
-    oracleManager = await deployOracleManager(mockConfig, 6, 0);
+    oracleManager = await deployOracleManager(mockConfig, 18, 0);
 
     mockAggregator = await deployMockContract(owner, AGGREGATOR.abi);
     mockAggregatorTwo = await deployMockContract(owner, AGGREGATOR.abi);
@@ -197,7 +196,7 @@ export const testChainlinkOracleManager = async (
     PriceRegistry = await ethers.getContractFactory("PriceRegistry");
 
     priceRegistry = <PriceRegistry>(
-      await PriceRegistry.deploy(mockConfig.address, 6)
+      await PriceRegistry.deploy(mockConfig.address, 18)
     );
   }
 
@@ -255,7 +254,7 @@ export const testChainlinkOracleManager = async (
     });
 
     it("Fallback method should not allow a fallback submitter to submit before the fallback period", async function () {
-      const oracleManager = await deployOracleManager(mockConfig, 6, 5000);
+      const oracleManager = await deployOracleManager(mockConfig, 18, 5000);
       await oracleManager.deployed();
 
       await mockConfig.mock.protocolAddresses
@@ -271,7 +270,7 @@ export const testChainlinkOracleManager = async (
           .connect(fallbackPriceAccount)
           .setExpiryPriceInRegistryFallback(
             assetOne,
-            Math.round(Date.now() / 1000),
+            Math.round(Date.now() / 1000) + 3600,
             5000
           )
       ).to.be.revertedWith(
@@ -324,7 +323,7 @@ export const testChainlinkOracleManager = async (
       );
 
       expect(await oracleManager.getCurrentPrice(assetTwo)).to.be.equal(
-        ethers.utils.parseUnits("2", 6)
+        ethers.utils.parseUnits("2", 18)
       );
     });
 

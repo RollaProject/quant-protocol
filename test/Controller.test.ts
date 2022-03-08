@@ -57,6 +57,8 @@ import {
 const { deployMockContract } = waffle;
 const { AddressZero, Zero } = constants;
 
+BN.config({ EXPONENTIAL_AT: 30 });
+
 type optionParameters = [string, string, BigNumber, BigNumber, boolean];
 
 type CollateralTokenParameters = [
@@ -81,7 +83,7 @@ describe("Controller", async () => {
   let collateralCreator: Signer;
   let oracleManagerAccount: Signer;
   let WETH: MockERC20;
-  let USDC: MockERC20;
+  let BUSD: MockERC20;
   let optionsFactory: OptionsFactory;
   let assetsRegistry: AssetsRegistry;
   let oracleRegistry: OracleRegistry;
@@ -198,7 +200,7 @@ describe("Controller", async () => {
     ).to.eql([collateralAddress, collateralAmount]);
 
     // mint required collateral to the user account
-    const collateral = collateralAddress === WETH.address ? WETH : USDC;
+    const collateral = collateralAddress === WETH.address ? WETH : BUSD;
 
     expect(await collateral.balanceOf(secondAccount.address)).to.equal(0);
 
@@ -321,7 +323,7 @@ describe("Controller", async () => {
 
     //Note: Converts to the chainlink 8 decimal format
     await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
-      expiryPrice.mul("100"),
+      expiryPrice.div((10 ** ((await BUSD.decimals()) - 8)).toString()),
       BigNumber.from(8),
     ]);
 
@@ -333,7 +335,7 @@ describe("Controller", async () => {
         BN.ROUND_CEIL
       );
 
-    const collateral = collateralAddress === WETH.address ? WETH : USDC;
+    const collateral = collateralAddress === WETH.address ? WETH : BUSD;
 
     await collateral
       .connect(assetsRegistryManager)
@@ -465,7 +467,7 @@ describe("Controller", async () => {
     expect(parseInt(controllerExtraFunds.toString())).to.be.lessThanOrEqual(1); //check the rounding is within 1 wei
 
     const strikePriceString = (await qTokenShort.strikePrice()).div(
-      ethers.BigNumber.from("10").pow(await USDC.decimals())
+      ethers.BigNumber.from("10").pow(await BUSD.decimals())
     );
     const qTokenShortString = `${strikePriceString}${
       (await qTokenShort.isCall()) ? "CALL" : "PUT"
@@ -476,7 +478,7 @@ describe("Controller", async () => {
       10 ** (await collateral.decimals());
 
     const expiryPriceString = expiryPrice.div(
-      ethers.BigNumber.from("10").pow(await USDC.decimals())
+      ethers.BigNumber.from("10").pow(await BUSD.decimals())
     );
 
     const payoutFromShortString =
@@ -490,23 +492,23 @@ describe("Controller", async () => {
           .toString()
       ) /
       10 ** (await collateral.decimals())
-    } ${payoutAsset.address === USDC.address ? "USDC" : "WETH"}`;
+    } ${payoutAsset.address === BUSD.address ? "BUSD" : "WETH"}`;
 
     const qTokenLongStrikePriceString =
       qTokenLong.address !== AddressZero
         ? (await qTokenLong.strikePrice())
-            .div(ethers.BigNumber.from("10").pow(await USDC.decimals()))
+            .div(ethers.BigNumber.from("10").pow(await BUSD.decimals()))
             .toString()
         : "0";
 
     console.log(
       `${qTokenShortString} -> CollateralToken(${qTokenShortString}, ${qTokenLongStrikePriceString}) costing ${collateralRequirementString} ${
-        collateral.address === USDC.address ? "USDC" : "WETH"
+        collateral.address === BUSD.address ? "BUSD" : "WETH"
       }`
     );
     console.log(
       `Expired at $${expiryPriceString}. Exercised for ${payoutFromShortString} ${
-        payoutAsset.address === USDC.address ? "USDC" : "WETH"
+        payoutAsset.address === BUSD.address ? "BUSD" : "WETH"
       } so the user is entitled to ~ ${claimableCollateralString}`
     );
 
@@ -545,7 +547,7 @@ describe("Controller", async () => {
             .div(new BN(10).pow(optionsDecimals))
         : new BN(0);
 
-      payoutToken = USDC;
+      payoutToken = BUSD;
     }
 
     payoutAmount = payoutAmount.integerValue(roundMode);
@@ -592,7 +594,7 @@ describe("Controller", async () => {
     ]);
 
     WETH = await mockERC20(assetsRegistryManager, "WETH", "Wrapped Ether");
-    USDC = await mockERC20(assetsRegistryManager, "USDC", "USD Coin", 6);
+    BUSD = await mockERC20(assetsRegistryManager, "BUSD", "BUSD Token", 18);
     collateralToken = await deployCollateralToken(deployer, quantConfig);
 
     assetsRegistry = await deployAssetsRegistry(deployer, quantConfig);
@@ -618,10 +620,10 @@ describe("Controller", async () => {
     await assetsRegistry
       .connect(assetsRegistryManager)
       .addAsset(
-        USDC.address,
-        await USDC.name(),
-        await USDC.symbol(),
-        await USDC.decimals()
+        BUSD.address,
+        await BUSD.name(),
+        await BUSD.symbol(),
+        await BUSD.decimals()
       );
 
     QTokenInterface = (await ethers.getContractFactory("QToken")).interface;
@@ -631,7 +633,7 @@ describe("Controller", async () => {
 
     optionsFactory = await deployOptionsFactory(
       deployer,
-      USDC.address,
+      BUSD.address,
       quantConfig,
       collateralToken
     );
@@ -642,7 +644,7 @@ describe("Controller", async () => {
     samplePutOptionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("1400", await USDC.decimals()),
+      ethers.utils.parseUnits("1400", await BUSD.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       false,
     ];
@@ -710,7 +712,7 @@ describe("Controller", async () => {
     sampleCallOptionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("2000", await USDC.decimals()),
+      ethers.utils.parseUnits("2000", await BUSD.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       true,
     ];
@@ -730,7 +732,7 @@ describe("Controller", async () => {
     const qTokenCall2880Parameters: optionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("2880", await USDC.decimals()),
+      ethers.utils.parseUnits("2880", await BUSD.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       true,
     ];
@@ -752,7 +754,7 @@ describe("Controller", async () => {
     const qTokenCall3520Parameters: optionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("3520", await USDC.decimals()),
+      ethers.utils.parseUnits("3520", await BUSD.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       true,
     ];
@@ -774,7 +776,7 @@ describe("Controller", async () => {
     const qTokenPut400Parameters: optionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("400", await USDC.decimals()),
+      ethers.utils.parseUnits("400", await BUSD.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       false,
     ];
@@ -799,6 +801,7 @@ describe("Controller", async () => {
 
     quantCalculator = await deployQuantCalculator(
       deployer,
+      18,
       optionsFactory.address
     );
 
@@ -874,15 +877,15 @@ describe("Controller", async () => {
       );
 
       expect(collateralRequirement).to.equal(
-        ethers.utils.parseUnits("7000", 6)
+        ethers.utils.parseUnits("7000", await BUSD.decimals())
       );
 
-      await USDC.connect(assetsRegistryManager).mint(
+      await BUSD.connect(assetsRegistryManager).mint(
         secondAccount.address,
         collateralRequirement
       );
 
-      await USDC.connect(secondAccount).approve(
+      await BUSD.connect(secondAccount).approve(
         controller.address,
         collateralRequirement
       );
@@ -895,7 +898,7 @@ describe("Controller", async () => {
         }),
       ]);
 
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(Zero);
+      expect(await BUSD.balanceOf(secondAccount.address)).to.equal(Zero);
 
       const collateralTokenId = await collateralToken.getCollateralTokenId(
         qTokenPut1400.address,
@@ -936,12 +939,12 @@ describe("Controller", async () => {
         )
       ).to.equal(remainingAmount);
 
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
-        ethers.utils.parseUnits("4200", 6)
+      expect(await BUSD.balanceOf(secondAccount.address)).to.equal(
+        ethers.utils.parseUnits("4200", await BUSD.decimals())
       );
 
-      expect(await USDC.balanceOf(controller.address)).to.equal(
-        ethers.utils.parseUnits("2800", 6)
+      expect(await BUSD.balanceOf(controller.address)).to.equal(
+        ethers.utils.parseUnits("2800", await BUSD.decimals())
       );
     });
 
@@ -955,7 +958,7 @@ describe("Controller", async () => {
       );
 
       expect(spreadCollateralRequirement).to.equal(
-        ethers.utils.parseUnits("5000", 6)
+        ethers.utils.parseUnits("5000", await BUSD.decimals())
       );
 
       const [, longCollateralRequirement] = await getCollateralRequirement(
@@ -965,15 +968,15 @@ describe("Controller", async () => {
       );
 
       expect(longCollateralRequirement).to.equal(
-        ethers.utils.parseUnits("2000", 6)
+        ethers.utils.parseUnits("2000", await BUSD.decimals())
       );
 
-      await USDC.connect(assetsRegistryManager).mint(
+      await BUSD.connect(assetsRegistryManager).mint(
         secondAccount.address,
         spreadCollateralRequirement.add(longCollateralRequirement)
       );
 
-      await USDC.connect(secondAccount).approve(
+      await BUSD.connect(secondAccount).approve(
         controller.address,
         spreadCollateralRequirement.add(longCollateralRequirement)
       );
@@ -1002,11 +1005,11 @@ describe("Controller", async () => {
         optionsAmount
       );
 
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+      expect(await BUSD.balanceOf(secondAccount.address)).to.equal(
         spreadCollateralRequirement
       );
 
-      expect(await USDC.balanceOf(controller.address)).to.equal(
+      expect(await BUSD.balanceOf(controller.address)).to.equal(
         longCollateralRequirement
       );
 
@@ -1042,9 +1045,9 @@ describe("Controller", async () => {
         Zero
       );
 
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(Zero);
+      expect(await BUSD.balanceOf(secondAccount.address)).to.equal(Zero);
 
-      expect(await USDC.balanceOf(controller.address)).to.equal(
+      expect(await BUSD.balanceOf(controller.address)).to.equal(
         longCollateralRequirement.add(spreadCollateralRequirement)
       );
 
@@ -1097,11 +1100,11 @@ describe("Controller", async () => {
         )
       ).to.equal(optionsAmount);
 
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+      expect(await BUSD.balanceOf(secondAccount.address)).to.equal(
         collateralOwed
       );
 
-      expect(await USDC.balanceOf(controller.address)).to.equal(
+      expect(await BUSD.balanceOf(controller.address)).to.equal(
         longCollateralRequirement
       );
     });
@@ -1117,7 +1120,7 @@ describe("Controller", async () => {
       );
 
       expect(spreadCollateralRequirement).to.equal(
-        ethers.utils.parseUnits("0", 6)
+        ethers.utils.parseUnits("0", await BUSD.decimals())
       );
 
       const [, longCollateralRequirement] = await getCollateralRequirement(
@@ -1127,15 +1130,15 @@ describe("Controller", async () => {
       );
 
       expect(longCollateralRequirement).to.equal(
-        ethers.utils.parseUnits("7000", 6)
+        ethers.utils.parseUnits("7000", await BUSD.decimals())
       );
 
-      await USDC.connect(assetsRegistryManager).mint(
+      await BUSD.connect(assetsRegistryManager).mint(
         secondAccount.address,
         spreadCollateralRequirement.add(longCollateralRequirement)
       );
 
-      await USDC.connect(secondAccount).approve(
+      await BUSD.connect(secondAccount).approve(
         controller.address,
         spreadCollateralRequirement.add(longCollateralRequirement)
       );
@@ -1164,11 +1167,11 @@ describe("Controller", async () => {
         optionsAmount
       );
 
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+      expect(await BUSD.balanceOf(secondAccount.address)).to.equal(
         spreadCollateralRequirement
       );
 
-      expect(await USDC.balanceOf(controller.address)).to.equal(
+      expect(await BUSD.balanceOf(controller.address)).to.equal(
         longCollateralRequirement
       );
 
@@ -1204,9 +1207,9 @@ describe("Controller", async () => {
         Zero
       );
 
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(Zero);
+      expect(await BUSD.balanceOf(secondAccount.address)).to.equal(Zero);
 
-      expect(await USDC.balanceOf(controller.address)).to.equal(
+      expect(await BUSD.balanceOf(controller.address)).to.equal(
         longCollateralRequirement.add(spreadCollateralRequirement)
       );
 
@@ -1259,92 +1262,15 @@ describe("Controller", async () => {
         )
       ).to.equal(optionsAmount);
 
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+      expect(await BUSD.balanceOf(secondAccount.address)).to.equal(
         collateralOwed
       );
 
       expect(collateralOwed).to.equal(Zero);
 
-      expect(await USDC.balanceOf(controller.address)).to.equal(
+      expect(await BUSD.balanceOf(controller.address)).to.equal(
         longCollateralRequirement
       );
-    });
-
-    it("Should round in favour of the protocol when neutralizing positions", async () => {
-      //1400 USD strike -> 1400 * 10^6 = 10^9
-      //1 OPTION REQUIRES 1.4 * 10^9
-      //10^18 OPTION REQUIRES 1.4 * 10^9
-      //1.4 WEI OF USDC NEEDED PER 10^9 options
-      //3.5 WEI of USDC NEEDED FOR 2.5 * 10^9
-      //4 WEI WHEN ROUNDED UP (MINT) FOR 2.5 * 10^9 OPTIONS
-      //3 WEI WHEN ROUNDED DOWN (NEUTRALIZE) FOR 2.5 * 10^9 OPTIONS
-
-      const optionsAmount = ethers.utils.parseUnits("2.5", 9);
-
-      const [, collateralRequirement] = await getCollateralRequirement(
-        qTokenPut1400,
-        nullQToken,
-        optionsAmount,
-        BN.ROUND_UP
-      );
-
-      expect(collateralRequirement).to.equal(4);
-
-      await USDC.connect(assetsRegistryManager).mint(
-        secondAccount.address,
-        collateralRequirement
-      );
-
-      await USDC.connect(secondAccount).approve(
-        controller.address,
-        collateralRequirement
-      );
-
-      await controller.connect(secondAccount).operate([
-        encodeMintOptionArgs({
-          to: secondAccount.address,
-          qToken: qTokenPut1400.address,
-          amount: optionsAmount,
-        }),
-      ]);
-
-      const collateralTokenId = await collateralToken.getCollateralTokenId(
-        qTokenPut1400.address,
-        AddressZero
-      );
-
-      await controller.connect(secondAccount).operate([
-        encodeNeutralizeArgs({
-          collateralTokenId,
-          amount: optionsAmount,
-        }),
-      ]);
-
-      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
-        Zero
-      );
-
-      expect(
-        await collateralToken.balanceOf(
-          secondAccount.address,
-          collateralTokenId
-        )
-      ).to.equal(Zero);
-
-      const [, collateralOwed] = await getCollateralRequirement(
-        qTokenPut1400,
-        nullQToken,
-        optionsAmount,
-        BN.ROUND_DOWN
-      );
-
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
-        collateralOwed
-      );
-      expect(await USDC.balanceOf(controller.address)).to.equal(
-        collateralRequirement.sub(collateralOwed)
-      );
-      expect(collateralOwed).to.equal(3);
     });
   });
 
@@ -1437,7 +1363,7 @@ describe("Controller", async () => {
       const qTokenParams: optionParameters = [
         WETH.address,
         mockOracleManager.address,
-        ethers.utils.parseUnits("1400", await USDC.decimals()),
+        ethers.utils.parseUnits("1400", await BUSD.decimals()),
         ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
         false,
       ];
@@ -1477,7 +1403,7 @@ describe("Controller", async () => {
       const qTokenParams: optionParameters = [
         WETH.address,
         mockOracleManager.address,
-        ethers.utils.parseUnits("1400", await USDC.decimals()),
+        ethers.utils.parseUnits("1400", await BUSD.decimals()),
         ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
         false,
       ];
@@ -1501,9 +1427,9 @@ describe("Controller", async () => {
 
     it("Should revert when trying to create spreads from options with different underlying assets", async () => {
       const qTokenParams: optionParameters = [
-        USDC.address,
+        BUSD.address,
         mockOracleManager.address,
-        ethers.utils.parseUnits("5000", await USDC.decimals()),
+        ethers.utils.parseUnits("5000", await BUSD.decimals()),
         ethers.BigNumber.from(futureTimestamp),
         true,
       ];
@@ -1641,7 +1567,7 @@ describe("Controller", async () => {
         .connect(optionsMinter)
         .mint(secondAccount.address, optionsAmount);
 
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+      expect(await BUSD.balanceOf(secondAccount.address)).to.equal(
         ethers.BigNumber.from("0")
       );
 
@@ -1656,9 +1582,9 @@ describe("Controller", async () => {
         )
       ).payoutAmount;
 
-      // Mint USDC to the Controller so it can pay the user
-      await USDC.connect(deployer).mint(controller.address, payoutAmount);
-      expect(await USDC.balanceOf(controller.address)).to.equal(payoutAmount);
+      // Mint BUSD to the Controller so it can pay the user
+      await BUSD.connect(deployer).mint(controller.address, payoutAmount);
+      expect(await BUSD.balanceOf(controller.address)).to.equal(payoutAmount);
 
       await expect(
         controller.connect(secondAccount).operate([
@@ -1674,13 +1600,13 @@ describe("Controller", async () => {
           qTokenToExercise.address,
           optionsAmount,
           payoutAmount,
-          USDC.address
+          BUSD.address
         );
 
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+      expect(await BUSD.balanceOf(secondAccount.address)).to.equal(
         payoutAmount
       );
-      expect(await USDC.balanceOf(controller.address)).to.equal(
+      expect(await BUSD.balanceOf(controller.address)).to.equal(
         ethers.BigNumber.from("0")
       );
       expect(await qTokenToExercise.balanceOf(secondAccount.address)).to.equal(
@@ -1864,7 +1790,7 @@ describe("Controller", async () => {
       const totalCollateralRequirement = firstCollateralAmount.add(
         secondCollateralRequirement
       );
-      const collateral = USDC;
+      const collateral = BUSD;
       await collateral
         .connect(assetsRegistryManager)
         .mint(deployer.address, totalCollateralRequirement);
@@ -1872,7 +1798,7 @@ describe("Controller", async () => {
         .connect(deployer)
         .approve(controller.address, totalCollateralRequirement);
       await controller.connect(deployer).operate(mintActions);
-      expect(await USDC.balanceOf(controller.address)).to.equal(
+      expect(await BUSD.balanceOf(controller.address)).to.equal(
         totalCollateralRequirement
       );
       expect(await qTokenPut1400.balanceOf(deployer.address)).to.equal(
@@ -1896,7 +1822,7 @@ describe("Controller", async () => {
       const ExternalQToken = await ethers.getContractFactory("ExternalQToken");
       const externalStrikePrice = ethers.utils.parseUnits(
         "2600",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
       const externalQToken = <ExternalQToken>(
         await ExternalQToken.connect(secondAccount).deploy(
@@ -1981,7 +1907,7 @@ describe("Controller", async () => {
     });
 
     it("Users should be able to claim collateral from PUT options that expired ITM", async () => {
-      const expiryPrice = ethers.utils.parseUnits("300", await USDC.decimals());
+      const expiryPrice = ethers.utils.parseUnits("300", await BUSD.decimals());
 
       const snapshotId = await testClaimCollateral(
         qTokenPut400,
@@ -1993,7 +1919,7 @@ describe("Controller", async () => {
     });
 
     it("Users should be able to claim collateral from PUT options that expired OTM", async () => {
-      const expiryPrice = ethers.utils.parseUnits("500", await USDC.decimals());
+      const expiryPrice = ethers.utils.parseUnits("500", await BUSD.decimals());
 
       const snapshotId = await testClaimCollateral(
         qTokenPut400,
@@ -2005,7 +1931,7 @@ describe("Controller", async () => {
     });
 
     it("Users should be able to claim collateral from PUT options that expired ATM", async () => {
-      const expiryPrice = ethers.utils.parseUnits("400", await USDC.decimals());
+      const expiryPrice = ethers.utils.parseUnits("400", await BUSD.decimals());
 
       const snapshotId = await testClaimCollateral(
         qTokenPut400,
@@ -2019,7 +1945,7 @@ describe("Controller", async () => {
     it("Users should be able to claim collateral from CALL options that expired ITM", async () => {
       const expiryPrice = ethers.utils.parseUnits(
         "2500",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
 
       const snapshotId = await testClaimCollateral(
@@ -2034,7 +1960,7 @@ describe("Controller", async () => {
     it("Users should be able to claim collateral from CALL options that expired OTM", async () => {
       const expiryPrice = ethers.utils.parseUnits(
         "1800",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
 
       const snapshotId = await testClaimCollateral(
@@ -2049,7 +1975,7 @@ describe("Controller", async () => {
     it("Users should be able to claim collateral from CALL options that expired ATM", async () => {
       const expiryPrice = ethers.utils.parseUnits(
         "2000",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
 
       const snapshotId = await testClaimCollateral(
@@ -2064,7 +1990,7 @@ describe("Controller", async () => {
     it("Users should be able to claim collateral from PUT Credit Spreads that expired ITM", async () => {
       const expiryPrice = ethers.utils.parseUnits(
         "1100",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
 
       const snapshotId = await testClaimCollateral(
@@ -2078,7 +2004,7 @@ describe("Controller", async () => {
     });
 
     it("PUT Credit Spreads that expired ITM and below the coverage of the spread CollateralToken", async () => {
-      const expiryPrice = ethers.utils.parseUnits("300", await USDC.decimals());
+      const expiryPrice = ethers.utils.parseUnits("300", await BUSD.decimals());
 
       const snapshotId = await testClaimCollateral(
         qTokenPut1400,
@@ -2087,7 +2013,7 @@ describe("Controller", async () => {
         qTokenPut400
       );
 
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+      expect(await BUSD.balanceOf(secondAccount.address)).to.equal(
         ethers.BigNumber.from("0")
       );
 
@@ -2097,7 +2023,7 @@ describe("Controller", async () => {
     it("Users should be able to claim collateral from PUT Credit Spreads that expired OTM", async () => {
       const expiryPrice = ethers.utils.parseUnits(
         "1800",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
 
       const snapshotId = await testClaimCollateral(
@@ -2113,7 +2039,7 @@ describe("Controller", async () => {
     it("Users should be able to claim collateral from PUT Credit Spreads that expired ATM", async () => {
       const expiryPrice = ethers.utils.parseUnits(
         "1400",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
 
       const snapshotId = await testClaimCollateral(
@@ -2127,7 +2053,7 @@ describe("Controller", async () => {
     });
 
     it("Users should be able to claim collateral from PUT Debit Spreads that expired ITM", async () => {
-      const expiryPrice = ethers.utils.parseUnits("200", await USDC.decimals());
+      const expiryPrice = ethers.utils.parseUnits("200", await BUSD.decimals());
 
       const snapshotId = await testClaimCollateral(
         qTokenPut400,
@@ -2140,7 +2066,7 @@ describe("Controller", async () => {
     });
 
     it("Users should be able to claim collateral from PUT Debit Spreads that expired OTM", async () => {
-      const expiryPrice = ethers.utils.parseUnits("600", await USDC.decimals());
+      const expiryPrice = ethers.utils.parseUnits("600", await BUSD.decimals());
 
       const snapshotId = await testClaimCollateral(
         qTokenPut400,
@@ -2153,7 +2079,7 @@ describe("Controller", async () => {
     });
 
     it("Users should be able to claim collateral from PUT Debit Spreads that expired ATM", async () => {
-      const expiryPrice = ethers.utils.parseUnits("400", await USDC.decimals());
+      const expiryPrice = ethers.utils.parseUnits("400", await BUSD.decimals());
 
       const snapshotId = await testClaimCollateral(
         qTokenPut400,
@@ -2168,7 +2094,7 @@ describe("Controller", async () => {
     it("Users should be able to claim collateral from CALL Credit Spreads that expired ITM", async () => {
       const expiryPrice = ethers.utils.parseUnits(
         "3200",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
 
       const snapshotId = await testClaimCollateral(
@@ -2184,7 +2110,7 @@ describe("Controller", async () => {
     it("Users should be able to claim collateral from CALL Credit Spreads that expired OTM", async () => {
       const expiryPrice = ethers.utils.parseUnits(
         "2600",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
 
       const snapshotId = await testClaimCollateral(
@@ -2200,7 +2126,7 @@ describe("Controller", async () => {
     it("Users should be able to claim collateral from CALL Credit Spreads that expired ATM", async () => {
       const expiryPrice = ethers.utils.parseUnits(
         "2880",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
 
       const snapshotId = await testClaimCollateral(
@@ -2216,7 +2142,7 @@ describe("Controller", async () => {
     it("CALL Credit Spreads that expired ITM, at the strike price of the long option", async () => {
       const expiryPrice = ethers.utils.parseUnits(
         "3520",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
 
       const snapshotId = await testClaimCollateral(
@@ -2236,7 +2162,7 @@ describe("Controller", async () => {
     it("Users should be able to claim collateral from CALL Debit Spreads that expired ITM", async () => {
       const expiryPrice = ethers.utils.parseUnits(
         "4000",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
 
       const snapshotId = await testClaimCollateral(
@@ -2252,7 +2178,7 @@ describe("Controller", async () => {
     it("Users should be able to claim collateral from CALL Debit Spreads that expired OTM", async () => {
       const expiryPrice = ethers.utils.parseUnits(
         "3000",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
 
       const snapshotId = await testClaimCollateral(
@@ -2268,7 +2194,7 @@ describe("Controller", async () => {
     it("Users should be able to claim collateral from CALL Debit Spreads that expired ATM", async () => {
       const expiryPrice = ethers.utils.parseUnits(
         "3520",
-        await USDC.decimals()
+        await BUSD.decimals()
       );
 
       const snapshotId = await testClaimCollateral(
@@ -2556,7 +2482,7 @@ describe("Controller", async () => {
       const [collateralAddress, collateralAmount] =
         await getCollateralRequirement(qTokenCall2000, nullQToken, amount);
       // mint required collateral to the user account
-      const collateral = collateralAddress === WETH.address ? WETH : USDC;
+      const collateral = collateralAddress === WETH.address ? WETH : BUSD;
       await collateral
         .connect(assetsRegistryManager)
         .mint(await deployer.address, collateralAmount);
@@ -2616,7 +2542,7 @@ describe("Controller", async () => {
       const [collateralAddress, collateralAmount] =
         await getCollateralRequirement(qTokenCall2880, qTokenCall3520, amount);
 
-      const collateral = collateralAddress === WETH.address ? WETH : USDC;
+      const collateral = collateralAddress === WETH.address ? WETH : BUSD;
 
       await collateral
         .connect(assetsRegistryManager)
@@ -2698,9 +2624,9 @@ describe("Controller", async () => {
         )
       ).payoutAmount;
 
-      // Mint USDC to the Controller so it can pay the user
-      await USDC.connect(deployer).mint(controller.address, payoutAmount);
-      expect(await USDC.balanceOf(controller.address)).to.equal(payoutAmount);
+      // Mint BUSD to the Controller so it can pay the user
+      await BUSD.connect(deployer).mint(controller.address, payoutAmount);
+      expect(await BUSD.balanceOf(controller.address)).to.equal(payoutAmount);
 
       const actions = [
         encodeExerciseArgs({
@@ -2734,8 +2660,8 @@ describe("Controller", async () => {
           await (await controller.getNonce(deployer.address)).add(1)
         );
 
-      expect(await USDC.balanceOf(deployer.address)).to.equal(payoutAmount);
-      expect(await USDC.balanceOf(controller.address)).to.equal(
+      expect(await BUSD.balanceOf(deployer.address)).to.equal(payoutAmount);
+      expect(await BUSD.balanceOf(controller.address)).to.equal(
         ethers.BigNumber.from("0")
       );
       expect(await qTokenToExercise.balanceOf(deployer.address)).to.equal(
@@ -2746,13 +2672,13 @@ describe("Controller", async () => {
     });
 
     it("Users should be able to claim collateral through meta transactions", async () => {
-      const expiryPrice = ethers.utils.parseUnits("300", await USDC.decimals());
+      const expiryPrice = ethers.utils.parseUnits("300", await BUSD.decimals());
 
       await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
 
       //Note: Converts to the chainlink 8 decimal format
       await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
-        expiryPrice.mul("100"),
+        expiryPrice.div((10 ** ((await BUSD.decimals()) - 8)).toString()),
         BigNumber.from(8),
       ]);
 
@@ -2766,7 +2692,7 @@ describe("Controller", async () => {
           BN.ROUND_CEIL
         );
 
-      const collateral = collateralAddress === WETH.address ? WETH : USDC;
+      const collateral = collateralAddress === WETH.address ? WETH : BUSD;
 
       await collateral
         .connect(assetsRegistryManager)
@@ -2872,12 +2798,12 @@ describe("Controller", async () => {
         BN.ROUND_DOWN
       );
 
-      await USDC.connect(assetsRegistryManager).mint(
+      await BUSD.connect(assetsRegistryManager).mint(
         deployer.address,
         collateralRequirement
       );
 
-      await USDC.connect(deployer).approve(
+      await BUSD.connect(deployer).approve(
         controller.address,
         collateralRequirement
       );
@@ -3059,7 +2985,7 @@ describe("Controller", async () => {
       const newQTokenParams: optionParameters = [
         WETH.address,
         mockOracleManager.address,
-        ethers.utils.parseUnits("1000", 6),
+        ethers.utils.parseUnits("1000", await BUSD.decimals()),
         ethers.BigNumber.from(futureTimestamp),
         false,
       ];
