@@ -54,7 +54,7 @@ perl -0777 -i -pe 's/\(\(_a.div\(10\*\*exp\)\).uintToInt\(\)\);\s*} else \{/\(\(
 # Division simplification
 perl -0777 -i -pe 's/Registry.sol";/Registry.sol"    ;\nimport "\@openzeppelin\/contracts\/math\/SignedSafeMath.sol";/g' contracts/libraries/FundsCalculator.sol
 perl -0777 -i -pe 's/using SafeMath for uint256;/using SafeMath for uint256    ;\n    using SignedSafeMath for int256;/g' contracts/libraries/FundsCalculator.sol
-perl -0777 -i -pe 's/\(10\*\*_underlyingDecimals\)/uint256\(1000000\)/g' contracts/libraries/FundsCalculator.sol
+# perl -0777 -i -pe 's/\(10\*\*_underlyingDecimals\)/uint256\(1000000\)/g' contracts/libraries/FundsCalculator.sol
 
 perl -0777 -i -pe 's/payoutAmount = payoutInput.expiryPrice.isGreaterThan\(/QuantMath.FixedPointInt memory divResult = QuantMath.FixedPointInt\(computeDivision\(payoutInput.expiryPrice.value,
                                           payoutInput.strikePrice.value\)\);
