@@ -22,6 +22,7 @@ contract QTokenStringUtils {
     function _assetSymbol(address _quantConfig, address _asset)
         internal
         view
+        virtual
         returns (string memory assetSymbol)
     {
         (, assetSymbol, ) = IAssetsRegistry(
@@ -45,7 +46,7 @@ contract QTokenStringUtils {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) internal view returns (string memory tokenName) {
+    ) internal view virtual returns (string memory tokenName) {
         string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
         string memory displayStrikePrice = _displayedStrikePrice(
             _strikePrice,
@@ -97,7 +98,7 @@ contract QTokenStringUtils {
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
-    ) internal view returns (string memory tokenSymbol) {
+    ) internal view virtual returns (string memory tokenSymbol) {
         string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
         string memory displayStrikePrice = _displayedStrikePrice(
             _strikePrice,
@@ -139,6 +140,7 @@ contract QTokenStringUtils {
     function _displayedStrikePrice(uint256 _strikePrice, address _strikeAsset)
         internal
         view
+        virtual
         returns (string memory)
     {
         uint256 strikePriceDigits = ERC20(_strikeAsset).decimals();
@@ -176,6 +178,7 @@ contract QTokenStringUtils {
     function _getOptionType(bool _isCall)
         internal
         pure
+        virtual
         returns (string memory, string memory)
     {
         return _isCall ? ("C", "Call") : ("P", "Put");
@@ -187,6 +190,7 @@ contract QTokenStringUtils {
     function _uintToChars(uint256 _number)
         internal
         pure
+        virtual
         returns (string memory)
     {
         if (_number > 99) {
@@ -211,7 +215,7 @@ contract QTokenStringUtils {
         string memory _s,
         uint256 _start,
         uint256 _end
-    ) internal pure returns (string memory) {
+    ) internal pure virtual returns (string memory) {
         bytes memory slice = new bytes(_end.sub(_start));
         for (uint256 i = 0; i < _end.sub(_start); i = i.add(1)) {
             slice[i] = bytes(_s)[_start.add(1)];
@@ -226,6 +230,7 @@ contract QTokenStringUtils {
     function _getMonth(uint256 _month)
         internal
         pure
+        virtual
         returns (string memory, string memory)
     {
         if (_month == 1) {

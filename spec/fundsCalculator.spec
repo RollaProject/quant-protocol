@@ -27,20 +27,24 @@ methods {
                                        uint256 _optionsAmount,
                                        bool _qTokenToMintIsCall,
                                        uint8 _optionsDecimals,
-                                       uint8 _underlyingDecimals) returns (int256) envfree;
+                                       uint8 _underlyingDecimals,
+                                       uint8 _strikeAssetDecimals) returns (int256) envfree;
 
    getPutCollateralRequirementWrapper(uint256 _qTokenToMintStrikePrice,
-                                      uint256 _qTokenForCollateralStrikePrice) returns (int256) envfree;
+                                      uint256 _qTokenForCollateralStrikePrice,
+                                      uint8 _strikeAssetDecimals) returns (int256) envfree;
 
    getCallCollateralRequirementWrapper(uint256 _qTokenToMintStrikePrice,
                                            uint256 _qTokenForCollateralStrikePrice,
-                                           uint8 _underlyingDecimals) returns (int256) envfree;
+                                           uint8 _underlyingDecimals,
+                                           uint8 _strikeAssetDecimals) returns (int256) envfree;
 
    setPayoutInput(uint256 _strikePrice,
                    uint256 _expiryPrice,
                    uint256 _amount,
                    uint8 _expiryDecimals,
-                   uint8 _optionsDecimals) envfree;
+                   uint8 _optionsDecimals,
+                   uint8 _strikeAssetDecimals) envfree;
 
    getPayoutForPutWrapper() returns (int256) envfree;
    getPayoutForCallWrapper() returns (int256) envfree;
@@ -49,6 +53,7 @@ methods {
                                uint256 _expiryPrice,
                                uint256 _amount,
                                uint8 _optionsDecimals,
+                               uint8 _strikeAssetDecimals,
                                uint8 _expiryDecimals) returns (int256) envfree;
 
    checkAgeB(int256 _a, int256 _b) returns (bool) envfree;
@@ -123,9 +128,11 @@ rule checkOptionCollateralRequirement(uint256 qTokenToMintStrikePrice,
                                       uint256 optionsAmount,
                                       bool qTokenToMintIsCall,
                                       uint8 optionsDecimals,
-                                      uint8 underlyingDecimals) {
+                                      uint8 underlyingDecimals,
+                                      uint8 strikeAssetDecimals) {
 
-   require underlyingDecimals == 6;
+   require underlyingDecimals > 0 && underlyingDecimals <= 18;
+   require strikeAssetDecimals > 0 && strikeAssetDecimals <= 18;
    require optionsDecimals == 18;
 
    // minting a non-spread option
@@ -134,7 +141,8 @@ rule checkOptionCollateralRequirement(uint256 qTokenToMintStrikePrice,
                                                             optionsAmount,
                                                             qTokenToMintIsCall,
                                                             optionsDecimals,
-                                                            underlyingDecimals);
+                                                            underlyingDecimals,
+                                                            strikeAssetDecimals);
 
    // minting a spread option (when qTokenForCollateralStrikePrice != 0)
    int256 spreadCollateral = getOptionCollateralRequirementWrapper(qTokenToMintStrikePrice,
@@ -142,7 +150,8 @@ rule checkOptionCollateralRequirement(uint256 qTokenToMintStrikePrice,
                                                            optionsAmount,
                                                            qTokenToMintIsCall,
                                                            optionsDecimals,
-                                                           underlyingDecimals);
+                                                           underlyingDecimals,
+                                                           strikeAssetDecimals);
 
    // check spreads require less collateral than minting option : spreadCollateral <= optionCollateral
    assert checkAleB(spreadCollateral, optionCollateral);
@@ -158,13 +167,16 @@ rule checkOptionCollateralRequirement(uint256 qTokenToMintStrikePrice,
 */
 rule checkPutCollateralRequirement(uint256 mintStrikePrice,
                                     uint256 collateralStrikePrice1,
-                                    uint256 collateralStrikePrice2) {
+                                    uint256 collateralStrikePrice2,
+                                    uint8 strikeAssetDecimals) {
+
+    require strikeAssetDecimals > 0 && strikeAssetDecimals <= 18;
 
    // since we need to check the behavior as the collateralStrikePrice decreases
    require collateralStrikePrice1 > collateralStrikePrice2;
 
-   int256 collateralRequirement1 = getPutCollateralRequirementWrapper(mintStrikePrice, collateralStrikePrice1);
-   int256 collateralRequirement2 = getPutCollateralRequirementWrapper(mintStrikePrice, collateralStrikePrice2);
+   int256 collateralRequirement1 = getPutCollateralRequirementWrapper(mintStrikePrice, collateralStrikePrice1, strikeAssetDecimals);
+   int256 collateralRequirement2 = getPutCollateralRequirementWrapper(mintStrikePrice, collateralStrikePrice2, strikeAssetDecimals);
 
    // check collateralRequirement2 >= collateralRequirement1
    assert checkAgeB(collateralRequirement2, collateralRequirement1);
@@ -180,13 +192,16 @@ rule checkPutCollateralRequirement(uint256 mintStrikePrice,
 */
 rule checkPutCollateralRequirement2(uint256 mintStrikePrice1,
                                     uint256 mintStrikePrice2,
-                                    uint256 collateralStrikePrice) {
+                                    uint256 collateralStrikePrice,
+                                    uint8 strikeAssetDecimals) {
+
+    require strikeAssetDecimals > 0 && strikeAssetDecimals <= 18;
 
    // since we need to check the behaviour as the mintStrikePrice decreases
    require mintStrikePrice1 > mintStrikePrice2;
 
-   int256 collateralRequirement1 = getPutCollateralRequirementWrapper(mintStrikePrice1, collateralStrikePrice);
-   int256 collateralRequirement2 = getPutCollateralRequirementWrapper(mintStrikePrice2, collateralStrikePrice);
+   int256 collateralRequirement1 = getPutCollateralRequirementWrapper(mintStrikePrice1, collateralStrikePrice, strikeAssetDecimals);
+   int256 collateralRequirement2 = getPutCollateralRequirementWrapper(mintStrikePrice2, collateralStrikePrice, strikeAssetDecimals);
 
    // check less collateral required: collateralRequirement2 <= collateralRequirement1
    assert checkAleB(collateralRequirement2, collateralRequirement1);
@@ -206,9 +221,11 @@ rule checkPutCollateralRequirement2(uint256 mintStrikePrice1,
 rule checkCallCollateralRequirement(uint256 mintStrikePrice,
                                     uint256 collateralStrikePrice1,
                                     uint256 collateralStrikePrice2,
-                                    uint8 underlyingDecimals) {
+                                    uint8 underlyingDecimals,
+                                    uint8 strikeAssetDecimals) {
 
-    require underlyingDecimals == 6;
+    require underlyingDecimals > 0 && underlyingDecimals <= 18;
+    require strikeAssetDecimals > 0 && strikeAssetDecimals <= 18;
 
     // since we are only concerned about call spreads, make
     // sure both collateral strike prices are greater than 0
@@ -219,9 +236,9 @@ rule checkCallCollateralRequirement(uint256 mintStrikePrice,
     require collateralStrikePrice1 < collateralStrikePrice2;
 
     int256 collateralRequirement1 = getCallCollateralRequirementWrapper(mintStrikePrice, collateralStrikePrice1,
-                                                                            underlyingDecimals);
+                                                                            underlyingDecimals, strikeAssetDecimals);
     int256 collateralRequirement2 = getCallCollateralRequirementWrapper(mintStrikePrice, collateralStrikePrice2,
-                                                                            underlyingDecimals);
+                                                                            underlyingDecimals, strikeAssetDecimals);
 
     // check more collateral required: collateralRequirement2 >= collateralRequirement1
     assert checkAgeB(collateralRequirement2, collateralRequirement1);
@@ -239,15 +256,16 @@ rule checkCallCollateralRequirement(uint256 mintStrikePrice,
 rule checkCallCollateralRequirement2(uint256 mintStrikePrice1,
                                     uint256 mintStrikePrice2,
                                     uint256 collateralStrikePrice,
-                                    uint8 underlyingDecimals) {
+                                    uint8 underlyingDecimals,
+                                    uint8 strikeAssetDecimals) {
 
     // since we need to check the behavior as the mintStrikePrice increases
     require mintStrikePrice1 < mintStrikePrice2;
 
     int256 collateralRequirement1 = getCallCollateralRequirementWrapper(mintStrikePrice1, collateralStrikePrice,
-                                                                 underlyingDecimals);
+                                                                 underlyingDecimals, strikeAssetDecimals);
     int256 collateralRequirement2 = getCallCollateralRequirementWrapper(mintStrikePrice2, collateralStrikePrice,
-                                                                 underlyingDecimals);
+                                                                 underlyingDecimals, strikeAssetDecimals);
 
     // check less collateral required: collateralRequirement2 <= collateralRequirement1
     assert checkAleB(collateralRequirement2, collateralRequirement1);
@@ -267,16 +285,20 @@ rule checkPayoutForPut(uint256 strikePrice,
                        uint256 expiryPrice,
                        uint256 amount,
                        uint8 expiryDecimals,
-                       uint8 optionsDecimals) {
+                       uint8 optionsDecimals,
+                       uint8 strikeAssetDecimals) {
 
-    require expiryDecimals == 6;
+    require expiryDecimals == 8;
     require optionsDecimals == 18;
+    require strikeAssetDecimals == 18;
 
-    setPayoutInput(strikePrice, expiryPrice, amount, expiryDecimals, optionsDecimals);
+    setPayoutInput(strikePrice, expiryPrice, amount, expiryDecimals, optionsDecimals, strikeAssetDecimals);
 
     // get scaled ints for above uints
-    int256 strikePriceScaledInt = uintToInt(strikePrice * 1000000000000000000000);
-    int256 expiryPriceScaledInt = uintToInt(expiryPrice * 1000000000000000000000);
+    uint256 scaledStrikePrice = strikePrice * 10 ^ (27 - 18);
+    int256 strikePriceScaledInt = uintToInt(scaledStrikePrice);
+    uint256 scaledExpiryPrice = expiryPrice * 10 ^ (27 - 8);
+    int256 expiryPriceScaledInt = uintToInt(scaledExpiryPrice);
     int256 amountScaledInt = uintToInt(amount * 1000000000);
 
     int256 a = AsubB(strikePriceScaledInt, expiryPriceScaledInt);
@@ -287,7 +309,7 @@ rule checkPayoutForPut(uint256 strikePrice,
 
     int256 payoutAmount = getPayoutForPutWrapper();
 
-    assert payoutAmount > 0 <=> (strikePrice > expiryPrice) && (amount > 0);
+    assert payoutAmount > 0 <=> (scaledStrikePrice > scaledExpiryPrice) && (amount > 0);
 }
 
 /*
@@ -303,16 +325,20 @@ rule checkPayoutForCall(uint256 strikePrice,
                        uint256 expiryPrice,
                        uint256 amount,
                        uint8 expiryDecimals,
-                       uint8 optionsDecimals) {
+                       uint8 optionsDecimals,
+                       uint8 strikeAssetDecimals) {
 
-    require expiryDecimals == 6;
+    require expiryDecimals == 8;
     require optionsDecimals == 18;
+    require strikeAssetDecimals == 18;
 
-    setPayoutInput(strikePrice, expiryPrice, amount, expiryDecimals, optionsDecimals);
+    setPayoutInput(strikePrice, expiryPrice, amount, expiryDecimals, optionsDecimals, strikeAssetDecimals);
 
     // get scaled ints for above uints
-    int256 strikePriceScaledInt = uintToInt(strikePrice * 1000000000000000000000);
-    int256 expiryPriceScaledInt = uintToInt(expiryPrice * 1000000000000000000000);
+    uint256 scaledStrikePrice = strikePrice * 10 ^ (27 - 18);
+    int256 strikePriceScaledInt = uintToInt(scaledStrikePrice);
+    uint256 scaledExpiryPrice = expiryPrice * 10 ^ (27 - 8);
+    int256 expiryPriceScaledInt = uintToInt(scaledExpiryPrice);
     int256 amountScaledInt = uintToInt(amount * 1000000000);
 
     int256 a = ghost_division(expiryPriceScaledInt, strikePriceScaledInt);
@@ -322,7 +348,7 @@ rule checkPayoutForCall(uint256 strikePrice,
 
     int256 payoutAmount = getPayoutForCallWrapper();
 
-    assert payoutAmount > 0 => (expiryPrice > strikePrice) && (amount > 0);
+    assert payoutAmount > 0 => (scaledExpiryPrice > scaledStrikePrice) && (amount > 0);
 }
 
 /*
@@ -337,18 +363,22 @@ rule checkPayoutAmount(uint256 strikePrice,
                        uint256 expiryPrice,
                        uint256 amount,
                        uint8 optionsDecimals,
+                       uint8 strikeAssetDecimals,
                        uint8 expiryDecimals,
                        bool _isCall) {
 
-    require expiryDecimals == 6;
+    require strikeAssetDecimals == 18;
+    require expiryDecimals == 8;
     require optionsDecimals == 18;
 
     int256 payoutAmount = getPayoutAmountWrapper(_isCall, strikePrice, expiryPrice, amount,
-                                                 optionsDecimals, expiryDecimals);
+                                                 optionsDecimals, strikeAssetDecimals, expiryDecimals);
 
     // get scaled ints for above uints
-    int256 strikePriceScaledInt = uintToInt(strikePrice * 1000000000000000000000);
-    int256 expiryPriceScaledInt = uintToInt(expiryPrice * 1000000000000000000000);
+    uint256 scaledStrikePrice = strikePrice * 10 ^ (27 - 18);
+    int256 strikePriceScaledInt = uintToInt(scaledStrikePrice);
+    uint256 scaledExpiryPrice = expiryPrice * 10 ^ (27 - 8);
+    int256 expiryPriceScaledInt = uintToInt(scaledExpiryPrice);
     int256 amountScaledInt = uintToInt(amount * 1000000000);
 
     int256 a = ghost_division(expiryPriceScaledInt, strikePriceScaledInt);
@@ -373,21 +403,24 @@ rule checkPayoutAmountAdditiveCall(uint256 strikePrice,
                                    uint256 amount1,
                                    uint256 amount2) {
 
-    uint8 expiryDecimals = 6;
+    uint8 expiryDecimals = 8;
     uint8 optionsDecimals = 18;
+    uint8 strikeAssetDecimals = 18;
 
     require amount1 + amount2 < 2^255;
     uint256 amount3 = amount1 + amount2;
 
-    setPayoutInput(strikePrice, expiryPrice, amount1, expiryDecimals, optionsDecimals);
+    setPayoutInput(strikePrice, expiryPrice, amount1, expiryDecimals, optionsDecimals, strikeAssetDecimals);
     int256 payoutAmount1 = getPayoutForCallWrapper();
 
-    setPayoutInput(strikePrice, expiryPrice, amount2, expiryDecimals, optionsDecimals);
+    setPayoutInput(strikePrice, expiryPrice, amount2, expiryDecimals, optionsDecimals, strikeAssetDecimals);
     int256 payoutAmount2 = getPayoutForCallWrapper();
 
     // get scaled ints for above uints
-    int256 strikePriceScaledInt = uintToInt(strikePrice * 1000000000000000000000);
-    int256 expiryPriceScaledInt = uintToInt(expiryPrice * 1000000000000000000000);
+    uint256 scaledStrikePrice = strikePrice * 10 ^ (27 - 18);
+    int256 strikePriceScaledInt = uintToInt(scaledStrikePrice);
+    uint256 scaledExpiryPrice = expiryPrice * 10 ^ (27 - 8);
+    int256 expiryPriceScaledInt = uintToInt(scaledExpiryPrice);
     int256 amount1ScaledInt = uintToInt(amount1 * 1000000000);
     int256 amount2ScaledInt = uintToInt(amount2 * 1000000000);
     int256 amount3ScaledInt = uintToInt(amount3 * 1000000000);
@@ -395,7 +428,7 @@ rule checkPayoutAmountAdditiveCall(uint256 strikePrice,
     int256 a = ghost_division(expiryPriceScaledInt, strikePriceScaledInt);
     require to_mathint(ghost_multiplication(a, amount3ScaledInt)) == to_mathint(ghost_multiplication(a, amount1ScaledInt)) + to_mathint(ghost_multiplication(a, amount2ScaledInt));
 
-    setPayoutInput(strikePrice, expiryPrice, amount3, expiryDecimals, optionsDecimals);
+    setPayoutInput(strikePrice, expiryPrice, amount3, expiryDecimals, optionsDecimals, strikeAssetDecimals);
     int256 payoutAmount3 = getPayoutForCallWrapper();
 
     assert checkAplusBeqC(payoutAmount1, payoutAmount2, payoutAmount3);
@@ -415,21 +448,24 @@ rule checkPayoutAmountAdditivePut(uint256 strikePrice,
                                    uint256 amount1,
                                    uint256 amount2) {
 
-    uint8 expiryDecimals = 6;
+    uint8 expiryDecimals = 8;
     uint8 optionsDecimals = 18;
+    uint8 strikeAssetDecimals = 18;
 
     require amount1 + amount2 < 2^255;
     uint256 amount3 = amount1 + amount2;
 
-    setPayoutInput(strikePrice, expiryPrice, amount1, expiryDecimals, optionsDecimals);
+    setPayoutInput(strikePrice, expiryPrice, amount1, expiryDecimals, optionsDecimals, strikeAssetDecimals);
     int256 payoutAmount1 = getPayoutForPutWrapper();
 
-    setPayoutInput(strikePrice, expiryPrice, amount2, expiryDecimals, optionsDecimals);
+    setPayoutInput(strikePrice, expiryPrice, amount2, expiryDecimals, optionsDecimals, strikeAssetDecimals);
     int256 payoutAmount2 = getPayoutForPutWrapper();
 
     // get scaled ints for above uints
-    int256 strikePriceScaledInt = uintToInt(strikePrice * 1000000000000000000000);
-    int256 expiryPriceScaledInt = uintToInt(expiryPrice * 1000000000000000000000);
+    uint256 scaledStrikePrice = strikePrice * 10 ^ (27 - 18);
+    int256 strikePriceScaledInt = uintToInt(scaledStrikePrice);
+    uint256 scaledExpiryPrice = expiryPrice * 10 ^ (27 - 8);
+    int256 expiryPriceScaledInt = uintToInt(scaledExpiryPrice);
     int256 amount1ScaledInt = uintToInt(amount1 * 1000000000);
     int256 amount2ScaledInt = uintToInt(amount2 * 1000000000);
     int256 amount3ScaledInt = uintToInt(amount3 * 1000000000);
@@ -437,7 +473,7 @@ rule checkPayoutAmountAdditivePut(uint256 strikePrice,
     int256 a = AsubB(strikePriceScaledInt, expiryPriceScaledInt);
     require to_mathint(ghost_multiplication(a, amount3ScaledInt)) == to_mathint(ghost_multiplication(a, amount1ScaledInt)) + to_mathint(ghost_multiplication(a, amount2ScaledInt));
 
-    setPayoutInput(strikePrice, expiryPrice, amount3, expiryDecimals, optionsDecimals);
+    setPayoutInput(strikePrice, expiryPrice, amount3, expiryDecimals, optionsDecimals, strikeAssetDecimals);
     int256 payoutAmount3 = getPayoutForPutWrapper();
 
     assert checkAplusBeqC(payoutAmount1, payoutAmount2, payoutAmount3);

@@ -43,6 +43,7 @@ contract QuantCalculatorHarness is IQuantCalculator {
     uint8 public constant override OPTIONS_DECIMALS = 0;
 
     IQuantCalculator calcOriginal;
+    uint8 public override strikeAssetDecimals;
     address public override optionsFactory;
 
     mapping(address => address) public qTokenToCollateralType;

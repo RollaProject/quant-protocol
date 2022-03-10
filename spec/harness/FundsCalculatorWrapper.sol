@@ -24,10 +24,11 @@ contract FundsCalculatorWrapper {
         uint256 _expiryPrice,
         uint256 _amount,
         uint8 _expiryDecimals,
-        uint8 _optionsDecimals
+        uint8 _optionsDecimals,
+        uint8 _strikeAssetDecimals
     ) public {
         payoutInput = FundsCalculator.OptionPayoutInput(
-            _strikePrice.fromScaledUint(6),
+            _strikePrice.fromScaledUint(_strikeAssetDecimals),
             _expiryPrice.fromScaledUint(_expiryDecimals),
             _amount.fromScaledUint(_optionsDecimals)
         );
@@ -40,7 +41,8 @@ contract FundsCalculatorWrapper {
         uint256 _optionsAmount,
         bool _qTokenToMintIsCall,
         uint8 _optionsDecimals,
-        uint8 _underlyingDecimals
+        uint8 _underlyingDecimals,
+        uint8 _strikeAssetDecimals
     ) public returns (int256 collateralAmountValue) {
         collateralAmount = FundsCalculator.getOptionCollateralRequirement(
             _qTokenToMintStrikePrice,
@@ -48,7 +50,8 @@ contract FundsCalculatorWrapper {
             _optionsAmount,
             _qTokenToMintIsCall,
             _optionsDecimals,
-            _underlyingDecimals
+            _underlyingDecimals,
+            _strikeAssetDecimals
         );
 
         collateralAmountValue = collateralAmount.value;
@@ -57,11 +60,13 @@ contract FundsCalculatorWrapper {
     // Rule 3 and 5
     function getPutCollateralRequirementWrapper(
         uint256 _qTokenToMintStrikePrice,
-        uint256 _qTokenForCollateralStrikePrice
+        uint256 _qTokenForCollateralStrikePrice,
+        uint8 _strikeAssetDecimals
     ) public returns (int256 collateralPerOptionValue) {
         collateralAmount = FundsCalculator.getPutCollateralRequirement(
             _qTokenToMintStrikePrice,
-            _qTokenForCollateralStrikePrice
+            _qTokenForCollateralStrikePrice,
+            _strikeAssetDecimals
         );
 
         collateralPerOptionValue = collateralAmount.value;
@@ -71,12 +76,14 @@ contract FundsCalculatorWrapper {
     function getCallCollateralRequirementWrapper(
         uint256 _qTokenToMintStrikePrice,
         uint256 _qTokenForCollateralStrikePrice,
-        uint8 _underlyingDecimals
+        uint8 _underlyingDecimals,
+        uint8 _strikeAssetDecimals
     ) public returns (int256 collateralPerOptionValue) {
         collateralAmount = FundsCalculator.getCallCollateralRequirement(
             _qTokenToMintStrikePrice,
             _qTokenForCollateralStrikePrice,
-            _underlyingDecimals
+            _underlyingDecimals,
+            _strikeAssetDecimals
         );
 
         collateralPerOptionValue = collateralAmount.value;
@@ -100,6 +107,7 @@ contract FundsCalculatorWrapper {
         uint256 _expiryPrice,
         uint256 _amount,
         uint8 _optionsDecimals,
+        uint8 _strikeAssetDecimals,
         uint8 _expiryDecimals
     ) public returns (int256 payoutAmount) {
         QuantMath.FixedPointInt memory payoutAmountStruct;
@@ -111,6 +119,7 @@ contract FundsCalculatorWrapper {
             _strikePrice,
             _amount,
             _optionsDecimals,
+            _strikeAssetDecimals,
             expiryPrice
         );
 
