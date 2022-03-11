@@ -1272,6 +1272,120 @@ describe("Controller", async () => {
         longCollateralRequirement
       );
     });
+
+    it("Should round in favour of the protocol when neutralizing positions", async () => {
+      //1400 USD strike -> 1400 * 10^6 = 10^9
+      //1 OPTION REQUIRES 1.4 * 10^9
+      //10^18 OPTION REQUIRES 1.4 * 10^9
+      //1.4 WEI OF USDC NEEDED PER 10^9 options
+      //3.5 WEI of USDC NEEDED FOR 2.5 * 10^9
+      //4 WEI WHEN ROUNDED UP (MINT) FOR 2.5 * 10^9 OPTIONS
+      //3 WEI WHEN ROUNDED DOWN (NEUTRALIZE) FOR 2.5 * 10^9 OPTIONS
+
+      const USDC = await mockERC20(
+        assetsRegistryManager,
+        "USDC",
+        "USD Coin",
+        6
+      );
+
+      const newQuantConfig = await deployQuantConfig(assetsRegistryManager);
+
+      const newCollateralToken = await deployCollateralToken(
+        assetsRegistryManager,
+        newQuantConfig
+      );
+
+      const usdcOptionsFactory = await deployOptionsFactory(
+        assetsRegistryManager,
+        USDC.address,
+        newQuantConfig,
+        newCollateralToken
+      );
+
+      const putOptionParameters: optionParameters = [
+        WETH.address,
+        mockOracleManager.address,
+        ethers.utils.parseUnits("1400", await USDC.decimals()),
+        ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
+        false,
+      ];
+
+      await usdcOptionsFactory.createOption(...putOptionParameters);
+
+      const usdcPut1400 = <QToken>(
+        new ethers.Contract(
+          await usdcOptionsFactory.getQToken(...putOptionParameters),
+          QTokenInterface,
+          provider
+        )
+      );
+
+      const optionsAmount = ethers.utils.parseUnits("2.5", 9);
+
+      const [, collateralRequirement] = await getCollateralRequirement(
+        usdcPut1400,
+        nullQToken,
+        optionsAmount,
+        BN.ROUND_UP
+      );
+
+      expect(collateralRequirement).to.equal(4);
+
+      await USDC.connect(assetsRegistryManager).mint(
+        secondAccount.address,
+        collateralRequirement
+      );
+
+      await USDC.connect(secondAccount).approve(
+        controller.address,
+        collateralRequirement
+      );
+
+      await controller.connect(secondAccount).operate([
+        encodeMintOptionArgs({
+          to: secondAccount.address,
+          qToken: usdcPut1400.address,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      const collateralTokenId = await newCollateralToken.getCollateralTokenId(
+        usdcPut1400.address,
+        AddressZero
+      );
+
+      await controller.connect(secondAccount).operate([
+        encodeNeutralizeArgs({
+          collateralTokenId,
+          amount: optionsAmount,
+        }),
+      ]);
+
+      expect(await usdcPut1400.balanceOf(secondAccount.address)).to.equal(Zero);
+
+      expect(
+        await newCollateralToken.balanceOf(
+          secondAccount.address,
+          collateralTokenId
+        )
+      ).to.equal(Zero);
+
+      const [, collateralOwed] = await getCollateralRequirement(
+        usdcPut1400,
+        nullQToken,
+        optionsAmount,
+        BN.ROUND_DOWN
+      );
+
+      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+        collateralOwed
+      );
+      expect(await USDC.balanceOf(controller.address)).to.equal(
+        collateralRequirement.sub(collateralOwed)
+      );
+      expect(collateralOwed).to.equal(3);
+    });
   });
 
   describe("mintOptionsPosition", () => {
