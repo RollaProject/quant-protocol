@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../libraries/OptionsUtils.sol";
 import "../interfaces/IOptionsFactory.sol";
 import "../interfaces/IQuantConfig.sol";
@@ -16,8 +14,6 @@ import "../interfaces/ICollateralToken.sol";
 /// @notice Creates tokens for long (QToken) and short (CollateralToken) positions
 /// @dev This contract follows the factory design pattern
 contract OptionsFactory is IOptionsFactory {
-    using SafeMath for uint256;
-
     /// @inheritdoc IOptionsFactory
     address[] public override qTokens;
 

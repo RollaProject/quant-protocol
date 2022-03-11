@@ -853,15 +853,15 @@
     widest-line "^3.1.0"
     wrap-ansi "^6.2.0"
 
-"@openzeppelin/contracts-upgradeable@^3.4.1-solc-0.7-2":
-  version "3.4.2"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts-upgradeable/-/contracts-upgradeable-3.4.2.tgz#2c2a1b0fa748235a1f495b6489349776365c51b3"
-  integrity sha512-mDlBS17ymb2wpaLcrqRYdnBAmP1EwqhOXMvqWk2c5Q1N1pm5TkiCtXM9Xzznh4bYsQBq0aIWEkFFE2+iLSN1Tw==
+"@openzeppelin/contracts-upgradeable@^4.5.1":
+  version "4.5.1"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts-upgradeable/-/contracts-upgradeable-4.5.1.tgz#dc354082460eb34f5833afdecfab46538b208c4f"
+  integrity sha512-xcKycsSyFauIGMhSeeTJW/Jzz9jZUJdiFNP9Wo/9VhMhw8t5X0M92RY6x176VfcIWsxURMHFWOJVTlFA78HI/w==
 
-"@openzeppelin/contracts@3.4.2-solc-0.7":
-  version "3.4.2-solc-0.7"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-3.4.2-solc-0.7.tgz#38f4dbab672631034076ccdf2f3201fab1726635"
-  integrity sha512-W6QmqgkADuFcTLzHL8vVoNBtkwjvQRpYIAom7KiUNoLKghyx3FgH0GBjt8NRvigV1ZmMOBllvE1By1C+bi8WpA==
+"@openzeppelin/contracts@^4.5.0":
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.5.0.tgz#3fd75d57de172b3743cdfc1206883f56430409cc"
+  integrity sha512-fdkzKPYMjrRiPK6K4y64e6GzULR7R7RwxSigHS8DDp7aWDeoReqsQI+cxHV1UuhAqX69L1lAaWDxenfP+xiqzA==
 
 "@openzeppelin/hardhat-upgrades@1.8.2":
   version "1.8.2"
@@ -884,10 +884,10 @@
     proper-lockfile "^4.1.1"
     solidity-ast "^0.4.15"
 
-"@quant-finance/solidity-datetime@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@quant-finance/solidity-datetime/-/solidity-datetime-2.0.0.tgz#9f89c2d919f54f038c4560d117e7e546a02d1ce7"
-  integrity sha512-1phdoJRCV4mBtpDfotN1oFJF8p6BS4KEAqhiPfRJuhSvBr73nrptwwIG8lrhj1vFWhasF79aZMzV782qhll0ag==
+"@quant-finance/solidity-datetime@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@quant-finance/solidity-datetime/-/solidity-datetime-2.1.0.tgz#0d155a56ce4462e5be6ba9e860cb631914246f16"
+  integrity sha512-3kxxJ7fsVlN9QvTZlBISqiIPGq3ijMZRITPsajmKR+vIQLknPZ/e9sBR4VNiA76K/NTk1rty7yvTkR/qE7CV3g==
 
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"

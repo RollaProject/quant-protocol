@@ -2598,7 +2598,7 @@ describe("Controller", async () => {
         .withArgs(
           deployer.address,
           secondAccount.address,
-          await (await controller.getNonce(deployer.address)).add(1)
+          await controller.getNonce(deployer.address)
         );
 
       expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
@@ -2656,7 +2656,7 @@ describe("Controller", async () => {
         .withArgs(
           deployer.address,
           secondAccount.address,
-          await (await controller.getNonce(deployer.address)).add(1)
+          await controller.getNonce(deployer.address)
         );
 
       expect(await qTokenCall3520.balanceOf(deployer.address)).to.equal(
@@ -2743,7 +2743,7 @@ describe("Controller", async () => {
         .withArgs(
           deployer.address,
           secondAccount.address,
-          await (await controller.getNonce(deployer.address)).add(1)
+          await controller.getNonce(deployer.address)
         );
 
       expect(await BUSD.balanceOf(deployer.address)).to.equal(payoutAmount);
@@ -2845,7 +2845,7 @@ describe("Controller", async () => {
         .withArgs(
           deployer.address,
           secondAccount.address,
-          await (await controller.getNonce(deployer.address)).add(1)
+          await controller.getNonce(deployer.address)
         );
 
       const collateralClaimed = await payoutAsset.balanceOf(deployer.address);
@@ -2938,7 +2938,7 @@ describe("Controller", async () => {
         .withArgs(
           deployer.address,
           secondAccount.address,
-          await (await controller.getNonce(deployer.address)).add(1)
+          await controller.getNonce(deployer.address)
         );
 
       expect(await qTokenPut1400.balanceOf(deployer.address)).to.equal(

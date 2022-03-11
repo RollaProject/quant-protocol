@@ -43,7 +43,7 @@ const config: HardhatUserConfig = {
     },
   },
   solidity: {
-    version: "0.7.6",
+    version: "0.8.12",
     settings: {
       metadata: {
         // do not include the metadata hash, since this is machine dependent
@@ -56,6 +56,7 @@ const config: HardhatUserConfig = {
         enabled: true,
         runs: 800,
       },
+      // viaIR: true,
     },
   },
 

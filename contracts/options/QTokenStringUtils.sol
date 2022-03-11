@@ -1,18 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
 import "../interfaces/IAssetsRegistry.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../libraries/ProtocolValue.sol";
 
 contract QTokenStringUtils {
-    using SafeMath for uint256;
-
     /// @notice get the ERC20 token symbol from the AssetsRegistry
     /// @dev the asset is assumed to be in the AssetsRegistry since QTokens
     /// must be created through the OptionsFactory, which performs that check
@@ -145,8 +141,8 @@ contract QTokenStringUtils {
     {
         uint256 strikePriceDigits = ERC20(_strikeAsset).decimals();
         uint256 strikePriceScale = 10**strikePriceDigits;
-        uint256 remainder = _strikePrice.mod(strikePriceScale);
-        uint256 quotient = _strikePrice.div(strikePriceScale);
+        uint256 remainder = _strikePrice % strikePriceScale;
+        uint256 quotient = _strikePrice / strikePriceScale;
         string memory quotientStr = Strings.toString(quotient);
 
         if (remainder == 0) {
@@ -154,20 +150,16 @@ contract QTokenStringUtils {
         }
 
         uint256 trailingZeroes;
-        while (remainder.mod(10) == 0) {
-            remainder = remainder.div(10);
-            trailingZeroes = trailingZeroes.add(1);
+        while (remainder % 10 == 0) {
+            remainder /= 10;
+            trailingZeroes++;
         }
 
         // pad the number with "1 + starting zeroes"
-        remainder = remainder.add(10**(strikePriceDigits.sub(trailingZeroes)));
+        remainder += 10**(strikePriceDigits - trailingZeroes);
 
         string memory tmp = Strings.toString(remainder);
-        tmp = _slice(
-            tmp,
-            1,
-            uint256(1).add(strikePriceDigits).sub(trailingZeroes)
-        );
+        tmp = _slice(tmp, 1, (1 + strikePriceDigits) - trailingZeroes);
 
         return string(abi.encodePacked(quotientStr, ".", tmp));
     }
@@ -194,7 +186,7 @@ contract QTokenStringUtils {
         returns (string memory)
     {
         if (_number > 99) {
-            _number = _number.mod(100);
+            _number %= 100;
         }
 
         string memory str = Strings.toString(_number);
@@ -216,9 +208,10 @@ contract QTokenStringUtils {
         uint256 _start,
         uint256 _end
     ) internal pure virtual returns (string memory) {
-        bytes memory slice = new bytes(_end.sub(_start));
-        for (uint256 i = 0; i < _end.sub(_start); i = i.add(1)) {
-            slice[i] = bytes(_s)[_start.add(1)];
+        uint256 range = _end - _start;
+        bytes memory slice = new bytes(range);
+        for (uint256 i = 0; i < range; i++) {
+            slice[i] = bytes(_s)[_start + 1];
         }
 
         return string(slice);
