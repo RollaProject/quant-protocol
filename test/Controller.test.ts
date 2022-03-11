@@ -801,7 +801,7 @@ describe("Controller", async () => {
 
     quantCalculator = await deployQuantCalculator(
       deployer,
-      18,
+      await BUSD.decimals(),
       optionsFactory.address
     );
 
