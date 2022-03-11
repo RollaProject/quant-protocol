@@ -1286,8 +1286,8 @@ describe("Controller", async () => {
       //1400 USD strike -> 1400 * 10^6 = 10^9
       //1 OPTION REQUIRES 1.4 * 10^9
       //10^18 OPTION REQUIRES 1.4 * 10^9
-      //1.4 WEI OF USDC NEEDED PER 10^9 options
-      //3.5 WEI of USDC NEEDED FOR 2.5 * 10^9
+      //1.4 WEI OF BUSD NEEDED PER 10^9 options
+      //3.5 WEI of BUSD NEEDED FOR 2.5 * 10^9
       //4 WEI WHEN ROUNDED UP (MINT) FOR 2.5 * 10^9 OPTIONS
       //3 WEI WHEN ROUNDED DOWN (NEUTRALIZE) FOR 2.5 * 10^9 OPTIONS
 
