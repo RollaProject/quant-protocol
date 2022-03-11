@@ -555,7 +555,7 @@ describe("Controller", async () => {
     return [BigNumber.from(payoutAmount.toString()), payoutToken];
   };
 
-  beforeEach(async () => {
+  const testSetup = async (busdDecimals = 18) => {
     [
       deployer,
       secondAccount,
@@ -594,7 +594,12 @@ describe("Controller", async () => {
     ]);
 
     WETH = await mockERC20(assetsRegistryManager, "WETH", "Wrapped Ether");
-    BUSD = await mockERC20(assetsRegistryManager, "BUSD", "BUSD Token", 18);
+    BUSD = await mockERC20(
+      assetsRegistryManager,
+      "BUSD",
+      "BUSD Token",
+      busdDecimals
+    );
     collateralToken = await deployCollateralToken(deployer, quantConfig);
 
     assetsRegistry = await deployAssetsRegistry(deployer, quantConfig);
@@ -623,7 +628,7 @@ describe("Controller", async () => {
         BUSD.address,
         await BUSD.name(),
         await BUSD.symbol(),
-        await BUSD.decimals()
+        busdDecimals
       );
 
     QTokenInterface = (await ethers.getContractFactory("QToken")).interface;
@@ -644,7 +649,7 @@ describe("Controller", async () => {
     samplePutOptionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("1400", await BUSD.decimals()),
+      ethers.utils.parseUnits("1400", busdDecimals),
       ethers.BigNumber.from(futureTimestamp),
       false,
     ];
@@ -712,7 +717,7 @@ describe("Controller", async () => {
     sampleCallOptionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("2000", await BUSD.decimals()),
+      ethers.utils.parseUnits("2000", busdDecimals),
       ethers.BigNumber.from(futureTimestamp),
       true,
     ];
@@ -732,7 +737,7 @@ describe("Controller", async () => {
     const qTokenCall2880Parameters: optionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("2880", await BUSD.decimals()),
+      ethers.utils.parseUnits("2880", busdDecimals),
       ethers.BigNumber.from(futureTimestamp),
       true,
     ];
@@ -754,7 +759,7 @@ describe("Controller", async () => {
     const qTokenCall3520Parameters: optionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("3520", await BUSD.decimals()),
+      ethers.utils.parseUnits("3520", busdDecimals),
       ethers.BigNumber.from(futureTimestamp),
       true,
     ];
@@ -776,7 +781,7 @@ describe("Controller", async () => {
     const qTokenPut400Parameters: optionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("400", await BUSD.decimals()),
+      ethers.utils.parseUnits("400", busdDecimals),
       ethers.BigNumber.from(futureTimestamp),
       false,
     ];
@@ -801,7 +806,7 @@ describe("Controller", async () => {
 
     quantCalculator = await deployQuantCalculator(
       deployer,
-      await BUSD.decimals(),
+      busdDecimals,
       optionsFactory.address
     );
 
@@ -849,7 +854,9 @@ describe("Controller", async () => {
         ethers.utils.id("priceRegistry"),
         mockPriceRegistry.address
       );
-  });
+  };
+
+  beforeEach(testSetup);
 
   describe("neutralizePosition", () => {
     it("Should revert when users try to neutralize more options than they have", async () => {
@@ -1274,6 +1281,8 @@ describe("Controller", async () => {
     });
 
     it("Should round in favour of the protocol when neutralizing positions", async () => {
+      await testSetup(6);
+
       //1400 USD strike -> 1400 * 10^6 = 10^9
       //1 OPTION REQUIRES 1.4 * 10^9
       //10^18 OPTION REQUIRES 1.4 * 10^9
@@ -1282,49 +1291,10 @@ describe("Controller", async () => {
       //4 WEI WHEN ROUNDED UP (MINT) FOR 2.5 * 10^9 OPTIONS
       //3 WEI WHEN ROUNDED DOWN (NEUTRALIZE) FOR 2.5 * 10^9 OPTIONS
 
-      const USDC = await mockERC20(
-        assetsRegistryManager,
-        "USDC",
-        "USD Coin",
-        6
-      );
-
-      const newQuantConfig = await deployQuantConfig(assetsRegistryManager);
-
-      const newCollateralToken = await deployCollateralToken(
-        assetsRegistryManager,
-        newQuantConfig
-      );
-
-      const usdcOptionsFactory = await deployOptionsFactory(
-        assetsRegistryManager,
-        USDC.address,
-        newQuantConfig,
-        newCollateralToken
-      );
-
-      const putOptionParameters: optionParameters = [
-        WETH.address,
-        mockOracleManager.address,
-        ethers.utils.parseUnits("1400", await USDC.decimals()),
-        ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
-        false,
-      ];
-
-      await usdcOptionsFactory.createOption(...putOptionParameters);
-
-      const usdcPut1400 = <QToken>(
-        new ethers.Contract(
-          await usdcOptionsFactory.getQToken(...putOptionParameters),
-          QTokenInterface,
-          provider
-        )
-      );
-
       const optionsAmount = ethers.utils.parseUnits("2.5", 9);
 
       const [, collateralRequirement] = await getCollateralRequirement(
-        usdcPut1400,
+        qTokenPut1400,
         nullQToken,
         optionsAmount,
         BN.ROUND_UP
@@ -1332,12 +1302,12 @@ describe("Controller", async () => {
 
       expect(collateralRequirement).to.equal(4);
 
-      await USDC.connect(assetsRegistryManager).mint(
+      await BUSD.connect(assetsRegistryManager).mint(
         secondAccount.address,
         collateralRequirement
       );
 
-      await USDC.connect(secondAccount).approve(
+      await BUSD.connect(secondAccount).approve(
         controller.address,
         collateralRequirement
       );
@@ -1345,13 +1315,13 @@ describe("Controller", async () => {
       await controller.connect(secondAccount).operate([
         encodeMintOptionArgs({
           to: secondAccount.address,
-          qToken: usdcPut1400.address,
+          qToken: qTokenPut1400.address,
           amount: optionsAmount,
         }),
       ]);
 
-      const collateralTokenId = await newCollateralToken.getCollateralTokenId(
-        usdcPut1400.address,
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenPut1400.address,
         AddressZero
       );
 
@@ -1362,26 +1332,28 @@ describe("Controller", async () => {
         }),
       ]);
 
-      expect(await usdcPut1400.balanceOf(secondAccount.address)).to.equal(Zero);
+      expect(await qTokenPut1400.balanceOf(secondAccount.address)).to.equal(
+        Zero
+      );
 
       expect(
-        await newCollateralToken.balanceOf(
+        await collateralToken.balanceOf(
           secondAccount.address,
           collateralTokenId
         )
       ).to.equal(Zero);
 
       const [, collateralOwed] = await getCollateralRequirement(
-        usdcPut1400,
+        qTokenPut1400,
         nullQToken,
         optionsAmount,
         BN.ROUND_DOWN
       );
 
-      expect(await USDC.balanceOf(secondAccount.address)).to.equal(
+      expect(await BUSD.balanceOf(secondAccount.address)).to.equal(
         collateralOwed
       );
-      expect(await USDC.balanceOf(controller.address)).to.equal(
+      expect(await BUSD.balanceOf(controller.address)).to.equal(
         collateralRequirement.sub(collateralOwed)
       );
       expect(collateralOwed).to.equal(3);
