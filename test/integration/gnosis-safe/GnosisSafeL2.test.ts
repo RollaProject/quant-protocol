@@ -78,7 +78,7 @@ describe("GnosisSafeL2 integration tests", () => {
     gnosisSafeProxyFactory = await GnosisSafeProxyFactory.deploy();
 
     const saltNonce = ethers.BigNumber.from(
-      (Math.random() * 10 ** 18).toString()
+      Math.ceil(Math.random() * 10 ** 18).toString()
     );
     const initCode = "0x";
 
