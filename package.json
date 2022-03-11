@@ -1,7 +1,7 @@
 {
   "name": "@rolla-contracts/quant-protocol",
   "version": "0.10.0",
-  "description": "Smart-contracts for Quant. The free, instant, DeFi crypto options trading protocol.",
+  "description": "Smart contracts for the Quant Protocol.",
   "scripts": {
     "build": "hardhat compile",
     "test": "yarn build && hardhat test && forge test -vvv",
@@ -21,7 +21,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Quant-Finance-HQ/quant-protocol.git"
+    "url": "git+https://github.com/RollaProject/quant-protocol.git"
   },
   "keywords": [
     "options",
@@ -30,13 +30,14 @@
     "solidity",
     "defi",
     "cryptocurrency",
-    "quant"
+    "quant",
+    "rolla"
   ],
   "license": "BUSL-1.1",
   "bugs": {
-    "url": "https://github.com/Quant-Finance-HQ/quant-protocol/issues"
+    "url": "https://github.com/RollaProject/quant-protocol/issues"
   },
-  "homepage": "https://github.com/Quant-Finance-HQ/quant-protocol#readme",
+  "homepage": "https://github.com/RollaProject/quant-protocol",
   "devDependencies": {
     "@commitlint/cli": "^12.1.1",
     "@commitlint/config-conventional": "^12.1.1",
