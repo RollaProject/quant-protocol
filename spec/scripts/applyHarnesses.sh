@@ -79,8 +79,8 @@ perl -0777 -i -pe 's/\(collateralStrikePrice.sub\(mintStrikePrice\)\).div\(\n\s*
    pure
    returns \(int256 collateralPerOption\)    {
            int256 _SCALING_FACTOR = 1e27;
-           int256 subResult = _collateralStrikePrice.sub\(_mintStrikePrice\);
-           collateralPerOption = subResult.mul\(_SCALING_FACTOR\) \/ _collateralStrikePrice;
+           int256 subResult = _collateralStrikePrice - _mintStrikePrice;
+           collateralPerOption = subResult * _SCALING_FACTOR \/ _collateralStrikePrice;
    }
    function computeMultiplication\(
             int256 _a,
@@ -90,6 +90,6 @@ perl -0777 -i -pe 's/\(collateralStrikePrice.sub\(mintStrikePrice\)\).div\(\n\s*
     pure
     returns \(int256\) {
         int256 _SCALING_FACTOR = 1e27;
-        return _a.mul\(_b\) \/ _SCALING_FACTOR;
+        return _a * _b \/ _SCALING_FACTOR;
     }/g' contracts/libraries/FundsCalculator.sol
 
