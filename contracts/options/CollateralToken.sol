@@ -28,9 +28,6 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
     /// @inheritdoc ICollateralToken
     uint256[] public override collateralTokenIds;
 
-    /// @inheritdoc ICollateralToken
-    mapping(uint256 => uint256) public override tokenSupplies;
-
     // Signature nonce per address
     mapping(address => uint256) public nonces;
 
@@ -113,8 +110,6 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
             "CollateralToken: Only a collateral minter can mint CollateralTokens"
         );
 
-        tokenSupplies[collateralTokenId] += amount;
-
         emit CollateralTokenMinted(recipient, collateralTokenId, amount);
 
         _mint(recipient, collateralTokenId, amount, "");
@@ -135,8 +130,6 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         );
         _burn(owner, collateralTokenId, amount);
 
-        tokenSupplies[collateralTokenId] -= amount;
-
         emit CollateralTokenBurned(owner, collateralTokenId, amount);
     }
 
@@ -155,7 +148,6 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         );
 
         for (uint256 i = 0; i < ids.length; i++) {
-            tokenSupplies[ids[i]] += amounts[i];
             emit CollateralTokenMinted(recipient, ids[i], amounts[i]);
         }
 
@@ -178,7 +170,6 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         _burnBatch(owner, ids, amounts);
 
         for (uint256 i = 0; i < ids.length; i++) {
-            tokenSupplies[ids[i]] -= amounts[i];
             emit CollateralTokenBurned(owner, ids[i], amounts[i]);
         }
     }

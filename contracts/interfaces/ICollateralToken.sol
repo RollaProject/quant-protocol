@@ -137,9 +137,6 @@ interface ICollateralToken is IERC1155 {
     /// @notice array of all the created CollateralToken ids
     function collateralTokenIds(uint256) external view returns (uint256);
 
-    /// @notice mapping from token ids to their supplies
-    function tokenSupplies(uint256) external view returns (uint256);
-
     /// @notice get the total amount of collateral tokens created
     function getCollateralTokensLength() external view returns (uint256);
 

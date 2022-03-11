@@ -93,3 +93,9 @@ perl -0777 -i -pe 's/\(collateralStrikePrice.sub\(mintStrikePrice\)\).div\(\n\s*
         return _a * _b \/ _SCALING_FACTOR;
     }/g' contracts/libraries/FundsCalculator.sol
 
+# Add tokenSupplies to CollateralToken
+perl -0777 -i -pe 's/override collateralTokenIds;\n/override collateralTokenIds;\n\n    mapping\(uint256 => uint256\) public tokenSupplies;\n/g' contracts/options/CollateralToken.sol
+perl -0777 -i -pe 's/emit CollateralTokenMinted\(recipient, collateralTokenId, amount\);\n/tokenSupplies[collateralTokenId] += amount;\n\n\t\temit CollateralTokenMinted\(recipient, collateralTokenId, amount\);\n/g' contracts/options/CollateralToken.sol
+perl -0777 -i -pe 's/emit CollateralTokenBurned\(owner, collateralTokenId, amount\);/tokenSupplies[collateralTokenId] -= amount;\n\n\t\temit CollateralTokenBurned\(owner, collateralTokenId, amount\);/g' contracts/options/CollateralToken.sol
+perl -0777 -i -pe 's/emit CollateralTokenMinted\(recipient, ids\[i\], amounts\[i\]\);/tokenSupplies[ids[i]] += amounts[i];\n\t\t\temit CollateralTokenMinted\(recipient, ids[i], amounts[i]\);/g' contracts/options/CollateralToken.sol
+perl -0777 -i -pe 's/emit CollateralTokenBurned\(owner, ids\[i\], amounts\[i\]\);/tokenSupplies[ids[i]] -= amounts[i];\n\t\t\temit CollateralTokenBurned(owner, ids[i], amounts[i]);/g' contracts/options/CollateralToken.sol
