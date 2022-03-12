@@ -158,8 +158,12 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
         returns (bytes32[] memory)
     {
         bytes32[] memory hashedActions = new bytes32[](actions.length);
-        for (uint256 i = 0; i < actions.length; i++) {
+        uint256 length = actions.length;
+        for (uint256 i = 0; i < length; ) {
             hashedActions[i] = _hashAction(actions[i]);
+            unchecked {
+                i++;
+            }
         }
         return hashedActions;
     }

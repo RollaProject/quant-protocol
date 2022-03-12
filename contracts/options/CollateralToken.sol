@@ -147,8 +147,12 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
             "CollateralToken: Only a collateral minter can mint CollateralTokens"
         );
 
-        for (uint256 i = 0; i < ids.length; i++) {
+        uint256 length = ids.length;
+        for (uint256 i = 0; i < length; ) {
             emit CollateralTokenMinted(recipient, ids[i], amounts[i]);
+            unchecked {
+                i++;
+            }
         }
 
         _mintBatch(recipient, ids, amounts, "");
@@ -169,8 +173,12 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         );
         _burnBatch(owner, ids, amounts);
 
-        for (uint256 i = 0; i < ids.length; i++) {
+        uint256 length = ids.length;
+        for (uint256 i = 0; i < length; ) {
             emit CollateralTokenBurned(owner, ids[i], amounts[i]);
+            unchecked {
+                i++;
+            }
         }
     }
 
