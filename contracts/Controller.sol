@@ -40,7 +40,8 @@ contract Controller is
         nonReentrant
         returns (bool)
     {
-        for (uint256 i = 0; i < _actions.length; i++) {
+        uint256 length = _actions.length;
+        for (uint256 i = 0; i < length; ) {
             ActionArgs memory action = _actions[i];
 
             if (action.actionType == ActionType.MintOption) {
@@ -107,6 +108,10 @@ contract Controller is
                 );
                 (address callee, bytes memory data) = action.parseCallArgs();
                 _call(callee, data);
+            }
+
+            unchecked {
+                i++;
             }
         }
 

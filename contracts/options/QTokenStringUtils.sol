@@ -210,8 +210,11 @@ contract QTokenStringUtils {
     ) internal pure virtual returns (string memory) {
         uint256 range = _end - _start;
         bytes memory slice = new bytes(range);
-        for (uint256 i = 0; i < range; i++) {
+        for (uint256 i = 0; i < range; ) {
             slice[i] = bytes(_s)[_start + 1];
+            unchecked {
+                i++;
+            }
         }
 
         return string(slice);

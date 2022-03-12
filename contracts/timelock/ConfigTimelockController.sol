@@ -190,11 +190,15 @@ contract ConfigTimelockController is TimelockController {
         bytes32 salt,
         uint256 delay
     ) public virtual override onlyRole(PROPOSER_ROLE) {
-        for (uint256 i = 0; i < targets.length; ++i) {
+        uint256 length = targets.length;
+        for (uint256 i = 0; i < length; ) {
             require(
                 !_isProtocoValueSetter(datas[i]),
                 "ConfigTimelockController: Can not schedule changes to a protocol value with an arbitrary delay"
             );
+            unchecked {
+                i++;
+            }
         }
 
         super.scheduleBatch(targets, values, datas, predecessor, salt, delay);
@@ -213,13 +217,16 @@ contract ConfigTimelockController is TimelockController {
             "ConfigTimelockController: length mismatch"
         );
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length; ) {
             scheduleSetProtocolAddress(
                 protocolValues[i],
                 newAddresses[i],
                 quantConfig,
                 eta
             );
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -236,13 +243,16 @@ contract ConfigTimelockController is TimelockController {
             "ConfigTimelockController: length mismatch"
         );
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length; ) {
             scheduleSetProtocolUint256(
                 protocolValues[i],
                 newUints[i],
                 quantConfig,
                 eta
             );
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -259,13 +269,16 @@ contract ConfigTimelockController is TimelockController {
             "ConfigTimelockController: length mismatch"
         );
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length; ) {
             scheduleSetProtocolBoolean(
                 protocolValues[i],
                 newBooleans[i],
                 quantConfig,
                 eta
             );
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -282,13 +295,16 @@ contract ConfigTimelockController is TimelockController {
             "ConfigTimelockController: length mismatch"
         );
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length; ) {
             scheduleSetProtocolRole(
                 protocolRoles[i],
                 roleAdmins[i],
                 quantConfig,
                 eta
             );
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -365,7 +381,7 @@ contract ConfigTimelockController is TimelockController {
             "ConfigTimelockController: length mismatch"
         );
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length; ) {
             execute(
                 quantConfig,
                 0,
@@ -377,6 +393,9 @@ contract ConfigTimelockController is TimelockController {
                 bytes32(0),
                 bytes32(eta)
             );
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -393,7 +412,7 @@ contract ConfigTimelockController is TimelockController {
             "ConfigTimelockController: length mismatch"
         );
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length; ) {
             execute(
                 quantConfig,
                 0,
@@ -405,6 +424,9 @@ contract ConfigTimelockController is TimelockController {
                 bytes32(0),
                 bytes32(eta)
             );
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -421,7 +443,7 @@ contract ConfigTimelockController is TimelockController {
             "ConfigTimelockController: length mismatch"
         );
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length; ) {
             execute(
                 quantConfig,
                 0,
@@ -433,6 +455,9 @@ contract ConfigTimelockController is TimelockController {
                 bytes32(0),
                 bytes32(eta)
             );
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -449,7 +474,7 @@ contract ConfigTimelockController is TimelockController {
             "ConfigTimelockController: length mismatch"
         );
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length; ) {
             execute(
                 quantConfig,
                 0,
@@ -461,6 +486,9 @@ contract ConfigTimelockController is TimelockController {
                 bytes32(0),
                 bytes32(eta)
             );
+            unchecked {
+                i++;
+            }
         }
     }
 
