@@ -433,9 +433,6 @@ describe("CollateralToken", () => {
           await collateralToken.balanceOf(userAddress, collateralTokenId)
         ).toString()
       );
-      const supplyAfterMint = parseInt(
-        (await collateralToken.tokenSupplies(collateralTokenId)).toString()
-      );
 
       // Burn some of the CollateralToken from the user
       await collateralToken
@@ -453,12 +450,6 @@ describe("CollateralToken", () => {
           ).toString()
         )
       ).to.be.lessThan(balanceAfterMint);
-
-      expect(
-        parseInt(
-          (await collateralToken.tokenSupplies(collateralTokenId)).toString()
-        )
-      ).to.be.lessThan(supplyAfterMint);
     });
 
     it("Should revert when an unauthorized account tries to burn CollateralTokens", async () => {
@@ -550,14 +541,6 @@ describe("CollateralToken", () => {
           [firstCollateralTokenId, secondCollateralTokenId]
         )
       ).to.eql([firstCollateralTokenAmount, secondCollateralTokenAmount]);
-
-      expect(
-        await collateralToken.tokenSupplies(firstCollateralTokenId)
-      ).to.equal(firstCollateralTokenAmount);
-
-      expect(
-        await collateralToken.tokenSupplies(secondCollateralTokenId)
-      ).to.equal(secondCollateralTokenAmount);
     });
 
     it("Should revert when an unauthorized account tries to mint a batch of CollateralTokens", async () => {
@@ -624,13 +607,6 @@ describe("CollateralToken", () => {
           [firstCollateralTokenId, secondCollateralTokenId]
         );
 
-      const firstPrevSupply = await collateralToken.tokenSupplies(
-        firstCollateralTokenId
-      );
-      const secondPrevSupply = await collateralToken.tokenSupplies(
-        secondCollateralTokenId
-      );
-
       await collateralToken
         .connect(collateralBurner)
         .burnCollateralTokenBatch(
@@ -645,25 +621,11 @@ describe("CollateralToken", () => {
           [firstCollateralTokenId, secondCollateralTokenId]
         );
 
-      const firstNewSupply = await collateralToken.tokenSupplies(
-        firstCollateralTokenId
-      );
-      const secondNewSupply = await collateralToken.tokenSupplies(
-        secondCollateralTokenId
-      );
-
       expect(parseInt(firstPrevBalance.toString())).to.be.greaterThan(
         parseInt(firstNewBalance.toString())
       );
       expect(parseInt(secondPrevBalance.toString())).to.be.greaterThan(
         parseInt(secondNewBalance.toString())
-      );
-
-      expect(parseInt(firstPrevSupply.toString())).to.be.greaterThan(
-        parseInt(firstNewSupply.toString())
-      );
-      expect(parseInt(secondPrevSupply.toString())).to.be.greaterThan(
-        parseInt(secondNewSupply.toString())
       );
     });
 
