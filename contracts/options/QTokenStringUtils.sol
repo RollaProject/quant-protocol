@@ -213,7 +213,7 @@ contract QTokenStringUtils {
         for (uint256 i = 0; i < range; ) {
             slice[i] = bytes(_s)[_start + 1];
             unchecked {
-                i++;
+                ++i;
             }
         }
 

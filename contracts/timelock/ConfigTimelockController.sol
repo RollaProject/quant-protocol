@@ -197,7 +197,7 @@ contract ConfigTimelockController is TimelockController {
                 "ConfigTimelockController: Can not schedule changes to a protocol value with an arbitrary delay"
             );
             unchecked {
-                i++;
+                ++i;
             }
         }
 
@@ -225,7 +225,7 @@ contract ConfigTimelockController is TimelockController {
                 eta
             );
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -251,7 +251,7 @@ contract ConfigTimelockController is TimelockController {
                 eta
             );
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -277,7 +277,7 @@ contract ConfigTimelockController is TimelockController {
                 eta
             );
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -303,7 +303,7 @@ contract ConfigTimelockController is TimelockController {
                 eta
             );
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -394,7 +394,7 @@ contract ConfigTimelockController is TimelockController {
                 bytes32(eta)
             );
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -425,7 +425,7 @@ contract ConfigTimelockController is TimelockController {
                 bytes32(eta)
             );
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -456,7 +456,7 @@ contract ConfigTimelockController is TimelockController {
                 bytes32(eta)
             );
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -487,7 +487,7 @@ contract ConfigTimelockController is TimelockController {
                 bytes32(eta)
             );
             unchecked {
-                i++;
+                ++i;
             }
         }
     }

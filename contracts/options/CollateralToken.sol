@@ -151,7 +151,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         for (uint256 i = 0; i < length; ) {
             emit CollateralTokenMinted(recipient, ids[i], amounts[i]);
             unchecked {
-                i++;
+                ++i;
             }
         }
 
@@ -177,7 +177,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         for (uint256 i = 0; i < length; ) {
             emit CollateralTokenBurned(owner, ids[i], amounts[i]);
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
