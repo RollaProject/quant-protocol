@@ -132,3 +132,6 @@ deployments/
 .certora*
 last_conf*
 .vscode/
+
+#Foundry
+out/
