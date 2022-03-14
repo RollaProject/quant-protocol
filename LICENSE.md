@@ -3,20 +3,20 @@ Business Source License 1.1
 License text copyright (c) 2017 MariaDB Corporation Ab, All Rights Reserved.
 "Business Source License" is a trademark of MariaDB Corporation Ab.
 
------------------------------------------------------------------------------
+---
 
 Parameters
 
-Licensor:             Quant Labs, Inc.
+Licensor: Quant Labs, Inc.
 
-Licensed Work:        Quant Protocol
-                      The Licensed Work is (c) 2021 Quant Labs, Inc.
+Licensed Work: Quant Protocol
+The Licensed Work is (c) 2021 Quant Labs, Inc.
 
-Change Date:          2025-10-01 (YYYY-MM-DD)
+Change Date: 2026-03-01 (YYYY-MM-DD)
 
-Change License:       GNU General Public License v3.0 or later
+Change License: GNU General Public License v3.0 or later
 
------------------------------------------------------------------------------
+---
 
 Terms
 
@@ -64,7 +64,7 @@ MariaDB hereby grants you permission to use this License’s text to license
 your works, and to refer to it using the trademark "Business Source License",
 as long as you comply with the Covenants of Licensor below.
 
------------------------------------------------------------------------------
+---
 
 Covenants of Licensor
 
@@ -87,7 +87,7 @@ other recipients of the licensed work to be provided by Licensor:
 
 4. Not to modify this License in any other way.
 
------------------------------------------------------------------------------
+---
 
 Notice
 
