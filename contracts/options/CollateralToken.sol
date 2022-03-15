@@ -6,7 +6,7 @@ import "../external/openzeppelin/ERC1155.sol";
 import "../interfaces/ICollateralToken.sol";
 
 /// @title Tokens representing a Quant user's short positions
-/// @author Quant Finance
+/// @author Rolla
 /// @notice Can be used by owners to claim their collateral
 /// @dev This is a multi-token contract that implements the ERC1155 token standard:
 /// https://eips.ethereum.org/EIPS/eip-1155

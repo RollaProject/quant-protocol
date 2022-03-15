@@ -12,7 +12,7 @@ import "../interfaces/IQToken.sol";
 import "../interfaces/IAssetsRegistry.sol";
 
 /// @title Options utilities for Quant's QToken and CollateralToken
-/// @author Quant Finance
+/// @author Rolla
 /// @dev This library must be deployed and linked while deploying contracts that use it
 library OptionsUtils {
     /// @notice constant salt because options will only be deployed with the same parameters once

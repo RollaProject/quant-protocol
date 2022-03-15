@@ -9,15 +9,24 @@ import "./libraries/FundsCalculator.sol";
 import "./libraries/OptionsUtils.sol";
 import "./libraries/QuantMath.sol";
 
+/// @title Calculates collateral requirements and payouts for Quant options.
+/// @author Rolla
+/// @dev Uses fixed point arithmetic from the QuantMath library.
 contract QuantCalculator is IQuantCalculator {
     using QuantMath for uint256;
     using QuantMath for int256;
     using QuantMath for QuantMath.FixedPointInt;
 
+    /// @inheritdoc IQuantCalculator
     uint8 public constant override OPTIONS_DECIMALS = 18;
+
+    /// @inheritdoc IQuantCalculator
     uint8 public immutable override strikeAssetDecimals;
+
+    /// @inheritdoc IQuantCalculator
     address public immutable override optionsFactory;
 
+    /// @notice Checks that the QToken was created through the configured OptionsFactory
     modifier validQToken(address _qToken) {
         require(
             IOptionsFactory(optionsFactory).isQToken(_qToken),
@@ -27,6 +36,8 @@ contract QuantCalculator is IQuantCalculator {
         _;
     }
 
+    /// @notice Checks that the QToken used as collateral for a spread is either the zero address
+    /// or a QToken created through the configured OptionsFactory
     modifier validQTokenAsCollateral(address _qTokenAsCollateral) {
         if (_qTokenAsCollateral != address(0)) {
             // it could be the zero address for the qTokenAsCollateral for non-spreads
@@ -39,6 +50,8 @@ contract QuantCalculator is IQuantCalculator {
         _;
     }
 
+    /// @param _strikeAssetDecimals the number of decimals used to denominate strike prices
+    /// @param _optionsFactory the address of the OptionsFactory contract
     constructor(uint8 _strikeAssetDecimals, address _optionsFactory) {
         strikeAssetDecimals = _strikeAssetDecimals;
         optionsFactory = _optionsFactory;
