@@ -3,31 +3,31 @@ pragma solidity ^0.8.0;
 
 interface IQuantCalculator {
     function calculateClaimableCollateral(
-        uint256,
-        uint256,
-        address
+        uint256 _collateralTokenId,
+        uint256 _amount,
+        address _msgSender
     )
         external
         view
         returns (
-            uint256,
-            address,
-            uint256
+            uint256 returnableCollateral,
+            address collateralAsset,
+            uint256 amountToClaim
         );
 
     function getCollateralRequirement(
-        address,
-        address,
-        uint256
-    ) external view returns (address, uint256);
+        address _qTokenToMint,
+        address _qTokenForCollateral,
+        uint256 _amount
+    ) external view returns (address collateral, uint256 collateralAmount);
 
-    function getExercisePayout(address, uint256)
+    function getExercisePayout(address _qToken, uint256 _amount)
         external
         view
         returns (
-            bool,
-            address,
-            uint256
+            bool isSettled,
+            address payoutToken,
+            uint256 payoutAmount
         );
 
     function getNeutralizationPayout(

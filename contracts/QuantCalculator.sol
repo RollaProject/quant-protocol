@@ -57,6 +57,7 @@ contract QuantCalculator is IQuantCalculator {
         optionsFactory = _optionsFactory;
     }
 
+    /// @inheritdoc IQuantCalculator
     function calculateClaimableCollateral(
         uint256 _collateralTokenId,
         uint256 _amount,
@@ -161,6 +162,7 @@ contract QuantCalculator is IQuantCalculator {
             .toScaledUint(payoutDecimals, true);
     }
 
+    /// @inheritdoc IQuantCalculator
     function getNeutralizationPayout(
         address _qTokenShort,
         address _qTokenLong,
@@ -191,6 +193,7 @@ contract QuantCalculator is IQuantCalculator {
         collateralOwed = collateralOwedFP.toScaledUint(payoutDecimals, true);
     }
 
+    /// @inheritdoc IQuantCalculator
     function getCollateralRequirement(
         address _qTokenToMint,
         address _qTokenForCollateral,
@@ -226,6 +229,7 @@ contract QuantCalculator is IQuantCalculator {
         );
     }
 
+    /// @inheritdoc IQuantCalculator
     function getExercisePayout(address _qToken, uint256 _amount)
         external
         view
