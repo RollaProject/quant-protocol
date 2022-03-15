@@ -19,3 +19,4 @@ test/
 tsconfig.json
 typechain/
 yarn.lock
+src/
