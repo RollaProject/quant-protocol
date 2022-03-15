@@ -19,7 +19,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
  *
  * _Available since v3.3._
  */
-contract TimelockController is AccessControl {
+abstract contract TimelockController is AccessControl {
     bytes32 public constant TIMELOCK_ADMIN_ROLE =
         keccak256("TIMELOCK_ADMIN_ROLE");
     bytes32 public constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");

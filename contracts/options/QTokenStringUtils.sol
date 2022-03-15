@@ -8,7 +8,7 @@ import "../interfaces/IAssetsRegistry.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../libraries/ProtocolValue.sol";
 
-contract QTokenStringUtils {
+abstract contract QTokenStringUtils {
     /// @notice get the ERC20 token symbol from the AssetsRegistry
     /// @dev the asset is assumed to be in the AssetsRegistry since QTokens
     /// must be created through the OptionsFactory, which performs that check
