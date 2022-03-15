@@ -8,7 +8,7 @@ contract CollateralTokenHarness is CollateralToken {
     ////////////////////////////////////////////////////////////////////////////
     constructor(address _quantConfig)
         public
-        CollateralToken(_quantConfig, "", "")
+        CollateralToken(_quantConfig, "", "", "")
     {}
 
     ////////////////////////////////////////////////////////////////////////////
