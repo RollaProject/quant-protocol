@@ -12,7 +12,7 @@ import "../libraries/QuantMath.sol";
 import "./QTokenStringUtils.sol";
 
 /// @title Token that represents a user's long position
-/// @author Quant Finance
+/// @author Rolla
 /// @notice Can be used by owners to exercise their options
 /// @dev Every option long position is an ERC20 token: https://eips.ethereum.org/EIPS/eip-20
 contract QToken is ERC20Permit, QTokenStringUtils, IQToken {

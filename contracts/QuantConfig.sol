@@ -6,7 +6,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./libraries/ProtocolValue.sol";
 import "./interfaces/ITimelockedConfig.sol";
 
-/// @title A central config for the quant system. Also acts as a central access control manager.
+/// @title A central config for the Quant Protocol. Also acts as a central access control manager.
+/// @author Rolla
 /// @notice For storing constants, variables and allowing them to be changed by the admin (governance)
 /// @dev This should be used as a central access control manager which other contracts use to check permissions
 contract QuantConfig is

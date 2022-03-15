@@ -2,6 +2,11 @@
 pragma solidity ^0.8.0;
 
 interface IAssetsRegistry {
+    /// @notice emitted when a new asset is added to the registry
+    /// @param underlying address of the asset
+    /// @param name name of the asset
+    /// @param symbol symbol of the asset
+    /// @param decimals the amount of decimals the asset has
     event AssetAdded(
         address indexed underlying,
         string name,
@@ -9,15 +14,27 @@ interface IAssetsRegistry {
         uint8 decimals
     );
 
+    /// @notice Add a new asset to the registry
+    /// @dev It will revert when trying to add an asset with the same address twice
+    /// @dev Can only be called by addresses with the ASSETS_REGISTRY_MANAGER_ROLE role
+    /// @param _underlying address of the asset
+    /// @param _name name of the asset
+    /// @param _symbol symbol of the asset
+    /// @param _decimals the amount of decimals the asset has
     function addAsset(
-        address,
-        string calldata,
-        string calldata,
-        uint8
+        address _underlying,
+        string calldata _name,
+        string calldata _symbol,
+        uint8 _decimals
     ) external;
 
-    function addAssetWithOptionalERC20Methods(address) external;
+    /// @notice Add a new asset to the registry, calling the optional ERC20 methods
+    /// to get its name, symbol and decimals
+    /// @param _underlying address of the asset
+    function addAssetWithOptionalERC20Methods(address _underlying) external;
 
+    /// @notice Returns the name, symbol and decimals of an asset that's already in the registry
+    /// @dev Will return empty strings and zero for non-existent assets
     function assetProperties(address)
         external
         view
@@ -27,7 +44,9 @@ interface IAssetsRegistry {
             uint8
         );
 
+    /// @notice Returns the address of the asset at the given index
     function registeredAssets(uint256) external view returns (address);
 
+    /// @notice Returns the number of assets in the registry
     function getAssetsLength() external view returns (uint256);
 }

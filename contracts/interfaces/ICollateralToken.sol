@@ -6,7 +6,7 @@ import "./IQuantConfig.sol";
 import "./IQToken.sol";
 
 /// @title Tokens representing a Quant user's short positions
-/// @author Quant Finance
+/// @author Rolla
 /// @notice Can be used by owners to claim their collateral
 interface ICollateralToken is IERC1155 {
     struct QTokensDetails {

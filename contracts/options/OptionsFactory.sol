@@ -10,7 +10,7 @@ import "../interfaces/IAssetsRegistry.sol";
 import "../interfaces/ICollateralToken.sol";
 
 /// @title Factory contract for Quant options
-/// @author Quant Finance
+/// @author Rolla
 /// @notice Creates tokens for long (QToken) and short (CollateralToken) positions
 /// @dev This contract follows the factory design pattern
 contract OptionsFactory is IOptionsFactory {
