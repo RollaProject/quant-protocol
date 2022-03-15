@@ -129,11 +129,13 @@ const deployCollateralToken = async (
   deployer: Signer,
   quantConfig: QuantConfig
 ): Promise<CollateralToken> => {
+  const erc1155Uri = "https://tokens.rolla.finance/{id}.json";
   const collateralToken = <CollateralToken>(
     await deployContract(deployer, CollateralTokenJSON, [
       quantConfig.address,
       name,
       version,
+      erc1155Uri,
     ])
   );
 

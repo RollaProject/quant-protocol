@@ -43,11 +43,9 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
     constructor(
         address _quantConfig,
         string memory _name,
-        string memory _version
-    )
-        ERC1155("https://tokens.rolla.finance/{id}.json")
-        EIP712(_name, _version)
-    {
+        string memory _version,
+        string memory _uri
+    ) ERC1155(_uri) EIP712(_name, _version) {
         require(
             _quantConfig != address(0),
             "CollateralToken: invalid QuantConfig address"
