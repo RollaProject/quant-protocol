@@ -9,6 +9,7 @@ import "../../libraries/QuantMath.sol";
 import "../../interfaces/IChainlinkOracleManager.sol";
 
 /// @title For managing chainlink oracles for assets and submitting chainlink prices to the registry
+/// @author Rolla
 /// @notice Once an oracle is added for an asset it can't be changed!
 contract ChainlinkOracleManager is
     ProviderOracleManager,
@@ -128,6 +129,7 @@ contract ChainlinkOracleManager is
                 .toScaledUint(strikeAssetDecimals, true);
     }
 
+    /// @inheritdoc IProviderOracleManager
     function isValidOption(
         address,
         uint256,

@@ -5,6 +5,7 @@ import "./SignedConverter.sol";
 
 /**
  * @title QuantMath
+ * @author Rolla
  * @notice FixedPoint library
  */
 library QuantMath {

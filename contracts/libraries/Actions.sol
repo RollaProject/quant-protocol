@@ -22,6 +22,8 @@ struct ActionArgs {
     bytes data; //extra data for function calls
 }
 
+/// @title Library to parse arguments for actions to be executed by the Controller
+/// @author Rolla
 library Actions {
     function parseMintOptionArgs(ActionArgs memory _args)
         internal

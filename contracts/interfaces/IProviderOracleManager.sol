@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./IQuantConfig.sol";
 
 /// @title Oracle manager for holding asset addresses and their oracle addresses for a single provider
+/// @author Rolla
 /// @notice Once an oracle is added for an asset it can't be changed!
 interface IProviderOracleManager {
     event OracleAdded(address asset, address oracle);
@@ -46,6 +47,10 @@ interface IProviderOracleManager {
     /// @return the current price of the asset
     function getCurrentPrice(address _asset) external view returns (uint256);
 
+    /// @notice Checks if the option is valid for the oracle manager with the given parameters
+    /// @param _underlyingAsset the address of the underlying asset
+    /// @param _expiryTime the expiry timestamp of the option
+    /// @param _strikePrice the strike price of the option
     function isValidOption(
         address _underlyingAsset,
         uint256 _expiryTime,

@@ -4,6 +4,7 @@ pragma solidity 0.8.12;
 import "../interfaces/external/chainlink/IEACAggregatorProxy.sol";
 
 /// @title Mock chainlink proxy
+/// @author Rolla
 contract MockAggregatorProxy is IEACAggregatorProxy {
     struct LatestRoundData {
         uint80 roundId;

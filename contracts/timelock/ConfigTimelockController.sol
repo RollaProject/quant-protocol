@@ -5,10 +5,16 @@ import "./TimelockController.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../libraries/ProtocolValue.sol";
 
+/// @title Timelock controller contract for setting values in the QuantConfig and scheduling calls
+/// to external contracts.
+/// @author Rolla
+/// @dev Built on top of OpenZeppelin's TimelockController.
 contract ConfigTimelockController is TimelockController {
     mapping(bytes32 => uint256) public delays;
 
     mapping(bytes32 => uint256) private _timestamps;
+
+    /// @notice The minimum delay for scheduled executions
     uint256 public minDelay;
 
     constructor(
@@ -22,6 +28,9 @@ contract ConfigTimelockController is TimelockController {
         minDelay = _minDelay;
     }
 
+    /// @notice Sets the delay for a specific protocol value
+    /// @param _protocolValue the bytes32 encoded representation of the protocol value
+    /// @param _newDelay the delay in seconds
     function setDelay(bytes32 _protocolValue, uint256 _newDelay)
         external
         onlyRole(EXECUTOR_ROLE)
@@ -30,6 +39,7 @@ contract ConfigTimelockController is TimelockController {
         delays[_protocolValue] = _newDelay >= minDelay ? _newDelay : minDelay;
     }
 
+    /// @inheritdoc TimelockController
     function schedule(
         address target,
         uint256 value,
@@ -47,6 +57,11 @@ contract ConfigTimelockController is TimelockController {
         super.schedule(target, value, data, predecessor, salt, delay, false);
     }
 
+    /// @notice Schedule a call to set a protocol address in the QuantConfig contract
+    /// @param protocolAddress the encoded name of the protocol address variable to set in the config
+    /// @param newAddress the new address value to set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled call can be executed
     function scheduleSetProtocolAddress(
         bytes32 protocolAddress,
         address newAddress,
@@ -81,6 +96,11 @@ contract ConfigTimelockController is TimelockController {
         );
     }
 
+    /// @notice Schedule a call to set a protocol uint256 in the QuantConfig contract
+    /// @param protocolUint256 the encoded name of the protocol uint256 variable to set in the config
+    /// @param newUint256 the new uint256 value to set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled call can be executed
     function scheduleSetProtocolUint256(
         bytes32 protocolUint256,
         uint256 newUint256,
@@ -115,6 +135,11 @@ contract ConfigTimelockController is TimelockController {
         );
     }
 
+    /// @notice Schedule a call to set a protocol boolean in the QuantConfig contract
+    /// @param protocolBoolean the encoded name of the protocol boolean variable to set in the config
+    /// @param newBoolean the new boolean value to set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled call can be executed
     function scheduleSetProtocolBoolean(
         bytes32 protocolBoolean,
         bool newBoolean,
@@ -148,6 +173,11 @@ contract ConfigTimelockController is TimelockController {
         );
     }
 
+    /// @notice Schedule a call to set a protocol role in the QuantConfig contract
+    /// @param protocolRole the name of the protocol role variable to set in the config
+    /// @param roleAdmin address to be the role admin
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled call can be executed
     function scheduleSetProtocolRole(
         string calldata protocolRole,
         address roleAdmin,
@@ -182,6 +212,14 @@ contract ConfigTimelockController is TimelockController {
         );
     }
 
+    /// @notice Schedule multiple contract calls
+    /// @dev Cannot schedule calls to set protocol values in the QuantConfig
+    /// @param targets array of contracts to receive the scheduled calls
+    /// @param values array of values to be sent to the contracts
+    /// @param datas array of data to be sent to the contracts
+    /// @param predecessor extra 32 bytes to be used when hashing the operation batch
+    /// @param salt salt to be used when hashing the operation batch
+    /// @param delay execution delay in seconds
     function scheduleBatch(
         address[] memory targets,
         uint256[] memory values,
@@ -204,6 +242,11 @@ contract ConfigTimelockController is TimelockController {
         super.scheduleBatch(targets, values, datas, predecessor, salt, delay);
     }
 
+    /// @notice Schedule multiple calls to set protocol address values in the QuantConfig
+    /// @param protocolValues array of protocol address values to be set
+    /// @param newAddresses array of new addresses to be set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled calls can be executed
     function scheduleBatchSetProtocolAddress(
         bytes32[] calldata protocolValues,
         address[] calldata newAddresses,
@@ -230,6 +273,11 @@ contract ConfigTimelockController is TimelockController {
         }
     }
 
+    /// @notice Schedule multiple calls to set protocol uint256 values in the QuantConfig
+    /// @param protocolValues array of protocol uint256 values to be set
+    /// @param newUints array of new uints to be set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled calls can be executed
     function scheduleBatchSetProtocolUints(
         bytes32[] calldata protocolValues,
         uint256[] calldata newUints,
@@ -256,6 +304,11 @@ contract ConfigTimelockController is TimelockController {
         }
     }
 
+    /// @notice Schedule multiple calls to set protocol boolean values in the QuantConfig
+    /// @param protocolValues array of protocol boolean values to be set
+    /// @param newBooleans array of new booleans to be set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled calls can be executed
     function scheduleBatchSetProtocolBooleans(
         bytes32[] calldata protocolValues,
         bool[] calldata newBooleans,
@@ -282,6 +335,11 @@ contract ConfigTimelockController is TimelockController {
         }
     }
 
+    /// @notice Schedule multiple calls to set protocol roles in the QuantConfig
+    /// @param protocolRoles array of protocol roles to be set
+    /// @param roleAdmins array of role admins to be set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled calls can be executed
     function scheduleBatchSetProtocolRoles(
         string[] calldata protocolRoles,
         address[] calldata roleAdmins,
@@ -308,6 +366,11 @@ contract ConfigTimelockController is TimelockController {
         }
     }
 
+    /// @notice Execute a scheduled call to set a protocol address value in the QuantConfig
+    /// @param protocolAddress the protocol address value to be set
+    /// @param newAddress the new address to be set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled call can be executed
     function executeSetProtocolAddress(
         bytes32 protocolAddress,
         address newAddress,
@@ -323,6 +386,11 @@ contract ConfigTimelockController is TimelockController {
         );
     }
 
+    /// @notice Execute a scheduled call to set a protocol uint256 value in the QuantConfig
+    /// @param protocolUint256 the protocol uint256 value to be set
+    /// @param newUint256 the new uint to be set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled call can be executed
     function executeSetProtocolUint256(
         bytes32 protocolUint256,
         uint256 newUint256,
@@ -338,6 +406,11 @@ contract ConfigTimelockController is TimelockController {
         );
     }
 
+    /// @notice Execute a scheduled call to set a protocol boolean value in the QuantConfig
+    /// @param protocolBoolean the protocol boolean value to be set
+    /// @param newBoolean the new boolean to be set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled call can be executed
     function executeSetProtocolBoolean(
         bytes32 protocolBoolean,
         bool newBoolean,
@@ -353,6 +426,11 @@ contract ConfigTimelockController is TimelockController {
         );
     }
 
+    /// @notice Execute a scheduled call to set a protocol role in the QuantConfig
+    /// @param protocolRole the protocol role to be set
+    /// @param roleAdmin the role admin to be set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled call can be executed
     function executeSetProtocolRole(
         string calldata protocolRole,
         address roleAdmin,
@@ -368,6 +446,11 @@ contract ConfigTimelockController is TimelockController {
         );
     }
 
+    /// @notice Execute multiple scheduled calls to set protocol address values in the QuantConfig
+    /// @param protocolValues array of protocol address values to be set
+    /// @param newAddresses array of new addresses to be set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled calls can be executed
     function executeBatchSetProtocolAddress(
         bytes32[] calldata protocolValues,
         address[] calldata newAddresses,
@@ -399,6 +482,11 @@ contract ConfigTimelockController is TimelockController {
         }
     }
 
+    /// @notice Execute multiple scheduled calls to set protocol uint256 values in the QuantConfig
+    /// @param protocolValues array of protocol uint256 values to be set
+    /// @param newUints array of new uints to be set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled calls can be executed
     function executeBatchSetProtocolUint256(
         bytes32[] calldata protocolValues,
         uint256[] calldata newUints,
@@ -430,6 +518,11 @@ contract ConfigTimelockController is TimelockController {
         }
     }
 
+    /// @notice Execute multiple scheduled calls to set protocol boolean values in the QuantConfig
+    /// @param protocolValues array of protocol boolean values to be set
+    /// @param newBooleans array of new booleans to be set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled calls can be executed
     function executeBatchSetProtocolBoolean(
         bytes32[] calldata protocolValues,
         bool[] calldata newBooleans,
@@ -461,6 +554,11 @@ contract ConfigTimelockController is TimelockController {
         }
     }
 
+    /// @notice Execute multiple scheduled calls to set protocol roles in the QuantConfig
+    /// @param protocolRoles array of protocol roles to be set
+    /// @param roleAdmins array of role admins to be set
+    /// @param quantConfig the address of the QuantConfig contract
+    /// @param eta timestamp from which the scheduled calls can be executed
     function executeBatchSetProtocolRoles(
         string[] calldata protocolRoles,
         address[] calldata roleAdmins,
@@ -492,6 +590,10 @@ contract ConfigTimelockController is TimelockController {
         }
     }
 
+    /// @notice Gets the delay to set a specific protocol value using the timelock
+    /// @param quantConfig  the address of the QuantConfig contract
+    /// @param protocolValue the protocol value to get the delay for
+    /// @return the delay required to set the protocol value
     function _getProtocolValueDelay(
         address quantConfig,
         bytes32 protocolValue,
@@ -511,6 +613,13 @@ contract ConfigTimelockController is TimelockController {
         return storedDelay != 0 ? storedDelay : minDelay;
     }
 
+    /// @notice Checks if a given calldata is for setting a protocol value, which could be used
+    /// to bypass the minimum delay required to set a protocol value of a specific type
+    /// @param data the calldata to check
+    /// @return true if the calldata is for setting a protocol value, false otherwise
+    /// @dev There could be a clash between the 4-byte selector for `setProtocolValue` functions
+    /// and other external functions. That's unlikely to happen, but if it does, scheduling calls
+    /// to those functions will always revert.
     function _isProtocoValueSetter(bytes memory data)
         internal
         pure
@@ -528,6 +637,10 @@ contract ConfigTimelockController is TimelockController {
             selector == IQuantConfig(address(0)).setProtocolBoolean.selector;
     }
 
+    /// @notice Encodes the calldata for setting a protocol address value
+    /// @param _protocolAddress the protocol address value to be set
+    /// @param _newAddress the new address to be set
+    /// @param _quantConfig the address of the QuantConfig contract
     function _encodeSetProtocolAddress(
         bytes32 _protocolAddress,
         address _newAddress,
@@ -541,6 +654,10 @@ contract ConfigTimelockController is TimelockController {
             );
     }
 
+    /// @notice Encodes the calldata for setting a protocol uint256 value
+    /// @param _protocolUint256 the protocol uint256 value to be set
+    /// @param _newUint256 the new uint to be set
+    /// @param _quantConfig the address of the QuantConfig contract
     function _encodeSetProtocolUint256(
         bytes32 _protocolUint256,
         uint256 _newUint256,
@@ -554,6 +671,10 @@ contract ConfigTimelockController is TimelockController {
             );
     }
 
+    /// @notice Encodes the calldata for setting a protocol boolean value
+    /// @param _protocolBoolean the protocol boolean value to be set
+    /// @param _newBoolean the new boolean to be set
+    /// @param _quantConfig the address of the QuantConfig contract
     function _encodeSetProtocolBoolean(
         bytes32 _protocolBoolean,
         bool _newBoolean,
@@ -567,6 +688,10 @@ contract ConfigTimelockController is TimelockController {
             );
     }
 
+    /// @notice Encodes the calldata for setting a protocol role
+    /// @param _protocolRole the protocol role to be set
+    /// @param _roleAdmin the role admin to be set
+    /// @param _quantConfig the address of the QuantConfig contract
     function _encodeSetProtocolRole(
         string memory _protocolRole,
         address _roleAdmin,

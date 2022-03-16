@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./IQuantConfig.sol";
 
 /// @title For centrally managing a log of settlement prices, for each option.
+/// @author Rolla
 interface IPriceRegistry {
     struct PriceWithDecimals {
         uint256 price;

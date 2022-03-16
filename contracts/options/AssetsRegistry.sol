@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IAssetsRegistry.sol";
 
+/// @title For managing assets supported as underlying for options in the Quant Protocol
+/// @author Rolla
 contract AssetsRegistry is IAssetsRegistry {
     struct AssetProperties {
         string name;
@@ -39,6 +41,7 @@ contract AssetsRegistry is IAssetsRegistry {
         _;
     }
 
+    /// @param quantConfig_ address of the Quant central configuration contract
     constructor(address quantConfig_) {
         require(
             quantConfig_ != address(0),

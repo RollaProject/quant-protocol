@@ -88,6 +88,12 @@ library OptionsUtils {
             _collateralToken.getCollateralTokenId(qToken, _qTokenAsCollateral);
     }
 
+    /// @notice Checks if the given option parameters are valid for creation in the Quant Protocol
+    /// @param _underlyingAsset asset that the option is for
+    /// @param _oracle price oracle for the option underlying
+    /// @param _expiryTime expiration timestamp as a unix timestamp
+    /// @param _quantConfig address of the QuantConfig contract
+    /// @param _strikePrice strike price with as many decimals in the strike asset
     function validateOptionParameters(
         address _underlyingAsset,
         address _oracle,
@@ -139,6 +145,10 @@ library OptionsUtils {
         );
     }
 
+    /// @notice Checks if a given asset is in the AssetsRegistry configured in the QuantConfig
+    /// @param _asset address of the asset to check
+    /// @param _quantConfig address of the QuantConfig contract
+    /// @return whether the asset is in the configured registry
     function isInAssetsRegistry(address _asset, address _quantConfig)
         internal
         view
@@ -154,6 +164,11 @@ library OptionsUtils {
         return bytes(symbol).length != 0;
     }
 
+    /// @notice Gets the amount of decimals for an option exercise payout
+    /// @param _strikeAssetDecimals decimals of the strike asset
+    /// @param _qToken address of the option's QToken contract
+    /// @param _quantConfig address of the QuantConfig contract
+    /// @return payoutDecimals amount of decimals for the option exercise payout
     function getPayoutDecimals(
         uint8 _strikeAssetDecimals,
         IQToken _qToken,
@@ -174,6 +189,9 @@ library OptionsUtils {
         }
     }
 
+    /// @notice Gets the option details for a given QToken
+    /// @param _qToken QToken to get the info for
+    /// @return qTokenInfo struct containing all the QToken details
     function getQTokenInfo(address _qToken)
         internal
         view

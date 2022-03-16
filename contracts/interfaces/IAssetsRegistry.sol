@@ -35,18 +35,27 @@ interface IAssetsRegistry {
 
     /// @notice Returns the name, symbol and decimals of an asset that's already in the registry
     /// @dev Will return empty strings and zero for non-existent assets
-    function assetProperties(address)
+    /// @return name asset's name
+    /// @return symbol asset's symbol
+    /// @return decimals asset's decimals
+    function assetProperties(address asset)
         external
         view
         returns (
-            string memory,
-            string memory,
-            uint8
+            string memory name,
+            string memory symbol,
+            uint8 decimals
         );
 
     /// @notice Returns the address of the asset at the given index
-    function registeredAssets(uint256) external view returns (address);
+    /// @param index index of the asset in the registry
+    /// @return asset address of the asset at the given index
+    function registeredAssets(uint256 index)
+        external
+        view
+        returns (address asset);
 
     /// @notice Returns the number of assets in the registry
-    function getAssetsLength() external view returns (uint256);
+    /// @return length number of assets in the registry
+    function getAssetsLength() external view returns (uint256 length);
 }

@@ -5,6 +5,9 @@ import "./ChainlinkOracleManager.sol";
 import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
 import "../../interfaces/IChainlinkFixedTimeOracleManager.sol";
 
+/// @title For managing Chainlink oracles with updates at fixed times.
+/// @author Rolla
+/// @notice Update times are counted as seconds since the start of the day.
 contract ChainlinkFixedTimeOracleManager is
     ChainlinkOracleManager,
     IChainlinkFixedTimeOracleManager
@@ -28,6 +31,7 @@ contract ChainlinkFixedTimeOracleManager is
 
     }
 
+    /// @inheritdoc IChainlinkFixedTimeOracleManager
     function setFixedTimeUpdate(uint256 fixedTime, bool isValidTime)
         external
         override
@@ -45,6 +49,7 @@ contract ChainlinkFixedTimeOracleManager is
         emit FixedTimeUpdate(fixedTime, isValidTime);
     }
 
+    /// @inheritdoc IProviderOracleManager
     function isValidOption(
         address,
         uint256 _expiryTime,
@@ -59,6 +64,11 @@ contract ChainlinkFixedTimeOracleManager is
         return chainlinkFixedTimeUpdates[timeInSeconds];
     }
 
+    /// @notice Gets the price and roundId for a given expiry time.
+    /// @param aggregator address of the Chainlink aggregator proxy contract
+    /// @param _expiryTimestamp option expiration timestamp in seconds since the Unix epoch
+    /// @param _roundIdAfterExpiry id of the round right after the expiry
+    /// @param _expiryRoundId id of the round right before or at the expiry
     function _getExpiryPrice(
         IEACAggregatorProxy aggregator,
         uint256 _expiryTimestamp,
