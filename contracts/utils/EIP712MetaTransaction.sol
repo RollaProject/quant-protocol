@@ -33,15 +33,25 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
 
     mapping(address => uint256) private _nonces;
 
+    /// @notice user readable name of signing domain for EIP712 (the protocol name)
     string public name;
+
+    /// @notice the current major version of the signing domain for EIP712
     string public version;
 
+    /// @notice emitted when a meta transaction is executed
     event MetaTransactionExecuted(
         address indexed userAddress,
         address payable indexed relayerAddress,
         uint256 nonce
     );
 
+    /// @notice Given an encoded action and a signature, executes the action on behalf of the signer.
+    /// @param metaAction The encoded action to be executed.
+    /// @param r The r-value of the signature.
+    /// @param s The s-value of the signature.
+    /// @param v The v-value of the signature.
+    /// @return The returned data from the low-level call.
     function executeMetaTransaction(
         MetaAction memory metaAction,
         bytes32 r,
@@ -82,10 +92,17 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
         return returnData;
     }
 
+    /// @notice Returns the current nonce for a user.
+    /// @param user the address of the user to get the nonce for.
+    /// @return nonce the current nonce for the user.
     function getNonce(address user) external view returns (uint256 nonce) {
         nonce = _nonces[user];
     }
 
+    /// @notice initialize method for EIP712Upgradeable
+    /// @dev called once after initial deployment and every upgrade.
+    /// @param _name the user readable name of the signing domain for EIP712
+    /// @param _version the current major version of the signing domain for EIP712
     function initializeEIP712(string memory _name, string memory _version)
         public
         initializer
@@ -96,6 +113,9 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
         __EIP712_init(_name, _version);
     }
 
+    /// @notice Returns the address of the signer when called from this contract,
+    /// otherwise returns the msg.sender
+    /// @return sender the address of the signer or msg.sender
     function _msgSender() internal view returns (address sender) {
         if (msg.sender == address(this)) {
             bytes memory array = msg.data;
@@ -113,6 +133,12 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
         return sender;
     }
 
+    /// @notice Verifies that the signature is valid for a given user and action.
+    /// @param user the address to check as the signer.
+    /// @param metaAction the action struct to check.
+    /// @param r the r-value of the signature.
+    /// @param s the s-value of the signature.
+    /// @param v the v-value of the signature.
     function _verify(
         address user,
         MetaAction memory metaAction,
@@ -133,7 +159,9 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
         return signer == user;
     }
 
-    // functions to generate hash representation of the struct objects
+    /// @notice Hashes a given ActionArgs struct to be used with EIP712.
+    /// @param action the ActionArgs struct to hash.
+    /// @return the hash of the ActionArgs struct.
     function _hashAction(ActionArgs memory action)
         private
         pure
@@ -154,6 +182,9 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
             );
     }
 
+    /// @notice Hashes an array of ActionArgs structs to be used with EIP712.
+    /// @param actions the array of ActionArgs structs to hash.
+    /// @return the array of hashes for the ActionArgs structs.
     function _hashActions(ActionArgs[] memory actions)
         private
         pure
@@ -170,6 +201,9 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
         return hashedActions;
     }
 
+    /// @notice Hashes a MetaAction struct to be used with EIP712.
+    /// @param metaAction the MetaAction struct to hash.
+    /// @return the hash of the MetaAction struct.
     function _hashMetaAction(MetaAction memory metaAction)
         private
         pure
