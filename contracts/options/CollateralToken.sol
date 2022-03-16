@@ -40,12 +40,15 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
     /// @notice Initializes a new ERC1155 multi-token contract for representing
     /// users' short positions
     /// @param _quantConfig the address of the Quant system configuration contract
+    /// @param _name name for the domain typehash in EIP712 meta transactions
+    /// @param _version version for the domain typehash in EIP712 meta transactions
+    /// @param uri_ URI for ERC1155 tokens metadata
     constructor(
         address _quantConfig,
         string memory _name,
         string memory _version,
-        string memory _uri
-    ) ERC1155(_uri) EIP712(_name, _version) {
+        string memory uri_
+    ) ERC1155(uri_) EIP712(_name, _version) {
         require(
             _quantConfig != address(0),
             "CollateralToken: invalid QuantConfig address"
@@ -220,6 +223,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         emit ApprovalForAll(owner, operator, approved);
     }
 
+    /// @inheritdoc ICollateralToken
     function getCollateralTokensLength()
         external
         view
@@ -229,6 +233,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         return collateralTokenIds.length;
     }
 
+    /// @inheritdoc ICollateralToken
     function getCollateralTokenInfo(uint256 id)
         external
         view
