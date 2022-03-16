@@ -6,6 +6,7 @@ import "../options/QToken.sol";
 import "../interfaces/IPriceRegistry.sol";
 
 /// @title For calculating collateral requirements and payouts for options and spreads
+/// in a fixed point format
 /// @author Rolla
 library FundsCalculator {
     using QuantMath for uint256;
