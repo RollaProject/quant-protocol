@@ -167,6 +167,7 @@ contract QuantConfig is
     }
 
     /// @notice Sets a new protocol role, while also assigning a role admin
+    /// @dev If the role already exists in the config, only the role admin will be changed
     function _setProtocolRole(string memory _protocolRole, address _roleAdmin)
         internal
     {
