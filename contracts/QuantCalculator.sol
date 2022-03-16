@@ -9,7 +9,7 @@ import "./libraries/FundsCalculator.sol";
 import "./libraries/OptionsUtils.sol";
 import "./libraries/QuantMath.sol";
 
-/// @title Calculates collateral requirements and payouts for Quant options.
+/// @title For calculating collateral requirements and payouts for options and spreads
 /// @author Rolla
 /// @dev Uses fixed point arithmetic from the QuantMath library.
 contract QuantCalculator is IQuantCalculator {
