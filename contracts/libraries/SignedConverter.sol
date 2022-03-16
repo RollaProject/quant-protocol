@@ -3,6 +3,7 @@ pragma solidity 0.8.12;
 
 /**
  * @title SignedConverter
+ * @author Rolla
  * @notice A library to convert an unsigned integer to signed integer or signed integer to unsigned integer.
  */
 library SignedConverter {

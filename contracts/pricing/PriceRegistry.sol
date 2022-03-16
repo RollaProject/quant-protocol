@@ -6,6 +6,7 @@ import "../interfaces/IPriceRegistry.sol";
 import "../libraries/QuantMath.sol";
 
 /// @title For centrally managing a log of settlement prices, for each option.
+/// @author Rolla
 contract PriceRegistry is IPriceRegistry {
     using QuantMath for uint256;
     using QuantMath for QuantMath.FixedPointInt;

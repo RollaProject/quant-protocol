@@ -5,6 +5,7 @@ import "../../interfaces/IQuantConfig.sol";
 import "../../interfaces/IProviderOracleManager.sol";
 
 /// @title Oracle manager for holding asset addresses and their oracle addresses for a single provider
+/// @author Rolla
 /// @notice Once an oracle is added for an asset it can't be changed!
 abstract contract ProviderOracleManager is IProviderOracleManager {
     /// @inheritdoc IProviderOracleManager

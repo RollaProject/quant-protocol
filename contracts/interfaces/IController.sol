@@ -86,6 +86,7 @@ interface IController {
     /// different action, the relevant arguments are parsed and passed to the respective internal function
     /// @dev For documentation of each individual action, see the corresponding internal function in Controller.sol
     /// @param _actions array of ActionArgs structs, each representing an action to be executed
+    /// @return boolean indicating whether the actions were successfully executed
     function operate(ActionArgs[] memory _actions) external returns (bool);
 
     /// @notice Upgradable proxy initialization function called during deployment and upgrades

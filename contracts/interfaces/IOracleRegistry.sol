@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./IQuantConfig.sol";
 
 /// @title For centrally managing a list of oracle providers
+/// @author Rolla
 /// @notice oracle provider registry for holding a list of oracle providers and their id
 interface IOracleRegistry {
     event AddedOracle(address oracle, uint256 oracleId);

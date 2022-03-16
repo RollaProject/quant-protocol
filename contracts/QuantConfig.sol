@@ -15,24 +15,35 @@ contract QuantConfig is
     OwnableUpgradeable,
     ITimelockedConfig
 {
+    /// @inheritdoc ITimelockedConfig
     address payable public override timelockController;
 
+    /// @inheritdoc ITimelockedConfig
     mapping(bytes32 => address) public override protocolAddresses;
+    /// @inheritdoc ITimelockedConfig
     bytes32[] public override configuredProtocolAddresses;
 
+    /// @inheritdoc ITimelockedConfig
     mapping(bytes32 => uint256) public override protocolUints256;
+    /// @inheritdoc ITimelockedConfig
     bytes32[] public override configuredProtocolUints256;
 
+    /// @inheritdoc ITimelockedConfig
     mapping(bytes32 => bool) public override protocolBooleans;
+    /// @inheritdoc ITimelockedConfig
     bytes32[] public override configuredProtocolBooleans;
 
+    /// @inheritdoc ITimelockedConfig
     mapping(string => bytes32) public override quantRoles;
+    /// @inheritdoc ITimelockedConfig
     bytes32[] public override configuredQuantRoles;
 
+    /// @inheritdoc ITimelockedConfig
     mapping(bytes32 => mapping(ProtocolValue.Type => bool))
         public
         override isProtocolValueSet;
 
+    /// @inheritdoc ITimelockedConfig
     function setProtocolAddress(bytes32 _protocolAddress, address _newValue)
         external
         override
@@ -55,6 +66,7 @@ contract QuantConfig is
         emit SetProtocolAddress(_protocolAddress, previousValue, _newValue);
     }
 
+    /// @inheritdoc ITimelockedConfig
     function setProtocolUint256(bytes32 _protocolUint256, uint256 _newValue)
         external
         override
@@ -68,6 +80,7 @@ contract QuantConfig is
         emit SetProtocolUint256(_protocolUint256, previousValue, _newValue);
     }
 
+    /// @inheritdoc ITimelockedConfig
     function setProtocolBoolean(bytes32 _protocolBoolean, bool _newValue)
         external
         override
@@ -86,6 +99,7 @@ contract QuantConfig is
         emit SetProtocolBoolean(_protocolBoolean, previousValue, _newValue);
     }
 
+    /// @inheritdoc ITimelockedConfig
     function setProtocolRole(string calldata _protocolRole, address _roleAdmin)
         external
         override
@@ -94,6 +108,7 @@ contract QuantConfig is
         _setProtocolRole(_protocolRole, _roleAdmin);
     }
 
+    /// @inheritdoc ITimelockedConfig
     function setRoleAdmin(bytes32 role, bytes32 adminRole)
         external
         override
@@ -104,6 +119,7 @@ contract QuantConfig is
         emit SetRoleAdmin(role, adminRole);
     }
 
+    /// @inheritdoc ITimelockedConfig
     function protocolAddressesLength()
         external
         view
@@ -113,21 +129,22 @@ contract QuantConfig is
         return configuredProtocolAddresses.length;
     }
 
+    /// @inheritdoc ITimelockedConfig
     function protocolUints256Length() external view override returns (uint256) {
         return configuredProtocolUints256.length;
     }
 
+    /// @inheritdoc ITimelockedConfig
     function protocolBooleansLength() external view override returns (uint256) {
         return configuredProtocolBooleans.length;
     }
 
+    /// @inheritdoc ITimelockedConfig
     function quantRolesLength() external view override returns (uint256) {
         return configuredQuantRoles.length;
     }
 
-    /// @notice Initializes the system roles and assign them to the given TimelockController address
-    /// @param _timelockController Address of the TimelockController to receive the system roles
-    /// @dev The TimelockController should have a Quant multisig as its sole proposer
+    /// @inheritdoc ITimelockedConfig
     function initialize(address payable _timelockController)
         public
         override
@@ -149,6 +166,7 @@ contract QuantConfig is
         timelockController = _timelockController;
     }
 
+    /// @notice Sets a new protocol role, while also assigning a role admin
     function _setProtocolRole(string memory _protocolRole, address _roleAdmin)
         internal
     {

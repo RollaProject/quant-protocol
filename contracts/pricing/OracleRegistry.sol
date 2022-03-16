@@ -5,6 +5,7 @@ import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IOracleRegistry.sol";
 
 /// @title For centrally managing a list of oracle providers
+/// @author Rolla
 /// @notice oracle provider registry for holding a list of oracle providers and their id
 contract OracleRegistry is IOracleRegistry {
     struct OracleInfo {

@@ -3,7 +3,10 @@ pragma solidity 0.8.12;
 
 import "../interfaces/IOperateProxy.sol";
 
+/// @title Contract to be used by the Controller to make unprivileged external calls
+/// @author Rolla
 contract OperateProxy is IOperateProxy {
+    /// @inheritdoc IOperateProxy
     function callFunction(address callee, bytes memory data) external override {
         require(
             callee != address(0),

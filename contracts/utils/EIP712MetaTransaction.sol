@@ -8,6 +8,8 @@ import "../interfaces/IController.sol";
 import "../libraries/Actions.sol";
 import {ActionArgs} from "../libraries/Actions.sol";
 
+/// @title Contract to be inherited by contracts that want to support meta transactions.
+/// @author Rolla
 contract EIP712MetaTransaction is EIP712Upgradeable {
     using ECDSA for bytes32;
 
