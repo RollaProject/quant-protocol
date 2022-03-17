@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.12;
+pragma solidity 0.8.13;
 
 import "./QuantMath.sol";
 import "../options/QToken.sol";
@@ -198,17 +198,17 @@ library FundsCalculator {
     }
 
     /// @notice Calculates the collateral required to mint an option or spread
-    /// @param _qTokenToMintStrikePrice the strike price of the qToken being minted 
+    /// @param _qTokenToMintStrikePrice the strike price of the qToken being minted
     /// @param _qTokenForCollateralStrikePrice the strike price of the qToken being used as
     /// collateral in the case of a spread
     /// @param _optionsAmount the amount of options/spread being minted
     /// @param _qTokenToMintIsCall whether or not the token to mint is a call. if a spread,
-    /// the qToken as collateral is implicitly also a call. and for minting a put, the 
+    /// the qToken as collateral is implicitly also a call. and for minting a put, the
     /// qToken as collateral is implicitly also a put
     /// @param _optionsDecimals option decimals constant. qTokens have 18 decimals
     /// @param _underlyingDecimals the amount of decimals the underlying asset has
     /// @param _strikeAssetDecimals the amount of decimals the strike asset has
-    /// @return collateralAmount the collateral amount required as a fixed point type    
+    /// @return collateralAmount the collateral amount required as a fixed point type
     function getOptionCollateralRequirement(
         uint256 _qTokenToMintStrikePrice,
         uint256 _qTokenForCollateralStrikePrice,
@@ -240,7 +240,7 @@ library FundsCalculator {
     }
 
     /// @notice Calculates the collateral required to mint a single PUT option or PUT spread
-    /// @param _qTokenToMintStrikePrice the strike price of the PUT qToken being minted 
+    /// @param _qTokenToMintStrikePrice the strike price of the PUT qToken being minted
     /// @param _qTokenForCollateralStrikePrice the strike price of the PUT qToken being used as
     /// collateral in the case of a spread
     /// @param _strikeAssetDecimals the amount of decimals the strike asset has
@@ -275,7 +275,7 @@ library FundsCalculator {
     }
 
     /// @notice Calculates the collateral required to mint a single CALL option or CALL spread
-    /// @param _qTokenToMintStrikePrice the strike price of the CALL qToken being minted 
+    /// @param _qTokenToMintStrikePrice the strike price of the CALL qToken being minted
     /// @param _qTokenForCollateralStrikePrice the strike price of the CALL qToken being
     /// used as collateral in the case of a spread
     /// @param _underlyingDecimals the amount of decimals the underlying asset has
