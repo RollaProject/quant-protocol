@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "../QuantConfig.sol";
 import "../utils/EIP712MetaTransaction.sol";
@@ -20,19 +20,30 @@ import "../libraries/FundsCalculator.sol";
 import "../libraries/OptionsUtils.sol";
 import "../libraries/Actions.sol";
 
+/// @title The main entry point in the Quant Protocol
+/// @author Rolla
+/// @notice Handles minting options and spreads, exercising, claiming collateral and neutralizing positions.
+/// @dev This contract has no receive method, and also no way to recover tokens sent to it by accident.
+/// Its balance of options or any other tokens are never used in any calculations, so there is no risk if that happens.
+/// @dev This contract is an upgradeable proxy, and it supports meta transactions.
+/// @dev The Controller holds all the collateral used to mint options. Options need to be created through the
+/// OptionsFactory first.
 contract ControllerV2 is
     IController,
     EIP712MetaTransaction,
     ReentrancyGuardUpgradeable
 {
-    using SafeERC20 for IERC20;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
     using QuantMath for QuantMath.FixedPointInt;
     using Actions for ActionArgs;
 
+    /// @inheritdoc IController
     address public override optionsFactory;
 
+    /// @inheritdoc IController
     address public override operateProxy;
 
+    /// @inheritdoc IController
     address public override quantCalculator;
 
     uint256 public newV2StateVariable;
@@ -43,7 +54,8 @@ contract ControllerV2 is
         nonReentrant
         returns (bool)
     {
-        for (uint256 i = 0; i < _actions.length; i++) {
+        uint256 length = _actions.length;
+        for (uint256 i = 0; i < length; ) {
             ActionArgs memory action = _actions[i];
 
             if (action.actionType == ActionType.MintOption) {
@@ -111,6 +123,10 @@ contract ControllerV2 is
                 (address callee, bytes memory data) = action.parseCallArgs();
                 _call(callee, data);
             }
+
+            unchecked {
+                ++i;
+            }
         }
 
         return true;
@@ -120,6 +136,7 @@ contract ControllerV2 is
         newV2StateVariable = _value;
     }
 
+    // @inheritdoc IController
     function initialize(
         string memory _name,
         string memory _version,
@@ -138,10 +155,26 @@ contract ControllerV2 is
         __ReentrancyGuard_init();
         EIP712MetaTransaction.initializeEIP712(_name, _version);
         optionsFactory = _optionsFactory;
+
+        /// @dev Unless this line is removed, a new OperateProxy will be created
+        /// during each upgrade. So make sure any application that requires approving
+        /// the OperateProxy to spend funds is aware of this.
         operateProxy = address(new OperateProxy());
+
         quantCalculator = _quantCalculator;
     }
 
+    /// @notice Mints options for a given QToken, which must have been previously created in
+    /// the configured OptionsFactory.
+    /// @dev The caller (or signer in case of meta transactions) must first approve the Controller
+    /// to spend the collateral asset, and then this function can be called, pulling the collateral
+    /// from the caller/signer and minting QTokens and CollateralTokens to the given `to` address.
+    /// Note that QTokens represent a long position, giving holders the ability to exercise options
+    /// after expiry, while CollateralTokens represent a short position, giving holders the ability
+    /// to claim the collateral after expiry.
+    /// @param _to The address to which the QTokens and CollateralTokens will be minted.
+    /// @param _qToken The QToken that represents the long position for the option to be minted.
+    /// @param _amount The amount of options to be minted.
     function _mintOptionsPosition(
         address _to,
         address _qToken,
@@ -149,12 +182,17 @@ contract ControllerV2 is
     ) internal returns (uint256) {
         IQToken qToken = IQToken(_qToken);
 
+        // get the collateral required to mint the specified amount of options
+        // the zero address is passed as the second argument as it's only used
+        // for spreads
         (address collateral, uint256 collateralAmount) = IQuantCalculator(
             quantCalculator
         ).getCollateralRequirement(_qToken, address(0), _amount);
 
         _checkIfUnexpiredQToken(_qToken);
 
+        // check if the oracle set during the option's creation through the OptionsFactory
+        // is an active oracle in the OracleRegistry
         require(
             IOracleRegistry(
                 IOptionsFactory(optionsFactory).quantConfig().protocolAddresses(
@@ -164,7 +202,8 @@ contract ControllerV2 is
             "Controller: Can't mint an options position as the oracle is inactive"
         );
 
-        IERC20(collateral).safeTransferFrom(
+        // pull the required collateral from the caller/signer
+        IERC20Upgradeable(collateral).safeTransferFrom(
             _msgSender(),
             address(this),
             collateralAmount
@@ -196,6 +235,12 @@ contract ControllerV2 is
         return collateralTokenId;
     }
 
+    /// @notice Creates a spread position from an option to long and another option to short.
+    /// @dev The caller (or signer in case of meta transactions) must first approve the Controller
+    /// to spend the collateral asset in cases of a debit spread.
+    /// @param _qTokenToMint The QToken for the option to be long.
+    /// @param _qTokenForCollateral The QToken for the option to be short.
+    /// @param _amount The amount of long options to be minted.
     function _mintSpread(
         address _qTokenToMint,
         address _qTokenForCollateral,
@@ -209,6 +254,8 @@ contract ControllerV2 is
         IQToken qTokenToMint = IQToken(_qTokenToMint);
         IQToken qTokenForCollateral = IQToken(_qTokenForCollateral);
 
+        // Calculate the extra collateral required to create the spread.
+        // A positive value for debit spreads and zero for credit spreads.
         (address collateral, uint256 collateralAmount) = IQuantCalculator(
             quantCalculator
         ).getCollateralRequirement(
@@ -220,10 +267,12 @@ contract ControllerV2 is
         _checkIfUnexpiredQToken(_qTokenToMint);
         _checkIfUnexpiredQToken(_qTokenForCollateral);
 
+        // Burn the QToken being shorted
         qTokenForCollateral.burn(_msgSender(), _amount);
 
+        // Transfer in any collateral required for the spread
         if (collateralAmount > 0) {
-            IERC20(collateral).safeTransferFrom(
+            IERC20Upgradeable(collateral).safeTransferFrom(
                 _msgSender(),
                 address(this),
                 collateralAmount
@@ -233,7 +282,7 @@ contract ControllerV2 is
         ICollateralToken collateralToken = IOptionsFactory(optionsFactory)
             .collateralToken();
 
-        // Check if the corresponding CollateralToken has already been created
+        // Check if the CollateralToken representing this specific spread has already been created
         // Create it if it hasn't
         uint256 collateralTokenId = collateralToken.getCollateralTokenId(
             _qTokenToMint,
@@ -253,12 +302,12 @@ contract ControllerV2 is
             );
         }
 
+        // Mint the tokens for the new spread position
         collateralToken.mintCollateralToken(
             _msgSender(),
             collateralTokenId,
             _amount
         );
-
         qTokenToMint.mint(_msgSender(), _amount);
 
         emit SpreadMinted(
@@ -273,6 +322,10 @@ contract ControllerV2 is
         return collateralTokenId;
     }
 
+    /// @notice Closes a long position after the option's expiry.
+    /// @dev Pass an `_amount` of 0 to close the entire position.
+    /// @param _qToken The QToken representing the long position to be closed.
+    /// @param _amount The amount of options to exercise.
     function _exercise(address _qToken, uint256 _amount) internal {
         IQToken qToken = IQToken(_qToken);
         require(
@@ -281,10 +334,13 @@ contract ControllerV2 is
         );
 
         uint256 amountToExercise = _amount;
+        // if the amount is 0, the entire position will be exercised
         if (amountToExercise == 0) {
             amountToExercise = qToken.balanceOf(_msgSender());
         }
 
+        // Use the QuantCalculator to check how much the sender/signer is due.
+        // Will only be a positive value for options that expired In The Money.
         (
             bool isSettled,
             address payoutToken,
@@ -296,10 +352,15 @@ contract ControllerV2 is
 
         require(isSettled, "Controller: Cannot exercise unsettled options");
 
+        // Burn the long tokens
         qToken.burn(_msgSender(), amountToExercise);
 
+        // Transfer any profit due after expiration
         if (exerciseTotal > 0) {
-            IERC20(payoutToken).safeTransfer(_msgSender(), exerciseTotal);
+            IERC20Upgradeable(payoutToken).safeTransfer(
+                _msgSender(),
+                exerciseTotal
+            );
         }
 
         emit OptionsExercised(
@@ -311,11 +372,15 @@ contract ControllerV2 is
         );
     }
 
+    /// @notice Closes a short position after the option's expiry.
+    /// @param _collateralTokenId ERC1155 token id representing the short position to be closed.
+    /// @param _amount The size of the position to close.
     function _claimCollateral(uint256 _collateralTokenId, uint256 _amount)
         internal
     {
         uint256 collateralTokenId = _collateralTokenId;
 
+        // Use the QuantCalculator to check how much collateral the sender/signer is due.
         (
             uint256 returnableCollateral,
             address collateralAsset,
@@ -326,14 +391,16 @@ contract ControllerV2 is
                 _msgSender()
             );
 
+        // Burn the short tokens
         IOptionsFactory(optionsFactory).collateralToken().burnCollateralToken(
             _msgSender(),
             collateralTokenId,
             amountToClaim
         );
 
+        // Transfer any collateral due after expiration
         if (returnableCollateral > 0) {
-            IERC20(collateralAsset).safeTransfer(
+            IERC20Upgradeable(collateralAsset).safeTransfer(
                 _msgSender(),
                 returnableCollateral
             );
@@ -348,9 +415,15 @@ contract ControllerV2 is
         );
     }
 
+    /// @notice Closes a neutral position, claiming all the collateral required to create it.
+    /// @dev Unlike `_exercise` and `_claimCollateral`, this function does not require the option to be expired.
+    /// @param _collateralTokenId ERC1155 token id representing the position to be closed.
+    /// @param _amount The size of the position to close.
     function _neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
         internal
     {
+        /// @dev Put these values in the stack to save gas from having to read
+        /// from calldata
         (uint256 collateralTokenId, uint256 amount) = (
             _collateralTokenId,
             _amount
@@ -362,22 +435,22 @@ contract ControllerV2 is
             collateralTokenId
         );
 
-        //get the amount of collateral tokens owned
+        //get the amount of CollateralTokens owned
         uint256 collateralTokensOwned = collateralToken.balanceOf(
             _msgSender(),
             collateralTokenId
         );
 
-        //get the amount of qTokens owned
+        //get the amount of QTokens owned
         uint256 qTokensOwned = IQToken(qTokenShort).balanceOf(_msgSender());
 
-        //the amount of position that can be neutralized
+        // the size of the position that can be neutralized
         uint256 maxNeutralizable = qTokensOwned < collateralTokensOwned
             ? qTokensOwned
             : collateralTokensOwned;
 
+        // make sure that the amount passed is not greater than the amount that can be neutralized
         uint256 amountToNeutralize;
-
         if (amount != 0) {
             require(
                 amount <= maxNeutralizable,
@@ -388,21 +461,29 @@ contract ControllerV2 is
             amountToNeutralize = maxNeutralizable;
         }
 
+        // use the QuantCalculator to check how much collateral the sender/signer is due
+        // for closing the neutral position
         (address collateralType, uint256 collateralOwed) = IQuantCalculator(
             quantCalculator
         ).getNeutralizationPayout(qTokenShort, qTokenLong, amountToNeutralize);
 
+        // burn the short tokens
         IQToken(qTokenShort).burn(_msgSender(), amountToNeutralize);
 
+        // burn the long tokens
         collateralToken.burnCollateralToken(
             _msgSender(),
             collateralTokenId,
             amountToNeutralize
         );
 
-        IERC20(collateralType).safeTransfer(_msgSender(), collateralOwed);
+        // tranfer the collateral owed
+        IERC20Upgradeable(collateralType).safeTransfer(
+            _msgSender(),
+            collateralOwed
+        );
 
-        //give the user their long tokens (if any)
+        //give the user their long tokens (if any, in case of CollateralTokens representing a spread)
         if (qTokenLong != address(0)) {
             IQToken(qTokenLong).mint(_msgSender(), amountToNeutralize);
         }
@@ -417,6 +498,14 @@ contract ControllerV2 is
         );
     }
 
+    /// @notice Allows a QToken owner to approve a spender to transfer a specified amount of tokens on their behalf.
+    /// @param _qToken The QToken to be approved.
+    /// @param _spender The address of the spender.
+    /// @param _value The amount of tokens to be approved for spending.
+    /// @param _deadline Timestamp at which the permit signature expires.
+    /// @param _v The signature's v value.
+    /// @param _r The signature's r value.
+    /// @param _s The signature's s value.
     function _qTokenPermit(
         address _qToken,
         address _owner,
@@ -438,6 +527,16 @@ contract ControllerV2 is
         );
     }
 
+    /// @notice Allows a CollateralToken owner to either approve an operator address
+    /// to spend all of their tokens on their behalf, or to remove a prior approval.
+    /// @param _owner The address of the owner of the CollateralToken.
+    /// @param _operator The address of the operator to be approved or removed.
+    /// @param _approved Whether the operator is being approved or removed.
+    /// @param _nonce The nonce for the approval through a meta transaction.
+    /// @param _deadline Timestamp at which the approval signature expires.
+    /// @param _v The signature's v value.
+    /// @param _r The signature's r value.
+    /// @param _s The signature's s value.
     function _collateralTokenApproval(
         address _owner,
         address _operator,
@@ -460,10 +559,18 @@ contract ControllerV2 is
             );
     }
 
+    /// @notice Allows a sender/signer to make external calls to any other contract.
+    /// @dev A separate OperateProxy contract is used to make the external calls so
+    /// that the Controller, which holds funds and has special privileges in the Quant
+    /// Protocol, is never the `msg.sender` in any of those external calls.
+    /// @param _callee The address of the contract to be called.
+    /// @param _data The calldata to be sent to the contract.
     function _call(address _callee, bytes memory _data) internal {
         IOperateProxy(operateProxy).callFunction(_callee, _data);
     }
 
+    /// @notice Checks if the given QToken has not expired yet, reverting otherwise
+    /// @param _qToken The address of the QToken to check.
     function _checkIfUnexpiredQToken(address _qToken) internal view {
         require(
             IQToken(_qToken).expiryTime() > block.timestamp,
