@@ -167,11 +167,6 @@
   dependencies:
     chalk "^4.0.0"
 
-"@cto.af/textdecoder@^0.0.0":
-  version "0.0.0"
-  resolved "https://registry.yarnpkg.com/@cto.af/textdecoder/-/textdecoder-0.0.0.tgz#e1e8d84c936c30a0f4619971f19ca41941af9fdc"
-  integrity sha512-sJpx3F5xcVV/9jNYJQtvimo4Vfld/nD3ph+ZWtQzZ03Zo8rJC7QKQTRcIGS13Rcz80DwFNthCWMrd58vpY4ZAQ==
-
 "@ensdomains/ens@^0.4.4":
   version "0.4.5"
   resolved "https://registry.yarnpkg.com/@ensdomains/ens/-/ens-0.4.5.tgz#e0aebc005afdc066447c6e22feb4eda89a5edbfc"
@@ -863,22 +858,24 @@
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.5.0.tgz#3fd75d57de172b3743cdfc1206883f56430409cc"
   integrity sha512-fdkzKPYMjrRiPK6K4y64e6GzULR7R7RwxSigHS8DDp7aWDeoReqsQI+cxHV1UuhAqX69L1lAaWDxenfP+xiqzA==
 
-"@openzeppelin/hardhat-upgrades@1.8.2":
-  version "1.8.2"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.8.2.tgz#553c116f291bf1492dfb73ed3feda079b5b400a7"
-  integrity sha512-G+z1WdsjBYQX4j0yPU+pM3rcmVgQNI6g3N05prxpXgAj8QhSDDisfWH2hC1XW8FLm7+dijz7FpUaEEdidpOA9Q==
+"@openzeppelin/hardhat-upgrades@^1.16.1":
+  version "1.16.1"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.16.1.tgz#f2c1cdeadb3461712e593945e0fce52f362c91fe"
+  integrity sha512-vSlOCi3n9MGex3F+Qs+0WZJx2d2sg1rhWQ6FbHAybfQH7wngQn4INv1m3JZZpmerkOAoHi1Cdv4GOGLmxFnWYQ==
   dependencies:
-    "@openzeppelin/upgrades-core" "^1.7.3"
+    "@openzeppelin/upgrades-core" "^1.13.1"
+    chalk "^4.1.0"
+    proper-lockfile "^4.1.1"
 
-"@openzeppelin/upgrades-core@1.7.3", "@openzeppelin/upgrades-core@^1.7.3":
-  version "1.7.3"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/upgrades-core/-/upgrades-core-1.7.3.tgz#5c25b83362bfbc954b55630c76715a5774d747be"
-  integrity sha512-DYeAYhsU5m27hNwLYo7+4LYRf9xeNT9+ZMdOZUR9VNPW/6SKlIHEzUXSXi6h6nomP2ChsMiR4pYkWTwJhcDrVg==
+"@openzeppelin/upgrades-core@^1.13.1", "@openzeppelin/upgrades-core@^1.14.1":
+  version "1.14.1"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/upgrades-core/-/upgrades-core-1.14.1.tgz#a0e1c83f9811186ac49d286e6b43ae129097422b"
+  integrity sha512-iKlh1mbUxyfdjdEiUFyhMkqirfas+DMUu7ED53nZbHEyhcYsm+5Fl/g0Bv6bZA+a7k8kO8+22DNEKsqaDUBc2Q==
   dependencies:
     bn.js "^5.1.2"
-    cbor "^7.0.0"
+    cbor "^8.0.0"
     chalk "^4.1.0"
-    compare-versions "^3.6.0"
+    compare-versions "^4.0.0"
     debug "^4.1.1"
     ethereumjs-util "^7.0.3"
     proper-lockfile "^4.1.1"
@@ -2718,13 +2715,12 @@ caseless@^0.12.0, caseless@~0.12.0:
   resolved "https://registry.yarnpkg.com/caseless/-/caseless-0.12.0.tgz#1b681c21ff84033c826543090689420d187151dc"
   integrity sha1-G2gcIf+EAzyCZUMJBolCDRhxUdw=
 
-cbor@^7.0.0:
-  version "7.0.6"
-  resolved "https://registry.yarnpkg.com/cbor/-/cbor-7.0.6.tgz#ce47d1d5f946760f199f848dbbcfe762cf492fd6"
-  integrity sha512-rgt2RFogHGDLFU5r0kSfyeBc+de55DwYHP73KxKsQxsR5b0CYuQPH6AnJaXByiohpLdjQqj/K0SFcOV+dXdhSA==
+cbor@^8.0.0:
+  version "8.1.0"
+  resolved "https://registry.yarnpkg.com/cbor/-/cbor-8.1.0.tgz#cfc56437e770b73417a2ecbfc9caf6b771af60d5"
+  integrity sha512-DwGjNW9omn6EwP70aXsn7FQJx5kO12tX0bZkaTjzdVFM6/7nhA4t0EENocKGx6D2Bch9PE2KzCUf5SceBdeijg==
   dependencies:
-    "@cto.af/textdecoder" "^0.0.0"
-    nofilter "^2.0.3"
+    nofilter "^3.1.0"
 
 chai@^4.3.0:
   version "4.3.6"
@@ -3055,6 +3051,11 @@ compare-versions@^3.6.0:
   version "3.6.0"
   resolved "https://registry.yarnpkg.com/compare-versions/-/compare-versions-3.6.0.tgz#1a5689913685e5a87637b8d3ffca75514ec41d62"
   integrity sha512-W6Af2Iw1z4CB7q4uU4hv646dW9GQuBM+YpC0UvUCWSD8w90SJjp+ujJuXaEMtAXBtSqGfMPuFOVn4/+FlaqfBA==
+
+compare-versions@^4.0.0:
+  version "4.1.3"
+  resolved "https://registry.yarnpkg.com/compare-versions/-/compare-versions-4.1.3.tgz#8f7b8966aef7dc4282b45dfa6be98434fc18a1a4"
+  integrity sha512-WQfnbDcrYnGr55UwbxKiQKASnTtNnaAWVi8jZyy8NTpVAXWACSne8lMD1iaIo9AiU6mnuLvSVshCzewVuWxHUg==
 
 component-emitter@^1.2.1:
   version "1.3.0"
@@ -7449,12 +7450,10 @@ node-gyp-build@^4.2.0, node-gyp-build@^4.3.0:
   resolved "https://registry.yarnpkg.com/node-gyp-build/-/node-gyp-build-4.3.0.tgz#9f256b03e5826150be39c764bf51e993946d71a3"
   integrity sha512-iWjXZvmboq0ja1pUGULQBexmxq8CV4xBhX7VDOTbL7ZR4FOowwY/VOtRxBN/yKxmdGoIp4j5ysNT4u3S2pDQ3Q==
 
-nofilter@^2.0.3:
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/nofilter/-/nofilter-2.0.3.tgz#f5460f3cb33147005883e3f5d4476239501fa187"
-  integrity sha512-FbuXC+lK+GU2+63D1kC1ETiZo+Z7SIi7B+mxKTCH1byrh6WFvfBCN/wpherFz0a0bjGd7EKTst/cz0yLeNngug==
-  dependencies:
-    "@cto.af/textdecoder" "^0.0.0"
+nofilter@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/nofilter/-/nofilter-3.1.0.tgz#c757ba68801d41ff930ba2ec55bab52ca184aa66"
+  integrity sha512-l2NNj07e9afPnhAhvgVrCD/oy2Ai1yfLpuo3EpiO1jFTsB4sFz6oIfAfSZyQzVpkZQ9xS8ZS5g1jCBgq4Hwo0g==
 
 nopt@3.x:
   version "3.0.6"

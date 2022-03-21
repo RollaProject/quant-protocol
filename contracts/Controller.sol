@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./QuantConfig.sol";
 import "./utils/EIP712MetaTransaction.sol";
@@ -32,7 +32,7 @@ contract Controller is
     EIP712MetaTransaction,
     ReentrancyGuardUpgradeable
 {
-    using SafeERC20 for IERC20;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
     using QuantMath for QuantMath.FixedPointInt;
     using Actions for ActionArgs;
 
@@ -197,7 +197,7 @@ contract Controller is
         );
 
         // pull the required collateral from the caller/signer
-        IERC20(collateral).safeTransferFrom(
+        IERC20Upgradeable(collateral).safeTransferFrom(
             _msgSender(),
             address(this),
             collateralAmount
@@ -266,7 +266,7 @@ contract Controller is
 
         // Transfer in any collateral required for the spread
         if (collateralAmount > 0) {
-            IERC20(collateral).safeTransferFrom(
+            IERC20Upgradeable(collateral).safeTransferFrom(
                 _msgSender(),
                 address(this),
                 collateralAmount
@@ -351,7 +351,10 @@ contract Controller is
 
         // Transfer any profit due after expiration
         if (exerciseTotal > 0) {
-            IERC20(payoutToken).safeTransfer(_msgSender(), exerciseTotal);
+            IERC20Upgradeable(payoutToken).safeTransfer(
+                _msgSender(),
+                exerciseTotal
+            );
         }
 
         emit OptionsExercised(
@@ -391,7 +394,7 @@ contract Controller is
 
         // Transfer any collateral due after expiration
         if (returnableCollateral > 0) {
-            IERC20(collateralAsset).safeTransfer(
+            IERC20Upgradeable(collateralAsset).safeTransfer(
                 _msgSender(),
                 returnableCollateral
             );
@@ -469,7 +472,10 @@ contract Controller is
         );
 
         // tranfer the collateral owed
-        IERC20(collateralType).safeTransfer(_msgSender(), collateralOwed);
+        IERC20Upgradeable(collateralType).safeTransfer(
+            _msgSender(),
+            collateralOwed
+        );
 
         //give the user their long tokens (if any, in case of CollateralTokens representing a spread)
         if (qTokenLong != address(0)) {
