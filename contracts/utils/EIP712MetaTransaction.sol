@@ -105,7 +105,6 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
     /// @param _version the current major version of the signing domain for EIP712
     function initializeEIP712(string memory _name, string memory _version)
         public
-        initializer
     {
         name = _name;
         version = _version;
