@@ -85,7 +85,6 @@ contract AssetsRegistry is IAssetsRegistry {
         );
 
         uint8 decimals = ERC20(_underlying).decimals();
-        require(decimals > 0, "AssetsRegistry: invalid zero decimals");
 
         assetProperties[_underlying] = AssetProperties(name, symbol, decimals);
 
