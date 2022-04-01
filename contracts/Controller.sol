@@ -147,7 +147,7 @@ contract Controller is
         );
 
         __ReentrancyGuard_init();
-        EIP712MetaTransaction.initializeEIP712(_name, _version);
+        EIP712MetaTransaction.__EIP712MetaTransaction_init(_name, _version);
         optionsFactory = _optionsFactory;
 
         /// @dev Unless this line is removed, a new OperateProxy will be created
