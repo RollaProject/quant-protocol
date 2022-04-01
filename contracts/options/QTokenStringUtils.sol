@@ -211,7 +211,7 @@ abstract contract QTokenStringUtils {
         uint256 range = _end - _start;
         bytes memory slice = new bytes(range);
         for (uint256 i = 0; i < range; ) {
-            slice[i] = bytes(_s)[_start + 1];
+            slice[i] = bytes(_s)[_start + i];
             unchecked {
                 ++i;
             }
