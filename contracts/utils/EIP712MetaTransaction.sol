@@ -10,7 +10,7 @@ import {ActionArgs} from "../libraries/Actions.sol";
 
 /// @title Contract to be inherited by contracts that want to support meta transactions.
 /// @author Rolla
-contract EIP712MetaTransaction is EIP712Upgradeable {
+abstract contract EIP712MetaTransaction is EIP712Upgradeable {
     using ECDSA for bytes32;
 
     struct MetaAction {
@@ -100,12 +100,14 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
     }
 
     /// @notice initialize method for EIP712Upgradeable
-    /// @dev called once after initial deployment and every upgrade.
+    /// @dev called once after initial deployment.
     /// @param _name the user readable name of the signing domain for EIP712
     /// @param _version the current major version of the signing domain for EIP712
-    function initializeEIP712(string memory _name, string memory _version)
-        public
-    {
+    // solhint-disable-next-line func-name-mixedcase
+    function __EIP712MetaTransaction_init(
+        string memory _name,
+        string memory _version
+    ) internal onlyInitializing {
         name = _name;
         version = _version;
 
