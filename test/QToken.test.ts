@@ -181,9 +181,9 @@ describe("QToken", async () => {
       ethers.BigNumber.from("1630768904"),
       true,
     ]);
-    expect(await qToken.symbol()).to.equal("ROLLA-WETH-04SEP21-1912.44-C");
+    expect(await qToken.symbol()).to.equal("ROLLA-WETH-04SEP21-1912.34-C");
     expect(await qToken.name()).to.equal(
-      "ROLLA WETH 04-September-2021 1912.44 Call"
+      "ROLLA WETH 04-September-2021 1912.34 Call"
     );
   });
 
@@ -347,5 +347,27 @@ describe("QToken", async () => {
 
   it("Should return the correct details of an option", async () => {
     expect(await qToken.getQTokenInfo()).to.eql(qTokenParams);
+  });
+
+  it("Should generate the right strike price string for decimal numbers", async () => {
+    const decimalStrikePrice = ethers.utils.parseEther("10000.90001");
+    const expiryTime = ethers.BigNumber.from("2153731385"); // Thu Apr 01 2038 10:43:05 GMT+0000
+
+    const decimalStrikeQToken = await deployQToken(
+      timelockController,
+      quantConfig,
+      WETH.address,
+      BUSD.address,
+      oracle,
+      decimalStrikePrice,
+      expiryTime
+    );
+
+    expect(await decimalStrikeQToken.name()).to.equal(
+      "ROLLA WETH 01-April-2038 10000.90001 Put"
+    );
+    expect(await decimalStrikeQToken.symbol()).to.equal(
+      "ROLLA-WETH-01APR38-10000.90001-P"
+    );
   });
 });
