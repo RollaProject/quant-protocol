@@ -24,6 +24,10 @@ abstract contract ProviderOracleManager is IProviderOracleManager {
     /// @inheritdoc IProviderOracleManager
     function addAssetOracle(address _asset, address _oracle) external override {
         require(
+            _oracle != address(0),
+            "ProviderOracleManager: Oracle is zero address"
+        );
+        require(
             config.hasRole(
                 config.quantRoles("ORACLE_MANAGER_ROLE"),
                 msg.sender
