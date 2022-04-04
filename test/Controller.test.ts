@@ -2455,6 +2455,46 @@ describe("Controller", async () => {
     });
   });
 
+  describe("call", () => {
+    it("Should revert when trying to make an external call to a non-contract address", async () => {
+      const actions = [encodeCallArgs({ callee: AddressZero, data: "0x" })];
+
+      await expect(
+        controller.connect(deployer).operate(actions)
+      ).to.be.revertedWith("OperateProxy: callee is not a contract");
+    });
+
+    it("Users should be able to make external calls through the unprivileged OperateProxy contract", async () => {
+      const amountToApprove = ethers.utils.parseEther("1");
+
+      expect(
+        await qTokenPut1400.allowance(
+          await controller.operateProxy(),
+          controller.address
+        )
+      ).to.equal(Zero);
+
+      const actions = [
+        encodeCallArgs({
+          callee: qTokenPut1400.address,
+          data: qTokenPut1400.interface.encodeFunctionData("approve", [
+            controller.address,
+            amountToApprove,
+          ]),
+        }),
+      ];
+
+      await controller.connect(deployer).operate(actions);
+
+      expect(
+        await qTokenPut1400.allowance(
+          await controller.operateProxy(),
+          controller.address
+        )
+      ).to.equal(amountToApprove);
+    });
+  });
+
   describe("Meta transactions", () => {
     const deadline = Math.floor(Date.now() / 1000) + aMonth + 3600 * 24;
     let nonce: number;
