@@ -127,6 +127,14 @@ export const testProviderOracleManager = async (
         "ProviderOracleManager: Only an oracle admin can add an oracle"
       );
     });
+
+    it("Should revert when trying to add the zero address as an oracle", async () => {
+      await expect(
+        oracleManager
+          .connect(oracleManagerAccount)
+          .addAssetOracle(assetOne, ethers.constants.AddressZero)
+      ).to.be.revertedWith("ProviderOracleManager: Oracle is zero address");
+    });
   });
 };
 
