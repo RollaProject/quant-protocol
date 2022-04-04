@@ -508,6 +508,11 @@ contract Controller is
         bytes32 _r,
         bytes32 _s
     ) internal {
+        require(
+            IOptionsFactory(optionsFactory).isQToken(_qToken),
+            "Controller: not a QToken for calling permit"
+        );
+
         IQToken(_qToken).permit(
             _owner,
             _spender,
