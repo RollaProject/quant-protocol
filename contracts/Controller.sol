@@ -185,16 +185,7 @@ contract Controller is
 
         _checkIfUnexpiredQToken(_qToken);
 
-        // check if the oracle set during the option's creation through the OptionsFactory
-        // is an active oracle in the OracleRegistry
-        require(
-            IOracleRegistry(
-                IOptionsFactory(optionsFactory).quantConfig().protocolAddresses(
-                    ProtocolValue.encode("oracleRegistry")
-                )
-            ).isOracleActive(qToken.oracle()),
-            "Controller: Can't mint an options position as the oracle is inactive"
-        );
+        _checkIfActiveOracle(_qToken);
 
         // pull the required collateral from the caller/signer
         IERC20Upgradeable(collateral).safeTransferFrom(
@@ -258,8 +249,15 @@ contract Controller is
                 _amount
             );
 
+        // Check if the QTokens are unexpired
+        // Only one of them needs to be checked since `getCollateralRequirement`
+        // requires that both QTokens have the same expiry
         _checkIfUnexpiredQToken(_qTokenToMint);
-        _checkIfUnexpiredQToken(_qTokenForCollateral);
+
+        // Check if the QTokens are using active oracles
+        // Only one of them needs to be checked since `getCollateralRequirement`
+        // requires that both QTokens have the same oracle
+        _checkIfActiveOracle(_qTokenToMint);
 
         // Burn the QToken being shorted
         qTokenForCollateral.burn(_msgSender(), _amount);
@@ -569,6 +567,20 @@ contract Controller is
         require(
             IQToken(_qToken).expiryTime() > block.timestamp,
             "Controller: Cannot mint expired options"
+        );
+    }
+
+    /// @notice Checks if the oracle set during the option's creation through the OptionsFactory
+    /// is an active oracle in the OracleRegistry
+    /// @param _qToken The address of the QToken to check.
+    function _checkIfActiveOracle(address _qToken) internal view {
+        require(
+            IOracleRegistry(
+                IOptionsFactory(optionsFactory).quantConfig().protocolAddresses(
+                    ProtocolValue.encode("oracleRegistry")
+                )
+            ).isOracleActive(IQToken(_qToken).oracle()),
+            "Controller: Can't mint an options position as the oracle is inactive"
         );
     }
 }
