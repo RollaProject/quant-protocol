@@ -140,11 +140,6 @@ library Actions {
         pure
         returns (address callee, bytes memory data)
     {
-        require(
-            _args.receiver != address(0),
-            "Actions: cannot make calls to the zero address"
-        );
-
         callee = _args.receiver;
         data = _args.data;
     }
