@@ -158,7 +158,13 @@ describe("Chainlink Oracle Manager", async function () {
     await mockAggregatorProxy.setTimestamp(2, 30);
     await mockAggregatorProxy.setTimestamp(3, 40);
     await mockAggregatorProxy.setTimestamp(4, 50);
-    await mockAggregatorProxy.setLatestAnswer(42001);
+    await mockAggregatorProxy.setRoundData({
+      roundId: 2,
+      answer: 42001,
+      startedAt: 32,
+      updatedAt: 32,
+      answeredInRound: 3,
+    });
 
     //set the price of the round that'll get picked
     await mockAggregatorProxy.setRoundIdAnswer(2, 42001);

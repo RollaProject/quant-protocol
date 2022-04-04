@@ -6,7 +6,7 @@ import "../interfaces/external/chainlink/IEACAggregatorProxy.sol";
 /// @title Mock chainlink proxy
 /// @author Rolla
 contract MockAggregatorProxy is IEACAggregatorProxy {
-    struct LatestRoundData {
+    struct RoundData {
         uint80 roundId;
         int256 answer;
         uint256 startedAt;
@@ -16,7 +16,8 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
 
     mapping(uint256 => uint256) public roundTimestamps;
     mapping(uint256 => int256) public roundIdAnswers;
-    LatestRoundData public latestRoundDataValue;
+    mapping(uint80 => RoundData) public roundData;
+    RoundData public latestRoundDataValue;
     int256 public latestAnswerValue;
     uint256 public latestTimestampValue;
     uint256 public latestRoundValue;
@@ -29,9 +30,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         roundIdAnswers[_roundId] = _answer;
     }
 
-    function setLatestRoundData(LatestRoundData calldata _latestRoundData)
-        external
-    {
+    function setLatestRoundData(RoundData calldata _latestRoundData) external {
         latestRoundDataValue = _latestRoundData;
     }
 
@@ -45,6 +44,10 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
 
     function setLatestRound(uint256 _latestRound) external {
         latestRoundValue = _latestRound;
+    }
+
+    function setRoundData(RoundData calldata _roundData) external {
+        roundData[_roundData.roundId] = _roundData;
     }
 
     // solhint-disable-next-line no-empty-blocks
@@ -123,6 +126,28 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         return latestTimestampValue;
     }
 
+    function getRoundData(uint80 _roundId)
+        external
+        view
+        override
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
+    {
+        RoundData memory data = roundData[_roundId];
+        return (
+            data.roundId,
+            data.answer,
+            data.startedAt,
+            data.updatedAt,
+            data.answeredInRound
+        );
+    }
+
     function accessController() external pure override returns (address) {
         return address(0);
     }
@@ -137,21 +162,6 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
 
     function description() external pure override returns (string memory) {
         return "...";
-    }
-
-    function getRoundData(uint80)
-        external
-        pure
-        override
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
-    {
-        return (0, 0, 0, 0, 0);
     }
 
     function owner() external pure override returns (address) {
