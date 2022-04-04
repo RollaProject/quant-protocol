@@ -43,21 +43,26 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
     event MetaTransactionExecuted(
         address indexed userAddress,
         address payable indexed relayerAddress,
-        uint256 nonce
+        bool success,
+        uint256 nonce,
+        bytes returnData
     );
 
     /// @notice Given an encoded action and a signature, executes the action on behalf of the signer.
     /// @param metaAction The encoded action to be executed.
+    /// @param gasLimit the gas limit
     /// @param r The r-value of the signature.
     /// @param s The s-value of the signature.
     /// @param v The v-value of the signature.
     /// @return The returned data from the low-level call.
+    /// @return the gas
     function executeMetaTransaction(
         MetaAction memory metaAction,
+        uint256 gasLimit,
         bytes32 r,
         bytes32 s,
         uint8 v
-    ) external payable returns (bytes memory) {
+    ) external payable returns (bool, bytes memory) {
         require(
             _verify(metaAction.from, metaAction, r, s, v),
             "signer and signature don't match"
@@ -73,7 +78,9 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
 
         // Append the metaAction.from at the end so that it can be extracted later
         // from the calling context (see _msgSender() below)
-        (bool success, bytes memory returnData) = address(this).call(
+        (bool success, bytes memory returnData) = address(this).call{
+            gas: gasLimit
+        }(
             abi.encodePacked(
                 abi.encodeWithSelector(
                     IController(address(this)).operate.selector,
@@ -83,13 +90,27 @@ contract EIP712MetaTransaction is EIP712Upgradeable {
             )
         );
 
-        require(success, "unsuccessful function call");
+        // Validate that the relayer has sent enough gas to execute the meta transaction,
+        // avoiding insufficient gas griefing attacks, as describe in:
+        // https://ipfs.io/ipfs/QmbbYTGTeot9ic4hVrsvnvVuHw4b5P7F5SeMSNX9TYPGjY/blog/ethereum-gas-dangers/
+        if (gasleft() <= gasLimit / 63) {
+            // We explicitly trigger invalid opcode to consume all gas and bubble-up the effects, since
+            // neither revert or assert consume all gas since Solidity 0.8.0
+            // https://docs.soliditylang.org/en/v0.8.0/control-structures.html#panic-via-assert-and-error-via-require
+            assembly {
+                invalid()
+            }
+        }
+
         emit MetaTransactionExecuted(
             metaAction.from,
             payable(msg.sender),
-            currentNonce
+            success,
+            currentNonce,
+            returnData
         );
-        return returnData;
+
+        return (success, returnData);
     }
 
     /// @notice Returns the current nonce for a user.
