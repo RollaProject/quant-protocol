@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../external/openzeppelin/ERC1155.sol";
 import "../interfaces/ICollateralToken.sol";
 
@@ -11,6 +12,8 @@ import "../interfaces/ICollateralToken.sol";
 /// @dev This is a multi-token contract that implements the ERC1155 token standard:
 /// https://eips.ethereum.org/EIPS/eip-1155
 contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
+    using ECDSA for bytes32;
+
     /// @dev stores metadata for a CollateralToken with an specific id
     /// @param qTokenAddress address of the corresponding QToken
     /// @param qTokenAsCollateral QToken address of an option used as collateral in a spread
@@ -194,13 +197,13 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         bytes32 r,
         bytes32 s
     ) external override {
+        require(nonce == nonces[owner], "CollateralToken: invalid nonce");
+
         // solhint-disable-next-line not-rely-on-time
         require(
-            block.timestamp <= deadline,
+            deadline >= block.timestamp,
             "CollateralToken: expired deadline"
         );
-
-        require(nonce == nonces[owner], "CollateralToken: invalid nonce");
 
         bytes32 structHash = keccak256(
             abi.encode(
@@ -215,10 +218,13 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
 
         bytes32 hash = _hashTypedDataV4(structHash);
 
-        address signer = ecrecover(hash, v, r, s);
+        address signer = hash.recover(v, r, s);
+
         require(signer == owner, "CollateralToken: invalid signature");
 
-        nonces[owner]++;
+        unchecked {
+            nonces[owner]++;
+        }
         _operatorApprovals[owner][operator] = approved;
         emit ApprovalForAll(owner, operator, approved);
     }
