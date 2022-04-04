@@ -17,6 +17,9 @@ contract ConfigTimelockController is TimelockController {
     /// @notice The minimum delay for scheduled executions
     uint256 public minDelay;
 
+    /// @notice The maximum delay for scheduled executions
+    uint256 public constant MAX_DELAY = 2629800; // 1 month in seconds
+
     constructor(
         uint256 _minDelay,
         address[] memory _proposers,
@@ -25,6 +28,7 @@ contract ConfigTimelockController is TimelockController {
         TimelockController(_minDelay, _proposers, _executors)
     // solhint-disable-next-line no-empty-blocks
     {
+        require(_minDelay <= MAX_DELAY, "minDelay greater than MAX_DELAY");
         minDelay = _minDelay;
     }
 
@@ -35,6 +39,8 @@ contract ConfigTimelockController is TimelockController {
         external
         onlyRole(EXECUTOR_ROLE)
     {
+        require(_newDelay <= MAX_DELAY, "newDelay greater than MAX_DELAY");
+
         // Delays must be greater than or equal to the minimum delay
         delays[_protocolValue] = _newDelay >= minDelay ? _newDelay : minDelay;
     }
