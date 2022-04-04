@@ -116,7 +116,7 @@ contract ChainlinkOracleManager is
     {
         address assetOracle = getAssetOracle(_asset);
         IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
-        int256 answer = aggregator.latestAnswer();
+        (, int256 answer, , , ) = aggregator.latestRoundData();
         require(
             answer > 0,
             "ChainlinkOracleManager: No pricing data available"
@@ -257,7 +257,10 @@ contract ChainlinkOracleManager is
         uint256,
         uint256 _expiryRoundId
     ) internal view virtual returns (uint256, uint256) {
-        return (uint256(aggregator.getAnswer(_expiryRoundId)), _expiryRoundId);
+        (, int256 answer, , , ) = aggregator.getRoundData(
+            uint80(_expiryRoundId)
+        );
+        return (uint256(answer), _expiryRoundId);
     }
 
     /// @notice Performs a binary search step between the first and last round in the aggregator proxy

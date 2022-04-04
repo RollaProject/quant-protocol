@@ -301,9 +301,13 @@ export const testChainlinkOracleManager = async (
     });
 
     it("Should fetch the current price of the asset provided correctly", async function () {
-      await mockAggregator.mock.latestAnswer.returns(0);
-      await mockAggregatorTwo.mock.latestAnswer.returns(
-        ethers.utils.parseUnits("2", 8)
+      await mockAggregator.mock.latestRoundData.returns(2, 0, 32, 32, 3);
+      await mockAggregatorTwo.mock.latestRoundData.returns(
+        2,
+        ethers.utils.parseUnits("2", 8),
+        32,
+        32,
+        3
       );
 
       await expect(
