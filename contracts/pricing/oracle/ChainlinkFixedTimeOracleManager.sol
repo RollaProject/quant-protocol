@@ -74,15 +74,22 @@ contract ChainlinkFixedTimeOracleManager is
         uint256 _expiryTimestamp,
         uint256 _roundIdAfterExpiry,
         uint256 _expiryRoundId
-    ) internal view override returns (uint256 price, uint256 roundId) {
+    ) internal view override returns (uint256, uint256) {
+        int256 price;
+        uint256 roundId;
+
         if (
             aggregator.getTimestamp(uint256(_expiryRoundId)) == _expiryTimestamp
         ) {
-            price = uint256(aggregator.getAnswer(_expiryRoundId));
+            (, price, , , ) = aggregator.getRoundData(uint80(_expiryRoundId));
             roundId = _expiryRoundId;
         } else {
-            price = uint256(aggregator.getAnswer(_roundIdAfterExpiry));
+            (, price, , , ) = aggregator.getRoundData(
+                uint80(_roundIdAfterExpiry)
+            );
             roundId = _roundIdAfterExpiry;
         }
+
+        return (uint256(price), roundId);
     }
 }
