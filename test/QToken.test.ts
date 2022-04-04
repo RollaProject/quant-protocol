@@ -112,7 +112,7 @@ describe("QToken", async () => {
   });
 
   it("Should be able to create a new option", async () => {
-    expect(await qToken.symbol()).to.equal("ROLLA-WETH-16APR21-1400-P");
+    expect(await qToken.symbol()).to.equal("ROLLA-WETH-16APR2021-1400-P");
     expect(await qToken.name()).to.equal("ROLLA WETH 16-April-2021 1400 Put");
     expect(await qToken.quantConfig()).to.equal(quantConfig.address);
     expect(await qToken.underlyingAsset()).to.equal(WETH.address);
@@ -181,7 +181,7 @@ describe("QToken", async () => {
       ethers.BigNumber.from("1630768904"),
       true,
     ]);
-    expect(await qToken.symbol()).to.equal("ROLLA-WETH-04SEP21-1912.34-C");
+    expect(await qToken.symbol()).to.equal("ROLLA-WETH-04SEP2021-1912.44-C");
     expect(await qToken.name()).to.equal(
       "ROLLA WETH 04-September-2021 1912.34 Call"
     );

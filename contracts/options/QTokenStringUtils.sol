@@ -121,7 +121,7 @@ abstract contract QTokenStringUtils {
                 "-",
                 _uintToChars(day),
                 monthSymbol,
-                _uintToChars(year),
+                Strings.toString(year),
                 "-",
                 displayStrikePrice,
                 "-",
