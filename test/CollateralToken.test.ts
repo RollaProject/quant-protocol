@@ -167,7 +167,7 @@ describe("CollateralToken", () => {
             ethers.constants.HashZero,
             ethers.constants.HashZero
           )
-      ).to.be.revertedWith("CollateralToken: invalid signature");
+      ).to.be.revertedWith("ECDSA: invalid signature 'v' value");
     });
 
     it("Should revert when passing an invalid nonce", async () => {
