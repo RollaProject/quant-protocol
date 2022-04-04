@@ -2335,6 +2335,43 @@ describe("Controller", async () => {
 
       expect(await qToken.allowance(owner, spender)).to.equal(value);
     });
+
+    it("Should revert when trying to call the permit method on a contract that's not a QToken", async () => {
+      const deadline = Math.floor(Date.now() / 1000) + aMonth + 3600 * 24;
+      const value = ethers.utils.parseEther("1");
+      const tokenContract = BUSD;
+      const owner = deployer.address;
+      const spender = secondAccount.address;
+
+      const digest = await getApprovalDigest(
+        tokenContract,
+        { owner, spender, value },
+        Zero,
+        ethers.BigNumber.from(deadline)
+      );
+
+      const { v, r, s } = ecsign(
+        Buffer.from(digest.slice(2), "hex"),
+        Buffer.from(deployer.privateKey.slice(2), "hex")
+      );
+
+      const actions = [
+        encodeQTokenPermitArgs({
+          qToken: tokenContract.address,
+          owner,
+          spender,
+          value: value.toString(),
+          deadline: deadline.toString(),
+          v,
+          r: ethers.utils.hexlify(r),
+          s: ethers.utils.hexlify(s),
+        }),
+      ];
+
+      await expect(
+        controller.connect(deployer).operate(actions)
+      ).to.be.revertedWith("Controller: not a QToken for calling permit");
+    });
   });
 
   describe("collateralTokenApproval", () => {
