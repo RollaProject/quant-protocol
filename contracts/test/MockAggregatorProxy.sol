@@ -132,7 +132,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
     }
 
     function decimals() external pure override returns (uint8) {
-        return 0;
+        return 8;
     }
 
     function description() external pure override returns (string memory) {
