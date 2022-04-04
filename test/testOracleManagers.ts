@@ -155,7 +155,7 @@ export const testChainlinkOracleManager = async (
 
   const assetOne = "0x0000000000000000000000000000000000000001";
   const assetTwo = "0x0000000000000000000000000000000000000002";
-  const oracleOne = "0x0000000000000000000000000000000000000010";
+  let oracleOne: string;
 
   async function setUpTests() {
     [owner, oracleManagerAccount, normalUserAccount, fallbackPriceAccount] =
@@ -168,6 +168,10 @@ export const testChainlinkOracleManager = async (
     mockAggregator = await deployMockContract(owner, AGGREGATOR.abi);
     mockAggregatorTwo = await deployMockContract(owner, AGGREGATOR.abi);
     mockPriceRegistry = await deployMockContract(owner, PRICE_REGISTRY.abi);
+
+    await mockAggregator.mock.decimals.returns(8);
+    oracleOne = mockAggregator.address;
+    await mockAggregatorTwo.mock.decimals.returns(8);
 
     await mockConfig.mock.quantRoles
       .withArgs("ORACLE_MANAGER_ROLE")
