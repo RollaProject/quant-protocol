@@ -1485,6 +1485,36 @@ describe("Controller", async () => {
       );
     });
 
+    it("Should revert when trying to create spreads from options with a deactivated oracle", async () => {
+      await oracleRegistry
+        .connect(oracleManagerAccount)
+        .deactivateOracle(mockOracleManager.address);
+
+      await expect(
+        controller.connect(secondAccount).operate([
+          encodeMintSpreadArgs({
+            qTokenToMint: qTokenPut1400.address,
+            qTokenForCollateral: qTokenPut400.address,
+            amount: ethers.utils.parseEther("1"),
+          }),
+        ])
+      ).to.be.revertedWith(
+        "Controller: Can't mint an options position as the oracle is inactive"
+      );
+    });
+
+    it("Should revert when passing the zero address as the QToken as collateral for a spread", async () => {
+      await expect(
+        controller.connect(secondAccount).operate([
+          encodeMintSpreadArgs({
+            qTokenToMint: qTokenPut1400.address,
+            qTokenForCollateral: AddressZero,
+            amount: ethers.utils.parseEther("1"),
+          }),
+        ])
+      ).to.be.revertedWith("function call to a non-contract account");
+    });
+
     it("Should revert when trying to create spreads from options with different expiries", async () => {
       const qTokenParams: optionParameters = [
         WETH.address,
