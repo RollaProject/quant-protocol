@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../interfaces/IEIP712MetaTransaction.sol";
 import "../interfaces/IController.sol";
@@ -10,7 +10,7 @@ import {ActionArgs} from "../libraries/Actions.sol";
 
 /// @title Contract to be inherited by contracts that want to support meta transactions.
 /// @author Rolla
-abstract contract EIP712MetaTransaction is EIP712Upgradeable {
+abstract contract EIP712MetaTransaction is EIP712 {
     using ECDSA for bytes32;
 
     struct MetaAction {
@@ -47,6 +47,17 @@ abstract contract EIP712MetaTransaction is EIP712Upgradeable {
         uint256 nonce,
         bytes returnData
     );
+
+    /// @notice initialize method for EIP712Upgradeable
+    /// @dev called once after initial deployment and every upgrade.
+    /// @param _name the user readable name of the signing domain for EIP712
+    /// @param _version the current major version of the signing domain for EIP712
+    constructor(string memory _name, string memory _version)
+        EIP712(_name, _version)
+    {
+        name = _name;
+        version = _version;
+    }
 
     /// @notice Given an encoded action and a signature, executes the action on behalf of the signer.
     /// @param metaAction The encoded action to be executed.
@@ -118,21 +129,6 @@ abstract contract EIP712MetaTransaction is EIP712Upgradeable {
     /// @return nonce the current nonce for the user.
     function getNonce(address user) external view returns (uint256 nonce) {
         nonce = _nonces[user];
-    }
-
-    /// @notice initialize method for EIP712Upgradeable
-    /// @dev called once after initial deployment.
-    /// @param _name the user readable name of the signing domain for EIP712
-    /// @param _version the current major version of the signing domain for EIP712
-    // solhint-disable-next-line func-name-mixedcase
-    function __EIP712MetaTransaction_init(
-        string memory _name,
-        string memory _version
-    ) internal onlyInitializing {
-        name = _name;
-        version = _version;
-
-        __EIP712_init(_name, _version);
     }
 
     /// @notice Returns the address of the signer when called from this contract,

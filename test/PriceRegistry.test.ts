@@ -1,5 +1,5 @@
 import { ContractFactory, Signer } from "ethers";
-import { ethers, upgrades, waffle } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import PriceRegistryJSON from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
 import { PriceRegistry, QuantConfig } from "../typechain";
@@ -22,7 +22,7 @@ describe("PriceRegistry", () => {
       "QuantConfig"
     );
     quantConfig = <QuantConfig>(
-      await upgrades.deployProxy(QuantConfig, [await admin.getAddress()])
+      await QuantConfig.deploy(await admin.getAddress())
     );
     priceRegistry = <PriceRegistry>(
       await deployContract(admin, PriceRegistryJSON, [
