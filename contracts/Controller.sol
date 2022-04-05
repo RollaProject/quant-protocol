@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./QuantConfig.sol";
 import "./utils/EIP712MetaTransaction.sol";
 import "./utils/OperateProxy.sol";
@@ -27,12 +27,8 @@ import "./libraries/Actions.sol";
 /// @dev This contract is an upgradeable proxy, and it supports meta transactions.
 /// @dev The Controller holds all the collateral used to mint options. Options need to be created through the
 /// OptionsFactory first.
-contract Controller is
-    IController,
-    EIP712MetaTransaction,
-    ReentrancyGuardUpgradeable
-{
-    using SafeERC20Upgradeable for IERC20Upgradeable;
+contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
+    using SafeERC20 for IERC20;
     using QuantMath for QuantMath.FixedPointInt;
     using Actions for ActionArgs;
 
@@ -44,6 +40,27 @@ contract Controller is
 
     /// @inheritdoc IController
     address public override quantCalculator;
+
+    constructor(
+        string memory _name,
+        string memory _version,
+        address _optionsFactory,
+        address _quantCalculator
+    ) EIP712MetaTransaction(_name, _version) {
+        require(
+            _optionsFactory != address(0),
+            "Controller: invalid OptionsFactory address"
+        );
+        require(
+            _quantCalculator != address(0),
+            "Controller: invalid QuantCalculator address"
+        );
+
+        optionsFactory = _optionsFactory;
+        quantCalculator = _quantCalculator;
+
+        operateProxy = address(new OperateProxy());
+    }
 
     /// @inheritdoc IController
     function operate(ActionArgs[] memory _actions)
@@ -128,34 +145,6 @@ contract Controller is
         }
 
         return true;
-    }
-
-    // @inheritdoc IController
-    function initialize(
-        string memory _name,
-        string memory _version,
-        address _optionsFactory,
-        address _quantCalculator
-    ) public override initializer {
-        require(
-            _optionsFactory != address(0),
-            "Controller: invalid OptionsFactory address"
-        );
-        require(
-            _quantCalculator != address(0),
-            "Controller: invalid QuantCalculator address"
-        );
-
-        __ReentrancyGuard_init();
-        EIP712MetaTransaction.__EIP712MetaTransaction_init(_name, _version);
-        optionsFactory = _optionsFactory;
-
-        /// @dev Unless this line is removed, a new OperateProxy will be created
-        /// during each upgrade. So make sure any application that requires approving
-        /// the OperateProxy to spend funds is aware of this.
-        operateProxy = address(new OperateProxy());
-
-        quantCalculator = _quantCalculator;
     }
 
     /// @notice Mints options for a given QToken, which must have been previously created in

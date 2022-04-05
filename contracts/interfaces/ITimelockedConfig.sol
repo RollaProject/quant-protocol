@@ -74,11 +74,6 @@ interface ITimelockedConfig {
     /// @param adminRole the encoded name of the role to act as an admin
     function setRoleAdmin(bytes32 role, bytes32 adminRole) external;
 
-    /// @notice Initializes the system roles and assign them to the given TimelockController address
-    /// @param _timelockController Address of the TimelockController to receive the system roles
-    /// @dev The TimelockController should have a Quant multisig as its sole proposer
-    function initialize(address payable _timelockController) external;
-
     /// @notice Returns the address of the TimelockController
     function timelockController() external view returns (address payable);
 

@@ -89,14 +89,6 @@ interface IController {
     /// @return boolean indicating whether the actions were successfully executed
     function operate(ActionArgs[] memory _actions) external returns (bool);
 
-    /// @notice Upgradable proxy initialization function called during deployment
-    function initialize(
-        string memory,
-        string memory,
-        address,
-        address
-    ) external;
-
     /// @notice Address of the OptionsFactory contract
     function optionsFactory() external view returns (address);
 

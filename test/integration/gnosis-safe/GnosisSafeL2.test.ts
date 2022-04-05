@@ -3,24 +3,15 @@ import GnosisSafeProxyFactoryArtifact from "@gnosis.pm/safe-contracts/build/arti
 import { executeContractCallWithSigners } from "@gnosis.pm/safe-contracts/dist/utils/execution";
 import { calculateProxyAddress } from "@gnosis.pm/safe-contracts/dist/utils/proxies";
 import * as dotenv from "dotenv";
-import { Contract, ContractFactory, Wallet } from "ethers";
-import { ethers, upgrades } from "hardhat";
+import { Contract, Wallet } from "ethers";
+import { ethers } from "hardhat";
 import { beforeEach, describe } from "mocha";
-import {
-  ConfigTimelockController,
-  Controller,
-  ControllerV2,
-  QuantConfig,
-  QuantConfigV2,
-} from "../../../typechain";
+import { ConfigTimelockController, QuantConfig } from "../../../typechain";
 import { expect, provider } from "../../setup";
 import {
   getWalletFromMnemonic,
-  name,
   revertToSnapshot,
   takeSnapshot,
-  uintToBytes32,
-  version,
 } from "../../testUtils";
 
 dotenv.config();
@@ -38,9 +29,6 @@ describe("GnosisSafeL2 integration tests", () => {
   let owners: Array<string>;
   let configTimelockController: ConfigTimelockController;
   let quantConfig: QuantConfig;
-  let QuantConfigV2Factory: ContractFactory;
-  let controller: Controller;
-  let ControllerV2Factory: ContractFactory;
 
   const confirmationThreshold = ethers.BigNumber.from("2"); // 2/3 confirmations/signatures required for a transaction
   const gnosisSafeVersion = "1.3.0";
@@ -128,33 +116,17 @@ describe("GnosisSafeL2 integration tests", () => {
       await ConfigTimelockControllerFactory.deploy(aDay, proposers, executors)
     );
 
-    const QuantConfigFactory = await ethers.getContractFactory(
-      "QuantConfig",
-      deployer
-    );
+    console.log(configTimelockController.address);
+
+    const QuantConfigFactory = await ethers.getContractFactory("QuantConfig");
     quantConfig = <QuantConfig>(
-      await upgrades.deployProxy(QuantConfigFactory, [
-        configTimelockController.address,
-      ])
+      await QuantConfigFactory.deploy(configTimelockController.address)
     );
 
     // Make the timelock the owner of QuantConfig
     await quantConfig
       .connect(deployer)
       .transferOwnership(configTimelockController.address);
-
-    const Controller = await ethers.getContractFactory("Controller");
-    controller = <Controller>(
-      await upgrades.deployProxy(Controller, [
-        name,
-        version,
-        ethers.Wallet.createRandom().address,
-        ethers.Wallet.createRandom().address,
-      ])
-    );
-
-    QuantConfigV2Factory = await ethers.getContractFactory("QuantConfigV2");
-    ControllerV2Factory = await ethers.getContractFactory("ControllerV2");
   });
 
   it("Should create the Safe correctly", async () => {
@@ -248,165 +220,5 @@ describe("GnosisSafeL2 integration tests", () => {
     );
 
     await revertToSnapshot(snapshotId);
-  });
-
-  it("Should revert when an account other than the timelock tries to upgrade the QuantConfig", async () => {
-    const snapshotId = await takeSnapshot();
-
-    // Transfer ownership of the ProxyAdmin contract to the timelock
-    await upgrades.admin.transferProxyAdminOwnership(
-      configTimelockController.address
-    );
-
-    await expect(
-      upgrades.upgradeProxy(quantConfig, QuantConfigV2Factory)
-    ).to.be.revertedWith("Ownable: caller is not the owner");
-
-    await revertToSnapshot(snapshotId);
-  });
-
-  it("Should revert when an account other than the timelock tries to upgrade the Controller", async () => {
-    const snapshotId = await takeSnapshot();
-
-    // Transfer ownership of the ProxyAdmin contract to the timelock
-    await upgrades.admin.transferProxyAdminOwnership(
-      configTimelockController.address
-    );
-
-    await expect(
-      upgrades.upgradeProxy(controller, ControllerV2Factory)
-    ).to.be.revertedWith("Ownable: caller is not the owner");
-
-    await revertToSnapshot(snapshotId);
-  });
-
-  it("The multisig (Safe) should be able to upgrade the QuantConfig", async () => {
-    const snapshotId = await takeSnapshot();
-
-    // Transfer ownership of the ProxyAdmin contract to the timelock
-    await upgrades.admin.transferProxyAdminOwnership(
-      configTimelockController.address
-    );
-
-    const quantConfigV2ImplAddr = await upgrades.prepareUpgrade(
-      quantConfig,
-      QuantConfigV2Factory
-    );
-
-    const proxyAdmin = await upgrades.admin.getInstance();
-
-    // extra 20 seconds to be enough until the block at which scheduleSetProtocolAddress is mined
-    const eta = (await provider.getBlock("latest")).timestamp + aDay + 20;
-
-    const upgradeCallData = proxyAdmin.interface.encodeFunctionData("upgrade", [
-      quantConfig.address,
-      quantConfigV2ImplAddr,
-    ]);
-
-    const predecessor = ethers.utils.formatBytes32String("");
-    const salt = uintToBytes32(aDay);
-
-    await (
-      await configTimelockController
-        .connect(user1)
-        .schedule(
-          proxyAdmin.address,
-          0,
-          upgradeCallData,
-          predecessor,
-          salt,
-          aDay,
-          false
-        )
-    ).wait();
-
-    await provider.send("evm_mine", [eta]);
-
-    await executeContractCallWithSigners(
-      quantMultisig,
-      configTimelockController,
-      "execute",
-      [proxyAdmin.address, 0, upgradeCallData, predecessor, salt],
-      [user1, user2]
-    );
-
-    const quantConfigV2 = <QuantConfigV2>(
-      QuantConfigV2Factory.attach(quantConfig.address)
-    );
-
-    expect(await proxyAdmin.owner()).to.equal(configTimelockController.address);
-    expect(
-      await proxyAdmin.getProxyImplementation(quantConfigV2.address)
-    ).to.equal(quantConfigV2ImplAddr);
-    expect(await quantConfigV2.newV2StateVariable()).to.equal(
-      ethers.BigNumber.from(0)
-    );
-
-    revertToSnapshot(snapshotId);
-  });
-
-  it("The multisig (Safe) should be able to upgrade the Controller", async () => {
-    const snapshotId = await takeSnapshot();
-
-    // Transfer ownership of the ProxyAdmin contract to the timelock
-    await upgrades.admin.transferProxyAdminOwnership(
-      configTimelockController.address
-    );
-
-    const controllerV2ImplAddr = await upgrades.prepareUpgrade(
-      controller,
-      ControllerV2Factory
-    );
-
-    const proxyAdmin = await upgrades.admin.getInstance();
-
-    // extra 20 seconds to be enough until the block at which scheduleSetProtocolAddress is mined
-    const eta = (await provider.getBlock("latest")).timestamp + aDay + 20;
-
-    const upgradeCallData = proxyAdmin.interface.encodeFunctionData("upgrade", [
-      controller.address,
-      controllerV2ImplAddr,
-    ]);
-
-    const predecessor = ethers.utils.formatBytes32String("");
-    const salt = uintToBytes32(aDay);
-
-    await (
-      await configTimelockController
-        .connect(user1)
-        .schedule(
-          proxyAdmin.address,
-          0,
-          upgradeCallData,
-          predecessor,
-          salt,
-          aDay,
-          false
-        )
-    ).wait();
-
-    await provider.send("evm_mine", [eta]);
-
-    await executeContractCallWithSigners(
-      quantMultisig,
-      configTimelockController,
-      "execute",
-      [proxyAdmin.address, 0, upgradeCallData, predecessor, salt],
-      [user1, user2]
-    );
-
-    const controllerV2 = <ControllerV2>(
-      ControllerV2Factory.attach(controller.address)
-    );
-
-    expect(await proxyAdmin.owner()).to.equal(configTimelockController.address);
-    expect(
-      await proxyAdmin.getProxyImplementation(controllerV2.address)
-    ).to.equal(controllerV2ImplAddr);
-    expect(await controllerV2.newV2StateVariable()).to.equal(
-      ethers.BigNumber.from(0)
-    );
-
-    revertToSnapshot(snapshotId);
   });
 });
