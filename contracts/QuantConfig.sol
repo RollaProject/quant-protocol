@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./libraries/ProtocolValue.sol";
 import "./interfaces/ITimelockedConfig.sol";
 
@@ -10,11 +10,7 @@ import "./interfaces/ITimelockedConfig.sol";
 /// @author Rolla
 /// @notice For storing constants, variables and allowing them to be changed by the admin (governance)
 /// @dev This should be used as a central access control manager which other contracts use to check permissions
-contract QuantConfig is
-    AccessControlUpgradeable,
-    OwnableUpgradeable,
-    ITimelockedConfig
-{
+contract QuantConfig is AccessControl, Ownable, ITimelockedConfig {
     /// @inheritdoc ITimelockedConfig
     address payable public override timelockController;
 
@@ -42,6 +38,20 @@ contract QuantConfig is
     mapping(bytes32 => mapping(ProtocolValue.Type => bool))
         public
         override isProtocolValueSet;
+
+    constructor(address payable _timelockController) {
+        require(
+            _timelockController != address(0),
+            "QuantConfig: invalid TimelockController address"
+        );
+
+        _setupRole(DEFAULT_ADMIN_ROLE, _timelockController);
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        string memory oracleManagerRole = "ORACLE_MANAGER_ROLE";
+        _setProtocolRole(oracleManagerRole, _timelockController);
+
+        timelockController = _timelockController;
+    }
 
     /// @inheritdoc ITimelockedConfig
     function setProtocolAddress(bytes32 _protocolAddress, address _newValue)
@@ -142,28 +152,6 @@ contract QuantConfig is
     /// @inheritdoc ITimelockedConfig
     function quantRolesLength() external view override returns (uint256) {
         return configuredQuantRoles.length;
-    }
-
-    /// @inheritdoc ITimelockedConfig
-    function initialize(address payable _timelockController)
-        public
-        override
-        initializer
-    {
-        require(
-            _timelockController != address(0),
-            "QuantConfig: invalid TimelockController address"
-        );
-
-        __AccessControl_init();
-        __Ownable_init_unchained();
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(DEFAULT_ADMIN_ROLE, _timelockController);
-
-        string memory oracleManagerRole = "ORACLE_MANAGER_ROLE";
-        _setProtocolRole(oracleManagerRole, _timelockController);
-        _setProtocolRole(oracleManagerRole, _msgSender());
-        timelockController = _timelockController;
     }
 
     /// @notice Sets a new protocol role, while also assigning a role admin

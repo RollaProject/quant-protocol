@@ -42,6 +42,8 @@ contract AssetsRegistryTest is DSTest {
 
     AssetsRegistry public assetsRegistry;
 
+    address public quantConfig;
+
     event AssetAdded(
         address indexed underlying,
         string name,
@@ -50,7 +52,7 @@ contract AssetsRegistryTest is DSTest {
     );
 
     function setUp() public {
-        address quantConfig = address(new QuantConfig());
+        quantConfig = address(new QuantConfig(payable(address((this)))));
         assetsRegistry = new AssetsRegistry(quantConfig);
         vm.mockCall(
             quantConfig,
@@ -103,7 +105,11 @@ contract AssetsRegistryTest is DSTest {
     }
 
     function testAddAssetAsNotRegistryMananger() public {
-        vm.clearMockedCalls();
+        vm.mockCall(
+            quantConfig,
+            abi.encodeWithSelector(AccessControlUpgradeable.hasRole.selector),
+            abi.encode(false)
+        );
 
         string memory name = "BUSD Token";
         string memory symbol = "BUSD";

@@ -8,7 +8,7 @@ import {
   Signer,
   Wallet,
 } from "ethers";
-import { ethers, upgrades, waffle } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { hexToNumber } from "web3-utils";
 import AssetsRegistryJSON from "../artifacts/contracts/options/AssetsRegistry.sol/AssetsRegistry.json";
 import CollateralTokenJSON from "../artifacts/contracts/options/CollateralToken.sol/CollateralToken.json";
@@ -78,14 +78,8 @@ const deployQuantConfig = async (
 ): Promise<QuantConfig> => {
   const QuantConfig = await ethers.getContractFactory("QuantConfig");
 
-  if (typeof configTimelockController === "undefined") {
-    configTimelockController = <ConfigTimelockController>(
-      await deployConfigTimelockController(deployer, ethers.BigNumber.from("0"))
-    );
-  }
-
   const quantConfig = <QuantConfig>(
-    await upgrades.deployProxy(QuantConfig, [configTimelockController.address])
+    await QuantConfig.deploy(await deployer.getAddress())
   );
 
   for (const roleToAssign of rolesToAssign) {

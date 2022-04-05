@@ -11,7 +11,5 @@ interface IEIP712MetaTransaction {
         uint8
     ) external payable returns (bytes memory);
 
-    function initializeEIP712(string memory, string memory) external;
-
     function getNonce(address) external view returns (uint256);
 }

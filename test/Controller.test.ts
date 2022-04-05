@@ -8,7 +8,7 @@ import {
   Signer,
   Wallet,
 } from "ethers";
-import { ethers, upgrades, waffle } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import Web3 from "web3";
 import ORACLE_MANAGER from "../artifacts/contracts/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
@@ -21,7 +21,6 @@ import {
 } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
-import { ControllerV2 } from "../typechain/ControllerV2";
 import { ExternalQToken } from "../typechain/ExternalQToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
@@ -816,12 +815,12 @@ describe("Controller", async () => {
     );
 
     controller = <Controller>(
-      await upgrades.deployProxy(Controller, [
+      await Controller.deploy(
         name,
         version,
         optionsFactory.address,
-        quantCalculator.address,
-      ])
+        quantCalculator.address
+      )
     );
 
     await quantConfig
@@ -3496,45 +3495,6 @@ describe("Controller", async () => {
       );
       expect(await collateral.balanceOf(deployer.address)).to.equal(
         collateralAmount
-      );
-    });
-  });
-
-  describe("Upgradeability", () => {
-    const upgradeController = async (
-      controller: Controller
-    ): Promise<ControllerV2> => {
-      const ControllerV2 = await ethers.getContractFactory("ControllerV2");
-      const controllerV2 = <ControllerV2>(
-        await upgrades.upgradeProxy(controller.address, ControllerV2)
-      );
-      return controllerV2;
-    };
-    it("Should maintain state after upgrades", async () => {
-      const configuredOptionsFactory = await controller.optionsFactory();
-
-      const controllerV2 = await upgradeController(controller);
-
-      expect(await controllerV2.optionsFactory()).to.equal(
-        configuredOptionsFactory
-      );
-    });
-
-    it("Should be able to add new state variables through upgrades", async () => {
-      const controllerV2 = await upgradeController(controller);
-
-      expect(await controllerV2.newV2StateVariable()).to.equal(Zero);
-    });
-
-    it("Should be able to add new functions through upgrades", async () => {
-      const controllerV2 = await upgradeController(controller);
-
-      expect(await controllerV2.newV2StateVariable()).to.equal(Zero);
-
-      await controllerV2.connect(deployer).setNewV2StateVariable(42);
-
-      expect(await controllerV2.newV2StateVariable()).to.equal(
-        ethers.BigNumber.from("42")
       );
     });
   });
