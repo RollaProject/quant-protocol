@@ -4,12 +4,13 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "./options/CollateralToken.sol";
+import "./options/OptionsFactory.sol";
 import "./QuantConfig.sol";
 import "./utils/EIP712MetaTransaction.sol";
 import "./utils/OperateProxy.sol";
 import "./interfaces/IQToken.sol";
 import "./interfaces/IOracleRegistry.sol";
-import "./interfaces/ICollateralToken.sol";
 import "./interfaces/IController.sol";
 import "./interfaces/IOperateProxy.sol";
 import "./interfaces/IQuantCalculator.sol";
@@ -35,31 +36,45 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     /// @inheritdoc IController
     address public override optionsFactory;
 
-    /// @inheritdoc IController
-    address public override operateProxy;
+    OperateProxy public override operateProxy;
 
     /// @inheritdoc IController
     address public override quantCalculator;
 
+    address public oracleRegistry;
+
+    CollateralToken public collateralToken;
+
     constructor(
         string memory _name,
         string memory _version,
-        address _optionsFactory,
-        address _quantCalculator
+        string memory _uri,
+        address _strikeAsset,
+        address _quantCalculator,
+        address _oracleRegistry
     ) EIP712MetaTransaction(_name, _version) {
-        require(
-            _optionsFactory != address(0),
-            "Controller: invalid OptionsFactory address"
-        );
         require(
             _quantCalculator != address(0),
             "Controller: invalid QuantCalculator address"
         );
+        require(
+            _oracleRegistry != address(0),
+            "Controller: invalid OracleRegistry address"
+        );
 
-        optionsFactory = _optionsFactory;
         quantCalculator = _quantCalculator;
+        oracleRegistry = _oracleRegistry;
 
-        operateProxy = address(new OperateProxy());
+        operateProxy = new OperateProxy();
+        collateralToken = new CollateralToken(_name, _version, _uri);
+
+        optionsFactory = address(
+            new OptionsFactory(
+                _strikeAsset,
+                address(collateralToken),
+                address(this)
+            )
+        );
     }
 
     /// @inheritdoc IController
@@ -183,9 +198,6 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             collateralAmount
         );
 
-        ICollateralToken collateralToken = IOptionsFactory(optionsFactory)
-            .collateralToken();
-
         // Mint the options to the sender's address
         qToken.mint(_to, _amount);
         uint256 collateralTokenId = collateralToken.getCollateralTokenId(
@@ -259,9 +271,6 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
                 collateralAmount
             );
         }
-
-        ICollateralToken collateralToken = IOptionsFactory(optionsFactory)
-            .collateralToken();
 
         // Check if the CollateralToken representing this specific spread has already been created
         // Create it if it hasn't
@@ -373,7 +382,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             );
 
         // Burn the short tokens
-        IOptionsFactory(optionsFactory).collateralToken().burnCollateralToken(
+        collateralToken.burnCollateralToken(
             _msgSender(),
             collateralTokenId,
             amountToClaim
@@ -410,8 +419,6 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             _amount
         );
 
-        ICollateralToken collateralToken = IOptionsFactory(optionsFactory)
-            .collateralToken();
         (address qTokenShort, address qTokenLong) = collateralToken.idToInfo(
             collateralTokenId
         );
@@ -533,16 +540,16 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         bytes32 _r,
         bytes32 _s
     ) internal {
-        IOptionsFactory(optionsFactory).collateralToken().metaSetApprovalForAll(
-                _owner,
-                _operator,
-                _approved,
-                _nonce,
-                _deadline,
-                _v,
-                _r,
-                _s
-            );
+        collateralToken.metaSetApprovalForAll(
+            _owner,
+            _operator,
+            _approved,
+            _nonce,
+            _deadline,
+            _v,
+            _r,
+            _s
+        );
     }
 
     /// @notice Allows a sender/signer to make external calls to any other contract.
@@ -552,7 +559,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     /// @param _callee The address of the contract to be called.
     /// @param _data The calldata to be sent to the contract.
     function _call(address _callee, bytes memory _data) internal {
-        IOperateProxy(operateProxy).callFunction(_callee, _data);
+        operateProxy.callFunction(_callee, _data);
     }
 
     /// @notice Checks if the given QToken has not expired yet, reverting otherwise
