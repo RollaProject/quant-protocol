@@ -184,20 +184,6 @@ describe("Actions lib", () => {
   });
 
   describe("Test parseCallArgs", () => {
-    it("Should revert when passing the zero address as the receiver (callee)", async () => {
-      await expect(
-        lib.testParseCallArgs({
-          actionType: ActionType.Call,
-          qToken: AddressZero,
-          secondaryAddress: AddressZero,
-          receiver: AddressZero,
-          amount,
-          collateralTokenId: 0,
-          data: "0x",
-        })
-      ).to.be.revertedWith("Actions: cannot make calls to the zero address");
-    });
-
     it("Should parse valid parameters correctly", async () => {
       const callee = ethers.Wallet.createRandom().address;
       const data = "0xd6cafe";
