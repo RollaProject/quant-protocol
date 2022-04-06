@@ -210,7 +210,7 @@ invariant balanceVSsupply(uint collateralTokenId, address qToken, env e)
 */
 rule validQtoken(method f)  
 		filtered { f -> f.selector != certorafallback_0().selector &&
-						f.selector != executeMetaTransaction((uint256,uint256,address,(uint8,address,address,address,uint256,uint256,bytes)[]),uint256,bytes32,bytes32,uint8).selector  && 
+						f.selector != executeMetaTransaction((uint256,uint256,address,(uint8,address,address,address,uint256,uint256,bytes)[]),bytes32,bytes32,uint8).selector  && 
 						f.selector != initialize(string,string,address,address).selector }			
 {
 	address qToken; 
@@ -239,7 +239,7 @@ rule validQtoken(method f)
 */
 rule solvencyUser(uint collateralTokenId, uint pricePerQToken, method f, uint valueOfCollateralTokenIdBefore, uint valueOfQTokenBefore, uint valueOfCollateralTokenIdAfter, uint valueOfQTokenAfter)
 		filtered { f -> f.selector != certorafallback_0().selector &&
-						f.selector != executeMetaTransaction((uint256,uint256,address,(uint8,address,address,address,uint256,uint256,bytes)[]),uint256,bytes32,bytes32,uint8).selector  && 
+						f.selector != executeMetaTransaction((uint256,uint256,address,(uint8,address,address,address,uint256,uint256,bytes)[]),bytes32,bytes32,uint8).selector  && 
 						f.selector != mintSpread(address, address, uint).selector &&
 						f.selector != initialize(string,string,address,address).selector }	
 
