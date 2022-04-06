@@ -367,7 +367,7 @@ describe("QToken", async () => {
       "ROLLA WETH 01-April-2038 10000.90001 Put"
     );
     expect(await decimalStrikeQToken.symbol()).to.equal(
-      "ROLLA-WETH-01APR38-10000.90001-P"
+      "ROLLA-WETH-01APR2038-10000.90001-P"
     );
   });
 });
