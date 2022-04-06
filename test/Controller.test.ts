@@ -3181,7 +3181,7 @@ describe("Controller", async () => {
           newCollateralTokenId,
         ]);
 
-      const baseGasLimit = BigNumber.from("4000000");
+      const baseGasLimit = BigNumber.from("10000000");
 
       await expect(
         await controller
