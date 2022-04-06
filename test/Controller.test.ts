@@ -107,11 +107,6 @@ describe("Controller", async () => {
 
   const aMonth = 30 * 24 * 3600; // in seconds
 
-  const encodedTrueReturnValue = ethers.utils.defaultAbiCoder.encode(
-    ["bool"],
-    [true]
-  );
-
   const getCollateralRequirement = async (
     qTokenToMint: QToken,
     qTokenForCollateral: QToken,
@@ -2417,14 +2412,11 @@ describe("Controller", async () => {
         controller.address
       );
 
-      const baseGasLimit = BigNumber.from("1000000");
-
       await expect(
         controller
           .connect(deployer)
           .executeMetaTransaction(
             { nonce, deadline, from: secondAccount.address, actions },
-            baseGasLimit,
             txData.r,
             txData.s,
             txData.v
@@ -2453,14 +2445,11 @@ describe("Controller", async () => {
 
       const invalidV = 21;
 
-      const baseGasLimit = BigNumber.from("1000000");
-
       await expect(
         controller
           .connect(secondAccount)
           .executeMetaTransaction(
             { nonce, deadline, from: deployer.address, actions },
-            baseGasLimit,
             txData.r,
             txData.s,
             invalidV
@@ -2479,14 +2468,11 @@ describe("Controller", async () => {
         }),
       ];
 
-      const baseGasLimit = BigNumber.from("1000000");
-
       await expect(
         controller
           .connect(deployer)
           .executeMetaTransaction(
             { nonce, deadline, from: secondAccount.address, actions },
-            baseGasLimit,
             ethers.constants.HashZero,
             ethers.constants.HashZero,
             0
@@ -2513,14 +2499,11 @@ describe("Controller", async () => {
         controller.address
       );
 
-      const baseGasLimit = BigNumber.from("1000000");
-
       await expect(
         controller
           .connect(secondAccount)
           .executeMetaTransaction(
             { nonce: nonce + 5, deadline, from: deployer.address, actions },
-            baseGasLimit,
             txData.r,
             txData.s,
             txData.v
@@ -2548,8 +2531,6 @@ describe("Controller", async () => {
         controller.address
       );
 
-      const baseGasLimit = BigNumber.from("1000000");
-
       await expect(
         controller.connect(secondAccount).executeMetaTransaction(
           {
@@ -2558,7 +2539,6 @@ describe("Controller", async () => {
             from: deployer.address,
             actions,
           },
-          baseGasLimit,
           txData.r,
           txData.s,
           txData.v
@@ -2604,14 +2584,11 @@ describe("Controller", async () => {
         collateralAmount
       );
 
-      const baseGasLimit = BigNumber.from("1000000");
-
       await expect(
         controller
           .connect(secondAccount)
           .executeMetaTransaction(
             { nonce, deadline, from: deployer.address, actions },
-            baseGasLimit,
             txData.r,
             txData.s,
             txData.v
@@ -2621,9 +2598,7 @@ describe("Controller", async () => {
         .withArgs(
           deployer.address,
           secondAccount.address,
-          true,
-          await controller.getNonce(deployer.address),
-          encodedTrueReturnValue
+          await controller.getNonce(deployer.address)
         );
 
       expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
@@ -2667,14 +2642,11 @@ describe("Controller", async () => {
         .connect(optionsMinter)
         .mint(deployer.address, amount);
 
-      const baseGasLimit = BigNumber.from("1000000");
-
       await expect(
         controller
           .connect(secondAccount)
           .executeMetaTransaction(
             { nonce, deadline, from: deployer.address, actions },
-            baseGasLimit,
             txData.r,
             txData.s,
             txData.v
@@ -2684,9 +2656,7 @@ describe("Controller", async () => {
         .withArgs(
           deployer.address,
           secondAccount.address,
-          true,
-          await controller.getNonce(deployer.address),
-          encodedTrueReturnValue
+          await controller.getNonce(deployer.address)
         );
 
       expect(await qTokenCall3520.balanceOf(deployer.address)).to.equal(
@@ -2759,14 +2729,11 @@ describe("Controller", async () => {
         controller.address
       );
 
-      const baseGasLimit = BigNumber.from("1000000");
-
       await expect(
         controller
           .connect(secondAccount)
           .executeMetaTransaction(
             { nonce, deadline, from: deployer.address, actions },
-            baseGasLimit,
             txData.r,
             txData.s,
             txData.v
@@ -2776,9 +2743,7 @@ describe("Controller", async () => {
         .withArgs(
           deployer.address,
           secondAccount.address,
-          true,
-          await controller.getNonce(deployer.address),
-          encodedTrueReturnValue
+          await controller.getNonce(deployer.address)
         );
 
       expect(await BUSD.balanceOf(deployer.address)).to.equal(payoutAmount);
@@ -2866,14 +2831,11 @@ describe("Controller", async () => {
         controller.address
       );
 
-      const baseGasLimit = BigNumber.from("1000000");
-
       await expect(
         controller
           .connect(secondAccount)
           .executeMetaTransaction(
             { nonce, deadline, from: deployer.address, actions },
-            baseGasLimit,
             txData.r,
             txData.s,
             txData.v
@@ -2883,9 +2845,7 @@ describe("Controller", async () => {
         .withArgs(
           deployer.address,
           secondAccount.address,
-          true,
-          await controller.getNonce(deployer.address),
-          encodedTrueReturnValue
+          await controller.getNonce(deployer.address)
         );
 
       const collateralClaimed = await payoutAsset.balanceOf(deployer.address);
@@ -2964,14 +2924,11 @@ describe("Controller", async () => {
         controller.address
       );
 
-      const baseGasLimit = BigNumber.from("1000000");
-
       await expect(
         controller
           .connect(secondAccount)
           .executeMetaTransaction(
             { nonce, deadline, from: deployer.address, actions },
-            baseGasLimit,
             txData.r,
             txData.s,
             txData.v
@@ -2981,9 +2938,7 @@ describe("Controller", async () => {
         .withArgs(
           deployer.address,
           secondAccount.address,
-          true,
-          await controller.getNonce(deployer.address),
-          encodedTrueReturnValue
+          await controller.getNonce(deployer.address)
         );
 
       expect(await qTokenPut1400.balanceOf(deployer.address)).to.equal(
@@ -3036,14 +2991,11 @@ describe("Controller", async () => {
 
       expect(await qToken.allowance(owner, spender)).to.equal(Zero);
 
-      const baseGasLimit = BigNumber.from("1000000");
-
       await expect(
         controller
           .connect(secondAccount)
           .executeMetaTransaction(
             { nonce, deadline, from: deployer.address, actions },
-            baseGasLimit,
             txData.r,
             txData.s,
             txData.v
@@ -3097,14 +3049,11 @@ describe("Controller", async () => {
         false
       );
 
-      const baseGasLimit = BigNumber.from("1000000");
-
       await expect(
         controller
           .connect(secondAccount)
           .executeMetaTransaction(
             { nonce, deadline, from: deployer.address, actions },
-            baseGasLimit,
             txData.r,
             txData.s,
             txData.v
@@ -3181,18 +3130,14 @@ describe("Controller", async () => {
           newCollateralTokenId,
         ]);
 
-      const baseGasLimit = BigNumber.from("4000000");
-
       await expect(
-        await controller
+        controller
           .connect(secondAccount)
           .executeMetaTransaction(
             { nonce, deadline, from: deployer.address, actions },
-            baseGasLimit,
             txData.r,
             txData.s,
-            txData.v,
-            { gasLimit: baseGasLimit }
+            txData.v
           )
       )
         .to.emit(operateProxy, "FunctionCallExecuted")
@@ -3207,7 +3152,7 @@ describe("Controller", async () => {
       expect(await optionsFactory.isQToken(targetQTokenAddress)).to.be.true;
     });
 
-    it("Should fail when trying to make reentrant operate calls through meta transactions", async () => {
+    it("Should revert when trying to make reentrant operate calls through meta transactions", async () => {
       const mintOptionsAction = [
         encodeMintOptionArgs({
           to: secondAccount.address,
@@ -3236,14 +3181,6 @@ describe("Controller", async () => {
         controller.address
       );
 
-      const errorSelector = "0x08c379a0";
-      const errorData = errorSelector.concat(
-        ethers.utils.defaultAbiCoder
-          .encode(["string"], ["OperateProxy: low-level call failed"])
-          .slice(2)
-      );
-
-      const baseGasLimit = BigNumber.from("2000000");
       await expect(
         controller.connect(secondAccount).executeMetaTransaction(
           {
@@ -3252,23 +3189,14 @@ describe("Controller", async () => {
             from: deployer.address,
             actions: reentrantOperateAction,
           },
-          baseGasLimit,
           txData.r,
           txData.s,
           txData.v
         )
-      )
-        .to.emit(controller, "MetaTransactionExecuted")
-        .withArgs(
-          deployer.address,
-          secondAccount.address,
-          false,
-          await controller.getNonce(deployer.address),
-          errorData
-        );
+      ).to.be.revertedWith("unsuccessful function call");
     });
 
-    it("Should fail when trying to call internal methods through meta transactions", async () => {
+    it("Should revert when trying to call internal methods through meta transactions", async () => {
       const mintOptionsPositionCallData = `${web3.eth.abi.encodeFunctionSignature(
         "_mintOptionsPosition((address,address,uint256))"
       )}${web3.eth.abi
@@ -3294,102 +3222,16 @@ describe("Controller", async () => {
         controller.address
       );
 
-      const baseGasLimit = BigNumber.from("1000000");
-
-      const errorSelector = "0x08c379a0";
-      const errorData = errorSelector.concat(
-        ethers.utils.defaultAbiCoder
-          .encode(["string"], ["OperateProxy: low-level call failed"])
-          .slice(2)
-      );
-
       await expect(
         controller
           .connect(secondAccount)
           .executeMetaTransaction(
             { nonce, deadline, from: deployer.address, actions },
-            baseGasLimit,
             txData.r,
             txData.s,
             txData.v
           )
-      )
-        .to.emit(controller, "MetaTransactionExecuted")
-        .withArgs(
-          deployer.address,
-          secondAccount.address,
-          false,
-          await controller.getNonce(deployer.address),
-          errorData
-        );
-    });
-
-    it("Should prevent insufficient gas griefing attacks from malicious meta transaction relayers", async () => {
-      const amount = ethers.utils.parseEther("1");
-
-      const actions = [
-        encodeMintOptionArgs({
-          to: secondAccount.address,
-          qToken: qTokenCall2000.address,
-          amount: amount.toString(),
-        }),
-      ];
-
-      const txData = getSignedTransactionData(
-        nonce,
-        deadline,
-        deployer,
-        actions,
-        controller.address
-      );
-
-      const [collateralAddress, collateralAmount] =
-        await getCollateralRequirement(qTokenCall2000, nullQToken, amount);
-      // mint required collateral to the user account
-      const collateral = collateralAddress === WETH.address ? WETH : BUSD;
-      await collateral
-        .connect(assetsRegistryManager)
-        .mint(await deployer.address, collateralAmount);
-      // Approve the Controller to use the user's funds
-      await collateral
-        .connect(deployer)
-        .approve(controller.address, collateralAmount);
-
-      expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
-        Zero
-      );
-      expect(await collateral.balanceOf(deployer.address)).to.equal(
-        collateralAmount
-      );
-
-      const baseGasLimit = BigNumber.from("10000");
-
-      await expect(
-        controller
-          .connect(secondAccount)
-          .executeMetaTransaction(
-            { nonce, deadline, from: deployer.address, actions },
-            baseGasLimit,
-            txData.r,
-            txData.s,
-            txData.v
-          )
-      )
-        .to.emit(controller, "MetaTransactionExecuted")
-        .withArgs(
-          deployer.address,
-          secondAccount.address,
-          false,
-          await controller.getNonce(deployer.address),
-          "0x"
-        );
-
-      expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
-        Zero
-      );
-      expect(await collateral.balanceOf(deployer.address)).to.equal(
-        collateralAmount
-      );
+      ).to.be.revertedWith("unsuccessful function call");
     });
   });
 
