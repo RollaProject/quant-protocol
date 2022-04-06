@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../libraries/OptionsUtils.sol";
 import "../interfaces/IOptionsFactory.sol";
 import "../interfaces/IQuantConfig.sol";
@@ -13,16 +14,20 @@ import "../interfaces/ICollateralToken.sol";
 /// @author Rolla
 /// @notice Creates tokens for long (QToken) and short (CollateralToken) positions
 /// @dev This contract follows the factory design pattern
-contract OptionsFactory is IOptionsFactory {
+contract OptionsFactory is Ownable, IOptionsFactory {
     /// @inheritdoc IOptionsFactory
     address[] public override qTokens;
 
     /// @inheritdoc IOptionsFactory
     address public override strikeAsset;
 
+    address public controller;
+
     IQuantConfig public override quantConfig;
 
     ICollateralToken public override collateralToken;
+
+    address public controller;
 
     mapping(uint256 => address) private _collateralTokenIdToQTokenAddress;
 
@@ -38,25 +43,38 @@ contract OptionsFactory is IOptionsFactory {
     /// @param _collateralToken address of the CollateralToken contract
     constructor(
         address _strikeAsset,
-        address _quantConfig,
-        address _collateralToken
+        address _collateralToken,
+        address _controller
     ) {
         require(
             _strikeAsset != address(0),
             "OptionsFactory: invalid strike asset address"
         );
         require(
-            _quantConfig != address(0),
-            "OptionsFactory: invalid QuantConfig address"
-        );
-        require(
             _collateralToken != address(0),
             "OptionsFactory: invalid CollateralToken address"
         );
+        require(
+            _controller != address(0),
+            "OptionsFactory: invalid controller address"
+        );
 
         strikeAsset = _strikeAsset;
-        quantConfig = IQuantConfig(_quantConfig);
         collateralToken = ICollateralToken(_collateralToken);
+        controller = _controller;
+    }
+
+    function setController(address _controller) external onlyOwner {
+        require(
+            _controller != address(0),
+            "OptionsFactory: invalid controller address"
+        );
+        require(
+            controller == address(0),
+            "OptionsFactory: controller already set"
+        );
+
+        controller = _controller;
     }
 
     /// @inheritdoc IOptionsFactory
@@ -108,6 +126,8 @@ contract OptionsFactory is IOptionsFactory {
                 _isCall
             )
         );
+
+        QToken(newQToken).transferOwnership(controller);
 
         _collateralTokenIdToQTokenAddress[newCollateralTokenId] = newQToken;
         qTokens.push(newQToken);

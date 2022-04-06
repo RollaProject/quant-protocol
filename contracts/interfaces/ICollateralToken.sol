@@ -128,9 +128,6 @@ interface ICollateralToken is IERC1155 {
         bytes32 s
     ) external;
 
-    /// @notice The Quant system config
-    function quantConfig() external view returns (IQuantConfig);
-
     /// @notice mapping of CollateralToken ids to their respective info struct
     function idToInfo(uint256) external view returns (address, address);
 

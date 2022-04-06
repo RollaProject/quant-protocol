@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../pricing/PriceRegistry.sol";
 import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IQToken.sol";
@@ -15,7 +16,7 @@ import "./QTokenStringUtils.sol";
 /// @author Rolla
 /// @notice Can be used by owners to exercise their options
 /// @dev Every option long position is an ERC20 token: https://eips.ethereum.org/EIPS/eip-20
-contract QToken is ERC20Permit, QTokenStringUtils, IQToken {
+contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
     using QuantMath for uint256;
 
     /// @inheritdoc IQToken
@@ -109,27 +110,13 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken {
     }
 
     /// @inheritdoc IQToken
-    function mint(address account, uint256 amount) external override {
-        require(
-            quantConfig.hasRole(
-                quantConfig.quantRoles("OPTIONS_MINTER_ROLE"),
-                msg.sender
-            ),
-            "QToken: Only an options minter can mint QTokens"
-        );
+    function mint(address account, uint256 amount) external override onlyOwner {
         _mint(account, amount);
         emit QTokenMinted(account, amount);
     }
 
     /// @inheritdoc IQToken
-    function burn(address account, uint256 amount) external override {
-        require(
-            quantConfig.hasRole(
-                quantConfig.quantRoles("OPTIONS_BURNER_ROLE"),
-                msg.sender
-            ),
-            "QToken: Only an options burner can burn QTokens"
-        );
+    function burn(address account, uint256 amount) external override onlyOwner {
         _burn(account, amount);
         emit QTokenBurned(account, amount);
     }

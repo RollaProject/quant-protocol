@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../external/openzeppelin/ERC1155.sol";
 import "../interfaces/ICollateralToken.sol";
 
@@ -11,7 +12,7 @@ import "../interfaces/ICollateralToken.sol";
 /// @notice Can be used by owners to claim their collateral
 /// @dev This is a multi-token contract that implements the ERC1155 token standard:
 /// https://eips.ethereum.org/EIPS/eip-1155
-contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
+contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     using ECDSA for bytes32;
 
     /// @dev stores metadata for a CollateralToken with an specific id
@@ -21,9 +22,6 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         address qTokenAddress;
         address qTokenAsCollateral;
     }
-
-    /// @inheritdoc ICollateralToken
-    IQuantConfig public override quantConfig;
 
     /// @inheritdoc ICollateralToken
     mapping(uint256 => CollateralTokenInfo) public override idToInfo;
@@ -42,23 +40,14 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
 
     /// @notice Initializes a new ERC1155 multi-token contract for representing
     /// users' short positions
-    /// @param _quantConfig the address of the Quant system configuration contract
     /// @param _name name for the domain typehash in EIP712 meta transactions
     /// @param _version version for the domain typehash in EIP712 meta transactions
     /// @param uri_ URI for ERC1155 tokens metadata
     constructor(
-        address _quantConfig,
         string memory _name,
         string memory _version,
         string memory uri_
-    ) ERC1155(uri_) EIP712(_name, _version) {
-        require(
-            _quantConfig != address(0),
-            "CollateralToken: invalid QuantConfig address"
-        );
-
-        quantConfig = IQuantConfig(_quantConfig);
-    }
+    ) ERC1155(uri_) EIP712(_name, _version) {}
 
     /// @inheritdoc ICollateralToken
     function createCollateralToken(
@@ -67,13 +56,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
     ) external override returns (uint256 id) {
         id = getCollateralTokenId(_qTokenAddress, _qTokenAsCollateral);
 
-        require(
-            quantConfig.hasRole(
-                quantConfig.quantRoles("COLLATERAL_CREATOR_ROLE"),
-                msg.sender
-            ),
-            "CollateralToken: Only a collateral creator can create new CollateralTokens"
-        );
+        // TODO: Add check that the QTokens are in the Factory
 
         require(
             _qTokenAddress != _qTokenAsCollateral,
@@ -105,18 +88,9 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         address recipient,
         uint256 collateralTokenId,
         uint256 amount
-    ) external override {
-        require(
-            quantConfig.hasRole(
-                quantConfig.quantRoles("COLLATERAL_MINTER_ROLE"),
-                msg.sender
-            ),
-            "CollateralToken: Only a collateral minter can mint CollateralTokens"
-        );
-
-        emit CollateralTokenMinted(recipient, collateralTokenId, amount);
-
+    ) external override onlyOwner {
         _mint(recipient, collateralTokenId, amount, "");
+        emit CollateralTokenMinted(recipient, collateralTokenId, amount);
     }
 
     /// @inheritdoc ICollateralToken
@@ -124,16 +98,8 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         address owner,
         uint256 collateralTokenId,
         uint256 amount
-    ) external override {
-        require(
-            quantConfig.hasRole(
-                quantConfig.quantRoles("COLLATERAL_BURNER_ROLE"),
-                msg.sender
-            ),
-            "CollateralToken: Only a collateral burner can burn CollateralTokens"
-        );
+    ) external override onlyOwner {
         _burn(owner, collateralTokenId, amount);
-
         emit CollateralTokenBurned(owner, collateralTokenId, amount);
     }
 
@@ -142,15 +108,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         address recipient,
         uint256[] calldata ids,
         uint256[] calldata amounts
-    ) external override {
-        require(
-            quantConfig.hasRole(
-                quantConfig.quantRoles("COLLATERAL_MINTER_ROLE"),
-                msg.sender
-            ),
-            "CollateralToken: Only a collateral minter can mint CollateralTokens"
-        );
-
+    ) external override onlyOwner {
         uint256 length = ids.length;
         for (uint256 i = 0; i < length; ) {
             emit CollateralTokenMinted(recipient, ids[i], amounts[i]);
@@ -167,14 +125,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712 {
         address owner,
         uint256[] calldata ids,
         uint256[] calldata amounts
-    ) external override {
-        require(
-            quantConfig.hasRole(
-                quantConfig.quantRoles("COLLATERAL_BURNER_ROLE"),
-                msg.sender
-            ),
-            "CollateralToken: Only a collateral burner can burn CollateralTokens"
-        );
+    ) external override onlyOwner {
         _burnBatch(owner, ids, amounts);
 
         uint256 length = ids.length;
