@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
-import "./IQuantConfig.sol";
-
 /// @title For centrally managing a list of oracle providers
 /// @author Rolla
 /// @notice oracle provider registry for holding a list of oracle providers and their id
@@ -31,9 +29,6 @@ interface IOracleRegistry {
 
     /// @notice exhaustive list of oracles in map
     function oracles(uint256) external view returns (address);
-
-    /// @notice quant central configuration
-    function config() external view returns (IQuantConfig);
 
     /// @notice Check if an oracle is registered in the registry
     /// @param _oracle the oracle to check

@@ -1,16 +1,17 @@
+import { deployMockContract, MockContract } from "ethereum-waffle";
 import { ecsign } from "ethereumjs-util";
 import { BigNumber, Signer, Wallet } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import QTokenJSON from "../artifacts/contracts/options/QToken.sol/QToken.json";
+import PriceRegistryJSON from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
+import { AssetsRegistry } from "../typechain";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
-import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
 import {
   deployAssetsRegistry,
   deployQToken,
-  deployQuantConfig,
   getApprovalDigest,
   mockERC20,
 } from "./testUtils";
@@ -21,16 +22,14 @@ const { keccak256, defaultAbiCoder, toUtf8Bytes, hexlify } = ethers.utils;
 const TEST_AMOUNT = ethers.utils.parseEther("10");
 
 describe("QToken", async () => {
-  let quantConfig: QuantConfig;
   let qToken: QToken;
-  let timelockController: Signer;
+  let deployer: Signer;
   let secondAccount: Wallet;
-  let assetsRegistryManager: Signer;
-  let optionsMinter: Signer;
-  let optionsBurner: Signer;
   let otherAccount: Signer;
   let BUSD: MockERC20;
   let WETH: MockERC20;
+  let mockPriceRegistry: MockContract;
+  let assetsRegistry: AssetsRegistry;
   let userAddress: string;
   let otherUserAddress: string;
   let scaledStrikePrice: BigNumber;
@@ -41,7 +40,7 @@ describe("QToken", async () => {
 
   const mintOptionsToAccount = async (account: string, amount: number) => {
     await qToken
-      .connect(optionsMinter)
+      .connect(deployer)
       .mint(account, ethers.utils.parseEther(amount.toString()));
   };
 
@@ -52,48 +51,29 @@ describe("QToken", async () => {
   }
 
   beforeEach(async () => {
-    [
-      timelockController,
-      secondAccount,
-      assetsRegistryManager,
-      optionsMinter,
-      optionsBurner,
-      otherAccount,
-    ] = provider.getWallets();
+    [deployer, secondAccount, deployer, deployer, deployer, otherAccount] =
+      provider.getWallets();
     userAddress = await secondAccount.getAddress();
     otherUserAddress = await otherAccount.getAddress();
 
-    quantConfig = await deployQuantConfig(timelockController, [
-      {
-        addresses: [await assetsRegistryManager.getAddress()],
-        role: "ASSETS_REGISTRY_MANAGER_ROLE",
-      },
-      {
-        addresses: [await optionsMinter.getAddress()],
-        role: "OPTIONS_MINTER_ROLE",
-      },
-      {
-        addresses: [await optionsBurner.getAddress()],
-        role: "OPTIONS_BURNER_ROLE",
-      },
-    ]);
+    WETH = await mockERC20(deployer, "WETH", "Wrapped Ether");
+    BUSD = await mockERC20(deployer, "BUSD", "BUSD Token", 18);
 
-    WETH = await mockERC20(timelockController, "WETH", "Wrapped Ether");
-    BUSD = await mockERC20(timelockController, "BUSD", "BUSD Token", 18);
-
-    const assetsRegistry = await deployAssetsRegistry(
-      timelockController,
-      quantConfig
-    );
+    assetsRegistry = await deployAssetsRegistry(deployer);
 
     await assetsRegistry
-      .connect(assetsRegistryManager)
+      .connect(deployer)
       .addAssetWithOptionalERC20Methods(WETH.address);
     await assetsRegistry
-      .connect(assetsRegistryManager)
+      .connect(deployer)
       .addAssetWithOptionalERC20Methods(BUSD.address);
 
     scaledStrikePrice = ethers.utils.parseUnits("1400", await BUSD.decimals());
+
+    mockPriceRegistry = await deployMockContract(
+      deployer,
+      PriceRegistryJSON.abi
+    );
 
     qTokenParams = [
       WETH.address,
@@ -105,16 +85,21 @@ describe("QToken", async () => {
     ];
 
     qToken = await deployQToken(
-      timelockController,
-      quantConfig,
-      ...qTokenParams
+      deployer,
+      WETH.address,
+      BUSD.address,
+      oracle,
+      mockPriceRegistry.address,
+      assetsRegistry.address,
+      strikePrice,
+      expiryTime,
+      false
     );
   });
 
   it("Should be able to create a new option", async () => {
     expect(await qToken.symbol()).to.equal("ROLLA-WETH-16APR2021-1400-P");
     expect(await qToken.name()).to.equal("ROLLA WETH 16-April-2021 1400 Put");
-    expect(await qToken.quantConfig()).to.equal(quantConfig.address);
     expect(await qToken.underlyingAsset()).to.equal(WETH.address);
     expect(await qToken.strikeAsset()).to.equal(BUSD.address);
     expect(await qToken.oracle()).to.equal(oracle);
@@ -145,7 +130,7 @@ describe("QToken", async () => {
 
     // Burn options from the user address
     await qToken
-      .connect(optionsBurner)
+      .connect(deployer)
       .burn(userAddress, ethers.utils.parseEther("2"));
 
     const newBalance = await qToken.balanceOf(userAddress);
@@ -160,28 +145,29 @@ describe("QToken", async () => {
       qToken
         .connect(secondAccount)
         .mint(userAddress, ethers.utils.parseEther("2"))
-    ).to.be.revertedWith("QToken: Only an options minter can mint QTokens");
+    ).to.be.revertedWith("Ownable: caller is not the owner");
   });
 
   it("Should revert when an unauthorized account tries to burn options", async () => {
     await expect(
       qToken
         .connect(secondAccount)
-        .burn(await timelockController.getAddress(), ethers.BigNumber.from("4"))
-    ).to.be.revertedWith("QToken: Only an options burner can burn QTokens");
+        .burn(await deployer.getAddress(), ethers.BigNumber.from("4"))
+    ).to.be.revertedWith("Ownable: caller is not the owner");
   });
 
   it("Should create CALL options with different parameters", async () => {
-    qToken = <QToken>await deployContract(timelockController, QTokenJSON, [
-      quantConfig.address,
+    qToken = <QToken>await deployContract(deployer, QTokenJSON, [
       WETH.address,
       BUSD.address,
       oracle,
+      mockPriceRegistry.address,
+      assetsRegistry.address,
       ethers.BigNumber.from("1912340000000000000000"), // BUSD has 18 decimals
       ethers.BigNumber.from("1630768904"),
       true,
     ]);
-    expect(await qToken.symbol()).to.equal("ROLLA-WETH-04SEP2021-1912.44-C");
+    expect(await qToken.symbol()).to.equal("ROLLA-WETH-04SEP2021-1912.34-C");
     expect(await qToken.name()).to.equal(
       "ROLLA WETH 04-September-2021 1912.34 Call"
     );
@@ -220,11 +206,12 @@ describe("QToken", async () => {
     const aMonthInSeconds = 2629746;
     for (const month in months) {
       qToken = <QToken>(
-        await deployContract(timelockController, QTokenJSON, [
-          quantConfig.address,
+        await deployContract(deployer, QTokenJSON, [
           WETH.address,
           BUSD.address,
           oracle,
+          mockPriceRegistry.address,
+          assetsRegistry.address,
           strikePrice,
           ethers.BigNumber.from(optionexpiryTime.toString()),
           false,
@@ -244,25 +231,26 @@ describe("QToken", async () => {
   });
 
   it("Should emit the QTokenMinted event", async () => {
-    await expect(qToken.connect(optionsMinter).mint(userAddress, 4))
+    await expect(qToken.connect(deployer).mint(userAddress, 4))
       .to.emit(qToken, "QTokenMinted")
       .withArgs(userAddress, 4);
   });
 
   it("Should emit the QTokenBurned event", async () => {
     await mintOptionsToAccount(userAddress, 6);
-    await expect(qToken.connect(optionsBurner).burn(userAddress, 3))
+    await expect(qToken.connect(deployer).burn(userAddress, 3))
       .to.emit(qToken, "QTokenBurned")
       .withArgs(userAddress, 3);
   });
 
   it("Should return an ACTIVE status for options that haven't expired yet", async () => {
     const nonExpiredQToken = await deployQToken(
-      timelockController,
-      quantConfig,
+      deployer,
       WETH.address,
       BUSD.address,
       ethers.Wallet.createRandom().address,
+      mockPriceRegistry.address,
+      assetsRegistry.address,
       strikePrice,
       ethers.BigNumber.from(
         (Math.round(Date.now() / 1000) + 30 * 24 * 3600).toString()
@@ -330,9 +318,9 @@ describe("QToken", async () => {
       ethers.BigNumber.from("1")
     );
 
-    await qToken.connect(optionsMinter).mint(userAddress, TEST_AMOUNT);
+    await qToken.connect(deployer).mint(userAddress, TEST_AMOUNT);
     expect(await qToken.balanceOf(userAddress)).to.equal(TEST_AMOUNT);
-    const recipient = await timelockController.getAddress();
+    const recipient = await deployer.getAddress();
     expect(await qToken.balanceOf(recipient)).to.equal(ethers.constants.Zero);
 
     await qToken
@@ -354,11 +342,12 @@ describe("QToken", async () => {
     const expiryTime = ethers.BigNumber.from("2153731385"); // Thu Apr 01 2038 10:43:05 GMT+0000
 
     const decimalStrikeQToken = await deployQToken(
-      timelockController,
-      quantConfig,
+      deployer,
       WETH.address,
       BUSD.address,
       oracle,
+      mockPriceRegistry.address,
+      assetsRegistry.address,
       decimalStrikePrice,
       expiryTime
     );

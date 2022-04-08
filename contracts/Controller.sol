@@ -4,9 +4,9 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "./QuantCalculator.sol";
 import "./options/CollateralToken.sol";
 import "./options/OptionsFactory.sol";
-import "./QuantConfig.sol";
 import "./utils/EIP712MetaTransaction.sol";
 import "./utils/OperateProxy.sol";
 import "./interfaces/IQToken.sol";
@@ -15,9 +15,8 @@ import "./interfaces/IController.sol";
 import "./interfaces/IOperateProxy.sol";
 import "./interfaces/IQuantCalculator.sol";
 import "./interfaces/IOptionsFactory.sol";
-import "./libraries/ProtocolValue.sol";
+import "./interfaces/IAssetsRegistry.sol";
 import "./libraries/QuantMath.sol";
-import "./libraries/OptionsUtils.sol";
 import "./libraries/Actions.sol";
 
 /// @title The main entry point in the Quant Protocol
@@ -36,7 +35,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     /// @inheritdoc IController
     address public override optionsFactory;
 
-    OperateProxy public override operateProxy;
+    OperateProxy public operateProxy;
 
     /// @inheritdoc IController
     address public override quantCalculator;
@@ -49,20 +48,16 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         string memory _name,
         string memory _version,
         string memory _uri,
+        address _oracleRegistry,
         address _strikeAsset,
-        address _quantCalculator,
-        address _oracleRegistry
+        address _priceRegistry,
+        address _assetsRegistry
     ) EIP712MetaTransaction(_name, _version) {
-        require(
-            _quantCalculator != address(0),
-            "Controller: invalid QuantCalculator address"
-        );
         require(
             _oracleRegistry != address(0),
             "Controller: invalid OracleRegistry address"
         );
 
-        quantCalculator = _quantCalculator;
         oracleRegistry = _oracleRegistry;
 
         operateProxy = new OperateProxy();
@@ -72,9 +67,20 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             new OptionsFactory(
                 _strikeAsset,
                 address(collateralToken),
-                address(this)
+                address(this),
+                _priceRegistry,
+                _assetsRegistry
             )
         );
+
+        (, , uint8 strikeAssetDecimals) = IAssetsRegistry(_assetsRegistry)
+            .assetProperties(_strikeAsset);
+
+        quantCalculator = address(
+            new QuantCalculator(strikeAssetDecimals, optionsFactory)
+        );
+
+        collateralToken.setOptionsFactory(optionsFactory);
     }
 
     /// @inheritdoc IController
@@ -192,7 +198,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         _checkIfActiveOracle(_qToken);
 
         // pull the required collateral from the caller/signer
-        IERC20Upgradeable(collateral).safeTransferFrom(
+        IERC20(collateral).safeTransferFrom(
             _msgSender(),
             address(this),
             collateralAmount
@@ -265,7 +271,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
 
         // Transfer in any collateral required for the spread
         if (collateralAmount > 0) {
-            IERC20Upgradeable(collateral).safeTransferFrom(
+            IERC20(collateral).safeTransferFrom(
                 _msgSender(),
                 address(this),
                 collateralAmount
@@ -347,10 +353,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
 
         // Transfer any profit due after expiration
         if (exerciseTotal > 0) {
-            IERC20Upgradeable(payoutToken).safeTransfer(
-                _msgSender(),
-                exerciseTotal
-            );
+            IERC20(payoutToken).safeTransfer(_msgSender(), exerciseTotal);
         }
 
         emit OptionsExercised(
@@ -390,7 +393,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
 
         // Transfer any collateral due after expiration
         if (returnableCollateral > 0) {
-            IERC20Upgradeable(collateralAsset).safeTransfer(
+            IERC20(collateralAsset).safeTransfer(
                 _msgSender(),
                 returnableCollateral
             );
@@ -466,10 +469,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         );
 
         // tranfer the collateral owed
-        IERC20Upgradeable(collateralType).safeTransfer(
-            _msgSender(),
-            collateralOwed
-        );
+        IERC20(collateralType).safeTransfer(_msgSender(), collateralOwed);
 
         //give the user their long tokens (if any, in case of CollateralTokens representing a spread)
         if (qTokenLong != address(0)) {
@@ -576,11 +576,9 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     /// @param _qToken The address of the QToken to check.
     function _checkIfActiveOracle(address _qToken) internal view {
         require(
-            IOracleRegistry(
-                IOptionsFactory(optionsFactory).quantConfig().protocolAddresses(
-                    ProtocolValue.encode("oracleRegistry")
-                )
-            ).isOracleActive(IQToken(_qToken).oracle()),
+            IOracleRegistry(oracleRegistry).isOracleActive(
+                IQToken(_qToken).oracle()
+            ),
             "Controller: Can't mint an options position as the oracle is inactive"
         );
     }

@@ -4,27 +4,29 @@ import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import ORACLE_MANAGER from "../artifacts/contracts/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
-import { AssetsRegistry, OptionsFactory, OracleRegistry } from "../typechain";
+import PRICE_REGISTRY from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
+import {
+  AssetsRegistry,
+  Controller,
+  OptionsFactory,
+  OracleRegistry,
+} from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
-import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
 import {
   deployAssetsRegistry,
-  deployCollateralToken,
-  deployOptionsFactory,
   deployOracleRegistry,
-  deployQuantConfig,
+  erc1155Uri,
   mockERC20,
+  name,
+  version,
 } from "./testUtils";
 
 describe("OptionsFactory", () => {
-  let quantConfig: QuantConfig;
   let collateralToken: CollateralToken;
-  let timelockController: Signer;
-  let oracleManagerAccount: Signer;
+  let deployer: Signer;
   let secondAccount: Signer;
-  let assetsRegistryManager: Signer;
   let WETH: MockERC20;
   let BUSD: MockERC20;
   let optionsFactory: OptionsFactory;
@@ -49,89 +51,58 @@ describe("OptionsFactory", () => {
   ];
 
   beforeEach(async () => {
-    [
-      timelockController,
-      oracleManagerAccount,
-      secondAccount,
-      assetsRegistryManager,
-    ] = provider.getWallets();
+    [deployer, secondAccount] = provider.getWallets();
 
-    quantConfig = await deployQuantConfig(timelockController, [
-      {
-        addresses: [await assetsRegistryManager.getAddress()],
-        role: "ASSETS_REGISTRY_MANAGER_ROLE",
-      },
-      {
-        addresses: [await oracleManagerAccount.getAddress()],
-        role: "ORACLE_MANAGER_ROLE",
-      },
-    ]);
+    WETH = await mockERC20(deployer, "WETH", "Wrapped Ether");
+    BUSD = await mockERC20(deployer, "BUSD", "BUSD Token", 18);
 
-    WETH = await mockERC20(timelockController, "WETH", "Wrapped Ether");
-    BUSD = await mockERC20(timelockController, "BUSD", "BUSD Token", 18);
+    mockOracleManager = await deployMockContract(deployer, ORACLE_MANAGER.abi);
 
-    collateralToken = await deployCollateralToken(
-      timelockController,
-      quantConfig
-    );
-
-    mockOracleManager = await deployMockContract(
-      timelockController,
-      ORACLE_MANAGER.abi
-    );
-
-    assetsRegistry = await deployAssetsRegistry(
-      timelockController,
-      quantConfig
-    );
-
-    oracleRegistry = await deployOracleRegistry(
-      timelockController,
-      quantConfig
-    );
-
+    assetsRegistry = await deployAssetsRegistry(deployer);
     await assetsRegistry
-      .connect(assetsRegistryManager)
-      .addAsset(
-        WETH.address,
-        await WETH.name(),
-        await WETH.symbol(),
-        await WETH.decimals()
-      );
+      .connect(deployer)
+      .addAssetWithOptionalERC20Methods(BUSD.address);
+    await assetsRegistry
+      .connect(deployer)
+      .addAssetWithOptionalERC20Methods(WETH.address);
 
-    optionsFactory = await deployOptionsFactory(
-      timelockController,
-      BUSD.address,
-      quantConfig,
-      collateralToken
+    oracleRegistry = await deployOracleRegistry(deployer);
+
+    await oracleRegistry.connect(deployer).addOracle(mockOracleManager.address);
+
+    await oracleRegistry
+      .connect(deployer)
+      .activateOracle(mockOracleManager.address);
+
+    const mockPriceRegistry = await deployMockContract(
+      deployer,
+      PRICE_REGISTRY.abi
     );
 
-    await quantConfig
-      .connect(timelockController)
-      .setProtocolRole("COLLATERAL_CREATOR_ROLE", optionsFactory.address);
+    await mockPriceRegistry.mock.oracleRegistry.returns(oracleRegistry.address);
 
-    await quantConfig
-      .connect(timelockController)
-      .setProtocolRole("PRICE_SUBMITTER_ROLE", oracleRegistry.address);
+    const Controller = await ethers.getContractFactory("Controller");
+    const controller = <Controller>(
+      await Controller.deploy(
+        name,
+        version,
+        erc1155Uri,
+        oracleRegistry.address,
+        BUSD.address,
+        mockPriceRegistry.address,
+        assetsRegistry.address
+      )
+    );
 
-    await quantConfig
-      .connect(timelockController)
-      .setProtocolRole("PRICE_SUBMITTER_ROLE_ADMIN", oracleRegistry.address);
+    const CollateralToken = await ethers.getContractFactory("CollateralToken");
+    collateralToken = <CollateralToken>(
+      CollateralToken.attach(await controller.collateralToken())
+    );
 
-    await quantConfig
-      .connect(timelockController)
-      .setRoleAdmin(
-        ethers.utils.id("PRICE_SUBMITTER_ROLE"),
-        ethers.utils.id("PRICE_SUBMITTER_ROLE_ADMIN")
-      );
-
-    await oracleRegistry
-      .connect(oracleManagerAccount)
-      .addOracle(mockOracleManager.address);
-
-    await oracleRegistry
-      .connect(oracleManagerAccount)
-      .activateOracle(mockOracleManager.address);
+    const OptionsFactory = await ethers.getContractFactory("OptionsFactory");
+    optionsFactory = <OptionsFactory>(
+      OptionsFactory.attach(await controller.optionsFactory())
+    );
 
     //Note: returning any address here to show existence of the oracle
     await mockOracleManager.mock.getAssetOracle.returns(
@@ -237,7 +208,7 @@ describe("OptionsFactory", () => {
     it("Should revert when trying to create an option with a deactivated oracle", async () => {
       //Deactivate the oracle
       await oracleRegistry
-        .connect(oracleManagerAccount)
+        .connect(deployer)
         .deactivateOracle(mockOracleManager.address);
 
       await expect(

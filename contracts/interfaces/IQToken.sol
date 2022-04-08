@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
-import "./IQuantConfig.sol";
 
 /// @dev Current pricing status of option. Only SETTLED options can be exercised
 enum PriceStatus {
@@ -45,9 +44,6 @@ interface IQToken is IERC20, IERC20Permit {
     /// @param account account to burn token from
     /// @param amount amount to burn
     function burn(address account, uint256 amount) external;
-
-    /// @dev Address of system config.
-    function quantConfig() external view returns (IQuantConfig);
 
     /// @dev Address of the underlying asset. WETH for ethereum options.
     function underlyingAsset() external view returns (address);

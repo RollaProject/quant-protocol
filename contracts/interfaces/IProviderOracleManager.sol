@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
-import "./IQuantConfig.sol";
-
 /// @title Oracle manager for holding asset addresses and their oracle addresses for a single provider
 /// @author Rolla
 /// @notice Once an oracle is added for an asset it can't be changed!
@@ -24,9 +22,6 @@ interface IProviderOracleManager {
         uint256 _expiryTimestamp,
         bytes memory _calldata
     ) external;
-
-    /// @notice quant central configuration
-    function config() external view returns (IQuantConfig);
 
     /// @notice asset address => oracle address
     function assetOracles(address) external view returns (address);

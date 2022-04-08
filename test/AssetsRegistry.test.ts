@@ -3,18 +3,13 @@ import { Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import BasicTokenJSON from "../artifacts/contracts/test/BasicERC20.sol/BasicERC20.json";
-import { AssetsRegistry, MockERC20, QuantConfig } from "../typechain";
+import { AssetsRegistry, MockERC20 } from "../typechain";
 import { expect, provider } from "./setup";
-import {
-  deployAssetsRegistry,
-  deployQuantConfig,
-  mockERC20,
-} from "./testUtils";
+import { deployAssetsRegistry, mockERC20 } from "./testUtils";
 
 type AssetProperties = [string, string, string, number];
 
 describe("AssetsRegistry", () => {
-  let quantConfig: QuantConfig;
   let assetsRegistry: AssetsRegistry;
   let deployer: Signer;
   let secondAccount: Signer;
@@ -43,14 +38,7 @@ describe("AssetsRegistry", () => {
       await BUSD.decimals(),
     ];
 
-    quantConfig = await deployQuantConfig(deployer, [
-      {
-        addresses: [await deployer.getAddress()],
-        role: "ASSETS_REGISTRY_MANAGER_ROLE",
-      },
-    ]);
-
-    assetsRegistry = await deployAssetsRegistry(deployer, quantConfig);
+    assetsRegistry = await deployAssetsRegistry(deployer);
   });
 
   describe("addAsset", () => {
@@ -65,9 +53,7 @@ describe("AssetsRegistry", () => {
     it("Should revert when an unauthorized account tries to add an asset", async () => {
       await expect(
         assetsRegistry.connect(secondAccount).addAsset(...BUSDProperties)
-      ).to.be.revertedWith(
-        "AssetsRegistry: only asset registry managers can add assets"
-      );
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("Should revert when trying to add a duplicate asset", async () => {

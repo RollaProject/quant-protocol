@@ -6,14 +6,8 @@ contract CollateralTokenHarness is CollateralToken {
     ////////////////////////////////////////////////////////////////////////////
     //                         Constructors and inits                         //
     ////////////////////////////////////////////////////////////////////////////
-    constructor(address _quantConfig)
-        public
-        CollateralToken(
-            _quantConfig,
-            "",
-            "",
-            "https://tokens.rolla.finance/{id}.json"
-        )
+    constructor()
+        CollateralToken("", "", "https://tokens.rolla.finance/{id}.json")
     {}
 
     ////////////////////////////////////////////////////////////////////////////

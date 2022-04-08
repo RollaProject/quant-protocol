@@ -1,14 +1,15 @@
-import { ContractFactory, Signer } from "ethers";
+import { deployMockContract } from "ethereum-waffle";
+import { Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
+import OracleRegistryJSON from "../artifacts/contracts/pricing/OracleRegistry.sol/OracleRegistry.json";
 import PriceRegistryJSON from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
-import { PriceRegistry, QuantConfig } from "../typechain";
+import { PriceRegistry } from "../typechain";
 import { expect, provider } from "./setup";
 
 const { deployContract } = waffle;
 
 describe("PriceRegistry", () => {
-  let quantConfig: QuantConfig;
   let priceRegistry: PriceRegistry;
   let admin: Signer;
   let secondAccount: Signer;
@@ -18,24 +19,33 @@ describe("PriceRegistry", () => {
 
   beforeEach(async () => {
     [admin, secondAccount] = provider.getWallets();
-    const QuantConfig: ContractFactory = await ethers.getContractFactory(
-      "QuantConfig"
+
+    const mockOracleRegistry = await deployMockContract(
+      admin,
+      OracleRegistryJSON.abi
     );
-    quantConfig = <QuantConfig>(
-      await QuantConfig.deploy(await admin.getAddress())
-    );
+
+    await mockOracleRegistry.mock.isOracleRegistered
+      .withArgs(await admin.getAddress())
+      .returns(true);
+    await mockOracleRegistry.mock.isOracleActive
+      .withArgs(await admin.getAddress())
+      .returns(true);
+
+    await mockOracleRegistry.mock.isOracleRegistered
+      .withArgs(await secondAccount.getAddress())
+      .returns(false);
+    await mockOracleRegistry.mock.isOracleActive
+      .withArgs(await secondAccount.getAddress())
+      .returns(false);
+
     priceRegistry = <PriceRegistry>(
       await deployContract(admin, PriceRegistryJSON, [
-        quantConfig.address,
         strikeAssetDecimals,
+        mockOracleRegistry.address,
       ])
     );
     oracle = await admin.getAddress(); //this is the oracle since its the price submitter
-
-    await quantConfig.setProtocolRole(
-      "PRICE_SUBMITTER_ROLE",
-      await admin.getAddress()
-    );
   });
 
   it("Should allow a price to be set only once", async () => {
@@ -138,6 +148,8 @@ describe("PriceRegistry", () => {
       priceRegistry
         .connect(secondAccount)
         .setSettlementPrice(assetOne, 1, 40, strikeAssetDecimals)
-    ).to.be.revertedWith("PriceRegistry: Price submitter is not an oracle");
+    ).to.be.revertedWith(
+      "PriceRegistry: Price submitter is not an active oracle"
+    );
   });
 });

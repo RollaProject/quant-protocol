@@ -1,34 +1,30 @@
-import { BigNumber, Signer, Wallet } from "ethers";
+import { BigNumber, Contract, Signer, Wallet } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
-import { QuantConfig } from "../typechain/QuantConfig";
 import { expect, provider } from "./setup";
 import {
   deployAssetsRegistry,
   deployCollateralToken,
+  deployOracleRegistry,
   deployQToken,
-  deployQuantConfig,
   getApprovalForAllSignedData,
   mockERC20,
 } from "./testUtils";
 
 describe("CollateralToken", () => {
-  let quantConfig: QuantConfig;
   let collateralToken: CollateralToken;
   let qToken: QToken;
   let secondQToken: QToken;
   let deployer: Wallet;
   let secondAccount: Wallet;
-  let assetRegistryManager: Signer;
-  let collateralCreator: Signer;
-  let collateralMinter: Signer;
-  let collateralBurner: Signer;
   let userAddress: string;
   let WETH: MockERC20;
   let BUSD: MockERC20;
+  let priceRegistry: Contract;
+  let assetsRegistry: Contract;
 
   const createCollateralToken = async (
     account: Signer,
@@ -41,17 +37,13 @@ describe("CollateralToken", () => {
   };
 
   const createTwoCollateralTokens = async (): Promise<Array<BigNumber>> => {
-    await createCollateralToken(
-      collateralCreator,
-      qToken,
-      ethers.constants.AddressZero
-    );
+    await createCollateralToken(deployer, qToken, ethers.constants.AddressZero);
     const firstCollateralTokenId = await collateralToken.collateralTokenIds(
       ethers.BigNumber.from("0")
     );
 
     await createCollateralToken(
-      collateralCreator,
+      deployer,
       secondQToken,
       ethers.constants.AddressZero
     );
@@ -63,66 +55,51 @@ describe("CollateralToken", () => {
   };
 
   beforeEach(async () => {
-    [
-      deployer,
-      secondAccount,
-      assetRegistryManager,
-      collateralCreator,
-      collateralMinter,
-      collateralBurner,
-    ] = provider.getWallets();
+    [deployer, secondAccount] = provider.getWallets();
     userAddress = await secondAccount.getAddress();
-
-    quantConfig = await deployQuantConfig(deployer, [
-      {
-        addresses: [await assetRegistryManager.getAddress()],
-        role: "ASSETS_REGISTRY_MANAGER_ROLE",
-      },
-      {
-        addresses: [await collateralCreator.getAddress()],
-        role: "COLLATERAL_CREATOR_ROLE",
-      },
-      {
-        addresses: [await collateralMinter.getAddress()],
-        role: "COLLATERAL_MINTER_ROLE",
-      },
-      {
-        addresses: [await collateralBurner.getAddress()],
-        role: "COLLATERAL_BURNER_ROLE",
-      },
-    ]);
 
     WETH = await mockERC20(deployer, "WETH");
     BUSD = await mockERC20(deployer, "BUSD");
 
-    const assetsRegistry = await deployAssetsRegistry(deployer, quantConfig);
+    assetsRegistry = await deployAssetsRegistry(deployer);
 
     await assetsRegistry
-      .connect(assetRegistryManager)
+      .connect(deployer)
       .addAssetWithOptionalERC20Methods(WETH.address);
     await assetsRegistry
-      .connect(assetRegistryManager)
+      .connect(deployer)
       .addAssetWithOptionalERC20Methods(BUSD.address);
+
+    const oracleRegistry = await deployOracleRegistry(deployer);
+
+    const PriceRegistry = await ethers.getContractFactory("PriceRegistry");
+    priceRegistry = await PriceRegistry.deploy(
+      await BUSD.decimals(),
+      oracleRegistry.address
+    );
 
     qToken = await deployQToken(
       deployer,
-      quantConfig,
       WETH.address,
-      BUSD.address
+      BUSD.address,
+      ethers.Wallet.createRandom().address,
+      priceRegistry.address,
+      assetsRegistry.address
     );
 
     secondQToken = await deployQToken(
       deployer,
-      quantConfig,
       WETH.address,
       BUSD.address,
       ethers.Wallet.createRandom().address,
+      priceRegistry.address,
+      assetsRegistry.address,
       ethers.utils.parseUnits("2000", await BUSD.decimals()),
       ethers.BigNumber.from("1618592400"),
       true
     );
 
-    collateralToken = await deployCollateralToken(deployer, quantConfig);
+    collateralToken = await deployCollateralToken(deployer);
   });
 
   describe("metaSetApprovalForAll", () => {
@@ -250,7 +227,7 @@ describe("CollateralToken", () => {
 
       // Create a new CollateralToken
       await createCollateralToken(
-        collateralCreator,
+        deployer,
         qToken,
         ethers.constants.AddressZero
       );
@@ -281,13 +258,13 @@ describe("CollateralToken", () => {
           ethers.constants.AddressZero
         )
       ).to.be.revertedWith(
-        "CollateralToken: Only a collateral creator can create new CollateralTokens"
+        "CollateralToken: caller is not owner or OptionsFactory"
       );
     });
 
     it("Should revert when trying to create a collateral token with the qToken and qTokenAsCollateral being equal", async () => {
       await expect(
-        createCollateralToken(collateralCreator, qToken, qToken.address)
+        createCollateralToken(deployer, qToken, qToken.address)
       ).to.be.revertedWith(
         "CollateralToken: Can only create a collateral token with different tokens"
       );
@@ -295,17 +272,13 @@ describe("CollateralToken", () => {
 
     it("Should revert when trying to create a duplicate CollateralToken", async () => {
       await createCollateralToken(
-        collateralCreator,
+        deployer,
         qToken,
         ethers.constants.AddressZero
       );
 
       await expect(
-        createCollateralToken(
-          collateralCreator,
-          qToken,
-          ethers.constants.AddressZero
-        )
+        createCollateralToken(deployer, qToken, ethers.constants.AddressZero)
       ).to.be.revertedWith(
         "CollateralToken: this token has already been created"
       );
@@ -314,7 +287,7 @@ describe("CollateralToken", () => {
     it("Should emit the CollateralTokenCreated event", async () => {
       await expect(
         await collateralToken
-          .connect(collateralCreator)
+          .connect(deployer)
           .createCollateralToken(qToken.address, ethers.constants.AddressZero)
       )
         .to.emit(collateralToken, "CollateralTokenCreated")
@@ -330,7 +303,7 @@ describe("CollateralToken", () => {
   describe("mintCollateralToken", () => {
     it("Admin should be able to mint CollateralTokens", async () => {
       await createCollateralToken(
-        collateralCreator,
+        deployer,
         qToken,
         ethers.constants.AddressZero
       );
@@ -346,7 +319,7 @@ describe("CollateralToken", () => {
 
       // Mint some of the CollateralToken
       await collateralToken
-        .connect(collateralMinter)
+        .connect(deployer)
         .mintCollateralToken(
           userAddress,
           collateralTokenId,
@@ -361,7 +334,7 @@ describe("CollateralToken", () => {
 
     it("Should revert when an unauthorized account tries to mint CollateralTokens", async () => {
       await createCollateralToken(
-        collateralCreator,
+        deployer,
         qToken,
         ethers.constants.AddressZero
       );
@@ -378,14 +351,12 @@ describe("CollateralToken", () => {
             collateralTokenId,
             ethers.BigNumber.from("1000")
           )
-      ).to.be.revertedWith(
-        "CollateralToken: Only a collateral minter can mint CollateralTokens"
-      );
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("Should emit the CollateralTokenMinted event", async () => {
       await createCollateralToken(
-        collateralCreator,
+        deployer,
         qToken,
         ethers.constants.AddressZero
       );
@@ -396,7 +367,7 @@ describe("CollateralToken", () => {
 
       await expect(
         await collateralToken
-          .connect(collateralMinter)
+          .connect(deployer)
           .mintCollateralToken(
             userAddress,
             collateralTokenId,
@@ -411,7 +382,7 @@ describe("CollateralToken", () => {
   describe("burnCollateralToken", () => {
     it("Admin should be able to burn CollateralTokens", async () => {
       await createCollateralToken(
-        collateralCreator,
+        deployer,
         qToken,
         ethers.constants.AddressZero
       );
@@ -421,7 +392,7 @@ describe("CollateralToken", () => {
       );
 
       await collateralToken
-        .connect(collateralMinter)
+        .connect(deployer)
         .mintCollateralToken(
           userAddress,
           collateralTokenId,
@@ -436,7 +407,7 @@ describe("CollateralToken", () => {
 
       // Burn some of the CollateralToken from the user
       await collateralToken
-        .connect(collateralBurner)
+        .connect(deployer)
         .burnCollateralToken(
           userAddress,
           collateralTokenId,
@@ -454,7 +425,7 @@ describe("CollateralToken", () => {
 
     it("Should revert when an unauthorized account tries to burn CollateralTokens", async () => {
       await createCollateralToken(
-        collateralCreator,
+        deployer,
         qToken,
         ethers.constants.AddressZero
       );
@@ -464,7 +435,7 @@ describe("CollateralToken", () => {
       );
 
       await collateralToken
-        .connect(collateralMinter)
+        .connect(deployer)
         .mintCollateralToken(
           await secondAccount.getAddress(),
           collateralTokenId,
@@ -479,14 +450,12 @@ describe("CollateralToken", () => {
             collateralTokenId,
             ethers.BigNumber.from("10")
           )
-      ).to.be.revertedWith(
-        "CollateralToken: Only a collateral burner can burn CollateralTokens"
-      );
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("Should emit the CollateralTokenBurned event", async () => {
       await createCollateralToken(
-        collateralCreator,
+        deployer,
         qToken,
         ethers.constants.AddressZero
       );
@@ -496,7 +465,7 @@ describe("CollateralToken", () => {
       );
 
       await collateralToken
-        .connect(collateralMinter)
+        .connect(deployer)
         .mintCollateralToken(
           userAddress,
           collateralTokenId,
@@ -505,7 +474,7 @@ describe("CollateralToken", () => {
 
       await expect(
         collateralToken
-          .connect(collateralBurner)
+          .connect(deployer)
           .burnCollateralToken(
             userAddress,
             collateralTokenId,
@@ -528,7 +497,7 @@ describe("CollateralToken", () => {
       const secondCollateralTokenAmount = ethers.BigNumber.from("20");
 
       await collateralToken
-        .connect(collateralMinter)
+        .connect(deployer)
         .mintCollateralTokenBatch(
           userAddress,
           [firstCollateralTokenId, secondCollateralTokenId],
@@ -555,9 +524,7 @@ describe("CollateralToken", () => {
             [firstCollateralTokenId, secondCollateralTokenId],
             [ethers.BigNumber.from("1000"), ethers.BigNumber.from("2000")]
           )
-      ).to.be.revertedWith(
-        "CollateralToken: Only a collateral minter can mint CollateralTokens"
-      );
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("Should emit the CollateralTokenMinted event", async () => {
@@ -569,7 +536,7 @@ describe("CollateralToken", () => {
 
       await expect(
         collateralToken
-          .connect(collateralMinter)
+          .connect(deployer)
           .mintCollateralTokenBatch(
             userAddress,
             [firstCollateralTokenId, secondCollateralTokenId],
@@ -594,7 +561,7 @@ describe("CollateralToken", () => {
       const secondCollateralTokenAmount = ethers.BigNumber.from("20");
 
       await collateralToken
-        .connect(collateralMinter)
+        .connect(deployer)
         .mintCollateralTokenBatch(
           userAddress,
           [firstCollateralTokenId, secondCollateralTokenId],
@@ -608,7 +575,7 @@ describe("CollateralToken", () => {
         );
 
       await collateralToken
-        .connect(collateralBurner)
+        .connect(deployer)
         .burnCollateralTokenBatch(
           userAddress,
           [firstCollateralTokenId, secondCollateralTokenId],
@@ -637,7 +604,7 @@ describe("CollateralToken", () => {
       const secondCollateralTokenAmount = ethers.BigNumber.from("20");
 
       await collateralToken
-        .connect(collateralMinter)
+        .connect(deployer)
         .mintCollateralTokenBatch(
           userAddress,
           [firstCollateralTokenId, secondCollateralTokenId],
@@ -652,9 +619,7 @@ describe("CollateralToken", () => {
             [firstCollateralTokenId, secondCollateralTokenId],
             [firstCollateralTokenAmount, secondCollateralTokenAmount]
           )
-      ).to.be.revertedWith(
-        "CollateralToken: Only a collateral burner can burn CollateralTokens"
-      );
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("Should emit the CollateralTokenBurned event", async () => {
@@ -665,7 +630,7 @@ describe("CollateralToken", () => {
       const secondCollateralTokenAmount = ethers.BigNumber.from("20");
 
       await collateralToken
-        .connect(collateralMinter)
+        .connect(deployer)
         .mintCollateralTokenBatch(
           userAddress,
           [firstCollateralTokenId, secondCollateralTokenId],
@@ -674,7 +639,7 @@ describe("CollateralToken", () => {
 
       await expect(
         collateralToken
-          .connect(collateralBurner)
+          .connect(deployer)
           .burnCollateralTokenBatch(
             userAddress,
             [firstCollateralTokenId, secondCollateralTokenId],
@@ -699,7 +664,7 @@ describe("CollateralToken", () => {
 
     it("Should return the right amount when a single CollateralToken is created", async () => {
       await createCollateralToken(
-        collateralCreator,
+        deployer,
         qToken,
         ethers.constants.AddressZero
       );
@@ -714,17 +679,18 @@ describe("CollateralToken", () => {
 
       const otherQToken = await deployQToken(
         deployer,
-        quantConfig,
         WETH.address,
         BUSD.address,
         ethers.Wallet.createRandom().address,
+        priceRegistry.address,
+        assetsRegistry.address,
         ethers.utils.parseUnits("10000", await BUSD.decimals()),
         ethers.BigNumber.from("1653285356"),
         false
       );
 
       await createCollateralToken(
-        collateralCreator,
+        deployer,
         otherQToken,
         ethers.constants.AddressZero
       );
@@ -744,7 +710,7 @@ describe("CollateralToken", () => {
 
     it("Should return the correct info for non-spreads", async () => {
       await createCollateralToken(
-        collateralCreator,
+        deployer,
         qToken,
         ethers.constants.AddressZero
       );
@@ -765,11 +731,7 @@ describe("CollateralToken", () => {
     });
 
     it("Should return the correct info for spreads", async () => {
-      await createCollateralToken(
-        collateralCreator,
-        qToken,
-        secondQToken.address
-      );
+      await createCollateralToken(deployer, qToken, secondQToken.address);
 
       const id = await collateralToken.collateralTokenIds(
         ethers.constants.Zero

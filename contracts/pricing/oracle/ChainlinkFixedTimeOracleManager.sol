@@ -14,15 +14,14 @@ contract ChainlinkFixedTimeOracleManager is
 {
     mapping(uint256 => bool) public override chainlinkFixedTimeUpdates;
 
-    /// @param _config address of quant central configuration
     /// @param _fallbackPeriodSeconds amount of seconds before fallback price submitter can submit
     constructor(
-        address _config,
+        address _priceRegistry,
         uint8 _strikeAssetDecimals,
         uint256 _fallbackPeriodSeconds
     )
         ChainlinkOracleManager(
-            _config,
+            _priceRegistry,
             _strikeAssetDecimals,
             _fallbackPeriodSeconds
         )
@@ -35,15 +34,8 @@ contract ChainlinkFixedTimeOracleManager is
     function setFixedTimeUpdate(uint256 fixedTime, bool isValidTime)
         external
         override
+        onlyOwner
     {
-        require(
-            config.hasRole(
-                config.quantRoles("ORACLE_MANAGER_ROLE"),
-                msg.sender
-            ),
-            "ChainlinkFixedTimeOracleManager: Only an oracle admin can add a fixed time for updates"
-        );
-
         chainlinkFixedTimeUpdates[fixedTime] = isValidTime;
 
         emit FixedTimeUpdate(fixedTime, isValidTime);

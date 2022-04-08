@@ -1,12 +1,10 @@
 import { deployMockContract } from "@ethereum-waffle/mock-contract";
 import { MockContract } from "ethereum-waffle";
-import { ContractFactory, Signer } from "ethers";
+import { Contract, ContractFactory, Signer } from "ethers";
 import { ethers } from "hardhat";
-import { Address } from "hardhat-deploy/dist/types";
 import { beforeEach, describe, it } from "mocha";
 import AGGREGATOR from "../artifacts/contracts/interfaces/external/chainlink/IEACAggregatorProxy.sol/IEACAggregatorProxy.json";
-import PRICE_REGISTRY from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
-import CONFIG from "../artifacts/contracts/QuantConfig.sol/QuantConfig.json";
+import ORACLE_REGISTRY from "../artifacts/contracts/pricing/OracleRegistry.sol/OracleRegistry.json";
 import {
   ChainlinkFixedTimeOracleManager,
   ChainlinkOracleManager,
@@ -18,15 +16,13 @@ import { expect, provider } from "./setup";
 export const testProviderOracleManager = async (
   testDescription: string,
   deployOracleManager: (
-    mockConfig: MockContract,
+    priceRegistry: Contract,
     strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
   ) => Promise<ChainlinkOracleManager | ChainlinkFixedTimeOracleManager>
 ): Promise<void> => {
-  let mockConfig: MockContract;
-  let mockPriceRegistry: MockContract;
+  let priceRegistry: Contract;
   let owner: Signer;
-  let oracleManagerAccount: Signer;
   let normalUserAccount: Signer;
   let oracleManager: ChainlinkOracleManager | ChainlinkFixedTimeOracleManager;
 
@@ -37,28 +33,23 @@ export const testProviderOracleManager = async (
   const oracleThree = "0x0000000000000000000000000000000000000030";
 
   async function setUpTests() {
-    [owner, oracleManagerAccount, normalUserAccount] = provider.getWallets();
+    [owner, normalUserAccount] = provider.getWallets();
 
-    mockConfig = await deployMockContract(owner, CONFIG.abi);
+    const mockOracleRegistry = await deployMockContract(
+      owner,
+      ORACLE_REGISTRY.abi
+    );
 
-    oracleManager = await deployOracleManager(mockConfig, 18, 0);
+    await mockOracleRegistry.mock.isOracleRegistered.returns(true);
+    await mockOracleRegistry.mock.isOracleActive.returns(true);
 
-    mockPriceRegistry = await deployMockContract(owner, PRICE_REGISTRY.abi);
+    const PriceRegistry = await ethers.getContractFactory("PriceRegistry");
 
-    // await mockConfig.mock.protocolAddresses.withArgs("ora")
-    await mockConfig.mock.quantRoles
-      .withArgs("ORACLE_MANAGER_ROLE")
-      .returns(ethers.utils.id("ORACLE_MANAGER_ROLE"));
-    await mockConfig.mock.quantRoles
-      .withArgs("FALLBACK_PRICE_ROLE")
-      .returns(ethers.utils.id("FALLBACK_PRICE_ROLE"));
-    await mockConfig.mock.quantRoles
-      .withArgs("PRICE_SUBMITTER_ROLE")
-      .returns(ethers.utils.id("PRICE_SUBMITTER_ROLE"));
+    priceRegistry = <PriceRegistry>(
+      await PriceRegistry.deploy(6, mockOracleRegistry.address)
+    );
 
-    await mockConfig.mock.protocolAddresses
-      .withArgs(ethers.utils.id("priceRegistry"))
-      .returns(mockPriceRegistry.address);
+    oracleManager = await deployOracleManager(priceRegistry, 18, 0);
   }
 
   describe(`ProviderOracleManager - ${testDescription}`, function () {
@@ -67,14 +58,10 @@ export const testProviderOracleManager = async (
     });
 
     it("Should allow the addition of asset oracles, get number of assets and fetch prices", async function () {
-      await mockConfig.mock.hasRole.returns(true);
-
       expect(await oracleManager.getAssetsLength()).to.be.equal(0);
 
       await expect(
-        oracleManager
-          .connect(oracleManagerAccount)
-          .addAssetOracle(assetOne, oracleOne)
+        oracleManager.connect(owner).addAssetOracle(assetOne, oracleOne)
       )
         .to.emit(oracleManager, "OracleAdded")
         .withArgs(assetOne, oracleOne);
@@ -82,9 +69,7 @@ export const testProviderOracleManager = async (
       expect(await oracleManager.getAssetsLength()).to.be.equal(1);
 
       await expect(
-        oracleManager
-          .connect(oracleManagerAccount)
-          .addAssetOracle(assetTwo, oracleTwo)
+        oracleManager.connect(owner).addAssetOracle(assetTwo, oracleTwo)
       )
         .to.emit(oracleManager, "OracleAdded")
         .withArgs(assetTwo, oracleTwo);
@@ -100,38 +85,30 @@ export const testProviderOracleManager = async (
         oracleTwo
       );
       await expect(
-        oracleManager
-          .connect(oracleManagerAccount)
-          .addAssetOracle(assetTwo, oracleTwo)
+        oracleManager.connect(owner).addAssetOracle(assetTwo, oracleTwo)
       ).to.be.revertedWith(
         "ProviderOracleManager: Oracle already set for asset"
       );
       await expect(
-        oracleManager
-          .connect(oracleManagerAccount)
-          .addAssetOracle(assetTwo, oracleThree)
+        oracleManager.connect(owner).addAssetOracle(assetTwo, oracleThree)
       ).to.be.revertedWith(
         "ProviderOracleManager: Oracle already set for asset"
       );
     });
 
     it("Should not allow a non oracle manager account to add an asset", async function () {
-      await mockConfig.mock.hasRole.returns(false);
-
       expect(await oracleManager.getAssetsLength()).to.be.equal(0);
       await expect(
         oracleManager
           .connect(normalUserAccount)
           .addAssetOracle(assetOne, oracleOne)
-      ).to.be.revertedWith(
-        "ProviderOracleManager: Only an oracle admin can add an oracle"
-      );
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("Should revert when trying to add the zero address as an oracle", async () => {
       await expect(
         oracleManager
-          .connect(oracleManagerAccount)
+          .connect(owner)
           .addAssetOracle(assetOne, ethers.constants.AddressZero)
       ).to.be.revertedWith("ProviderOracleManager: Oracle is zero address");
     });
@@ -141,7 +118,7 @@ export const testProviderOracleManager = async (
 export const testChainlinkOracleManager = async (
   testDescription: string,
   deployOracleManager: (
-    mockConfig: MockContract,
+    priceRegistry: Contract,
     strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
   ) => Promise<ChainlinkOracleManager | ChainlinkFixedTimeOracleManager>
@@ -150,52 +127,36 @@ export const testChainlinkOracleManager = async (
   let mockAggregatorProxy: MockAggregatorProxy;
   let PriceRegistry: ContractFactory;
   let priceRegistry: PriceRegistry;
-  let mockConfig: MockContract;
   let mockAggregator: MockContract;
   let mockAggregatorTwo: MockContract;
-  let mockPriceRegistry: MockContract;
+  let mockOracleRegistry: MockContract;
   let owner: Signer;
-  let oracleManagerAccount: Signer;
-  let fallbackPriceAccount: Signer;
   let normalUserAccount: Signer;
-  let fallbackPriceAccountAddress: Address;
   let oracleManager: ChainlinkOracleManager | ChainlinkFixedTimeOracleManager;
 
   const assetOne = "0x0000000000000000000000000000000000000001";
   const assetTwo = "0x0000000000000000000000000000000000000002";
-  let oracleOne: string;
 
   async function setUpTests() {
-    [owner, oracleManagerAccount, normalUserAccount, fallbackPriceAccount] =
-      provider.getWallets();
+    [owner, normalUserAccount] = provider.getWallets();
 
-    mockConfig = await deployMockContract(owner, CONFIG.abi);
+    mockOracleRegistry = await deployMockContract(owner, ORACLE_REGISTRY.abi);
 
-    oracleManager = await deployOracleManager(mockConfig, 18, 0);
+    await mockOracleRegistry.mock.isOracleRegistered.returns(true);
+    await mockOracleRegistry.mock.isOracleActive.returns(true);
+
+    PriceRegistry = await ethers.getContractFactory("PriceRegistry");
+
+    priceRegistry = <PriceRegistry>(
+      await PriceRegistry.deploy(18, mockOracleRegistry.address)
+    );
+
+    oracleManager = await deployOracleManager(priceRegistry, 18, 0);
 
     mockAggregator = await deployMockContract(owner, AGGREGATOR.abi);
-    mockAggregatorTwo = await deployMockContract(owner, AGGREGATOR.abi);
-    mockPriceRegistry = await deployMockContract(owner, PRICE_REGISTRY.abi);
-
     await mockAggregator.mock.decimals.returns(8);
-    oracleOne = mockAggregator.address;
+    mockAggregatorTwo = await deployMockContract(owner, AGGREGATOR.abi);
     await mockAggregatorTwo.mock.decimals.returns(8);
-
-    await mockConfig.mock.quantRoles
-      .withArgs("ORACLE_MANAGER_ROLE")
-      .returns(ethers.utils.id("ORACLE_MANAGER_ROLE"));
-    await mockConfig.mock.quantRoles
-      .withArgs("FALLBACK_PRICE_ROLE")
-      .returns(ethers.utils.id("FALLBACK_PRICE_ROLE"));
-    await mockConfig.mock.quantRoles
-      .withArgs("PRICE_SUBMITTER_ROLE")
-      .returns(ethers.utils.id("PRICE_SUBMITTER_ROLE"));
-
-    await mockConfig.mock.protocolAddresses
-      .withArgs(ethers.utils.id("priceRegistry"))
-      .returns(mockPriceRegistry.address);
-
-    fallbackPriceAccountAddress = await fallbackPriceAccount.getAddress();
 
     MockAggregatorProxy = await ethers.getContractFactory(
       "MockAggregatorProxy"
@@ -203,12 +164,6 @@ export const testChainlinkOracleManager = async (
 
     mockAggregatorProxy = <MockAggregatorProxy>(
       await MockAggregatorProxy.deploy()
-    );
-
-    PriceRegistry = await ethers.getContractFactory("PriceRegistry");
-
-    priceRegistry = <PriceRegistry>(
-      await PriceRegistry.deploy(mockConfig.address, 18)
     );
   }
 
@@ -221,25 +176,17 @@ export const testChainlinkOracleManager = async (
       const expiryTimestamp = Math.round(Date.now() / 1000) - 100;
       const price = 5000;
 
-      await mockConfig.mock.hasRole.returns(true);
-
       await expect(
         oracleManager
-          .connect(oracleManagerAccount)
-          .addAssetOracle(assetOne, oracleOne)
+          .connect(owner)
+          .addAssetOracle(assetOne, mockAggregator.address)
       )
         .to.emit(oracleManager, "OracleAdded")
-        .withArgs(assetOne, oracleOne);
-
-      await mockConfig.mock.protocolAddresses
-        .withArgs(ethers.utils.id("priceRegistry"))
-        .returns(mockPriceRegistry.address);
-
-      await mockPriceRegistry.mock.setSettlementPrice.returns();
+        .withArgs(assetOne, mockAggregator.address);
 
       await expect(
         oracleManager
-          .connect(fallbackPriceAccount)
+          .connect(owner)
           .setExpiryPriceInRegistryFallback(assetOne, expiryTimestamp, price)
       )
         .to.emit(oracleManager, "PriceRegistrySubmission")
@@ -248,17 +195,13 @@ export const testChainlinkOracleManager = async (
           expiryTimestamp,
           price,
           0,
-          fallbackPriceAccountAddress,
+          await owner.getAddress(),
           true
         );
 
-      await mockPriceRegistry.mock.setSettlementPrice.revertsWithReason(
-        "PriceRegistry: Settlement price has already been set"
-      );
-
       await expect(
         oracleManager
-          .connect(fallbackPriceAccount)
+          .connect(owner)
           .setExpiryPriceInRegistryFallback(assetOne, expiryTimestamp, price)
       ).to.be.revertedWith(
         "PriceRegistry: Settlement price has already been set"
@@ -266,20 +209,14 @@ export const testChainlinkOracleManager = async (
     });
 
     it("Fallback method should not allow a fallback submitter to submit before the fallback period", async function () {
-      const oracleManager = await deployOracleManager(mockConfig, 18, 5000);
+      const oracleManager = await deployOracleManager(priceRegistry, 18, 5000);
       await oracleManager.deployed();
 
-      await mockConfig.mock.protocolAddresses
-        .withArgs(ethers.utils.id("priceRegistry"))
-        .returns(priceRegistry.address);
-
-      await mockConfig.mock.hasRole.returns(true);
-
-      await oracleManager.addAssetOracle(assetOne, oracleOne);
+      await oracleManager.addAssetOracle(assetOne, mockAggregator.address);
 
       await expect(
         oracleManager
-          .connect(fallbackPriceAccount)
+          .connect(owner)
           .setExpiryPriceInRegistryFallback(
             assetOne,
             Math.round(Date.now() / 1000) + 3600,
@@ -289,15 +226,11 @@ export const testChainlinkOracleManager = async (
         "ChainlinkOracleManager: The fallback price period has not passed since the timestamp"
       );
 
-      await mockConfig.mock.hasRole.returns(false);
-
       await expect(
         oracleManager
           .connect(normalUserAccount)
           .setExpiryPriceInRegistryFallback(assetOne, 10, 5000)
-      ).to.be.revertedWith(
-        "ChainlinkOracleManager: Only the fallback price submitter can submit a fallback price"
-      );
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("Should fetch the current price of the asset provided correctly", async function () {
@@ -316,11 +249,11 @@ export const testChainlinkOracleManager = async (
         "ProviderOracleManager: Oracle doesn't exist for that asset"
       );
 
-      await mockConfig.mock.hasRole.returns(true);
+      // await mockConfig.mock.hasRole.returns(true);
 
       await expect(
         oracleManager
-          .connect(oracleManagerAccount)
+          .connect(owner)
           .addAssetOracle(assetOne, mockAggregator.address)
       )
         .to.emit(oracleManager, "OracleAdded")
@@ -328,7 +261,7 @@ export const testChainlinkOracleManager = async (
 
       await expect(
         oracleManager
-          .connect(oracleManagerAccount)
+          .connect(owner)
           .addAssetOracle(assetTwo, mockAggregatorTwo.address)
       )
         .to.emit(oracleManager, "OracleAdded")
@@ -344,14 +277,14 @@ export const testChainlinkOracleManager = async (
     });
 
     it("Should fail to fetch the round if the latest timestamp is equal to the expiry timestamp", async function () {
-      await mockConfig.mock.hasRole.returns(true);
+      // await mockConfig.mock.hasRole.returns(true);
 
       const expiryTimestamp = Math.round(Date.now() / 1000) - 100;
 
       await mockAggregatorProxy.setLatestTimestamp(expiryTimestamp);
 
       await oracleManager
-        .connect(oracleManagerAccount)
+        .connect(owner)
         .addAssetOracle(assetOne, mockAggregatorProxy.address);
 
       expect(
@@ -362,7 +295,7 @@ export const testChainlinkOracleManager = async (
     });
 
     it("Should not search if there is only 1 round of data", async function () {
-      await mockConfig.mock.hasRole.returns(true);
+      // await mockConfig.mock.hasRole.returns(true);
 
       const expiryTimestamp = Math.round(Date.now() / 1000) - 100;
 
@@ -376,7 +309,7 @@ export const testChainlinkOracleManager = async (
       });
 
       await oracleManager
-        .connect(oracleManagerAccount)
+        .connect(owner)
         .addAssetOracle(assetOne, mockAggregatorProxy.address);
 
       expect(
