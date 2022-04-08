@@ -92,9 +92,6 @@ interface IController {
     /// @notice Address of the OptionsFactory contract
     function optionsFactory() external view returns (address);
 
-    /// @notice Address of th OperateProxy contract deployed through the initialize function
-    function operateProxy() external view returns (address);
-
     /// @notice Address of the QuantCalculator being used
     function quantCalculator() external view returns (address);
 }

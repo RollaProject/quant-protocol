@@ -98,15 +98,9 @@ contract QuantCalculator is IQuantCalculator {
             ? collateralToken.balanceOf(_msgSender, _collateralTokenId)
             : _amount;
 
-        IQuantConfig quantConfig = IOptionsFactory(optionsFactory)
-            .quantConfig();
-
-        IPriceRegistry priceRegistry = IPriceRegistry(
-            quantConfig.protocolAddresses(ProtocolValue.encode("priceRegistry"))
-        );
-
-        IPriceRegistry.PriceWithDecimals memory expiryPrice = priceRegistry
-            .getSettlementPriceWithDecimals(
+        IPriceRegistry.PriceWithDecimals memory expiryPrice = IPriceRegistry(
+            IOptionsFactory(optionsFactory).priceRegistry()
+        ).getSettlementPriceWithDecimals(
                 qTokenShort.oracle(),
                 qTokenShort.underlyingAsset(),
                 qTokenShort.expiryTime()
@@ -133,7 +127,7 @@ contract QuantCalculator is IQuantCalculator {
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
             strikeAssetDecimals,
             qTokenShort,
-            quantConfig
+            IOptionsFactory(optionsFactory).assetsRegistry()
         );
 
         QuantMath.FixedPointInt memory collateralRequirement;
@@ -176,7 +170,7 @@ contract QuantCalculator is IQuantCalculator {
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
             strikeAssetDecimals,
             IQToken(_qTokenShort),
-            IOptionsFactory(optionsFactory).quantConfig()
+            IOptionsFactory(optionsFactory).assetsRegistry()
         );
 
         QuantMath.FixedPointInt memory collateralOwedFP;
@@ -210,7 +204,7 @@ contract QuantCalculator is IQuantCalculator {
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
             strikeAssetDecimals,
             IQToken(_qTokenToMint),
-            IOptionsFactory(optionsFactory).quantConfig()
+            IOptionsFactory(optionsFactory).assetsRegistry()
         );
 
         (collateral, collateralAmountFP) = FundsCalculator
@@ -251,23 +245,17 @@ contract QuantCalculator is IQuantCalculator {
 
         QuantMath.FixedPointInt memory payout;
 
-        IQuantConfig quantConfig = IOptionsFactory(optionsFactory)
-            .quantConfig();
-
-        IPriceRegistry priceRegistry = IPriceRegistry(
-            quantConfig.protocolAddresses(ProtocolValue.encode("priceRegistry"))
-        );
-
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
             strikeAssetDecimals,
             qToken,
-            quantConfig
+            IOptionsFactory(optionsFactory).assetsRegistry()
         );
 
         address underlyingAsset = qToken.underlyingAsset();
 
-        IPriceRegistry.PriceWithDecimals memory expiryPrice = priceRegistry
-            .getSettlementPriceWithDecimals(
+        IPriceRegistry.PriceWithDecimals memory expiryPrice = IPriceRegistry(
+            IOptionsFactory(optionsFactory).priceRegistry()
+        ).getSettlementPriceWithDecimals(
                 qToken.oracle(),
                 underlyingAsset,
                 qToken.expiryTime()

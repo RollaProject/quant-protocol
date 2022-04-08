@@ -5,27 +5,29 @@ import "../../contracts/options/QToken.sol";
 
 contract QTokenCore is QToken {
     constructor(
-        address _quantConfig,
         address _underlyingAsset,
         address _strikeAsset,
         address _oracle,
+        address _priceRegistry,
+        address _assetsRegistry,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
     )
         public
         QToken(
-            _quantConfig,
             _underlyingAsset,
             _strikeAsset,
             _oracle,
+            _priceRegistry,
+            _assetsRegistry,
             _strikePrice,
             _expiryTime,
             _isCall
         )
     {}
 
-    function _assetSymbol(address _quantConfig, address _asset)
+    function _assetSymbol(address _asset)
         internal
         view
         override
@@ -33,7 +35,6 @@ contract QTokenCore is QToken {
     {}
 
     function _qTokenName(
-        address _quantConfig,
         address _underlyingAsset,
         address _strikeAsset,
         uint256 _strikePrice,
@@ -42,7 +43,6 @@ contract QTokenCore is QToken {
     ) internal view override returns (string memory tokenName) {}
 
     function _qTokenSymbol(
-        address _quantConfig,
         address _underlyingAsset,
         address _strikeAsset,
         uint256 _strikePrice,

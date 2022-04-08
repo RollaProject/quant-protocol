@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
-import "./IQuantConfig.sol";
-
 /// @title For centrally managing a log of settlement prices, for each option.
 /// @author Rolla
 interface IPriceRegistry {
@@ -19,6 +17,8 @@ interface IPriceRegistry {
         uint8 _settlementPriceDecimals
     );
 
+    event OracleManagerRegistered(address indexed oracleManager);
+
     /// @notice Set the price at settlement for a particular asset, expiry
     /// @param _asset asset to set price for
     /// @param _settlementPrice price at settlement
@@ -29,9 +29,6 @@ interface IPriceRegistry {
         uint256 _settlementPrice,
         uint8 _settlementPriceDecimals
     ) external;
-
-    /// @notice quant central configuration
-    function config() external view returns (IQuantConfig);
 
     /// @notice Fetch the settlement price with decimals from an oracle for an asset at a particular timestamp.
     /// @param _oracle oracle which price should come from
@@ -66,4 +63,6 @@ interface IPriceRegistry {
         address _asset,
         uint256 _expiryTimestamp
     ) external view returns (bool);
+
+    function oracleRegistry() external view returns (address);
 }

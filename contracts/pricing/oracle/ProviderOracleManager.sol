@@ -1,38 +1,34 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
-import "../../interfaces/IQuantConfig.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../../interfaces/IProviderOracleManager.sol";
 
 /// @title Oracle manager for holding asset addresses and their oracle addresses for a single provider
 /// @author Rolla
 /// @notice Once an oracle is added for an asset it can't be changed!
-abstract contract ProviderOracleManager is IProviderOracleManager {
-    /// @inheritdoc IProviderOracleManager
-    IQuantConfig public override config;
-
+abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
     /// @inheritdoc IProviderOracleManager
     mapping(address => address) public override assetOracles;
 
     /// @inheritdoc IProviderOracleManager
     address[] public override assets;
 
-    constructor(address _config) {
-        config = IQuantConfig(_config);
+    address public priceRegistry;
+
+    constructor(address _priceRegistry) {
+        priceRegistry = _priceRegistry;
     }
 
     /// @inheritdoc IProviderOracleManager
-    function addAssetOracle(address _asset, address _oracle) external override {
+    function addAssetOracle(address _asset, address _oracle)
+        external
+        override
+        onlyOwner
+    {
         require(
             _oracle != address(0),
             "ProviderOracleManager: Oracle is zero address"
-        );
-        require(
-            config.hasRole(
-                config.quantRoles("ORACLE_MANAGER_ROLE"),
-                msg.sender
-            ),
-            "ProviderOracleManager: Only an oracle admin can add an oracle"
         );
         require(
             assetOracles[_asset] == address(0),

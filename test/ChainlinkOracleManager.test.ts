@@ -1,11 +1,10 @@
 import { deployMockContract } from "@ethereum-waffle/mock-contract";
 import { MockContract } from "ethereum-waffle";
-import { BigNumber, ContractFactory, Signer } from "ethers";
+import { BigNumber, Contract, ContractFactory, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { Address } from "hardhat-deploy/dist/types";
 import { beforeEach, describe } from "mocha";
-import PRICE_REGISTRY from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
-import CONFIG from "../artifacts/contracts/QuantConfig.sol/QuantConfig.json";
+import ORACLE_REGISTRY from "../artifacts/contracts/pricing/OracleRegistry.sol/OracleRegistry.json";
 import {
   ChainlinkFixedTimeOracleManager,
   ChainlinkOracleManager,
@@ -25,10 +24,8 @@ describe("Chainlink Oracle Manager", async function () {
   let mockAggregatorProxy: MockAggregatorProxy;
   let PriceRegistry: ContractFactory;
   let priceRegistry: PriceRegistry;
-  let mockConfig: MockContract;
-  let mockPriceRegistry: MockContract;
+  let mockOracleRegistry: MockContract;
   let owner: Signer;
-  let oracleManagerAccount: Signer;
   let normalUserAccount: Signer;
   let normalUserAccountAddress: Address;
 
@@ -36,25 +33,9 @@ describe("Chainlink Oracle Manager", async function () {
   const assetTwo = "0x0000000000000000000000000000000000000002";
 
   async function setUpTests() {
-    [owner, oracleManagerAccount, normalUserAccount] = provider.getWallets();
+    [owner, normalUserAccount] = provider.getWallets();
 
-    mockConfig = await deployMockContract(owner, CONFIG.abi);
-    mockPriceRegistry = await deployMockContract(owner, PRICE_REGISTRY.abi);
-
-    // await mockConfig.mock.protocolAddresses.withArgs("ora")
-    await mockConfig.mock.quantRoles
-      .withArgs("ORACLE_MANAGER_ROLE")
-      .returns(ethers.utils.id("ORACLE_MANAGER_ROLE"));
-    await mockConfig.mock.quantRoles
-      .withArgs("FALLBACK_PRICE_ROLE")
-      .returns(ethers.utils.id("FALLBACK_PRICE_ROLE"));
-    await mockConfig.mock.quantRoles
-      .withArgs("PRICE_SUBMITTER_ROLE")
-      .returns(ethers.utils.id("PRICE_SUBMITTER_ROLE"));
-
-    await mockConfig.mock.protocolAddresses
-      .withArgs(ethers.utils.id("priceRegistry"))
-      .returns(mockPriceRegistry.address);
+    // mockPriceRegistry = await deployMockContract(owner, PRICE_REGISTRY.abi);
 
     normalUserAccountAddress = await normalUserAccount.getAddress();
 
@@ -62,8 +43,19 @@ describe("Chainlink Oracle Manager", async function () {
       "ChainlinkOracleManager"
     );
 
+    mockOracleRegistry = await deployMockContract(owner, ORACLE_REGISTRY.abi);
+
+    await mockOracleRegistry.mock.isOracleRegistered.returns(true);
+    await mockOracleRegistry.mock.isOracleActive.returns(true);
+
+    PriceRegistry = await ethers.getContractFactory("PriceRegistry");
+
+    priceRegistry = <PriceRegistry>(
+      await PriceRegistry.deploy(6, mockOracleRegistry.address)
+    );
+
     chainlinkOracleManager = <ChainlinkOracleManager>(
-      await ChainlinkOracleManager.deploy(mockConfig.address, 6, 0)
+      await ChainlinkOracleManager.deploy(priceRegistry.address, 6, 0)
     );
 
     MockAggregatorProxy = await ethers.getContractFactory(
@@ -73,12 +65,6 @@ describe("Chainlink Oracle Manager", async function () {
     mockAggregatorProxy = <MockAggregatorProxy>(
       await MockAggregatorProxy.deploy()
     );
-
-    PriceRegistry = await ethers.getContractFactory("PriceRegistry");
-
-    priceRegistry = <PriceRegistry>(
-      await PriceRegistry.deploy(mockConfig.address, 6)
-    );
   }
 
   beforeEach(async function () {
@@ -86,7 +72,7 @@ describe("Chainlink Oracle Manager", async function () {
   });
 
   const deployChainlinkOracleManager = async (
-    mockConfig: MockContract,
+    priceRegistry: Contract,
     strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
   ): Promise<ChainlinkOracleManager> => {
@@ -96,7 +82,7 @@ describe("Chainlink Oracle Manager", async function () {
 
     chainlinkOracleManager = <ChainlinkOracleManager>(
       await ChainlinkOracleManager.deploy(
-        mockConfig.address,
+        priceRegistry.address,
         strikeAssetDecimals,
         fallBackPriceInSeconds
       )
@@ -106,7 +92,7 @@ describe("Chainlink Oracle Manager", async function () {
   };
 
   const deployChainlinkFixedTimeOracleManager = async (
-    mockConfig: MockContract,
+    priceRegistry: Contract,
     strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
   ): Promise<ChainlinkFixedTimeOracleManager> => {
@@ -116,7 +102,7 @@ describe("Chainlink Oracle Manager", async function () {
 
     const chainlinkFixedTimeOracleManager = <ChainlinkFixedTimeOracleManager>(
       await ChainlinkFixedTimeOracleManager.deploy(
-        mockConfig.address,
+        priceRegistry.address,
         strikeAssetDecimals,
         fallBackPriceInSeconds
       )
@@ -127,20 +113,19 @@ describe("Chainlink Oracle Manager", async function () {
 
   const setUpTestWithMockAggregator = async (
     deployOracleManager: (
-      mockConfig: MockContract,
+      priceRegistry: Contract,
       strikeAssetDecimals: number,
       fallBackPriceInSeconds: number
     ) => Promise<ChainlinkOracleManager | ChainlinkFixedTimeOracleManager>,
-    mockConfig: MockContract,
+    priceRegistry: Contract,
     strikeAssetDecimals: number,
     fallBackPriceInSeconds: number
   ): Promise<ChainlinkOracleManager | ChainlinkFixedTimeOracleManager> => {
     const oracleManager = await deployOracleManager(
-      mockConfig,
+      priceRegistry,
       strikeAssetDecimals,
       fallBackPriceInSeconds
     );
-    await mockConfig.mock.hasRole.returns(true);
 
     await mockAggregatorProxy.setLatestTimestamp(51);
     await mockAggregatorProxy.setLatestRoundData({
@@ -170,7 +155,7 @@ describe("Chainlink Oracle Manager", async function () {
     await mockAggregatorProxy.setRoundIdAnswer(2, 42001);
 
     await oracleManager
-      .connect(oracleManagerAccount)
+      .connect(owner)
       .addAssetOracle(assetOne, mockAggregatorProxy.address);
 
     return oracleManager;
@@ -180,7 +165,7 @@ describe("Chainlink Oracle Manager", async function () {
     it("Should search timestamps successfully and return the round after the timestamp passed", async function () {
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkOracleManager,
-        mockConfig,
+        priceRegistry,
         6,
         0
       );
@@ -196,13 +181,10 @@ describe("Chainlink Oracle Manager", async function () {
 
     it("Integration Test: Should submit the correct price to the price registry", async function () {
       //use the real price registry instead of the mock
-      await mockConfig.mock.protocolAddresses
-        .withArgs(ethers.utils.id("priceRegistry"))
-        .returns(priceRegistry.address);
 
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkOracleManager,
-        mockConfig,
+        priceRegistry,
         6,
         0
       );
@@ -243,13 +225,13 @@ describe("Chainlink Oracle Manager", async function () {
 
     it("Integration Test: Should submit the correct price to the price registry when submitting a round directly", async function () {
       //use the real price registry instead of the mock
-      await mockConfig.mock.protocolAddresses
-        .withArgs(ethers.utils.id("priceRegistry"))
-        .returns(priceRegistry.address);
+      // await mockConfig.mock.protocolAddresses
+      //   .withArgs(ethers.utils.id("priceRegistry"))
+      //   .returns(priceRegistry.address);
 
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkOracleManager,
-        mockConfig,
+        priceRegistry,
         6,
         0
       );
@@ -306,13 +288,9 @@ describe("Chainlink Oracle Manager", async function () {
 
     it("Integration Test: Should fail to submit a round for an asset that doesn't exist in the oracle", async function () {
       //use the real price registry instead of the mock
-      await mockConfig.mock.protocolAddresses
-        .withArgs(ethers.utils.id("priceRegistry"))
-        .returns(priceRegistry.address);
-
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkOracleManager,
-        mockConfig,
+        priceRegistry,
         6,
         0
       );
@@ -328,13 +306,9 @@ describe("Chainlink Oracle Manager", async function () {
 
     it("Integration Test: Should submit the correct price to the price registry when there's a price submission at exactly the given timestamp", async function () {
       //use the real price registry instead of the mock
-      await mockConfig.mock.protocolAddresses
-        .withArgs(ethers.utils.id("priceRegistry"))
-        .returns(priceRegistry.address);
-
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkOracleManager,
-        mockConfig,
+        priceRegistry,
         6,
         0
       );
@@ -392,7 +366,7 @@ describe("Chainlink Oracle Manager", async function () {
         const oracleManager = <ChainlinkOracleManager>(
           await setUpTestWithMockAggregator(
             deployChainlinkOracleManager,
-            mockConfig,
+            priceRegistry,
             6,
             0
           )
@@ -421,7 +395,7 @@ describe("Chainlink Oracle Manager", async function () {
     it("Should search timestamps successfully and return the round after the timestamp passed", async function () {
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkFixedTimeOracleManager,
-        mockConfig,
+        priceRegistry,
         6,
         0
       );
@@ -436,13 +410,9 @@ describe("Chainlink Oracle Manager", async function () {
     });
     it("Integration Test: Should submit the correct price to the price registry", async function () {
       //use the real price registry instead of the mock
-      await mockConfig.mock.protocolAddresses
-        .withArgs(ethers.utils.id("priceRegistry"))
-        .returns(priceRegistry.address);
-
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkFixedTimeOracleManager,
-        mockConfig,
+        priceRegistry,
         6,
         0
       );
@@ -483,13 +453,9 @@ describe("Chainlink Oracle Manager", async function () {
 
     it("Integration Test: Should submit the correct price to the price registry when submitting a round directly", async function () {
       //use the real price registry instead of the mock
-      await mockConfig.mock.protocolAddresses
-        .withArgs(ethers.utils.id("priceRegistry"))
-        .returns(priceRegistry.address);
-
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkFixedTimeOracleManager,
-        mockConfig,
+        priceRegistry,
         6,
         0
       );
@@ -546,13 +512,9 @@ describe("Chainlink Oracle Manager", async function () {
 
     it("Integration Test: Should fail to submit a round for an asset that doesn't exist in the oracle", async function () {
       //use the real price registry instead of the mock
-      await mockConfig.mock.protocolAddresses
-        .withArgs(ethers.utils.id("priceRegistry"))
-        .returns(priceRegistry.address);
-
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkFixedTimeOracleManager,
-        mockConfig,
+        priceRegistry,
         6,
         0
       );
@@ -568,13 +530,9 @@ describe("Chainlink Oracle Manager", async function () {
 
     it("Integration Test: Should submit the correct price to the price registry when there's a price submission at exactly the given timestamp", async function () {
       //use the real price registry instead of the mock
-      await mockConfig.mock.protocolAddresses
-        .withArgs(ethers.utils.id("priceRegistry"))
-        .returns(priceRegistry.address);
-
       const oracleManager = await setUpTestWithMockAggregator(
         deployChainlinkFixedTimeOracleManager,
-        mockConfig,
+        priceRegistry,
         6,
         0
       );
@@ -622,7 +580,7 @@ describe("Chainlink Oracle Manager", async function () {
         oracleManager = <ChainlinkFixedTimeOracleManager>(
           await setUpTestWithMockAggregator(
             deployChainlinkFixedTimeOracleManager,
-            mockConfig,
+            priceRegistry,
             6,
             0
           )
@@ -630,14 +588,11 @@ describe("Chainlink Oracle Manager", async function () {
       });
 
       it("Should revert when an accout without the oracle manager role tries to add a valid fixed time for updates", async () => {
-        await mockConfig.mock.hasRole.returns(false);
         await expect(
           oracleManager
             .connect(normalUserAccount)
             .setFixedTimeUpdate(fixedTimeUpdate, true)
-        ).to.be.revertedWith(
-          "ChainlinkFixedTimeOracleManager: Only an oracle admin can add a fixed time for updates"
-        );
+        ).to.be.revertedWith("Ownable: caller is not the owner");
       });
       it("Should allow the addition of valid option expiry timestamps", async () => {
         const firstValidExpiry = 2412144000; // Sat Jun 09 2046 08:00:00 GMT+0000
@@ -670,7 +625,7 @@ describe("Chainlink Oracle Manager", async function () {
 
         // Add 8 A.M. to the chainlinkFixedTimeUpdates mapping
         await oracleManager
-          .connect(oracleManagerAccount)
+          .connect(owner)
           .setFixedTimeUpdate(fixedTimeUpdate, true);
 
         expect(

@@ -5,45 +5,42 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
 import "../interfaces/IAssetsRegistry.sol";
-import "../interfaces/IQuantConfig.sol";
-import "../libraries/ProtocolValue.sol";
 
 abstract contract QTokenStringUtils {
     /// @notice get the ERC20 token symbol from the AssetsRegistry
     /// @dev the asset is assumed to be in the AssetsRegistry since QTokens
     /// must be created through the OptionsFactory, which performs that check
-    /// @param _quantConfig address of the Quant system configuration contract
     /// @param _asset address of the asset in the AssetsRegistry
     /// @return assetSymbol string stored as the ERC20 token symbol
-    function _assetSymbol(address _quantConfig, address _asset)
+    function _assetSymbol(address _asset, address _assetsRegistry)
         internal
         view
         virtual
         returns (string memory assetSymbol)
     {
-        (, assetSymbol, ) = IAssetsRegistry(
-            IQuantConfig(_quantConfig).protocolAddresses(
-                ProtocolValue.encode("assetsRegistry")
-            )
-        ).assetProperties(_asset);
+        (, assetSymbol, ) = IAssetsRegistry(_assetsRegistry).assetProperties(
+            _asset
+        );
     }
 
     /// @notice generates the name for an option
-    /// @param _quantConfig address of the Quant system configuration contract
     /// @param _underlyingAsset asset that the option references
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return tokenName name string for the QToken
     function _qTokenName(
-        address _quantConfig,
         address _underlyingAsset,
         address _strikeAsset,
+        address _assetsRegistry,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
     ) internal view virtual returns (string memory tokenName) {
-        string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
+        string memory underlying = _assetSymbol(
+            _underlyingAsset,
+            _assetsRegistry
+        );
         string memory displayStrikePrice = _displayedStrikePrice(
             _strikePrice,
             _strikeAsset
@@ -82,20 +79,22 @@ abstract contract QTokenStringUtils {
 
     /// @notice generates the symbol for an option
     /// @param _underlyingAsset asset that the option references
-    /// @param _quantConfig address of the Quant system configuration contract
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return tokenSymbol symbol string for the QToken
     function _qTokenSymbol(
-        address _quantConfig,
         address _underlyingAsset,
         address _strikeAsset,
+        address _assetsRegistry,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
     ) internal view virtual returns (string memory tokenSymbol) {
-        string memory underlying = _assetSymbol(_quantConfig, _underlyingAsset);
+        string memory underlying = _assetSymbol(
+            _underlyingAsset,
+            _assetsRegistry
+        );
         string memory displayStrikePrice = _displayedStrikePrice(
             _strikePrice,
             _strikeAsset

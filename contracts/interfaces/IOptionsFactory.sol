@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
-import "./IQuantConfig.sol";
 import "./ICollateralToken.sol";
 
 interface IOptionsFactory {
@@ -35,8 +34,6 @@ interface IOptionsFactory {
 
     /// @notice array of all the created QTokens
     function qTokens(uint256) external view returns (address);
-
-    function quantConfig() external view returns (IQuantConfig);
 
     function collateralToken() external view returns (ICollateralToken);
 
@@ -125,4 +122,10 @@ interface IOptionsFactory {
     /// @notice get the strike asset used for options created by the factory
     /// @return the strike asset address
     function strikeAsset() external view returns (address);
+
+    function controller() external view returns (address);
+
+    function priceRegistry() external view returns (address);
+
+    function assetsRegistry() external view returns (address);
 }

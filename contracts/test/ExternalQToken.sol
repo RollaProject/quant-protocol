@@ -5,19 +5,21 @@ import "../options/QToken.sol";
 
 contract ExternalQToken is QToken {
     constructor(
-        address _quantConfig,
         address _underlyingAsset,
         address _strikeAsset,
         address _oracle,
+        address _priceRegistry,
+        address _assetsRegistry,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
     )
         QToken(
-            _quantConfig,
             _underlyingAsset,
             _strikeAsset,
             _oracle,
+            _priceRegistry,
+            _assetsRegistry,
             _strikePrice,
             _expiryTime,
             _isCall

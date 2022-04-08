@@ -4,7 +4,6 @@ pragma solidity 0.8.13;
 import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
 import "../PriceRegistry.sol";
 import "./ProviderOracleManager.sol";
-import "../../libraries/ProtocolValue.sol";
 import "../../libraries/QuantMath.sol";
 import "../../interfaces/IChainlinkOracleManager.sol";
 
@@ -28,13 +27,12 @@ contract ChainlinkOracleManager is
     uint256 public immutable override fallbackPeriodSeconds;
     uint8 public immutable override strikeAssetDecimals;
 
-    /// @param _config address of quant central configuration
     /// @param _fallbackPeriodSeconds amount of seconds before fallback price submitter can submit
     constructor(
-        address _config,
+        address _priceRegistry,
         uint8 _strikeAssetDecimals,
         uint256 _fallbackPeriodSeconds
-    ) ProviderOracleManager(_config) {
+    ) ProviderOracleManager(_priceRegistry) {
         fallbackPeriodSeconds = _fallbackPeriodSeconds;
         strikeAssetDecimals = _strikeAssetDecimals;
     }
@@ -74,15 +72,7 @@ contract ChainlinkOracleManager is
         address _asset,
         uint256 _expiryTimestamp,
         uint256 _price
-    ) external override {
-        require(
-            config.hasRole(
-                config.quantRoles("FALLBACK_PRICE_ROLE"),
-                msg.sender
-            ),
-            "ChainlinkOracleManager: Only the fallback price submitter can submit a fallback price"
-        );
-
+    ) external override onlyOwner {
         require(
             block.timestamp >= _expiryTimestamp + fallbackPeriodSeconds,
             "ChainlinkOracleManager: The fallback price period has not passed since the timestamp"
@@ -97,14 +87,12 @@ contract ChainlinkOracleManager is
             true
         );
 
-        PriceRegistry(
-            config.protocolAddresses(ProtocolValue.encode("priceRegistry"))
-        ).setSettlementPrice(
-                _asset,
-                _expiryTimestamp,
-                _price,
-                IEACAggregatorProxy(getAssetOracle(_asset)).decimals()
-            );
+        PriceRegistry(priceRegistry).setSettlementPrice(
+            _asset,
+            _expiryTimestamp,
+            _price,
+            IEACAggregatorProxy(getAssetOracle(_asset)).decimals()
+        );
     }
 
     /// @inheritdoc IProviderOracleManager
@@ -241,14 +229,12 @@ contract ChainlinkOracleManager is
             false
         );
 
-        PriceRegistry(
-            config.protocolAddresses(ProtocolValue.encode("priceRegistry"))
-        ).setSettlementPrice(
-                _asset,
-                _expiryTimestamp,
-                price,
-                aggregator.decimals()
-            );
+        PriceRegistry(priceRegistry).setSettlementPrice(
+            _asset,
+            _expiryTimestamp,
+            price,
+            aggregator.decimals()
+        );
     }
 
     function _getExpiryPrice(

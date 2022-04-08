@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
-import "../interfaces/IQuantConfig.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IOracleRegistry.sol";
 
 /// @title For centrally managing a list of oracle providers
 /// @author Rolla
 /// @notice oracle provider registry for holding a list of oracle providers and their id
-contract OracleRegistry is IOracleRegistry {
+contract OracleRegistry is Ownable, IOracleRegistry {
     struct OracleInfo {
         bool isActive;
         uint256 oracleId;
@@ -20,22 +20,12 @@ contract OracleRegistry is IOracleRegistry {
     address[] public override oracles;
 
     /// @inheritdoc IOracleRegistry
-    IQuantConfig public override config;
-
-    /// @param _config address of quant central configuration
-    constructor(address _config) {
-        config = IQuantConfig(_config);
-    }
-
-    /// @inheritdoc IOracleRegistry
-    function addOracle(address _oracle) external override returns (uint256) {
-        require(
-            config.hasRole(
-                config.quantRoles("ORACLE_MANAGER_ROLE"),
-                msg.sender
-            ),
-            "OracleRegistry: Only an oracle admin can add an oracle"
-        );
+    function addOracle(address _oracle)
+        external
+        override
+        onlyOwner
+        returns (uint256)
+    {
         require(
             oracleInfo[_oracle].oracleId == 0,
             "OracleRegistry: Oracle already exists in registry"
@@ -47,8 +37,6 @@ contract OracleRegistry is IOracleRegistry {
 
         emit AddedOracle(_oracle, currentId);
 
-        config.grantRole(config.quantRoles("PRICE_SUBMITTER_ROLE"), _oracle);
-
         oracleInfo[_oracle] = OracleInfo(false, currentId);
         return currentId;
     }
@@ -57,15 +45,9 @@ contract OracleRegistry is IOracleRegistry {
     function deactivateOracle(address _oracle)
         external
         override
+        onlyOwner
         returns (bool)
     {
-        require(
-            config.hasRole(
-                config.quantRoles("ORACLE_MANAGER_ROLE"),
-                msg.sender
-            ),
-            "OracleRegistry: Only an oracle admin can add an oracle"
-        );
         require(
             oracleInfo[_oracle].isActive,
             "OracleRegistry: Oracle is already deactivated"
@@ -77,14 +59,12 @@ contract OracleRegistry is IOracleRegistry {
     }
 
     /// @inheritdoc IOracleRegistry
-    function activateOracle(address _oracle) external override returns (bool) {
-        require(
-            config.hasRole(
-                config.quantRoles("ORACLE_MANAGER_ROLE"),
-                msg.sender
-            ),
-            "OracleRegistry: Only an oracle admin can add an oracle"
-        );
+    function activateOracle(address _oracle)
+        external
+        override
+        onlyOwner
+        returns (bool)
+    {
         require(
             !oracleInfo[_oracle].isActive,
             "OracleRegistry: Oracle is already activated"

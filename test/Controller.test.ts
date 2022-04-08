@@ -1,18 +1,12 @@
 import BN from "bignumber.js";
 import { MockContract } from "ethereum-waffle";
 import { ecsign } from "ethereumjs-util";
-import {
-  BigNumber,
-  constants,
-  ContractInterface,
-  Signer,
-  Wallet,
-} from "ethers";
+import { BigNumber, constants, ContractInterface, Wallet } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import Web3 from "web3";
 import ORACLE_MANAGER from "../artifacts/contracts/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
-import PriceRegistry from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
+import PRICE_REGISTRY from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
 import {
   AssetsRegistry,
   OptionsFactory,
@@ -24,7 +18,6 @@ import { Controller } from "../typechain/Controller";
 import { ExternalQToken } from "../typechain/ExternalQToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
-import { QuantConfig } from "../typechain/QuantConfig";
 import {
   encodeCallArgs,
   encodeClaimCollateralArgs,
@@ -38,17 +31,15 @@ import {
 import { expect, provider } from "./setup";
 import {
   deployAssetsRegistry,
-  deployCollateralToken,
-  deployOptionsFactory,
   deployOracleRegistry,
-  deployQuantCalculator,
-  deployQuantConfig,
+  erc1155Uri,
   getApprovalDigest,
   getApprovalForAllSignedData,
   getSignedTransactionData,
   mockERC20,
   name,
   revertToSnapshot,
+  setQTokenBalance,
   takeSnapshot,
   version,
 } from "./testUtils";
@@ -71,16 +62,10 @@ type CollateralTokenParameters = [
 
 describe("Controller", async () => {
   let controller: Controller;
-  let quantConfig: QuantConfig;
   let collateralToken: CollateralToken;
   let deployer: Wallet;
   let secondAccount: Wallet;
   let thirdAccount: Wallet;
-  let assetsRegistryManager: Signer;
-  let collateralMinter: Signer;
-  let optionsMinter: Signer;
-  let collateralCreator: Signer;
-  let oracleManagerAccount: Signer;
   let WETH: MockERC20;
   let BUSD: MockERC20;
   let optionsFactory: OptionsFactory;
@@ -209,7 +194,7 @@ describe("Controller", async () => {
     expect(await collateral.balanceOf(secondAccount.address)).to.equal(0);
 
     await collateral
-      .connect(assetsRegistryManager)
+      .connect(deployer)
       .mint(secondAccount.address, collateralAmount);
 
     expect(await collateral.balanceOf(secondAccount.address)).to.equal(
@@ -257,9 +242,11 @@ describe("Controller", async () => {
         await qTokenForCollateral.balanceOf(secondAccount.address)
       ).to.equal(ethers.BigNumber.from("0"));
 
-      await qTokenForCollateral
-        .connect(optionsMinter)
-        .mint(secondAccount.address, optionsAmount);
+      await setQTokenBalance(
+        qTokenForCollateral.address,
+        secondAccount.address,
+        optionsAmount
+      );
 
       expect(
         await qTokenForCollateral.balanceOf(secondAccount.address)
@@ -342,7 +329,7 @@ describe("Controller", async () => {
     const collateral = collateralAddress === WETH.address ? WETH : BUSD;
 
     await collateral
-      .connect(assetsRegistryManager)
+      .connect(deployer)
       .mint(secondAccount.address, collateralRequirement);
 
     let qTokenAsCollateral;
@@ -375,7 +362,7 @@ describe("Controller", async () => {
       )[1];
 
       await collateral
-        .connect(assetsRegistryManager)
+        .connect(deployer)
         .mint(secondAccount.address, collateralRequiredForLong);
 
       await collateral
@@ -560,55 +547,14 @@ describe("Controller", async () => {
   };
 
   const testSetup = async (busdDecimals = 18) => {
-    [
-      deployer,
-      secondAccount,
-      thirdAccount,
-      assetsRegistryManager,
-      collateralMinter,
-      optionsMinter,
-      collateralCreator,
-      oracleManagerAccount,
-    ] = provider.getWallets();
+    [deployer, secondAccount, thirdAccount, deployer] = provider.getWallets();
 
-    quantConfig = await deployQuantConfig(deployer, [
-      {
-        addresses: [await assetsRegistryManager.getAddress()],
-        role: "ASSETS_REGISTRY_MANAGER_ROLE",
-      },
-      {
-        addresses: [
-          await collateralMinter.getAddress(),
-          await assetsRegistryManager.getAddress(),
-        ],
-        role: "COLLATERAL_MINTER_ROLE",
-      },
-      {
-        addresses: [await optionsMinter.getAddress()],
-        role: "OPTIONS_MINTER_ROLE",
-      },
-      {
-        addresses: [await collateralCreator.getAddress()],
-        role: "COLLATERAL_CREATOR_ROLE",
-      },
-      {
-        addresses: [await oracleManagerAccount.getAddress()],
-        role: "ORACLE_MANAGER_ROLE",
-      },
-    ]);
+    WETH = await mockERC20(deployer, "WETH", "Wrapped Ether");
+    BUSD = await mockERC20(deployer, "BUSD", "BUSD Token", busdDecimals);
 
-    WETH = await mockERC20(assetsRegistryManager, "WETH", "Wrapped Ether");
-    BUSD = await mockERC20(
-      assetsRegistryManager,
-      "BUSD",
-      "BUSD Token",
-      busdDecimals
-    );
-    collateralToken = await deployCollateralToken(deployer, quantConfig);
+    assetsRegistry = await deployAssetsRegistry(deployer);
 
-    assetsRegistry = await deployAssetsRegistry(deployer, quantConfig);
-
-    oracleRegistry = await deployOracleRegistry(deployer, quantConfig);
+    oracleRegistry = await deployOracleRegistry(deployer);
 
     mockOracleManager = await deployMockContract(deployer, ORACLE_MANAGER.abi);
 
@@ -617,8 +563,12 @@ describe("Controller", async () => {
       ORACLE_MANAGER.abi
     );
 
+    mockPriceRegistry = await deployMockContract(deployer, PRICE_REGISTRY.abi);
+
+    await mockPriceRegistry.mock.oracleRegistry.returns(oracleRegistry.address);
+
     await assetsRegistry
-      .connect(assetsRegistryManager)
+      .connect(deployer)
       .addAsset(
         WETH.address,
         await WETH.name(),
@@ -627,7 +577,7 @@ describe("Controller", async () => {
       );
 
     await assetsRegistry
-      .connect(assetsRegistryManager)
+      .connect(deployer)
       .addAsset(
         BUSD.address,
         await BUSD.name(),
@@ -635,17 +585,42 @@ describe("Controller", async () => {
         busdDecimals
       );
 
+    const Controller = await ethers.getContractFactory("Controller");
+
+    controller = <Controller>(
+      await Controller.deploy(
+        name,
+        version,
+        erc1155Uri,
+        oracleRegistry.address,
+        BUSD.address,
+        mockPriceRegistry.address,
+        assetsRegistry.address
+      )
+    );
+
+    const QuantCalculator = await ethers.getContractFactory("QuantCalculator");
+
+    quantCalculator = <QuantCalculator>(
+      QuantCalculator.attach(await controller.quantCalculator())
+    );
+
+    const OptionsFactory = await ethers.getContractFactory("OptionsFactory");
+
+    optionsFactory = <OptionsFactory>(
+      OptionsFactory.attach(await controller.optionsFactory())
+    );
+
+    const CollateralToken = await ethers.getContractFactory("CollateralToken");
+
+    collateralToken = <CollateralToken>(
+      CollateralToken.attach(await controller.collateralToken())
+    );
+
     QTokenInterface = (await ethers.getContractFactory("QToken")).interface;
 
     mockERC20Interface = (await ethers.getContractFactory("MockERC20"))
       .interface;
-
-    optionsFactory = await deployOptionsFactory(
-      deployer,
-      BUSD.address,
-      quantConfig,
-      collateralToken
-    );
 
     // 30 days from now
     futureTimestamp = Math.floor(Date.now() / 1000) + aMonth;
@@ -661,39 +636,18 @@ describe("Controller", async () => {
       ...samplePutOptionParameters
     );
 
-    await quantConfig
-      .connect(deployer)
-      .setProtocolRole("COLLATERAL_CREATOR_ROLE", optionsFactory.address);
-
-    await quantConfig
-      .connect(deployer)
-      .setProtocolRole("PRICE_SUBMITTER_ROLE", oracleRegistry.address);
-
-    await quantConfig
-      .connect(deployer)
-      .setProtocolRole("PRICE_SUBMITTER_ROLE_ADMIN", oracleRegistry.address);
-
-    await quantConfig
-      .connect(deployer)
-      .setRoleAdmin(
-        ethers.utils.id("PRICE_SUBMITTER_ROLE"),
-        ethers.utils.id("PRICE_SUBMITTER_ROLE_ADMIN")
-      );
+    await oracleRegistry.connect(deployer).addOracle(mockOracleManager.address);
 
     await oracleRegistry
-      .connect(oracleManagerAccount)
-      .addOracle(mockOracleManager.address);
-
-    await oracleRegistry
-      .connect(oracleManagerAccount)
+      .connect(deployer)
       .addOracle(mockOracleManagerTwo.address);
 
     await oracleRegistry
-      .connect(oracleManagerAccount)
+      .connect(deployer)
       .activateOracle(mockOracleManager.address);
 
     await oracleRegistry
-      .connect(oracleManagerAccount)
+      .connect(deployer)
       .activateOracle(mockOracleManagerTwo.address);
 
     //Note: returning any address here to show existence of the oracle
@@ -805,59 +759,6 @@ describe("Controller", async () => {
     nullQToken = <QToken>(
       new ethers.Contract(AddressZero, QTokenInterface, provider)
     );
-
-    const Controller = await ethers.getContractFactory("Controller");
-
-    quantCalculator = await deployQuantCalculator(
-      deployer,
-      busdDecimals,
-      optionsFactory.address
-    );
-
-    controller = <Controller>(
-      await Controller.deploy(
-        name,
-        version,
-        optionsFactory.address,
-        quantCalculator.address
-      )
-    );
-
-    await quantConfig
-      .connect(deployer)
-      .setProtocolRole("OPTIONS_MINTER_ROLE", controller.address);
-
-    await quantConfig
-      .connect(deployer)
-      .setProtocolRole("OPTIONS_BURNER_ROLE", controller.address);
-
-    await quantConfig
-      .connect(deployer)
-      .setProtocolRole("COLLATERAL_CREATOR_ROLE", controller.address);
-
-    await quantConfig
-      .connect(deployer)
-      .setProtocolRole("COLLATERAL_MINTER_ROLE", controller.address);
-
-    await quantConfig
-      .connect(deployer)
-      .setProtocolRole("COLLATERAL_BURNER_ROLE", controller.address);
-
-    await quantConfig
-      .connect(deployer)
-      .setProtocolAddress(
-        ethers.utils.id("assetsRegistry"),
-        assetsRegistry.address
-      );
-
-    mockPriceRegistry = await deployMockContract(deployer, PriceRegistry.abi);
-
-    await quantConfig
-      .connect(deployer)
-      .setProtocolAddress(
-        ethers.utils.id("priceRegistry"),
-        mockPriceRegistry.address
-      );
   };
 
   beforeEach(testSetup);
@@ -891,7 +792,7 @@ describe("Controller", async () => {
         ethers.utils.parseUnits("7000", await BUSD.decimals())
       );
 
-      await BUSD.connect(assetsRegistryManager).mint(
+      await BUSD.connect(deployer).mint(
         secondAccount.address,
         collateralRequirement
       );
@@ -982,7 +883,7 @@ describe("Controller", async () => {
         ethers.utils.parseUnits("2000", await BUSD.decimals())
       );
 
-      await BUSD.connect(assetsRegistryManager).mint(
+      await BUSD.connect(deployer).mint(
         secondAccount.address,
         spreadCollateralRequirement.add(longCollateralRequirement)
       );
@@ -1144,7 +1045,7 @@ describe("Controller", async () => {
         ethers.utils.parseUnits("7000", await BUSD.decimals())
       );
 
-      await BUSD.connect(assetsRegistryManager).mint(
+      await BUSD.connect(deployer).mint(
         secondAccount.address,
         spreadCollateralRequirement.add(longCollateralRequirement)
       );
@@ -1306,7 +1207,7 @@ describe("Controller", async () => {
 
       expect(collateralRequirement).to.equal(4);
 
-      await BUSD.connect(assetsRegistryManager).mint(
+      await BUSD.connect(deployer).mint(
         secondAccount.address,
         collateralRequirement
       );
@@ -1367,7 +1268,7 @@ describe("Controller", async () => {
   describe("mintOptionsPosition", () => {
     it("Should revert when trying to mint an option which has an oracle which is deactivated", async () => {
       await oracleRegistry
-        .connect(oracleManagerAccount)
+        .connect(deployer)
         .deactivateOracle(mockOracleManager.address);
 
       await expect(
@@ -1491,7 +1392,7 @@ describe("Controller", async () => {
 
     it("Should revert when trying to create spreads from options with a deactivated oracle", async () => {
       await oracleRegistry
-        .connect(oracleManagerAccount)
+        .connect(deployer)
         .deactivateOracle(mockOracleManager.address);
 
       await expect(
@@ -1616,18 +1517,6 @@ describe("Controller", async () => {
         qTokenCall2880.address
       );
     });
-
-    it("Spreads should be created correctly when the CollateralToken had already been created before", async () => {
-      await collateralToken
-        .connect(collateralCreator)
-        .createCollateralToken(qTokenCall2000.address, qTokenCall2880.address);
-
-      await testMintingOptions(
-        qTokenCall2000.address,
-        ethers.utils.parseEther("1"),
-        qTokenCall2880.address
-      );
-    });
   });
 
   describe("exercise", () => {
@@ -1683,9 +1572,11 @@ describe("Controller", async () => {
       // Mint options to the user
       const optionsAmount = ethers.utils.parseEther("1");
       const qTokenToExercise = qTokenPut1400;
-      await qTokenToExercise
-        .connect(optionsMinter)
-        .mint(secondAccount.address, optionsAmount);
+      await setQTokenBalance(
+        qTokenToExercise.address,
+        secondAccount.address,
+        optionsAmount
+      );
 
       expect(await BUSD.balanceOf(secondAccount.address)).to.equal(
         ethers.BigNumber.from("0")
@@ -1754,9 +1645,11 @@ describe("Controller", async () => {
       // Mint options to the user
       const optionsAmount = ethers.utils.parseEther("2");
       const qTokenToExercise = qTokenCall2000;
-      await qTokenToExercise
-        .connect(optionsMinter)
-        .mint(secondAccount.address, optionsAmount);
+      await setQTokenBalance(
+        qTokenToExercise.address,
+        secondAccount.address,
+        optionsAmount
+      );
 
       expect(await WETH.balanceOf(secondAccount.address)).to.equal(
         ethers.BigNumber.from("0")
@@ -1774,10 +1667,7 @@ describe("Controller", async () => {
       ).payoutAmount;
 
       // Mint WETH to the Controller so it can pay the user
-      await WETH.connect(assetsRegistryManager).mint(
-        controller.address,
-        payoutAmount
-      );
+      await WETH.connect(deployer).mint(controller.address, payoutAmount);
       expect(await WETH.balanceOf(controller.address)).to.equal(payoutAmount);
 
       await expect(
@@ -1855,9 +1745,11 @@ describe("Controller", async () => {
       // Mint options to the user
       const optionsAmount = ethers.utils.parseEther("3");
       const qTokenToExercise = qTokenCall2000;
-      await qTokenToExercise
-        .connect(optionsMinter)
-        .mint(secondAccount.address, optionsAmount);
+      await setQTokenBalance(
+        qTokenToExercise.address,
+        secondAccount.address,
+        optionsAmount
+      );
 
       await controller.connect(secondAccount).operate([
         encodeExerciseArgs({
@@ -1912,7 +1804,7 @@ describe("Controller", async () => {
       );
       const collateral = BUSD;
       await collateral
-        .connect(assetsRegistryManager)
+        .connect(deployer)
         .mint(deployer.address, totalCollateralRequirement);
       await collateral
         .connect(deployer)
@@ -1946,10 +1838,11 @@ describe("Controller", async () => {
       );
       const externalQToken = <ExternalQToken>(
         await ExternalQToken.connect(secondAccount).deploy(
-          await qTokenPut1400.quantConfig(),
           await qTokenPut1400.underlyingAsset(),
           await qTokenPut400.strikeAsset(),
           await qTokenPut1400.oracle(),
+          mockPriceRegistry.address,
+          assetsRegistry.address,
           externalStrikePrice,
           await qTokenPut1400.expiryTime(),
           await qTokenPut400.isCall()
@@ -2696,7 +2589,7 @@ describe("Controller", async () => {
       // mint required collateral to the user account
       const collateral = collateralAddress === WETH.address ? WETH : BUSD;
       await collateral
-        .connect(assetsRegistryManager)
+        .connect(deployer)
         .mint(await deployer.address, collateralAmount);
       // Approve the Controller to use the user's funds
       await collateral
@@ -2762,16 +2655,14 @@ describe("Controller", async () => {
       const collateral = collateralAddress === WETH.address ? WETH : BUSD;
 
       await collateral
-        .connect(assetsRegistryManager)
+        .connect(deployer)
         .mint(deployer.address, collateralAmount);
 
       await collateral
         .connect(deployer)
         .approve(controller.address, collateralAmount);
 
-      await qTokenCall3520
-        .connect(optionsMinter)
-        .mint(deployer.address, amount);
+      await setQTokenBalance(qTokenCall3520.address, deployer.address, amount);
 
       const baseGasLimit = BigNumber.from("1000000");
 
@@ -2835,9 +2726,11 @@ describe("Controller", async () => {
       // Mint options to the user
       const optionsAmount = ethers.utils.parseEther("1");
       const qTokenToExercise = qTokenPut1400;
-      await qTokenToExercise
-        .connect(optionsMinter)
-        .mint(deployer.address, optionsAmount);
+      await setQTokenBalance(
+        qTokenToExercise.address,
+        deployer.address,
+        optionsAmount
+      );
 
       const payoutAmount = (
         await quantCalculator.getExercisePayout(
@@ -2922,7 +2815,7 @@ describe("Controller", async () => {
       const collateral = collateralAddress === WETH.address ? WETH : BUSD;
 
       await collateral
-        .connect(assetsRegistryManager)
+        .connect(deployer)
         .mint(deployer.address, collateralRequirement);
 
       await collateral
@@ -3030,7 +2923,7 @@ describe("Controller", async () => {
         BN.ROUND_DOWN
       );
 
-      await BUSD.connect(assetsRegistryManager).mint(
+      await BUSD.connect(deployer).mint(
         deployer.address,
         collateralRequirement
       );
@@ -3454,7 +3347,7 @@ describe("Controller", async () => {
       // mint required collateral to the user account
       const collateral = collateralAddress === WETH.address ? WETH : BUSD;
       await collateral
-        .connect(assetsRegistryManager)
+        .connect(deployer)
         .mint(await deployer.address, collateralAmount);
       // Approve the Controller to use the user's funds
       await collateral

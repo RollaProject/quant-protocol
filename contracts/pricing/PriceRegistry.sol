@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
-import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IPriceRegistry.sol";
+import "../interfaces/IOracleRegistry.sol";
 import "../libraries/QuantMath.sol";
 
 /// @title For centrally managing a log of settlement prices, for each option.
@@ -11,19 +11,18 @@ contract PriceRegistry is IPriceRegistry {
     using QuantMath for uint256;
     using QuantMath for QuantMath.FixedPointInt;
 
-    /// @inheritdoc IPriceRegistry
-    IQuantConfig public override config;
-
     uint8 private immutable _strikeAssetDecimals;
+
+    address public immutable oracleRegistry;
 
     /// @dev oracle => asset => expiry => price
     mapping(address => mapping(address => mapping(uint256 => PriceWithDecimals)))
         private _settlementPrices;
 
-    /// @param _config address of quant central configuration
-    constructor(address _config, uint8 strikeAssetDecimals_) {
-        config = IQuantConfig(_config);
+    /// @param strikeAssetDecimals_ address of quant central configuration
+    constructor(uint8 strikeAssetDecimals_, address _oracleRegistry) {
         _strikeAssetDecimals = strikeAssetDecimals_;
+        oracleRegistry = _oracleRegistry;
     }
 
     /// @inheritdoc IPriceRegistry
@@ -34,11 +33,9 @@ contract PriceRegistry is IPriceRegistry {
         uint8 _settlementPriceDecimals
     ) external override {
         require(
-            config.hasRole(
-                config.quantRoles("PRICE_SUBMITTER_ROLE"),
-                msg.sender
-            ),
-            "PriceRegistry: Price submitter is not an oracle"
+            IOracleRegistry(oracleRegistry).isOracleRegistered(msg.sender) &&
+                IOracleRegistry(oracleRegistry).isOracleActive(msg.sender),
+            "PriceRegistry: Price submitter is not an active oracle"
         );
 
         uint256 currentSettlementPrice = _settlementPrices[msg.sender][_asset][

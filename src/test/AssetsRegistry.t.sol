@@ -3,8 +3,6 @@ pragma solidity 0.8.13;
 
 import "ds-test/test.sol";
 import "contracts/options/AssetsRegistry.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "contracts/QuantConfig.sol";
 import "forge-std/stdlib.sol";
 import "forge-std/Vm.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -52,13 +50,7 @@ contract AssetsRegistryTest is DSTest {
     );
 
     function setUp() public {
-        quantConfig = address(new QuantConfig(payable(address((this)))));
-        assetsRegistry = new AssetsRegistry(quantConfig);
-        vm.mockCall(
-            quantConfig,
-            abi.encodeWithSelector(AccessControlUpgradeable.hasRole.selector),
-            abi.encode(true)
-        );
+        assetsRegistry = new AssetsRegistry();
     }
 
     function testAddAssetWithOptionalERC20Methods() public {
@@ -104,22 +96,15 @@ contract AssetsRegistryTest is DSTest {
         assetsRegistry.addAssetWithOptionalERC20Methods(address(asset));
     }
 
-    function testAddAssetAsNotRegistryMananger() public {
-        vm.mockCall(
-            quantConfig,
-            abi.encodeWithSelector(AccessControlUpgradeable.hasRole.selector),
-            abi.encode(false)
-        );
-
+    function testAddAssetAsNotRegistryOwner() public {
         string memory name = "BUSD Token";
         string memory symbol = "BUSD";
         uint8 decimals = 18;
 
         ERC20WithDecimals asset = new ERC20WithDecimals(name, symbol, decimals);
 
-        vm.expectRevert(
-            bytes("AssetsRegistry: only asset registry managers can add assets")
-        );
+        vm.prank(address(1337));
+        vm.expectRevert(bytes("Ownable: caller is not the owner"));
 
         assetsRegistry.addAssetWithOptionalERC20Methods(address(asset));
     }
