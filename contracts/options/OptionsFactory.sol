@@ -1,33 +1,32 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "../libraries/OptionsUtils.sol";
 import "../interfaces/IOptionsFactory.sol";
-import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IProviderOracleManager.sol";
 import "../interfaces/IOracleRegistry.sol";
 import "../interfaces/IAssetsRegistry.sol";
 import "../interfaces/ICollateralToken.sol";
+import "../interfaces/IPriceRegistry.sol";
 
 /// @title Factory contract for Quant options
 /// @author Rolla
 /// @notice Creates tokens for long (QToken) and short (CollateralToken) positions
 /// @dev This contract follows the factory design pattern
-contract OptionsFactory is Ownable, IOptionsFactory {
+contract OptionsFactory is IOptionsFactory {
     /// @inheritdoc IOptionsFactory
     address[] public override qTokens;
 
     /// @inheritdoc IOptionsFactory
     address public override strikeAsset;
 
-    address public controller;
-
-    IQuantConfig public override quantConfig;
-
     ICollateralToken public override collateralToken;
 
-    address public controller;
+    address public override controller;
+
+    address public override priceRegistry;
+
+    address public override assetsRegistry;
 
     mapping(uint256 => address) private _collateralTokenIdToQTokenAddress;
 
@@ -39,12 +38,14 @@ contract OptionsFactory is Ownable, IOptionsFactory {
     /// @notice Initializes a new options factory
     /// @param _strikeAsset address of the asset used to denominate strike prices
     /// for options created through this factory
-    /// @param _quantConfig the address of the Quant system configuration contract
     /// @param _collateralToken address of the CollateralToken contract
+    /// @param _controller address of the Quant Controller contract
     constructor(
         address _strikeAsset,
         address _collateralToken,
-        address _controller
+        address _controller,
+        address _priceRegistry,
+        address _assetsRegistry
     ) {
         require(
             _strikeAsset != address(0),
@@ -58,23 +59,20 @@ contract OptionsFactory is Ownable, IOptionsFactory {
             _controller != address(0),
             "OptionsFactory: invalid controller address"
         );
+        require(
+            _priceRegistry != address(0),
+            "OptionsFactory: invalid price registry address"
+        );
+        require(
+            _assetsRegistry != address(0),
+            "OptionsFactory: invalid assets registry address"
+        );
 
         strikeAsset = _strikeAsset;
         collateralToken = ICollateralToken(_collateralToken);
         controller = _controller;
-    }
-
-    function setController(address _controller) external onlyOwner {
-        require(
-            _controller != address(0),
-            "OptionsFactory: invalid controller address"
-        );
-        require(
-            controller == address(0),
-            "OptionsFactory: controller already set"
-        );
-
-        controller = _controller;
+        priceRegistry = _priceRegistry;
+        assetsRegistry = _assetsRegistry;
     }
 
     /// @inheritdoc IOptionsFactory
@@ -90,19 +88,21 @@ contract OptionsFactory is Ownable, IOptionsFactory {
         returns (address newQToken, uint256 newCollateralTokenId)
     {
         OptionsUtils.validateOptionParameters(
+            IPriceRegistry(priceRegistry).oracleRegistry(),
             _underlyingAsset,
             _oracle,
+            assetsRegistry,
             _expiryTime,
-            address(quantConfig),
             _strikePrice
         );
 
         newCollateralTokenId = OptionsUtils.getTargetCollateralTokenId(
             collateralToken,
-            address(quantConfig),
             _underlyingAsset,
             strikeAsset,
             _oracle,
+            priceRegistry,
+            assetsRegistry,
             address(0),
             _strikePrice,
             _expiryTime,
@@ -117,10 +117,11 @@ contract OptionsFactory is Ownable, IOptionsFactory {
 
         newQToken = address(
             new QToken{salt: OptionsUtils.SALT}(
-                address(quantConfig),
                 _underlyingAsset,
                 strikeAsset,
                 _oracle,
+                priceRegistry,
+                assetsRegistry,
                 _strikePrice,
                 _expiryTime,
                 _isCall
@@ -161,10 +162,11 @@ contract OptionsFactory is Ownable, IOptionsFactory {
         return
             OptionsUtils.getTargetCollateralTokenId(
                 collateralToken,
-                address(quantConfig),
                 _underlyingAsset,
                 strikeAsset,
                 _oracle,
+                priceRegistry,
+                assetsRegistry,
                 _qTokenAsCollateral,
                 _strikePrice,
                 _expiryTime,
@@ -182,10 +184,11 @@ contract OptionsFactory is Ownable, IOptionsFactory {
     ) external view override returns (address) {
         return
             OptionsUtils.getTargetQTokenAddress(
-                address(quantConfig),
                 _underlyingAsset,
                 strikeAsset,
                 _oracle,
+                priceRegistry,
+                assetsRegistry,
                 _strikePrice,
                 _expiryTime,
                 _isCall
@@ -238,10 +241,11 @@ contract OptionsFactory is Ownable, IOptionsFactory {
     ) public view override returns (address) {
         uint256 collateralTokenId = OptionsUtils.getTargetCollateralTokenId(
             collateralToken,
-            address(quantConfig),
             _underlyingAsset,
             strikeAsset,
             _oracle,
+            priceRegistry,
+            assetsRegistry,
             address(0),
             _strikePrice,
             _expiryTime,

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "./IQuantConfig.sol";
 import "./IQToken.sol";
 
 /// @title Tokens representing a Quant user's short positions

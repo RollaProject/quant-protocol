@@ -4,11 +4,12 @@ import {
   BigNumberish,
   BytesLike,
   Contract,
+  ethers,
   providers,
   Signer,
   Wallet,
 } from "ethers";
-import { ethers, waffle } from "hardhat";
+import { waffle } from "hardhat";
 import { hexToNumber } from "web3-utils";
 import AssetsRegistryJSON from "../artifacts/contracts/options/AssetsRegistry.sol/AssetsRegistry.json";
 import CollateralTokenJSON from "../artifacts/contracts/options/CollateralToken.sol/CollateralToken.json";
@@ -17,10 +18,8 @@ import QTokenJSON from "../artifacts/contracts/options/QToken.sol/QToken.json";
 import OracleRegistryJSON from "../artifacts/contracts/pricing/OracleRegistry.sol/OracleRegistry.json";
 import QuantCalculatorJSON from "../artifacts/contracts/QuantCalculator.sol/QuantCalculator.json";
 import MockERC20JSON from "../artifacts/contracts/test/MockERC20.sol/MockERC20.json";
-import ConfigTimelockControllerJSON from "../artifacts/contracts/timelock/ConfigTimelockController.sol/ConfigTimelockController.json";
 import {
   AssetsRegistry,
-  ConfigTimelockController,
   OptionsFactory,
   OracleRegistry,
   QuantCalculator,
@@ -28,13 +27,11 @@ import {
 import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
-import { QuantConfig } from "../typechain/QuantConfig";
 import {
   actionType,
   domainType,
   metaActionType,
   metaApprovalType,
-  metaReferralActionType,
 } from "./eip712Types";
 import { provider } from "./setup";
 
@@ -50,6 +47,7 @@ const PERMIT_TYPEHASH = keccak256(
 
 export const name = "Quant Protocol";
 export const version = "0.6.2";
+export const erc1155Uri = "https://tokens.rolla.finance/{id}.json";
 
 const mockERC20 = async (
   deployer: Signer,
@@ -66,38 +64,13 @@ const mockERC20 = async (
   );
 };
 
-interface RoleToAssign {
-  addresses: Array<string>;
-  role: string;
-}
-
-const deployQuantConfig = async (
-  deployer: Signer,
-  rolesToAssign: Array<RoleToAssign> = [{ addresses: [], role: "" }],
-  configTimelockController?: ConfigTimelockController | undefined
-): Promise<QuantConfig> => {
-  const QuantConfig = await ethers.getContractFactory("QuantConfig");
-
-  const quantConfig = <QuantConfig>(
-    await QuantConfig.deploy(await deployer.getAddress())
-  );
-
-  for (const roleToAssign of rolesToAssign) {
-    const { addresses, role } = roleToAssign;
-    for (const address of addresses) {
-      await quantConfig.connect(deployer).setProtocolRole(role, address);
-    }
-  }
-
-  return quantConfig;
-};
-
 const deployQToken = async (
   deployer: Signer,
-  quantConfig: QuantConfig,
   underlyingAsset: string,
   strikeAsset: string,
   oracle: string = ethers.Wallet.createRandom().address,
+  priceRegistry: string,
+  assetsRegistry: string,
   strikePrice = ethers.BigNumber.from("1400000000"),
   expiryTime: BigNumber = ethers.BigNumber.from(
     Math.floor(Date.now() / 1000) + 30 * 24 * 3600
@@ -106,10 +79,11 @@ const deployQToken = async (
 ): Promise<QToken> => {
   const qToken = <QToken>(
     await deployContract(deployer, QTokenJSON, [
-      quantConfig.address,
       underlyingAsset,
       strikeAsset,
       oracle,
+      priceRegistry,
+      assetsRegistry,
       strikePrice,
       expiryTime,
       isCall,
@@ -120,13 +94,11 @@ const deployQToken = async (
 };
 
 const deployCollateralToken = async (
-  deployer: Signer,
-  quantConfig: QuantConfig
+  deployer: Signer
 ): Promise<CollateralToken> => {
   const erc1155Uri = "https://tokens.rolla.finance/{id}.json";
   const collateralToken = <CollateralToken>(
     await deployContract(deployer, CollateralTokenJSON, [
-      quantConfig.address,
       name,
       version,
       erc1155Uri,
@@ -139,14 +111,18 @@ const deployCollateralToken = async (
 const deployOptionsFactory = async (
   deployer: Signer,
   strikeAsset: string,
-  quantConfig: QuantConfig,
-  collateralToken: CollateralToken
+  collateralToken: CollateralToken,
+  controller: string,
+  priceRegistry: string,
+  assetsRegistry: string
 ): Promise<OptionsFactory> => {
   const optionsFactory = <OptionsFactory>(
     await deployContract(deployer, OptionsFactoryJSON, [
       strikeAsset,
-      quantConfig.address,
       collateralToken.address,
+      controller,
+      priceRegistry,
+      assetsRegistry,
     ])
   );
 
@@ -154,54 +130,23 @@ const deployOptionsFactory = async (
 };
 
 const deployAssetsRegistry = async (
-  deployer: Signer,
-  quantConfig: QuantConfig
+  deployer: Signer
 ): Promise<AssetsRegistry> => {
   const assetsRegistry = <AssetsRegistry>(
-    await deployContract(deployer, AssetsRegistryJSON, [quantConfig.address])
+    await deployContract(deployer, AssetsRegistryJSON)
   );
-
-  await quantConfig
-    .connect(deployer)
-    .setProtocolAddress(
-      ethers.utils.id("assetsRegistry"),
-      assetsRegistry.address
-    );
 
   return assetsRegistry;
 };
 
 const deployOracleRegistry = async (
-  deployer: Signer,
-  quantConfig: QuantConfig
+  deployer: Signer
 ): Promise<OracleRegistry> => {
   const oracleRegistry = <OracleRegistry>(
-    await deployContract(deployer, OracleRegistryJSON, [quantConfig.address])
+    await deployContract(deployer, OracleRegistryJSON)
   );
-
-  await quantConfig
-    .connect(deployer)
-    .setProtocolAddress(
-      ethers.utils.id("oracleRegistry"),
-      oracleRegistry.address
-    );
 
   return oracleRegistry;
-};
-
-const deployConfigTimelockController = async (
-  deployer: Signer,
-  delay: BigNumber
-): Promise<ConfigTimelockController> => {
-  const configTimelockController = <ConfigTimelockController>(
-    await deployContract(deployer, ConfigTimelockControllerJSON, [
-      delay,
-      [await deployer.getAddress()],
-      [await deployer.getAddress()],
-    ])
-  );
-
-  return configTimelockController;
 };
 
 const getDomainSeparator = (name: string, tokenAddress: string): string => {
@@ -381,14 +326,10 @@ const getApprovalForAllSignedData = (
 
 const deployQuantCalculator = async (
   deployer: Signer,
-  strikeAssetDecimals: number,
-  optionsFactory: string
+  strikeAssetDecimals: number
 ): Promise<QuantCalculator> => {
   const quantCalculator = <QuantCalculator>(
-    await deployContract(deployer, QuantCalculatorJSON, [
-      strikeAssetDecimals,
-      optionsFactory,
-    ])
+    await deployContract(deployer, QuantCalculatorJSON, [strikeAssetDecimals])
   );
   return quantCalculator;
 };
@@ -426,69 +367,6 @@ export const revertToSnapshot = async (id: string): Promise<void> => {
   await provider.send("evm_revert", [id]);
 };
 
-export enum ReferralAction {
-  CLAIM_CODE,
-  REGISTER_BY_CODE,
-  REGISTER_BY_REFERRER,
-}
-
-export const getReferralActionSignedData = (
-  userWallet: Wallet,
-  action: ReferralAction,
-  actionData: BytesLike,
-  nonce: number,
-  deadline: number,
-  verifyingContract: string
-): SignedTransactionData => {
-  const message = {
-    user: userWallet.address,
-    action,
-    actionData,
-    nonce,
-    deadline,
-  };
-
-  const domainData = {
-    name,
-    version,
-    verifyingContract,
-    chainId: provider.network.chainId,
-  };
-
-  type metaReferralAction = "metaReferralAction";
-  const metaReferralAction: metaReferralAction = "metaReferralAction";
-
-  const data = {
-    types: {
-      EIP712Domain: domainType,
-      metaReferralAction: metaReferralActionType,
-    },
-    domain: domainData,
-    primaryType: metaReferralAction,
-    message,
-  };
-
-  const signature = sigUtil.signTypedData_v4(
-    Buffer.from(userWallet.privateKey.slice(2), "hex"),
-    {
-      data,
-    }
-  );
-
-  const r = signature.slice(0, 66);
-  const s = "0x".concat(signature.slice(66, 130));
-  const vString = "0x".concat(signature.slice(130, 132));
-
-  let v = hexToNumber(vString);
-  if (![27, 28].includes(v)) v += 27;
-
-  return {
-    r,
-    s,
-    v,
-  };
-};
-
 export const getWalletFromMnemonic = (
   mnemonic: string,
   accountNumber = 0,
@@ -513,14 +391,45 @@ export const uintToBytes32 = (value: number): string => {
   );
 };
 
+const toBytes32 = (bn: BigNumber): string => {
+  return ethers.utils.hexlify(ethers.utils.zeroPad(bn.toHexString(), 32));
+};
+
+const setStorageAt = async (address: string, index: string, value: string) => {
+  await provider.send("hardhat_setStorageAt", [address, index, value]);
+  await provider.send("evm_mine", []); // Just mines to the next block
+};
+
+export const setQTokenBalance = async (
+  qToken: string,
+  user: string,
+  amount: BigNumber
+): Promise<void> => {
+  const qTokenBalancesSlot = 0;
+
+  const userBalanceSlot = ethers.utils.solidityKeccak256(
+    ["uint256", "uint256"],
+    [user, qTokenBalancesSlot]
+  );
+
+  await setStorageAt(qToken, userBalanceSlot, toBytes32(amount));
+
+  // also need to increase the totalSupply
+  const totalSupplySlot = "0x2";
+  const totalSupply = BigNumber.from(
+    await provider.getStorageAt(qToken, totalSupplySlot)
+  );
+  const newTotalSupply = totalSupply.add(amount);
+
+  await setStorageAt(qToken, totalSupplySlot, toBytes32(newTotalSupply));
+};
+
 export {
   deployCollateralToken,
   deployOptionsFactory,
   deployQToken,
-  deployQuantConfig,
   deployAssetsRegistry,
   deployOracleRegistry,
-  deployConfigTimelockController,
   mockERC20,
   getApprovalDigest,
   getSignedTransactionData,

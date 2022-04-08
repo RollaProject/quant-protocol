@@ -38,6 +38,8 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     bytes32 private constant _META_APPROVAL_TYPEHASH =
         0xf8f9aaf28cf20cd45b21061d07505fa1da285124284441ea655b9eb837ed89b7;
 
+    address private _optionsFactory;
+
     /// @notice Initializes a new ERC1155 multi-token contract for representing
     /// users' short positions
     /// @param _name name for the domain typehash in EIP712 meta transactions
@@ -47,7 +49,17 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
         string memory _name,
         string memory _version,
         string memory uri_
-    ) ERC1155(uri_) EIP712(_name, _version) {}
+    )
+        ERC1155(uri_)
+        EIP712(_name, _version)
+    // solhint-disable-next-line no-empty-blocks
+    {
+
+    }
+
+    function setOptionsFactory(address optionsFactory_) external onlyOwner {
+        _optionsFactory = optionsFactory_;
+    }
 
     /// @inheritdoc ICollateralToken
     function createCollateralToken(
@@ -56,7 +68,10 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     ) external override returns (uint256 id) {
         id = getCollateralTokenId(_qTokenAddress, _qTokenAsCollateral);
 
-        // TODO: Add check that the QTokens are in the Factory
+        require(
+            msg.sender == owner() || msg.sender == _optionsFactory,
+            "CollateralToken: caller is not owner or OptionsFactory"
+        );
 
         require(
             _qTokenAddress != _qTokenAsCollateral,

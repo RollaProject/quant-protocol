@@ -5,9 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../pricing/PriceRegistry.sol";
-import "../interfaces/IQuantConfig.sol";
 import "../interfaces/IQToken.sol";
-import "../libraries/ProtocolValue.sol";
 import "../libraries/OptionsUtils.sol";
 import "../libraries/QuantMath.sol";
 import "./QTokenStringUtils.sol";
@@ -20,9 +18,6 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
     using QuantMath for uint256;
 
     /// @inheritdoc IQToken
-    IQuantConfig public override quantConfig;
-
-    /// @inheritdoc IQToken
     address public override underlyingAsset;
 
     /// @inheritdoc IQToken
@@ -30,6 +25,8 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
 
     /// @inheritdoc IQToken
     address public override oracle;
+
+    address public priceRegistry;
 
     /// @inheritdoc IQToken
     uint256 public override strikePrice;
@@ -41,7 +38,6 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
     bool public override isCall;
 
     /// @notice Configures the parameters of a new option token
-    /// @param _quantConfig the address of the Quant system configuration contract
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
     /// @param _oracle price oracle for the underlying
@@ -49,27 +45,28 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
     constructor(
-        address _quantConfig,
         address _underlyingAsset,
         address _strikeAsset,
         address _oracle,
+        address _priceRegistry,
+        address _assetsRegistry,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
     )
         ERC20(
             _qTokenName(
-                _quantConfig,
                 _underlyingAsset,
                 _strikeAsset,
+                _assetsRegistry,
                 _strikePrice,
                 _expiryTime,
                 _isCall
             ),
             _qTokenSymbol(
-                _quantConfig,
                 _underlyingAsset,
                 _strikeAsset,
+                _assetsRegistry,
                 _strikePrice,
                 _expiryTime,
                 _isCall
@@ -77,19 +74,15 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
         )
         ERC20Permit(
             _qTokenName(
-                _quantConfig,
                 _underlyingAsset,
                 _strikeAsset,
+                _assetsRegistry,
                 _strikePrice,
                 _expiryTime,
                 _isCall
             )
         )
     {
-        require(
-            _quantConfig != address(0),
-            "QToken: invalid QuantConfig address"
-        );
         require(
             _underlyingAsset != address(0),
             "QToken: invalid underlying asset address"
@@ -99,11 +92,15 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
             "QToken: invalid strike asset address"
         );
         require(_oracle != address(0), "QToken: invalid oracle address");
+        require(
+            _priceRegistry != address(0),
+            "QToken: invalid price registry address"
+        );
 
-        quantConfig = IQuantConfig(_quantConfig);
         underlyingAsset = _underlyingAsset;
         strikeAsset = _strikeAsset;
         oracle = _oracle;
+        priceRegistry = _priceRegistry;
         strikePrice = _strikePrice;
         expiryTime = _expiryTime;
         isCall = _isCall;
@@ -129,14 +126,8 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
         returns (PriceStatus)
     {
         if (block.timestamp > expiryTime) {
-            PriceRegistry priceRegistry = PriceRegistry(
-                quantConfig.protocolAddresses(
-                    ProtocolValue.encode("priceRegistry")
-                )
-            );
-
             if (
-                priceRegistry.hasSettlementPrice(
+                PriceRegistry(priceRegistry).hasSettlementPrice(
                     oracle,
                     underlyingAsset,
                     expiryTime
