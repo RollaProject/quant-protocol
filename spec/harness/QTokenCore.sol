@@ -27,7 +27,7 @@ contract QTokenCore is QToken {
         )
     {}
 
-    function _assetSymbol(address _asset)
+    function _assetSymbol(address _asset, address _assetsRegistry)
         internal
         view
         override
@@ -37,6 +37,7 @@ contract QTokenCore is QToken {
     function _qTokenName(
         address _underlyingAsset,
         address _strikeAsset,
+        address _assetsRegistry,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall
@@ -45,6 +46,7 @@ contract QTokenCore is QToken {
     function _qTokenSymbol(
         address _underlyingAsset,
         address _strikeAsset,
+        address _assetsRegistry,
         uint256 _strikePrice,
         uint256 _expiryTime,
         bool _isCall

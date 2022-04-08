@@ -11,7 +11,26 @@ contract ControllerHarness is Controller {
     ////////////////////////////////////////////////////////////////////////////
     //                         Constructors and inits                         //
     ////////////////////////////////////////////////////////////////////////////
-    //constructor( ) .. public { }
+    constructor(
+        string memory _name,
+        string memory _version,
+        string memory _uri,
+        address _oracleRegistry,
+        address _strikeAsset,
+        address _priceRegistry,
+        address _assetsRegistry
+    )
+        public
+        Controller(
+            _name,
+            _version,
+            _uri,
+            _oracleRegistry,
+            _strikeAsset,
+            _priceRegistry,
+            _assetsRegistry
+        )
+    {}
 
     ////////////////////////////////////////////////////////////////////////////
     //                        Getters for The Internals                       //
