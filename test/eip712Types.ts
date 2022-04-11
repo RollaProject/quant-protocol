@@ -30,7 +30,7 @@ export const actionType = [
   { name: "secondaryAddress", type: "address" },
   { name: "receiver", type: "address" },
   { name: "amount", type: "uint256" },
-  { name: "collateralTokenId", type: "uint256" },
+  { name: "secondaryUint", type: "uint256" },
   { name: "data", type: "bytes" },
 ];
 

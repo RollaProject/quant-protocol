@@ -28,7 +28,7 @@ describe("Actions lib", () => {
           secondaryAddress: AddressZero,
           receiver: AddressZero,
           amount: 0,
-          collateralTokenId: 0,
+          secondaryUint: 0,
           data: "0x",
         })
       ).to.be.revertedWith("Actions: cannot mint 0 options");
@@ -42,7 +42,7 @@ describe("Actions lib", () => {
           secondaryAddress: AddressZero,
           receiver: AddressZero,
           amount,
-          collateralTokenId: 0,
+          secondaryUint: 0,
           data: "0x",
         })
       ).to.be.deep.equal([AddressZero, AddressZero, amount]);
@@ -58,7 +58,7 @@ describe("Actions lib", () => {
           secondaryAddress: AddressZero,
           receiver: AddressZero,
           amount: 0,
-          collateralTokenId: 0,
+          secondaryUint: 0,
           data: "0x",
         })
       ).to.be.revertedWith("Actions: cannot mint 0 options from spreads");
@@ -72,7 +72,7 @@ describe("Actions lib", () => {
           secondaryAddress: AddressZero,
           receiver: AddressZero,
           amount,
-          collateralTokenId: 0,
+          secondaryUint: 0,
           data: "0x",
         })
       ).to.be.deep.equal([AddressZero, AddressZero, amount]);
@@ -88,7 +88,7 @@ describe("Actions lib", () => {
           secondaryAddress: AddressZero,
           receiver: AddressZero,
           amount,
-          collateralTokenId: 0,
+          secondaryUint: 0,
           data: "0x",
         })
       ).to.be.deep.equal([AddressZero, amount]);
@@ -104,7 +104,7 @@ describe("Actions lib", () => {
           secondaryAddress: AddressZero,
           receiver: AddressZero,
           amount,
-          collateralTokenId: 0,
+          secondaryUint: 0,
           data: "0x",
         })
       ).to.be.deep.equal([Zero, amount]);
@@ -120,7 +120,7 @@ describe("Actions lib", () => {
           secondaryAddress: AddressZero,
           receiver: AddressZero,
           amount,
-          collateralTokenId: 0,
+          secondaryUint: 0,
           data: "0x",
         })
       ).to.be.deep.equal([Zero, amount]);
@@ -194,7 +194,7 @@ describe("Actions lib", () => {
           secondaryAddress: AddressZero,
           receiver: callee,
           amount: 0,
-          collateralTokenId: 0,
+          secondaryUint: 0,
           data,
         })
       ).to.be.deep.equal([callee, data]);

@@ -183,7 +183,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         address _to,
         address _qToken,
         uint256 _amount
-    ) internal returns (uint256) {
+    ) internal {
         IQToken qToken = IQToken(_qToken);
 
         // get the collateral required to mint the specified amount of options
@@ -223,8 +223,6 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             collateral,
             collateralAmount
         );
-
-        return collateralTokenId;
     }
 
     /// @notice Creates a spread position from an option to long and another option to short.
@@ -237,7 +235,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         address _qTokenToMint,
         address _qTokenForCollateral,
         uint256 _amount
-    ) internal returns (uint256) {
+    ) internal {
         require(
             _qTokenToMint != _qTokenForCollateral,
             "Controller: Can only create a spread with different tokens"
@@ -314,8 +312,6 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             collateral,
             collateralAmount
         );
-
-        return collateralTokenId;
     }
 
     /// @notice Closes a long position after the option's expiry.
@@ -325,7 +321,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     function _exercise(address _qToken, uint256 _amount) internal {
         IQToken qToken = IQToken(_qToken);
         require(
-            block.timestamp > qToken.expiryTime(),
+            block.timestamp >= qToken.expiryTime(),
             "Controller: Can not exercise options before their expiry"
         );
 

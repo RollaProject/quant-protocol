@@ -119,17 +119,17 @@ contract ChainlinkOracleManager is
 
     /// @inheritdoc IProviderOracleManager
     function isValidOption(
-        address,
+        address _underlyingAsset,
         uint256,
         uint256
     )
-        public
+        external
         view
         virtual
         override(ProviderOracleManager, IProviderOracleManager)
         returns (bool)
     {
-        return true;
+        return assetOracles[_underlyingAsset] != address(0);
     }
 
     /// @inheritdoc IChainlinkOracleManager

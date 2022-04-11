@@ -23,12 +23,12 @@ abstract contract EIP712MetaTransaction is EIP712 {
     bytes32 private constant _META_ACTION_TYPEHASH =
         keccak256(
             // solhint-disable-next-line max-line-length
-            "MetaAction(uint256 nonce,uint256 deadline,address from,ActionArgs[] actions)ActionArgs(uint8 actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 collateralTokenId,bytes data)"
+            "MetaAction(uint256 nonce,uint256 deadline,address from,ActionArgs[] actions)ActionArgs(uint8 actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 secondaryUint,bytes data)"
         );
     bytes32 private constant _ACTION_TYPEHASH =
         keccak256(
             // solhint-disable-next-line max-line-length
-            "ActionArgs(uint8 actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 collateralTokenId,bytes data)"
+            "ActionArgs(uint8 actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 secondaryUint,bytes data)"
         );
 
     mapping(address => uint256) private _nonces;
@@ -73,7 +73,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
         bytes32 r,
         bytes32 s,
         uint8 v
-    ) external payable returns (bool, bytes memory) {
+    ) external returns (bool, bytes memory) {
         require(
             _verify(metaAction.from, metaAction, r, s, v),
             "signer and signature don't match"
@@ -148,7 +148,6 @@ abstract contract EIP712MetaTransaction is EIP712 {
         } else {
             sender = msg.sender;
         }
-        return sender;
     }
 
     /// @notice Verifies that the signature is valid for a given user and action.
@@ -157,6 +156,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
     /// @param r the r-value of the signature.
     /// @param s the s-value of the signature.
     /// @param v the v-value of the signature.
+    /// @return true if the signature is valid, false otherwise.
     function _verify(
         address user,
         MetaAction memory metaAction,
@@ -194,7 +194,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
                     action.secondaryAddress,
                     action.receiver,
                     action.amount,
-                    action.collateralTokenId,
+                    action.secondaryUint,
                     keccak256(action.data)
                 )
             );

@@ -18,24 +18,25 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
     using QuantMath for uint256;
 
     /// @inheritdoc IQToken
-    address public override underlyingAsset;
+    address public immutable override underlyingAsset;
 
     /// @inheritdoc IQToken
-    address public override strikeAsset;
+    address public immutable override strikeAsset;
 
     /// @inheritdoc IQToken
-    address public override oracle;
-
-    address public priceRegistry;
+    address public immutable override oracle;
 
     /// @inheritdoc IQToken
-    uint256 public override strikePrice;
+    address public immutable priceRegistry;
 
     /// @inheritdoc IQToken
-    uint256 public override expiryTime;
+    uint256 public immutable override strikePrice;
 
     /// @inheritdoc IQToken
-    bool public override isCall;
+    uint256 public immutable override expiryTime;
+
+    /// @inheritdoc IQToken
+    bool public immutable override isCall;
 
     /// @notice Configures the parameters of a new option token
     /// @param _underlyingAsset asset that the option references

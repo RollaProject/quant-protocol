@@ -228,7 +228,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
         qTokensDetails.shortStrikePrice = shortDetails.strikePrice;
         qTokensDetails.expiryTime = shortDetails.expiryTime;
         qTokensDetails.isCall = shortDetails.isCall;
-
+        qTokensDetails.longStrikePrice = 0;
         if (info.qTokenAsCollateral != address(0)) {
             // the given id is for a CollateralToken representing a spread
             qTokensDetails.longStrikePrice = IQToken(info.qTokenAsCollateral)

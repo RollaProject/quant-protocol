@@ -21,10 +21,16 @@ abstract contract QTokenStringUtils {
         (, assetSymbol, ) = IAssetsRegistry(_assetsRegistry).assetProperties(
             _asset
         );
+        require(
+            bytes(assetSymbol).length > 0,
+            "QTokenStringUtils: asset is not in the registry"
+        );
     }
 
     /// @notice generates the name for an option
     /// @param _underlyingAsset asset that the option references
+    /// @param _strikeAsset asset that the option is settled on
+    /// @param _assetsRegistry address of the AssetsRegistry
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
@@ -138,7 +144,7 @@ abstract contract QTokenStringUtils {
         virtual
         returns (string memory)
     {
-        uint256 strikePriceDigits = ERC20(_strikeAsset).decimals();
+        uint8 strikePriceDigits = ERC20(_strikeAsset).decimals();
         uint256 strikePriceScale = 10**strikePriceDigits;
         uint256 remainder = _strikePrice % strikePriceScale;
         uint256 quotient = _strikePrice / strikePriceScale;
@@ -250,8 +256,10 @@ abstract contract QTokenStringUtils {
             return ("OCT", "October");
         } else if (_month == 11) {
             return ("NOV", "November");
-        } else {
+        } else if (_month == 12) {
             return ("DEC", "December");
+        } else {
+            revert("QTokenStringUtils: invalid month");
         }
     }
 }
