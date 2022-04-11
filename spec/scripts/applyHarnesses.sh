@@ -59,15 +59,15 @@ perl -0777 -i -pe 's/payoutAmount = payoutInput.expiryPrice.isGreaterThan\(/Quan
 
         payoutAmount = payoutInput.expiryPrice.isGreaterThan \(/g' contracts/libraries/FundsCalculator.sol
 
-perl -0777 -i -pe 's/\? payoutInput\n\s*.expiryPrice\n\s*.sub\(payoutInput.strikePrice\)\n\s*.mul\(payoutInput.amount\)\n\s*.div\(payoutInput.expiryPrice\)/\? QuantMath.FixedPointInt\(computeMultiplication\(divResult.value, payoutInput.amount.value\)\)/g' contracts/libraries/FundsCalculator.sol
+perl -0777 -i -pe 's/\? payoutInput\n\s*.expiryPrice\n\s*.sub\(payoutInput.strikePrice\)\n\s*.mul\(payoutInput.amount, true\)\n\s*.div\(payoutInput.expiryPrice, true\)/\? QuantMath.FixedPointInt\(computeMultiplication\(divResult.value, payoutInput.amount.value\)\)/g' contracts/libraries/FundsCalculator.sol
 
 perl -0777 -i -pe 's/payoutAmount = payoutInput.strikePrice.isGreaterThan\(/QuantMath.FixedPointInt memory subResult = payoutInput.strikePrice.sub\(payoutInput.expiryPrice\);
 
         payoutAmount = payoutInput.strikePrice.isGreaterThan \(/g' contracts/libraries/FundsCalculator.sol
 
-perl -0777 -i -pe 's/\(payoutInput.strikePrice.sub\(payoutInput.expiryPrice\)\).mul\(\n\s*payoutInput.amount\n\s*\)/QuantMath.FixedPointInt\(computeMultiplication\(subResult.value, payoutInput.amount.value\)\)/g' contracts/libraries/FundsCalculator.sol
+perl -0777 -i -pe 's/\(payoutInput.strikePrice.sub\(payoutInput.expiryPrice\)\).mul\(\n\s*payoutInput.amount,\n\s*true\n\s*\)/QuantMath.FixedPointInt\(computeMultiplication\(subResult.value, payoutInput.amount.value\)\)/g' contracts/libraries/FundsCalculator.sol
 
-perl -0777 -i -pe 's/\(collateralStrikePrice.sub\(mintStrikePrice\)\).div\(\n\s*collateralStrikePrice\n\s*\); \/\/ Call Credit Spread\n\s*}\n\s*}/QuantMath.FixedPointInt\(computeDivision\(collateralStrikePrice.value,
+perl -0777 -i -pe 's/\(collateralStrikePrice.sub\(mintStrikePrice\)\).div\(\n\s*collateralStrikePrice,\n\s*false\n\s*\); \/\/ Call Credit Spread\n\s*}\n\s*}/QuantMath.FixedPointInt\(computeDivision\(collateralStrikePrice.value,
                   mintStrikePrice.value\)\); \/\/ Call Credit Spread
         }
    }
