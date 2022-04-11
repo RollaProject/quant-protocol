@@ -321,7 +321,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     function _exercise(address _qToken, uint256 _amount) internal {
         IQToken qToken = IQToken(_qToken);
         require(
-            block.timestamp >= qToken.expiryTime(),
+            block.timestamp > qToken.expiryTime(),
             "Controller: Can not exercise options before their expiry"
         );
 
