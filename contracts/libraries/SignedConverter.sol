@@ -24,10 +24,8 @@ library SignedConverter {
      * @return converted unsigned integer
      */
     function intToUint(int256 a) internal pure returns (uint256) {
-        if (a < 0) {
-            return uint256(-a);
-        } else {
-            return uint256(a);
-        }
+        require(a >= 0, "QuantMath: negative int");
+
+        return uint256(a);
     }
 }
