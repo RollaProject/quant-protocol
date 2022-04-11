@@ -86,8 +86,8 @@ library QuantMath {
             uint256 exp = _BASE_DECIMALS - _decimals;
             uint256 tailing;
             if (!_roundDown) {
-                uint256 remainer = (_a.value).intToUint() % 10**exp;
-                if (remainer > 0) tailing = 1;
+                uint256 remainder = (_a.value).intToUint() % 10**exp;
+                if (remainder > 0) tailing = 1;
             }
             scaledUint = (_a.value).intToUint() / 10**exp + tailing;
         }
@@ -129,12 +129,15 @@ library QuantMath {
      * @param b FixedPointInt
      * @return mul of two signed integers
      */
-    function mul(FixedPointInt memory a, FixedPointInt memory b)
-        internal
-        pure
-        returns (FixedPointInt memory)
-    {
-        return FixedPointInt((a.value * b.value) / _SCALING_FACTOR);
+    function mul(
+        FixedPointInt memory a,
+        FixedPointInt memory b,
+        bool roundDown
+    ) internal pure returns (FixedPointInt memory) {
+        int256 remainder = (a.value * b.value) % _SCALING_FACTOR;
+        int8 tailing = !roundDown && remainder > 0 ? int8(1) : int8(0);
+
+        return FixedPointInt((a.value * b.value) / _SCALING_FACTOR + tailing);
     }
 
     /**
@@ -143,12 +146,15 @@ library QuantMath {
      * @param b FixedPointInt
      * @return div of two signed integers
      */
-    function div(FixedPointInt memory a, FixedPointInt memory b)
-        internal
-        pure
-        returns (FixedPointInt memory)
-    {
-        return FixedPointInt((a.value * _SCALING_FACTOR) / b.value);
+    function div(
+        FixedPointInt memory a,
+        FixedPointInt memory b,
+        bool roundDown
+    ) internal pure returns (FixedPointInt memory) {
+        int256 remainder = (a.value * _SCALING_FACTOR) % b.value;
+        int8 tailing = !roundDown && remainder > 0 ? int8(1) : int8(0);
+
+        return FixedPointInt((a.value * _SCALING_FACTOR) / b.value + tailing);
     }
 
     /**
