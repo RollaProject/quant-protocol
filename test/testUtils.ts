@@ -351,7 +351,7 @@ export type ActionArgs = {
   secondaryAddress: string;
   receiver: string;
   amount: BigNumberish;
-  collateralTokenId: BigNumberish;
+  secondaryUint: BigNumberish;
   data: BytesLike;
 };
 

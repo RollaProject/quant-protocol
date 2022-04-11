@@ -22,6 +22,8 @@ library OptionsUtils {
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
     /// @param _oracle price oracle for the option underlying
+    /// @param _priceRegistry address of the PriceRegistry contract
+    /// @param _assetsRegistry address of the AssetsRegistry contract
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
@@ -59,9 +61,11 @@ library OptionsUtils {
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the strike is denominated in
     /// @param _oracle price oracle for the option underlying
+    /// @param _priceRegistry address of the PriceRegistry contract
+    /// @param _assetsRegistry address of the AssetsRegistry contract
+    /// @param _qTokenAsCollateral initial spread collateral
     /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _qTokenAsCollateral initial spread collateral
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return the id that a CollateralToken would have
     function getTargetCollateralTokenId(

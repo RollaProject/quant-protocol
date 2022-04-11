@@ -18,7 +18,7 @@ struct ActionArgs {
     address secondaryAddress; //secondary address depending on the action type
     address receiver; //receiving address of minting or function call
     uint256 amount; //amount of qTokens or collateral tokens
-    uint256 collateralTokenId; //collateral token id for claiming collateral and neutralizing positions
+    uint256 secondaryUint; //secondary uint depending on the action type
     bytes data; //extra data for function calls
 }
 
@@ -74,7 +74,7 @@ library Actions {
         pure
         returns (uint256 collateralTokenId, uint256 amount)
     {
-        collateralTokenId = _args.collateralTokenId;
+        collateralTokenId = _args.secondaryUint;
         amount = _args.amount;
     }
 
@@ -83,7 +83,7 @@ library Actions {
         pure
         returns (uint256 collateralTokenId, uint256 amount)
     {
-        collateralTokenId = _args.collateralTokenId;
+        collateralTokenId = _args.secondaryUint;
         amount = _args.amount;
     }
 
@@ -107,7 +107,7 @@ library Actions {
         owner = _args.secondaryAddress;
         spender = _args.receiver;
         value = _args.amount;
-        deadline = _args.collateralTokenId;
+        deadline = _args.secondaryUint;
     }
 
     function parseCollateralTokenApprovalArgs(ActionArgs memory _args)
@@ -132,7 +132,7 @@ library Actions {
         owner = _args.secondaryAddress;
         operator = _args.receiver;
         nonce = _args.amount;
-        deadline = _args.collateralTokenId;
+        deadline = _args.secondaryUint;
     }
 
     function parseCallArgs(ActionArgs memory _args)

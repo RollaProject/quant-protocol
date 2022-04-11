@@ -53,6 +53,11 @@ contract QuantCalculator is IQuantCalculator {
     /// @param _strikeAssetDecimals the number of decimals used to denominate strike prices
     /// @param _optionsFactory the address of the OptionsFactory contract
     constructor(uint8 _strikeAssetDecimals, address _optionsFactory) {
+        require(
+            _optionsFactory != address(0),
+            "QuantCalculator: invalid OptionsFactory address"
+        );
+
         strikeAssetDecimals = _strikeAssetDecimals;
         optionsFactory = _optionsFactory;
     }
@@ -61,7 +66,7 @@ contract QuantCalculator is IQuantCalculator {
     function calculateClaimableCollateral(
         uint256 _collateralTokenId,
         uint256 _amount,
-        address _msgSender
+        address _user
     )
         external
         view
@@ -95,7 +100,7 @@ contract QuantCalculator is IQuantCalculator {
         );
 
         amountToClaim = _amount == 0
-            ? collateralToken.balanceOf(_msgSender, _collateralTokenId)
+            ? collateralToken.balanceOf(_user, _collateralTokenId)
             : _amount;
 
         IPriceRegistry.PriceWithDecimals memory expiryPrice = IPriceRegistry(
@@ -238,9 +243,7 @@ contract QuantCalculator is IQuantCalculator {
         IQToken qToken = IQToken(_qToken);
         isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
         if (!isSettled) {
-            return (false, address(0), 0);
-        } else {
-            isSettled = true;
+            return (isSettled, payoutToken, payoutAmount);
         }
 
         QuantMath.FixedPointInt memory payout;

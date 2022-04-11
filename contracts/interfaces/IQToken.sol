@@ -54,6 +54,9 @@ interface IQToken is IERC20, IERC20Permit {
     /// @dev Address of the oracle to be used with this option
     function oracle() external view returns (address);
 
+    /// @dev Address of the price registry to be used with this option
+    function priceRegistry() external view returns (address);
+
     /// @dev The strike price for the token with the strike asset precision.
     function strikePrice() external view returns (uint256);
 

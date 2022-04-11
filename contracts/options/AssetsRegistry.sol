@@ -37,6 +37,13 @@ contract AssetsRegistry is Ownable, IAssetsRegistry {
         string calldata _symbol,
         uint8 _decimals
     ) external override onlyOwner validAsset(_underlying) {
+        require(
+            _underlying != address(0),
+            "AssetsRegistry: invalid underlying address"
+        );
+        require(bytes(_name).length > 0, "AssetsRegistry: invalid name");
+        require(bytes(_symbol).length > 0, "AssetsRegistry: invalid symbol");
+
         assetProperties[_underlying] = AssetProperties(
             _name,
             _symbol,

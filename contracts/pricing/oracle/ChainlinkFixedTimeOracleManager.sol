@@ -47,7 +47,7 @@ contract ChainlinkFixedTimeOracleManager is
         uint256 _expiryTime,
         uint256
     )
-        public
+        external
         view
         override(ChainlinkOracleManager, IProviderOracleManager)
         returns (bool)
@@ -61,6 +61,8 @@ contract ChainlinkFixedTimeOracleManager is
     /// @param _expiryTimestamp option expiration timestamp in seconds since the Unix epoch
     /// @param _roundIdAfterExpiry id of the round right after the expiry
     /// @param _expiryRoundId id of the round right before or at the expiry
+    /// @return price for the expiry time
+    /// @return roundId for the expiry time
     function _getExpiryPrice(
         IEACAggregatorProxy aggregator,
         uint256 _expiryTimestamp,

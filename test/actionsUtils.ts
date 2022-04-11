@@ -52,7 +52,7 @@ export const encodeMintOptionArgs = (args: MintOptionArgs): ActionArgs => {
     secondaryAddress: AddressZero,
     receiver: args.to,
     amount: args.amount,
-    collateralTokenId: Zero.toString(),
+    secondaryUint: Zero.toString(),
     data: "0x",
   };
 };
@@ -64,7 +64,7 @@ export const encodeMintSpreadArgs = (args: MintSpreadArgs): ActionArgs => {
     secondaryAddress: args.qTokenForCollateral,
     receiver: AddressZero,
     amount: args.amount,
-    collateralTokenId: Zero.toString(),
+    secondaryUint: Zero.toString(),
     data: "0x",
   };
 };
@@ -76,7 +76,7 @@ export const encodeExerciseArgs = (args: ExerciseArgs): ActionArgs => {
     secondaryAddress: AddressZero,
     receiver: AddressZero,
     amount: args.amount,
-    collateralTokenId: Zero.toString(),
+    secondaryUint: Zero.toString(),
     data: "0x",
   };
 };
@@ -90,7 +90,7 @@ export const encodeClaimCollateralArgs = (
     secondaryAddress: AddressZero,
     receiver: AddressZero,
     amount: args.amount,
-    collateralTokenId: args.collateralTokenId,
+    secondaryUint: args.collateralTokenId,
     data: "0x",
   };
 };
@@ -102,7 +102,7 @@ export const encodeNeutralizeArgs = (args: NeutralizeArgs): ActionArgs => {
     secondaryAddress: AddressZero,
     receiver: AddressZero,
     amount: args.amount,
-    collateralTokenId: args.collateralTokenId,
+    secondaryUint: args.collateralTokenId,
     data: "0x",
   };
 };
@@ -114,7 +114,7 @@ export const encodeQTokenPermitArgs = (args: QTokenPermitArgs): ActionArgs => {
     secondaryAddress: args.owner,
     receiver: args.spender,
     amount: args.value,
-    collateralTokenId: args.deadline,
+    secondaryUint: args.deadline,
     data: defaultAbiCoder.encode(
       ["uint8", "bytes32", "bytes32"],
       [args.v, args.r, args.s]
@@ -131,7 +131,7 @@ export const encodeCollateralTokenApprovalArgs = (
     secondaryAddress: args.owner,
     receiver: args.operator,
     amount: args.nonce,
-    collateralTokenId: args.deadline,
+    secondaryUint: args.deadline,
     data: defaultAbiCoder.encode(
       ["bool", "uint8", "bytes32", "bytes32"],
       [args.approved, args.v, args.r, args.s]
@@ -146,7 +146,7 @@ export const encodeCallArgs = (args: CallArgs): ActionArgs => {
     secondaryAddress: AddressZero,
     receiver: args.callee,
     amount: Zero.toString(),
-    collateralTokenId: Zero.toString(),
+    secondaryUint: Zero.toString(),
     data: args.data,
   };
 };

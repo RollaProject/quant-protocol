@@ -362,7 +362,7 @@ describe("Chainlink Oracle Manager", async function () {
     });
 
     describe("isValidOption", () => {
-      it("Should return true regardless of the parameters that are passed", async () => {
+      it("Should return true as long as the asset has already been added to the oracle manager", async () => {
         const oracleManager = <ChainlinkOracleManager>(
           await setUpTestWithMockAggregator(
             deployChainlinkOracleManager,
@@ -372,19 +372,29 @@ describe("Chainlink Oracle Manager", async function () {
           )
         );
 
-        expect(
-          await oracleManager.isValidOption(
-            ethers.constants.AddressZero,
-            ethers.constants.Zero,
-            ethers.constants.Zero
-          )
-        ).to.equal(true);
+        const underlyinAsset = ethers.Wallet.createRandom().address;
+
+        const expiryTime = Math.floor(Math.random() * 1000000 + 1);
+        const strikePrice = Math.floor(Math.random() * 1000000 + 1);
 
         expect(
           await oracleManager.isValidOption(
-            ethers.Wallet.createRandom().address,
-            Math.floor(Math.random() * 1000000 + 1),
-            Math.floor(Math.random() * 1000000 + 1)
+            underlyinAsset,
+            expiryTime,
+            strikePrice
+          )
+        ).to.equal(false);
+
+        await oracleManager.addAssetOracle(
+          underlyinAsset,
+          oracleManager.address
+        );
+
+        expect(
+          await oracleManager.isValidOption(
+            underlyinAsset,
+            expiryTime,
+            strikePrice
           )
         ).to.equal(true);
       });

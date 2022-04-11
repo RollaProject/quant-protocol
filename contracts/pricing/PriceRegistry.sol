@@ -21,6 +21,11 @@ contract PriceRegistry is IPriceRegistry {
 
     /// @param strikeAssetDecimals_ address of quant central configuration
     constructor(uint8 strikeAssetDecimals_, address _oracleRegistry) {
+        require(
+            _oracleRegistry != address(0),
+            "PriceRegistry: invalid oracle registry address"
+        );
+
         _strikeAssetDecimals = strikeAssetDecimals_;
         oracleRegistry = _oracleRegistry;
     }
@@ -110,7 +115,7 @@ contract PriceRegistry is IPriceRegistry {
         address _oracle,
         address _asset,
         uint256 _expiryTimestamp
-    ) public view override returns (bool) {
+    ) external view override returns (bool) {
         return _settlementPrices[_oracle][_asset][_expiryTimestamp].price != 0;
     }
 }

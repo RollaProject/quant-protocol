@@ -17,6 +17,11 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
     address public priceRegistry;
 
     constructor(address _priceRegistry) {
+        require(
+            _priceRegistry != address(0),
+            "ProviderOracleManager: invalid price registry address"
+        );
+
         priceRegistry = _priceRegistry;
     }
 
@@ -64,7 +69,7 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
         address _underlyingAsset,
         uint256 _expiryTime,
         uint256 _strikePrice
-    ) public view virtual override returns (bool);
+    ) external view virtual override returns (bool);
 
     /// @inheritdoc IProviderOracleManager
     function getAssetOracle(address _asset)
@@ -75,7 +80,7 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
     {
         address assetOracle = assetOracles[_asset];
         require(
-            assetOracles[_asset] != address(0),
+            assetOracle != address(0),
             "ProviderOracleManager: Oracle doesn't exist for that asset"
         );
         return assetOracle;

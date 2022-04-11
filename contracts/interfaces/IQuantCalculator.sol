@@ -9,7 +9,7 @@ interface IQuantCalculator {
     /// @param _collateralTokenId the id of the collateral token that is being claimed
     /// @param _amount the amount of the collateral token being claimed. passing 0 claims the
     /// users whole collateral token balance (does a balance lookup)
-    /// @param _msgSender the address of the claiming account
+    /// @param _user the address of the claiming account
     /// @return returnableCollateral the amount of collateral that will be returned from the claim
     /// @return collateralAsset the address of the asset that will be returned from the claim
     /// @return amountToClaim the amount of collateral tokens claimed. can only different to _amount
@@ -17,7 +17,7 @@ interface IQuantCalculator {
     function calculateClaimableCollateral(
         uint256 _collateralTokenId,
         uint256 _amount,
-        address _msgSender
+        address _user
     )
         external
         view
