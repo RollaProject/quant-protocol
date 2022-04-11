@@ -177,8 +177,8 @@ library FundsCalculator {
             ? payoutInput
                 .expiryPrice
                 .sub(payoutInput.strikePrice)
-                .mul(payoutInput.amount)
-                .div(payoutInput.expiryPrice)
+                .mul(payoutInput.amount, true)
+                .div(payoutInput.expiryPrice, true)
             : int256(0).fromUnscaledInt();
     }
 
@@ -192,7 +192,8 @@ library FundsCalculator {
             payoutInput.expiryPrice
         )
             ? (payoutInput.strikePrice.sub(payoutInput.expiryPrice)).mul(
-                payoutInput.amount
+                payoutInput.amount,
+                true
             )
             : int256(0).fromUnscaledInt();
     }
@@ -235,7 +236,8 @@ library FundsCalculator {
         }
 
         collateralAmount = _optionsAmount.fromScaledUint(_optionsDecimals).mul(
-            collateralPerOption
+            collateralPerOption,
+            false
         );
     }
 
@@ -310,7 +312,8 @@ library FundsCalculator {
             )
                 ? int256(0).fromUnscaledInt() // Call Debit Spread
                 : (collateralStrikePrice.sub(mintStrikePrice)).div(
-                    collateralStrikePrice
+                    collateralStrikePrice,
+                    false
                 ); // Call Credit Spread
         }
     }

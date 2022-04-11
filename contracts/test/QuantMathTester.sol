@@ -48,14 +48,14 @@ contract QuantMathTester {
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b
     ) external pure returns (QuantMath.FixedPointInt memory) {
-        return a.mul(b);
+        return a.mul(b, true);
     }
 
     function testDiv(
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b
     ) external pure returns (QuantMath.FixedPointInt memory) {
-        return a.div(b);
+        return a.div(b, true);
     }
 
     function testMin(
