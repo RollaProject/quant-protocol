@@ -154,7 +154,7 @@ rule checkOptionCollateralRequirement(uint256 qTokenToMintStrikePrice,
                                                            strikeAssetDecimals);
 
    // check spreads require less collateral than minting option : spreadCollateral <= optionCollateral
-   assert checkAleB(spreadCollateral, optionCollateral);
+   assert checkAleB(spreadCollateral, optionCollateral + 1);
 }
 
 /*
