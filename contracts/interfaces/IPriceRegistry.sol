@@ -17,8 +17,6 @@ interface IPriceRegistry {
         uint8 _settlementPriceDecimals
     );
 
-    event OracleManagerRegistered(address indexed oracleManager);
-
     /// @notice Set the price at settlement for a particular asset, expiry
     /// @param _asset asset to set price for
     /// @param _settlementPrice price at settlement
