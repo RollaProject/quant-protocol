@@ -26,6 +26,10 @@ contract QuantCalculator is IQuantCalculator {
     /// @inheritdoc IQuantCalculator
     address public immutable override optionsFactory;
 
+    address public immutable assetsRegistry;
+
+    address public immutable priceRegistry;
+
     /// @notice Checks that the QToken was created through the configured OptionsFactory
     modifier validQToken(address _qToken) {
         require(
@@ -52,14 +56,29 @@ contract QuantCalculator is IQuantCalculator {
 
     /// @param _strikeAssetDecimals the number of decimals used to denominate strike prices
     /// @param _optionsFactory the address of the OptionsFactory contract
-    constructor(uint8 _strikeAssetDecimals, address _optionsFactory) {
+    constructor(
+        uint8 _strikeAssetDecimals,
+        address _optionsFactory,
+        address _assetsRegistry,
+        address _priceRegistry
+    ) {
         require(
             _optionsFactory != address(0),
             "QuantCalculator: invalid OptionsFactory address"
         );
+        require(
+            _assetsRegistry != address(0),
+            "QuantCalculator: invalid AssetsRegistry address"
+        );
+        require(
+            _priceRegistry != address(0),
+            "QuantCalculator: invalid PriceRegistry address"
+        );
 
         strikeAssetDecimals = _strikeAssetDecimals;
         optionsFactory = _optionsFactory;
+        assetsRegistry = _assetsRegistry;
+        priceRegistry = _priceRegistry;
     }
 
     /// @inheritdoc IQuantCalculator
@@ -104,7 +123,7 @@ contract QuantCalculator is IQuantCalculator {
             : _amount;
 
         IPriceRegistry.PriceWithDecimals memory expiryPrice = IPriceRegistry(
-            IOptionsFactory(optionsFactory).priceRegistry()
+            priceRegistry
         ).getSettlementPriceWithDecimals(
                 qTokenShort.oracle(),
                 qTokenShort.underlyingAsset(),
@@ -132,7 +151,7 @@ contract QuantCalculator is IQuantCalculator {
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
             strikeAssetDecimals,
             qTokenShort,
-            IOptionsFactory(optionsFactory).assetsRegistry()
+            assetsRegistry
         );
 
         QuantMath.FixedPointInt memory collateralRequirement;
@@ -175,7 +194,7 @@ contract QuantCalculator is IQuantCalculator {
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
             strikeAssetDecimals,
             IQToken(_qTokenShort),
-            IOptionsFactory(optionsFactory).assetsRegistry()
+            assetsRegistry
         );
 
         QuantMath.FixedPointInt memory collateralOwedFP;
@@ -209,7 +228,7 @@ contract QuantCalculator is IQuantCalculator {
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
             strikeAssetDecimals,
             IQToken(_qTokenToMint),
-            IOptionsFactory(optionsFactory).assetsRegistry()
+            assetsRegistry
         );
 
         (collateral, collateralAmountFP) = FundsCalculator
@@ -251,13 +270,13 @@ contract QuantCalculator is IQuantCalculator {
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
             strikeAssetDecimals,
             qToken,
-            IOptionsFactory(optionsFactory).assetsRegistry()
+            assetsRegistry
         );
 
         address underlyingAsset = qToken.underlyingAsset();
 
         IPriceRegistry.PriceWithDecimals memory expiryPrice = IPriceRegistry(
-            IOptionsFactory(optionsFactory).priceRegistry()
+            priceRegistry
         ).getSettlementPriceWithDecimals(
                 qToken.oracle(),
                 underlyingAsset,
