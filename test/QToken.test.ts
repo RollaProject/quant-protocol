@@ -28,6 +28,7 @@ describe("QToken", async () => {
   let otherAccount: Signer;
   let BUSD: MockERC20;
   let WETH: MockERC20;
+  let DOGE: MockERC20;
   let mockPriceRegistry: MockContract;
   let assetsRegistry: AssetsRegistry;
   let userAddress: string;
@@ -58,6 +59,7 @@ describe("QToken", async () => {
 
     WETH = await mockERC20(deployer, "WETH", "Wrapped Ether");
     BUSD = await mockERC20(deployer, "BUSD", "BUSD Token", 18);
+    DOGE = await mockERC20(deployer, "DOGE", "DOGE Coin", 8);
 
     assetsRegistry = await deployAssetsRegistry(deployer);
 
@@ -67,6 +69,9 @@ describe("QToken", async () => {
     await assetsRegistry
       .connect(deployer)
       .addAssetWithOptionalERC20Methods(BUSD.address);
+    await assetsRegistry
+      .connect(deployer)
+      .addAssetWithOptionalERC20Methods(DOGE.address);
 
     scaledStrikePrice = ethers.utils.parseUnits("1400", await BUSD.decimals());
 
@@ -358,5 +363,43 @@ describe("QToken", async () => {
     expect(await decimalStrikeQToken.symbol()).to.equal(
       "ROLLA-WETH-01APR2038-10000.90001-P"
     );
+  });
+
+  it("Should generate the right strike price for different tokens and decimal numbers", async () => {
+    const weiStrikePrice = ethers.BigNumber.from("1000000000000000001");
+    const weiStrikePriceQToken = await deployQToken(
+      deployer,
+      WETH.address,
+      BUSD.address,
+      oracle,
+      mockPriceRegistry.address,
+      assetsRegistry.address,
+      weiStrikePrice,
+      ethers.BigNumber.from("2153731385")
+    );
+
+    expect(await weiStrikePriceQToken.name()).to.equal(
+      "ROLLA WETH 01-April-2038 1.000000000000000001 Put"
+    );
+    expect(await weiStrikePriceQToken.symbol()).to.equal(
+      "ROLLA-WETH-01APR2038-1.000000000000000001-P"
+    );
+
+    const dogeStrikePrice = ethers.utils.parseEther("0.135921");
+    const dogeQToken = await deployQToken(
+      deployer,
+      DOGE.address,
+      BUSD.address,
+      oracle,
+      mockPriceRegistry.address,
+      assetsRegistry.address,
+      dogeStrikePrice,
+      ethers.BigNumber.from("2153731385")
+    );
+
+    expect(await dogeQToken.name()).to.eql(
+      "ROLLA DOGE 01-April-2038 0.135921 Put"
+    );
+    expect(await dogeQToken.symbol()).to.eql("ROLLA-DOGE-01APR2038-0.135921-P");
   });
 });
