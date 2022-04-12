@@ -27,11 +27,11 @@ contract QTokenCore is QToken {
         )
     {}
 
-    function _assetSymbol(address _asset, address _assetsRegistry)
+    function _assetSymbolAndDecimals(address _asset, address _assetsRegistry)
         internal
         view
         override
-        returns (string memory symbol)
+        returns (string memory symbol, uint8 decimals)
     {}
 
     function _qTokenName(
@@ -59,12 +59,10 @@ contract QTokenCore is QToken {
         returns (string memory chr, string memory str)
     {}
 
-    function _displayedStrikePrice(uint256 _strikePrice, address _strikeAsset)
-        internal
-        pure
-        override
-        returns (string memory strikePrice)
-    {}
+    function _displayedStrikePrice(
+        uint256 _strikePrice,
+        uint8 _strikePriceDecimals
+    ) internal pure override returns (string memory strikePrice) {}
 
     function _uintToChars(uint256 _number)
         internal
