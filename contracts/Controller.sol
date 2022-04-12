@@ -89,7 +89,12 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             .assetProperties(_strikeAsset);
 
         quantCalculator = address(
-            new QuantCalculator(strikeAssetDecimals, optionsFactory)
+            new QuantCalculator(
+                strikeAssetDecimals,
+                optionsFactory,
+                _assetsRegistry,
+                _priceRegistry
+            )
         );
 
         collateralToken.setOptionsFactory(optionsFactory);
