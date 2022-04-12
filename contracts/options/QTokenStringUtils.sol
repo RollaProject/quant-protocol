@@ -7,20 +7,21 @@ import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
 import "../interfaces/IAssetsRegistry.sol";
 
 abstract contract QTokenStringUtils {
-    /// @notice get the ERC20 token symbol from the AssetsRegistry
+    /// @notice get the ERC20 token symbol and decimals from the AssetsRegistry
     /// @dev the asset is assumed to be in the AssetsRegistry since QTokens
     /// must be created through the OptionsFactory, which performs that check
     /// @param _asset address of the asset in the AssetsRegistry
+    /// @param _assetsRegistry address of the AssetsRegistry contract
     /// @return assetSymbol string stored as the ERC20 token symbol
-    function _assetSymbol(address _asset, address _assetsRegistry)
+    /// @return assetDecimals uint8 stored as the ERC20 token decimals
+    function _assetSymbolAndDecimals(address _asset, address _assetsRegistry)
         internal
         view
         virtual
-        returns (string memory assetSymbol)
+        returns (string memory assetSymbol, uint8 assetDecimals)
     {
-        (, assetSymbol, ) = IAssetsRegistry(_assetsRegistry).assetProperties(
-            _asset
-        );
+        (, assetSymbol, assetDecimals) = IAssetsRegistry(_assetsRegistry)
+            .assetProperties(_asset);
         require(
             bytes(assetSymbol).length > 0,
             "QTokenStringUtils: asset is not in the registry"
@@ -43,13 +44,17 @@ abstract contract QTokenStringUtils {
         uint256 _expiryTime,
         bool _isCall
     ) internal view virtual returns (string memory tokenName) {
-        string memory underlying = _assetSymbol(
+        (string memory underlying, ) = _assetSymbolAndDecimals(
             _underlyingAsset,
+            _assetsRegistry
+        );
+        (, uint8 strikePriceDecimals) = _assetSymbolAndDecimals(
+            _strikeAsset,
             _assetsRegistry
         );
         string memory displayStrikePrice = _displayedStrikePrice(
             _strikePrice,
-            _strikeAsset
+            strikePriceDecimals
         );
 
         // convert the expiry to a readable string
@@ -97,13 +102,17 @@ abstract contract QTokenStringUtils {
         uint256 _expiryTime,
         bool _isCall
     ) internal view virtual returns (string memory tokenSymbol) {
-        string memory underlying = _assetSymbol(
+        (string memory underlying, ) = _assetSymbolAndDecimals(
             _underlyingAsset,
+            _assetsRegistry
+        );
+        (, uint8 strikePriceDecimals) = _assetSymbolAndDecimals(
+            _strikeAsset,
             _assetsRegistry
         );
         string memory displayStrikePrice = _displayedStrikePrice(
             _strikePrice,
-            _strikeAsset
+            strikePriceDecimals
         );
 
         // convert the expiry to a readable string
@@ -138,14 +147,11 @@ abstract contract QTokenStringUtils {
     /// @dev convert the option strike price scaled to a human readable value
     /// @param _strikePrice the option strike price scaled by 1e20
     /// @return strike price string
-    function _displayedStrikePrice(uint256 _strikePrice, address _strikeAsset)
-        internal
-        view
-        virtual
-        returns (string memory)
-    {
-        uint8 strikePriceDigits = ERC20(_strikeAsset).decimals();
-        uint256 strikePriceScale = 10**strikePriceDigits;
+    function _displayedStrikePrice(
+        uint256 _strikePrice,
+        uint8 _strikePriceDecimals
+    ) internal view virtual returns (string memory) {
+        uint256 strikePriceScale = 10**_strikePriceDecimals;
         uint256 remainder = _strikePrice % strikePriceScale;
         uint256 quotient = _strikePrice / strikePriceScale;
         string memory quotientStr = Strings.toString(quotient);
@@ -161,10 +167,10 @@ abstract contract QTokenStringUtils {
         }
 
         // pad the number with "1 + starting zeroes"
-        remainder += 10**(strikePriceDigits - trailingZeroes);
+        remainder += 10**(_strikePriceDecimals - trailingZeroes);
 
         string memory tmp = Strings.toString(remainder);
-        tmp = _slice(tmp, 1, (1 + strikePriceDigits) - trailingZeroes);
+        tmp = _slice(tmp, 1, (1 + _strikePriceDecimals) - trailingZeroes);
 
         return string(abi.encodePacked(quotientStr, ".", tmp));
     }
