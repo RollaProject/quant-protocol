@@ -57,6 +57,18 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             _oracleRegistry != address(0),
             "Controller: invalid OracleRegistry address"
         );
+        require(
+            _strikeAsset != address(0),
+            "Controller: invalid StrikeAsset address"
+        );
+        require(
+            _priceRegistry != address(0),
+            "Controller: invalid PriceRegistry address"
+        );
+        require(
+            _assetsRegistry != address(0),
+            "Controller: invalid AssetsRegistry address"
+        );
 
         oracleRegistry = _oracleRegistry;
 
