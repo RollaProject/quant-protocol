@@ -609,9 +609,16 @@ describe("Chainlink Oracle Manager", async function () {
         const secondValidExpiry = 2412230400; // Sun Jun 10 2046 08:00:00 GMT+0000
         const invalidExpiry = 2412165600; // Sat Jun 09 2046 14:00:00 GMT+0000
 
+        const underlyinAsset = ethers.Wallet.createRandom().address;
+
+        await oracleManager.addAssetOracle(
+          underlyinAsset,
+          mockAggregatorProxy.address
+        );
+
         expect(
           await oracleManager.isValidOption(
-            ethers.constants.AddressZero,
+            underlyinAsset,
             firstValidExpiry,
             ethers.constants.Zero
           )
@@ -619,7 +626,7 @@ describe("Chainlink Oracle Manager", async function () {
 
         expect(
           await oracleManager.isValidOption(
-            ethers.constants.AddressZero,
+            underlyinAsset,
             secondValidExpiry,
             ethers.constants.Zero
           )
@@ -627,7 +634,7 @@ describe("Chainlink Oracle Manager", async function () {
 
         expect(
           await oracleManager.isValidOption(
-            ethers.constants.AddressZero,
+            underlyinAsset,
             invalidExpiry,
             ethers.constants.Zero
           )
@@ -640,7 +647,7 @@ describe("Chainlink Oracle Manager", async function () {
 
         expect(
           await oracleManager.isValidOption(
-            ethers.constants.AddressZero,
+            underlyinAsset,
             firstValidExpiry,
             ethers.constants.Zero
           )
@@ -648,7 +655,7 @@ describe("Chainlink Oracle Manager", async function () {
 
         expect(
           await oracleManager.isValidOption(
-            ethers.constants.AddressZero,
+            underlyinAsset,
             secondValidExpiry,
             ethers.constants.Zero
           )
@@ -656,7 +663,7 @@ describe("Chainlink Oracle Manager", async function () {
 
         expect(
           await oracleManager.isValidOption(
-            ethers.constants.AddressZero,
+            underlyinAsset,
             invalidExpiry,
             ethers.constants.Zero
           )
