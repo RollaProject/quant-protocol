@@ -43,7 +43,7 @@ contract ChainlinkFixedTimeOracleManager is
 
     /// @inheritdoc IProviderOracleManager
     function isValidOption(
-        address,
+        address _underlyingAsset,
         uint256 _expiryTime,
         uint256
     )
@@ -53,7 +53,9 @@ contract ChainlinkFixedTimeOracleManager is
         returns (bool)
     {
         uint256 timeInSeconds = _expiryTime % 86400;
-        return chainlinkFixedTimeUpdates[timeInSeconds];
+        return
+            assetOracles[_underlyingAsset] != address(0) &&
+            chainlinkFixedTimeUpdates[timeInSeconds];
     }
 
     /// @notice Gets the price and roundId for a given expiry time.
