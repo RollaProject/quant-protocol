@@ -84,6 +84,8 @@ interface IController {
     /// @notice The main entry point in the Quant Protocol. This function takes an array of actions
     /// and executes them in order. Actions are passed encoded as ActionArgs structs, and then for each
     /// different action, the relevant arguments are parsed and passed to the respective internal function
+    /// WARNING: DO NOT UNDER ANY CIRCUMSTANCES APPROVE THE OperateProxy TO SPEND YOUR FUNDS (using
+    /// CALL action) OR ANYONE WILL BE ABLE TO SPEND THEM AFTER YOU!!!
     /// @dev For documentation of each individual action, see the corresponding internal function in Controller.sol
     /// @param _actions array of ActionArgs structs, each representing an action to be executed
     /// @return boolean indicating whether the actions were successfully executed
