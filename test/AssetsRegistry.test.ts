@@ -45,9 +45,10 @@ describe("AssetsRegistry", () => {
     it("AssetsRegistry managers should be able to add assets to the registry", async () => {
       await assetsRegistry.connect(deployer).addAsset(...WETHProperties);
 
-      expect(await assetsRegistry.assetProperties(WETH.address)).to.eql(
-        WETHProperties.slice(1)
-      );
+      expect(await assetsRegistry.assetProperties(WETH.address)).to.eql([
+        ...WETHProperties.slice(1),
+        true,
+      ]);
     });
 
     it("Should revert when an unauthorized account tries to add an asset", async () => {
@@ -74,6 +75,7 @@ describe("AssetsRegistry", () => {
         "Basic Token",
         "BASIC",
         14,
+        true,
       ]);
     });
 

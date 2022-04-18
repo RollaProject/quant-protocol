@@ -85,7 +85,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             )
         );
 
-        (, , uint8 strikeAssetDecimals) = IAssetsRegistry(_assetsRegistry)
+        (, , uint8 strikeAssetDecimals, ) = IAssetsRegistry(_assetsRegistry)
             .assetProperties(_strikeAsset);
 
         quantCalculator = address(

@@ -20,10 +20,13 @@ abstract contract QTokenStringUtils {
         virtual
         returns (string memory assetSymbol, uint8 assetDecimals)
     {
-        (, assetSymbol, assetDecimals) = IAssetsRegistry(_assetsRegistry)
-            .assetProperties(_asset);
+        bool isRegistered;
+        (, assetSymbol, assetDecimals, isRegistered) = IAssetsRegistry(
+            _assetsRegistry
+        ).assetProperties(_asset);
+
         require(
-            bytes(assetSymbol).length > 0,
+            isRegistered,
             "QTokenStringUtils: asset is not in the registry"
         );
     }
