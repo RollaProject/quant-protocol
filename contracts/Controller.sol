@@ -107,6 +107,9 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         nonReentrant
         returns (bool)
     {
+        /// WARNING: DO NOT UNDER ANY CIRCUMSTANCES APPROVE THE OperateProxy TO
+        /// SPEND YOUR FUNDS (using CALL action) OR ANYONE WILL BE ABLE TO SPEND THEM AFTER YOU!!!
+
         uint256 length = _actions.length;
         for (uint256 i = 0; i < length; ) {
             ActionArgs memory action = _actions[i];
@@ -566,6 +569,8 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     }
 
     /// @notice Allows a sender/signer to make external calls to any other contract.
+    /// WARNING: DO NOT UNDER ANY CIRCUMSTANCES APPROVE THE OperateProxy TO
+    /// SPEND YOUR FUNDS OR ANYONE WILL BE ABLE TO SPEND THEM AFTER YOU!!!
     /// @dev A separate OperateProxy contract is used to make the external calls so
     /// that the Controller, which holds funds and has special privileges in the Quant
     /// Protocol, is never the `msg.sender` in any of those external calls.
