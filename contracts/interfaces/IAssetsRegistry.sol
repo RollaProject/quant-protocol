@@ -38,13 +38,15 @@ interface IAssetsRegistry {
     /// @return name asset's name
     /// @return symbol asset's symbol
     /// @return decimals asset's decimals
+    /// @return isRegistered true if the asset is in the registry, false otherwise
     function assetProperties(address asset)
         external
         view
         returns (
             string memory name,
             string memory symbol,
-            uint8 decimals
+            uint8 decimals,
+            bool isRegistered
         );
 
     /// @notice Returns the address of the asset at the given index

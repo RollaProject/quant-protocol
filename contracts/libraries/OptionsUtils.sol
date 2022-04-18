@@ -149,16 +149,15 @@ library OptionsUtils {
     /// @notice Checks if a given asset is in the AssetsRegistry
     /// @param _asset address of the asset to check
     /// @param _assetsRegistry address of the AssetsRegistry contract
-    /// @return whether the asset is in the configured registry
+    /// @return isRegistered whether the asset is in the configured registry
     function isInAssetsRegistry(address _asset, address _assetsRegistry)
         internal
         view
-        returns (bool)
+        returns (bool isRegistered)
     {
-        string memory symbol;
-        (, symbol, ) = IAssetsRegistry(_assetsRegistry).assetProperties(_asset);
-
-        return bytes(symbol).length != 0;
+        (, , , isRegistered) = IAssetsRegistry(_assetsRegistry).assetProperties(
+            _asset
+        );
     }
 
     /// @notice Gets the amount of decimals for an option exercise payout
@@ -172,7 +171,7 @@ library OptionsUtils {
         address _assetsRegistry
     ) internal view returns (uint8 payoutDecimals) {
         if (_qToken.isCall()) {
-            (, , payoutDecimals) = IAssetsRegistry(_assetsRegistry)
+            (, , payoutDecimals, ) = IAssetsRegistry(_assetsRegistry)
                 .assetProperties(_qToken.underlyingAsset());
         } else {
             payoutDecimals = _strikeAssetDecimals;

@@ -12,6 +12,7 @@ contract AssetsRegistry is Ownable, IAssetsRegistry {
         string name;
         string symbol;
         uint8 decimals;
+        bool isRegistered;
     }
 
     /// @inheritdoc IAssetsRegistry
@@ -20,10 +21,10 @@ contract AssetsRegistry is Ownable, IAssetsRegistry {
     /// @inheritdoc IAssetsRegistry
     address[] public override registeredAssets;
 
-    /// @dev Also checks that the asset had not been added before.
+    /// @dev Checks that the asset had not been added before.
     modifier validAsset(address _underlying) {
         require(
-            bytes(assetProperties[_underlying].symbol).length == 0,
+            !assetProperties[_underlying].isRegistered,
             "AssetsRegistry: asset already added"
         );
 
@@ -47,7 +48,8 @@ contract AssetsRegistry is Ownable, IAssetsRegistry {
         assetProperties[_underlying] = AssetProperties(
             _name,
             _symbol,
-            _decimals
+            _decimals,
+            true
         );
 
         registeredAssets.push(_underlying);
@@ -73,7 +75,12 @@ contract AssetsRegistry is Ownable, IAssetsRegistry {
 
         uint8 decimals = ERC20(_underlying).decimals();
 
-        assetProperties[_underlying] = AssetProperties(name, symbol, decimals);
+        assetProperties[_underlying] = AssetProperties(
+            name,
+            symbol,
+            decimals,
+            true
+        );
 
         registeredAssets.push(_underlying);
 

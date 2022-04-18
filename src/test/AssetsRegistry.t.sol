@@ -76,12 +76,14 @@ contract AssetsRegistryTest is DSTest {
         (
             string memory registerdName,
             string memory registeredSymbol,
-            uint8 registeredDecimals
+            uint8 registeredDecimals,
+            bool isRegistered
         ) = assetsRegistry.assetProperties(registeredAsset);
 
         assertEq(registerdName, name);
         assertEq(registeredSymbol, symbol);
         assertEq(uint256(registeredDecimals), uint256(decimals));
+        assert(isRegistered);
     }
 
     function testAddAssetWithoutOptionalERC20Methods(
