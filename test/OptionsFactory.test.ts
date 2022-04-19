@@ -38,16 +38,16 @@ describe("OptionsFactory", () => {
     string,
     string,
     BigNumber,
-    BigNumber,
-    boolean
+    boolean,
+    BigNumber
   ];
   let sampleCollateralTokenParameters: [
     string,
     string,
     string,
     BigNumber,
-    BigNumber,
-    boolean
+    boolean,
+    BigNumber
   ];
 
   beforeEach(async () => {
@@ -117,18 +117,18 @@ describe("OptionsFactory", () => {
     samplePutOptionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("1400", await BUSD.decimals()),
       ethers.BigNumber.from(futureTimestamp),
       false,
+      ethers.utils.parseUnits("1400", await BUSD.decimals()),
     ];
 
     sampleCollateralTokenParameters = [
       WETH.address,
-      mockOracleManager.address,
       ethers.constants.AddressZero,
-      ethers.utils.parseUnits("1400", await BUSD.decimals()),
+      mockOracleManager.address,
       ethers.BigNumber.from(futureTimestamp),
       false,
+      ethers.utils.parseUnits("1400", await BUSD.decimals()),
     ];
   });
 
@@ -155,10 +155,9 @@ describe("OptionsFactory", () => {
         .withArgs(
           qTokenAddress,
           await secondAccount.getAddress(),
-          ...samplePutOptionParameters.slice(0, 4),
+          ...samplePutOptionParameters,
           collateralTokenId,
-          ethers.BigNumber.from("1"),
-          false
+          ethers.BigNumber.from("1")
         );
 
       expect(await optionsFactory.qTokens(ethers.BigNumber.from("0"))).to.equal(
@@ -177,9 +176,9 @@ describe("OptionsFactory", () => {
           .createOption(
             WETH.address,
             ethers.constants.AddressZero,
-            ethers.utils.parseUnits("1400", await BUSD.decimals()),
             ethers.BigNumber.from(futureTimestamp),
-            false
+            false,
+            ethers.utils.parseUnits("1400", await BUSD.decimals())
           )
       ).to.be.revertedWith(
         "OptionsFactory: Oracle is not registered in OracleRegistry"
@@ -198,9 +197,9 @@ describe("OptionsFactory", () => {
           .createOption(
             WETH.address,
             mockOracleManager.address,
-            ethers.utils.parseUnits("1400", await BUSD.decimals()),
             ethers.BigNumber.from(futureTimestamp),
-            false
+            false,
+            ethers.utils.parseUnits("1400", await BUSD.decimals())
           )
       ).to.be.revertedWith("OptionsFactory: Asset does not exist in oracle");
     });
@@ -217,9 +216,9 @@ describe("OptionsFactory", () => {
           .createOption(
             WETH.address,
             mockOracleManager.address,
-            ethers.utils.parseUnits("1400", await BUSD.decimals()),
             ethers.BigNumber.from(futureTimestamp),
-            false
+            false,
+            ethers.utils.parseUnits("1400", await BUSD.decimals())
           )
       ).to.be.revertedWith(
         "OptionsFactory: Oracle is not active in the OracleRegistry"
@@ -232,9 +231,9 @@ describe("OptionsFactory", () => {
         optionsFactory.createOption(
           WETH.address,
           ethers.constants.AddressZero,
-          ethers.utils.parseUnits("1400", await BUSD.decimals()),
           ethers.BigNumber.from(pastTimestamp),
-          false
+          false,
+          ethers.utils.parseUnits("1400", await BUSD.decimals())
         )
       ).to.be.revertedWith("OptionsFactory: given expiry time is in the past");
     });
@@ -258,9 +257,9 @@ describe("OptionsFactory", () => {
           .createOption(
             WETH.address,
             mockOracleManager.address,
-            ethers.BigNumber.from("0"),
             futureTimestamp,
-            false
+            false,
+            ethers.BigNumber.from("0")
           )
       ).to.be.revertedWith("strike can't be 0");
     });
@@ -272,9 +271,9 @@ describe("OptionsFactory", () => {
           .createOption(
             WETH.address,
             mockOracleManager.address,
-            ethers.BigNumber.from("0"),
             futureTimestamp,
-            true
+            true,
+            ethers.BigNumber.from("0")
           )
       ).to.be.revertedWith("strike can't be 0");
     });
@@ -286,9 +285,9 @@ describe("OptionsFactory", () => {
           .createOption(
             ethers.constants.AddressZero,
             mockOracleManager.address,
-            ethers.utils.parseUnits("1400", await BUSD.decimals()),
             futureTimestamp,
-            false
+            false,
+            ethers.utils.parseUnits("1400", await BUSD.decimals())
           )
       ).to.be.revertedWith("underlying not in the registry");
     });
@@ -301,9 +300,9 @@ describe("OptionsFactory", () => {
           .createOption(
             ethers.constants.AddressZero,
             mockOracleManager.address,
-            ethers.utils.parseUnits("1400", await BUSD.decimals()),
             futureTimestamp,
-            false
+            false,
+            ethers.utils.parseUnits("1400", await BUSD.decimals())
           )
       ).to.be.revertedWith(
         "OptionsFactory: Oracle doesn't support the given option"

@@ -35,17 +35,17 @@ abstract contract QTokenStringUtils {
     /// @param _underlyingAsset asset that the option references
     /// @param _strikeAsset asset that the option is settled on
     /// @param _assetsRegistry address of the AssetsRegistry
-    /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
+    /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @return tokenName name string for the QToken
     function _qTokenName(
         address _underlyingAsset,
         address _strikeAsset,
         address _assetsRegistry,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) internal view virtual returns (string memory tokenName) {
         (string memory underlying, ) = _assetSymbolAndDecimals(
             _underlyingAsset,
@@ -93,17 +93,17 @@ abstract contract QTokenStringUtils {
 
     /// @notice generates the symbol for an option
     /// @param _underlyingAsset asset that the option references
-    /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
+    /// @param _strikePrice strike price with as many decimals in the strike asset
     /// @return tokenSymbol symbol string for the QToken
     function _qTokenSymbol(
         address _underlyingAsset,
         address _strikeAsset,
         address _assetsRegistry,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) internal view virtual returns (string memory tokenSymbol) {
         (string memory underlying, ) = _assetSymbolAndDecimals(
             _underlyingAsset,

@@ -82,21 +82,21 @@ describe("CollateralToken", () => {
       deployer,
       WETH.address,
       BUSD.address,
-      ethers.Wallet.createRandom().address,
       priceRegistry.address,
-      assetsRegistry.address
+      assetsRegistry.address,
+      ethers.Wallet.createRandom().address
     );
 
     secondQToken = await deployQToken(
       deployer,
       WETH.address,
       BUSD.address,
-      ethers.Wallet.createRandom().address,
       priceRegistry.address,
       assetsRegistry.address,
-      ethers.utils.parseUnits("2000", await BUSD.decimals()),
+      ethers.Wallet.createRandom().address,
       ethers.BigNumber.from("1618592400"),
-      true
+      true,
+      ethers.utils.parseUnits("2000", await BUSD.decimals())
     );
 
     collateralToken = await deployCollateralToken(deployer);
@@ -681,12 +681,12 @@ describe("CollateralToken", () => {
         deployer,
         WETH.address,
         BUSD.address,
-        ethers.Wallet.createRandom().address,
         priceRegistry.address,
         assetsRegistry.address,
-        ethers.utils.parseUnits("10000", await BUSD.decimals()),
+        ethers.Wallet.createRandom().address,
         ethers.BigNumber.from("1653285356"),
-        false
+        false,
+        ethers.utils.parseUnits("10000", await BUSD.decimals())
       );
 
       await createCollateralToken(
@@ -723,10 +723,10 @@ describe("CollateralToken", () => {
         await qToken.underlyingAsset(),
         await qToken.strikeAsset(),
         await qToken.oracle(),
-        await qToken.strikePrice(),
-        ethers.constants.Zero,
         await qToken.expiryTime(),
         await qToken.isCall(),
+        await qToken.strikePrice(),
+        ethers.constants.Zero,
       ]);
     });
 
@@ -741,10 +741,10 @@ describe("CollateralToken", () => {
         await qToken.underlyingAsset(),
         await qToken.strikeAsset(),
         await qToken.oracle(),
-        await qToken.strikePrice(),
-        await secondQToken.strikePrice(),
         await qToken.expiryTime(),
         await qToken.isCall(),
+        await qToken.strikePrice(),
+        await secondQToken.strikePrice(),
       ]);
     });
   });

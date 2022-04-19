@@ -79,9 +79,9 @@ contract OptionsFactory is IOptionsFactory {
     function createOption(
         address _underlyingAsset,
         address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     )
         external
         override
@@ -90,8 +90,8 @@ contract OptionsFactory is IOptionsFactory {
         OptionsUtils.validateOptionParameters(
             IPriceRegistry(priceRegistry).oracleRegistry(),
             _underlyingAsset,
-            _oracle,
             assetsRegistry,
+            _oracle,
             _expiryTime,
             _strikePrice
         );
@@ -99,14 +99,14 @@ contract OptionsFactory is IOptionsFactory {
         newCollateralTokenId = OptionsUtils.getTargetCollateralTokenId(
             collateralToken,
             _underlyingAsset,
+            address(0),
             strikeAsset,
-            _oracle,
             priceRegistry,
             assetsRegistry,
-            address(0),
-            _strikePrice,
+            _oracle,
             _expiryTime,
-            _isCall
+            _isCall,
+            _strikePrice
         );
 
         require(
@@ -119,12 +119,12 @@ contract OptionsFactory is IOptionsFactory {
             new QToken{salt: OptionsUtils.SALT}(
                 _underlyingAsset,
                 strikeAsset,
-                _oracle,
                 priceRegistry,
                 assetsRegistry,
-                _strikePrice,
+                _oracle,
                 _expiryTime,
-                _isCall
+                _isCall,
+                _strikePrice
             )
         );
 
@@ -140,11 +140,11 @@ contract OptionsFactory is IOptionsFactory {
             msg.sender,
             _underlyingAsset,
             _oracle,
-            _strikePrice,
             _expiryTime,
+            _isCall,
+            _strikePrice,
             newCollateralTokenId,
-            qTokens.length,
-            _isCall
+            qTokens.length
         );
 
         collateralToken.createCollateralToken(newQToken, address(0));
@@ -153,24 +153,24 @@ contract OptionsFactory is IOptionsFactory {
     /// @inheritdoc IOptionsFactory
     function getTargetCollateralTokenId(
         address _underlyingAsset,
-        address _oracle,
         address _qTokenAsCollateral,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        address _oracle,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) external view override returns (uint256) {
         return
             OptionsUtils.getTargetCollateralTokenId(
                 collateralToken,
                 _underlyingAsset,
+                _qTokenAsCollateral,
                 strikeAsset,
-                _oracle,
                 priceRegistry,
                 assetsRegistry,
-                _qTokenAsCollateral,
-                _strikePrice,
+                _oracle,
                 _expiryTime,
-                _isCall
+                _isCall,
+                _strikePrice
             );
     }
 
@@ -178,38 +178,38 @@ contract OptionsFactory is IOptionsFactory {
     function getTargetQTokenAddress(
         address _underlyingAsset,
         address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) external view override returns (address) {
         return
             OptionsUtils.getTargetQTokenAddress(
                 _underlyingAsset,
                 strikeAsset,
-                _oracle,
                 priceRegistry,
                 assetsRegistry,
-                _strikePrice,
+                _oracle,
                 _expiryTime,
-                _isCall
+                _isCall,
+                _strikePrice
             );
     }
 
     /// @inheritdoc IOptionsFactory
     function getCollateralToken(
         address _underlyingAsset,
-        address _oracle,
         address _qTokenAsCollateral,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        address _oracle,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) external view override returns (uint256) {
         address qToken = getQToken(
             _underlyingAsset,
             _oracle,
-            _strikePrice,
             _expiryTime,
-            _isCall
+            _isCall,
+            _strikePrice
         );
 
         uint256 id = collateralToken.getCollateralTokenId(
@@ -235,21 +235,21 @@ contract OptionsFactory is IOptionsFactory {
     function getQToken(
         address _underlyingAsset,
         address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) public view override returns (address) {
         uint256 collateralTokenId = OptionsUtils.getTargetCollateralTokenId(
             collateralToken,
             _underlyingAsset,
+            address(0),
             strikeAsset,
-            _oracle,
             priceRegistry,
             assetsRegistry,
-            address(0),
-            _strikePrice,
+            _oracle,
             _expiryTime,
-            _isCall
+            _isCall,
+            _strikePrice
         );
 
         return _collateralTokenIdToQTokenAddress[collateralTokenId];

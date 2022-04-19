@@ -20,9 +20,9 @@ interface IQToken is IERC20, IERC20Permit {
         address underlyingAsset;
         address strikeAsset;
         address oracle;
-        uint256 strikePrice;
-        uint256 expiryTime;
+        uint88 expiryTime;
         bool isCall;
+        uint256 strikePrice;
     }
 
     /// @notice event emitted when QTokens are minted
@@ -61,7 +61,7 @@ interface IQToken is IERC20, IERC20Permit {
     function strikePrice() external view returns (uint256);
 
     /// @dev UNIX time for the expiry of the option
-    function expiryTime() external view returns (uint256);
+    function expiryTime() external view returns (uint88);
 
     /// @dev True if the option is a CALL. False if the option is a PUT.
     function isCall() external view returns (bool);

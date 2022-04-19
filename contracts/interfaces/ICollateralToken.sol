@@ -12,10 +12,10 @@ interface ICollateralToken is IERC1155 {
         address underlyingAsset;
         address strikeAsset;
         address oracle;
+        uint88 expiryTime;
+        bool isCall;
         uint256 shortStrikePrice;
         uint256 longStrikePrice;
-        uint256 expiryTime;
-        bool isCall;
     }
 
     /// @notice event emitted when a new CollateralToken is created

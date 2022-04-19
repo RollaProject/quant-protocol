@@ -49,15 +49,15 @@ const { AddressZero, Zero } = constants;
 
 BN.config({ EXPONENTIAL_AT: 30 });
 
-type optionParameters = [string, string, BigNumber, BigNumber, boolean];
+type optionParameters = [string, string, BigNumber, boolean, BigNumber];
 
 type CollateralTokenParameters = [
   string,
   string,
   string,
   BigNumber,
-  BigNumber,
-  boolean
+  boolean,
+  BigNumber
 ];
 
 describe("Controller", async () => {
@@ -628,9 +628,9 @@ describe("Controller", async () => {
     samplePutOptionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("1400", busdDecimals),
       ethers.BigNumber.from(futureTimestamp),
       false,
+      ethers.utils.parseUnits("1400", busdDecimals),
     ];
     const qTokenPut1400Address = await optionsFactory.getTargetQTokenAddress(
       ...samplePutOptionParameters
@@ -675,9 +675,9 @@ describe("Controller", async () => {
     sampleCallOptionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("2000", busdDecimals),
       ethers.BigNumber.from(futureTimestamp),
       true,
+      ethers.utils.parseUnits("2000", busdDecimals),
     ];
 
     const qTokenCall2000Address = await optionsFactory.getTargetQTokenAddress(
@@ -695,9 +695,9 @@ describe("Controller", async () => {
     const qTokenCall2880Parameters: optionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("2880", busdDecimals),
       ethers.BigNumber.from(futureTimestamp),
       true,
+      ethers.utils.parseUnits("2880", busdDecimals),
     ];
 
     await optionsFactory
@@ -717,9 +717,9 @@ describe("Controller", async () => {
     const qTokenCall3520Parameters: optionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("3520", busdDecimals),
       ethers.BigNumber.from(futureTimestamp),
       true,
+      ethers.utils.parseUnits("3520", busdDecimals),
     ];
 
     await optionsFactory
@@ -739,9 +739,9 @@ describe("Controller", async () => {
     const qTokenPut400Parameters: optionParameters = [
       WETH.address,
       mockOracleManager.address,
-      ethers.utils.parseUnits("400", busdDecimals),
       ethers.BigNumber.from(futureTimestamp),
       false,
+      ethers.utils.parseUnits("400", busdDecimals),
     ];
 
     await optionsFactory
@@ -1354,9 +1354,9 @@ describe("Controller", async () => {
       const qTokenParams: optionParameters = [
         WETH.address,
         mockOracleManager.address,
-        ethers.utils.parseUnits("1400", await BUSD.decimals()),
         ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
         false,
+        ethers.utils.parseUnits("1400", await BUSD.decimals()),
       ];
 
       const qTokenParamsDifferentOracle: optionParameters = [...qTokenParams];
@@ -1424,9 +1424,9 @@ describe("Controller", async () => {
       const qTokenParams: optionParameters = [
         WETH.address,
         mockOracleManager.address,
-        ethers.utils.parseUnits("1400", await BUSD.decimals()),
         ethers.BigNumber.from(futureTimestamp + 3600 * 24 * 30),
         false,
+        ethers.utils.parseUnits("1400", await BUSD.decimals()),
       ];
       const qTokenPutDifferentExpiry =
         await optionsFactory.getTargetQTokenAddress(...qTokenParams);
@@ -1450,9 +1450,9 @@ describe("Controller", async () => {
       const qTokenParams: optionParameters = [
         BUSD.address,
         mockOracleManager.address,
-        ethers.utils.parseUnits("5000", await BUSD.decimals()),
         ethers.BigNumber.from(futureTimestamp),
         true,
+        ethers.utils.parseUnits("5000", await BUSD.decimals()),
       ];
       const qTokenCallDifferentUnderlying =
         await optionsFactory.getTargetQTokenAddress(...qTokenParams);
@@ -1840,12 +1840,12 @@ describe("Controller", async () => {
         await ExternalQToken.connect(secondAccount).deploy(
           await qTokenPut1400.underlyingAsset(),
           await qTokenPut400.strikeAsset(),
-          await qTokenPut1400.oracle(),
           mockPriceRegistry.address,
           assetsRegistry.address,
-          externalStrikePrice,
+          await qTokenPut1400.oracle(),
           await qTokenPut1400.expiryTime(),
-          await qTokenPut400.isCall()
+          await qTokenPut400.isCall(),
+          externalStrikePrice
         )
       );
 
@@ -3121,9 +3121,9 @@ describe("Controller", async () => {
       const newQTokenParams: optionParameters = [
         WETH.address,
         mockOracleManager.address,
-        ethers.utils.parseUnits("1000", await BUSD.decimals()),
         ethers.BigNumber.from(futureTimestamp),
         false,
+        ethers.utils.parseUnits("1000", await BUSD.decimals()),
       ];
 
       const createOptionCallData = optionsFactory.interface.encodeFunctionData(
@@ -3167,7 +3167,7 @@ describe("Controller", async () => {
 
       const collateralTokenParams = [...newQTokenParams];
 
-      collateralTokenParams.splice(2, 0, AddressZero);
+      collateralTokenParams.splice(1, 0, AddressZero);
 
       const newCollateralTokenId =
         await optionsFactory.getTargetCollateralTokenId(

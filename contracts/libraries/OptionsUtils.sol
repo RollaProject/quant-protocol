@@ -31,12 +31,12 @@ library OptionsUtils {
     function getTargetQTokenAddress(
         address _underlyingAsset,
         address _strikeAsset,
-        address _oracle,
         address _priceRegistry,
         address _assetsRegistry,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        address _oracle,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) internal view returns (address) {
         bytes32 bytecodeHash = keccak256(
             abi.encodePacked(
@@ -44,12 +44,12 @@ library OptionsUtils {
                 abi.encode(
                     _underlyingAsset,
                     _strikeAsset,
-                    _oracle,
                     _priceRegistry,
                     _assetsRegistry,
-                    _strikePrice,
+                    _oracle,
                     _expiryTime,
-                    _isCall
+                    _isCall,
+                    _strikePrice
                 )
             )
         );
@@ -71,24 +71,24 @@ library OptionsUtils {
     function getTargetCollateralTokenId(
         ICollateralToken _collateralToken,
         address _underlyingAsset,
+        address _qTokenAsCollateral,
         address _strikeAsset,
-        address _oracle,
         address _priceRegistry,
         address _assetsRegistry,
-        address _qTokenAsCollateral,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        address _oracle,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) internal view returns (uint256) {
         address qToken = getTargetQTokenAddress(
             _underlyingAsset,
             _strikeAsset,
-            _oracle,
             _priceRegistry,
             _assetsRegistry,
-            _strikePrice,
+            _oracle,
             _expiryTime,
-            _isCall
+            _isCall,
+            _strikePrice
         );
         return
             _collateralToken.getCollateralTokenId(qToken, _qTokenAsCollateral);
@@ -103,9 +103,9 @@ library OptionsUtils {
     function validateOptionParameters(
         address _oracleRegistry,
         address _underlyingAsset,
-        address _oracle,
         address _assetsRegistry,
-        uint256 _expiryTime,
+        address _oracle,
+        uint88 _expiryTime,
         uint256 _strikePrice
     ) internal view {
         require(
@@ -176,25 +176,5 @@ library OptionsUtils {
         } else {
             payoutDecimals = _strikeAssetDecimals;
         }
-    }
-
-    /// @notice Gets the option details for a given QToken
-    /// @param _qToken QToken to get the info for
-    /// @return qTokenInfo struct containing all the QToken details
-    function getQTokenInfo(address _qToken)
-        internal
-        view
-        returns (IQToken.QTokenInfo memory qTokenInfo)
-    {
-        IQToken qToken = IQToken(_qToken);
-
-        qTokenInfo = IQToken.QTokenInfo(
-            qToken.underlyingAsset(),
-            qToken.strikeAsset(),
-            qToken.oracle(),
-            qToken.strikePrice(),
-            qToken.expiryTime(),
-            qToken.isCall()
-        );
     }
 }

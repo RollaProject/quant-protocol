@@ -10,7 +10,7 @@ import "../interfaces/IOracleRegistry.sol";
 contract OracleRegistry is Ownable, IOracleRegistry {
     struct OracleInfo {
         bool isActive;
-        uint256 oracleId;
+        uint248 oracleId;
     }
 
     /// @inheritdoc IOracleRegistry
@@ -24,7 +24,7 @@ contract OracleRegistry is Ownable, IOracleRegistry {
         external
         override
         onlyOwner
-        returns (uint256)
+        returns (uint248)
     {
         require(
             oracleInfo[_oracle].oracleId == 0,
@@ -33,7 +33,7 @@ contract OracleRegistry is Ownable, IOracleRegistry {
 
         oracles.push(_oracle);
 
-        uint256 currentId = oracles.length;
+        uint248 currentId = getOraclesLength();
 
         emit AddedOracle(_oracle, currentId);
 
@@ -100,9 +100,9 @@ contract OracleRegistry is Ownable, IOracleRegistry {
         external
         view
         override
-        returns (uint256)
+        returns (uint248)
     {
-        uint256 oracleId = oracleInfo[_oracle].oracleId;
+        uint248 oracleId = oracleInfo[_oracle].oracleId;
         require(
             oracleId != 0,
             "OracleRegistry: Oracle doesn't exist in registry"
@@ -111,7 +111,12 @@ contract OracleRegistry is Ownable, IOracleRegistry {
     }
 
     /// @inheritdoc IOracleRegistry
-    function getOraclesLength() external view override returns (uint256) {
-        return oracles.length;
+    function getOraclesLength() public view override returns (uint248) {
+        uint256 length = oracles.length;
+        require(
+            length <= uint256(type(uint248).max),
+            "OracleRegistry: oracles limit exceeded"
+        );
+        return uint248(length);
     }
 }

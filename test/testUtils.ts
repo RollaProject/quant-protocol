@@ -68,25 +68,25 @@ const deployQToken = async (
   deployer: Signer,
   underlyingAsset: string,
   strikeAsset: string,
-  oracle: string = ethers.Wallet.createRandom().address,
   priceRegistry: string,
   assetsRegistry: string,
-  strikePrice = ethers.BigNumber.from("1400000000"),
+  oracle: string = ethers.Wallet.createRandom().address,
   expiryTime: BigNumber = ethers.BigNumber.from(
     Math.floor(Date.now() / 1000) + 30 * 24 * 3600
   ), // a month from the current time
-  isCall = false
+  isCall = false,
+  strikePrice = ethers.BigNumber.from("1400000000")
 ): Promise<QToken> => {
   const qToken = <QToken>(
     await deployContract(deployer, QTokenJSON, [
       underlyingAsset,
       strikeAsset,
-      oracle,
       priceRegistry,
       assetsRegistry,
-      strikePrice,
+      oracle,
       expiryTime,
       isCall,
+      strikePrice,
     ])
   );
 

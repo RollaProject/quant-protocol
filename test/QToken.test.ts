@@ -34,7 +34,7 @@ describe("QToken", async () => {
   let userAddress: string;
   let otherUserAddress: string;
   let scaledStrikePrice: BigNumber;
-  let qTokenParams: [string, string, string, BigNumber, BigNumber, boolean];
+  let qTokenParams: [string, string, string, BigNumber, boolean, BigNumber];
   const strikePrice = ethers.utils.parseUnits("1400", 18);
   const expiryTime = ethers.BigNumber.from("1618592400"); // April 16th, 2021
   const oracle = ethers.Wallet.createRandom().address;
@@ -84,21 +84,21 @@ describe("QToken", async () => {
       WETH.address,
       BUSD.address,
       oracle,
-      strikePrice,
       expiryTime,
       false,
+      strikePrice,
     ];
 
     qToken = await deployQToken(
       deployer,
       WETH.address,
       BUSD.address,
-      oracle,
       mockPriceRegistry.address,
       assetsRegistry.address,
-      strikePrice,
+      oracle,
       expiryTime,
-      false
+      false,
+      strikePrice
     );
   });
 
@@ -165,12 +165,12 @@ describe("QToken", async () => {
     qToken = <QToken>await deployContract(deployer, QTokenJSON, [
       WETH.address,
       BUSD.address,
-      oracle,
       mockPriceRegistry.address,
       assetsRegistry.address,
-      ethers.BigNumber.from("1912340000000000000000"), // BUSD has 18 decimals
+      oracle,
       ethers.BigNumber.from("1630768904"),
       true,
+      ethers.BigNumber.from("1912340000000000000000"), // BUSD has 18 decimals
     ]);
     expect(await qToken.symbol()).to.equal("ROLLA-WETH-04SEP2021-1912.34-C");
     expect(await qToken.name()).to.equal(
@@ -214,12 +214,12 @@ describe("QToken", async () => {
         await deployContract(deployer, QTokenJSON, [
           WETH.address,
           BUSD.address,
-          oracle,
           mockPriceRegistry.address,
           assetsRegistry.address,
-          strikePrice,
+          oracle,
           ethers.BigNumber.from(optionexpiryTime.toString()),
           false,
+          strikePrice,
         ])
       );
 
@@ -253,13 +253,14 @@ describe("QToken", async () => {
       deployer,
       WETH.address,
       BUSD.address,
-      ethers.Wallet.createRandom().address,
       mockPriceRegistry.address,
       assetsRegistry.address,
-      strikePrice,
+      ethers.Wallet.createRandom().address,
       ethers.BigNumber.from(
         (Math.round(Date.now() / 1000) + 30 * 24 * 3600).toString()
-      )
+      ),
+      false,
+      strikePrice
     );
 
     expect(await nonExpiredQToken.getOptionPriceStatus()).to.equal(
@@ -350,11 +351,12 @@ describe("QToken", async () => {
       deployer,
       WETH.address,
       BUSD.address,
-      oracle,
       mockPriceRegistry.address,
       assetsRegistry.address,
-      decimalStrikePrice,
-      expiryTime
+      oracle,
+      expiryTime,
+      false,
+      decimalStrikePrice
     );
 
     expect(await decimalStrikeQToken.name()).to.equal(
@@ -371,11 +373,12 @@ describe("QToken", async () => {
       deployer,
       WETH.address,
       BUSD.address,
-      oracle,
       mockPriceRegistry.address,
       assetsRegistry.address,
-      weiStrikePrice,
-      ethers.BigNumber.from("2153731385")
+      oracle,
+      ethers.BigNumber.from("2153731385"),
+      false,
+      weiStrikePrice
     );
 
     expect(await weiStrikePriceQToken.name()).to.equal(
@@ -390,11 +393,12 @@ describe("QToken", async () => {
       deployer,
       DOGE.address,
       BUSD.address,
-      oracle,
       mockPriceRegistry.address,
       assetsRegistry.address,
-      dogeStrikePrice,
-      ethers.BigNumber.from("2153731385")
+      oracle,
+      ethers.BigNumber.from("2153731385"),
+      false,
+      dogeStrikePrice
     );
 
     expect(await dogeQToken.name()).to.eql(

@@ -10,11 +10,11 @@ interface IOptionsFactory {
         address creator,
         address indexed underlying,
         address oracle,
+        uint88 expiry,
+        bool isCall,
         uint256 strikePrice,
-        uint256 expiry,
         uint256 collateralTokenId,
-        uint256 allOptionsLength,
-        bool isCall
+        uint256 allOptionsLength
     );
 
     /// @notice Creates new options (QToken + CollateralToken)
@@ -27,9 +27,9 @@ interface IOptionsFactory {
     function createOption(
         address _underlyingAsset,
         address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) external returns (address, uint256);
 
     /// @notice array of all the created QTokens
@@ -54,9 +54,9 @@ interface IOptionsFactory {
     function getTargetQTokenAddress(
         address _underlyingAsset,
         address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) external view returns (address);
 
     /// @notice get the id that a CollateralToken with the given parameters would have
@@ -69,11 +69,11 @@ interface IOptionsFactory {
     /// @return the id that a CollateralToken would have
     function getTargetCollateralTokenId(
         address _underlyingAsset,
-        address _oracle,
         address _qTokenAsCollateral,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        address _oracle,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) external view returns (uint256);
 
     /// @notice get the CollateralToken id for an already created CollateralToken,
@@ -87,11 +87,11 @@ interface IOptionsFactory {
     /// @return id of the requested CollateralToken
     function getCollateralToken(
         address _underlyingAsset,
-        address _oracle,
         address _qTokenAsCollateral,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        address _oracle,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) external view returns (uint256);
 
     /// @notice get the QToken address for an already created QToken, if no QToken has been created
@@ -105,9 +105,9 @@ interface IOptionsFactory {
     function getQToken(
         address _underlyingAsset,
         address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) external view returns (address);
 
     /// @notice get the total number of options created by the factory

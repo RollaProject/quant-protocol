@@ -24,19 +24,19 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
     address public immutable override strikeAsset;
 
     /// @inheritdoc IQToken
-    address public immutable override oracle;
-
-    /// @inheritdoc IQToken
     address public immutable priceRegistry;
 
     /// @inheritdoc IQToken
-    uint256 public immutable override strikePrice;
+    address public immutable override oracle;
 
     /// @inheritdoc IQToken
-    uint256 public immutable override expiryTime;
+    uint88 public immutable override expiryTime;
 
     /// @inheritdoc IQToken
     bool public immutable override isCall;
+
+    /// @inheritdoc IQToken
+    uint256 public immutable override strikePrice;
 
     /// @notice Configures the parameters of a new option token
     /// @param _underlyingAsset asset that the option references
@@ -48,29 +48,29 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
     constructor(
         address _underlyingAsset,
         address _strikeAsset,
-        address _oracle,
         address _priceRegistry,
         address _assetsRegistry,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        address _oracle,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     )
         ERC20(
             _qTokenName(
                 _underlyingAsset,
                 _strikeAsset,
                 _assetsRegistry,
-                _strikePrice,
                 _expiryTime,
-                _isCall
+                _isCall,
+                _strikePrice
             ),
             _qTokenSymbol(
                 _underlyingAsset,
                 _strikeAsset,
                 _assetsRegistry,
-                _strikePrice,
                 _expiryTime,
-                _isCall
+                _isCall,
+                _strikePrice
             )
         )
         ERC20Permit(
@@ -78,9 +78,9 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
                 _underlyingAsset,
                 _strikeAsset,
                 _assetsRegistry,
-                _strikePrice,
                 _expiryTime,
-                _isCall
+                _isCall,
+                _strikePrice
             )
         )
     {
@@ -100,11 +100,11 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
 
         underlyingAsset = _underlyingAsset;
         strikeAsset = _strikeAsset;
-        oracle = _oracle;
         priceRegistry = _priceRegistry;
-        strikePrice = _strikePrice;
+        oracle = _oracle;
         expiryTime = _expiryTime;
         isCall = _isCall;
+        strikePrice = _strikePrice;
     }
 
     /// @inheritdoc IQToken
@@ -147,8 +147,15 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
         external
         view
         override
-        returns (QTokenInfo memory)
+        returns (QTokenInfo memory qTokenInfo)
     {
-        return OptionsUtils.getQTokenInfo(address(this));
+        qTokenInfo = QTokenInfo(
+            underlyingAsset,
+            strikeAsset,
+            oracle,
+            expiryTime,
+            isCall,
+            strikePrice
+        );
     }
 }
