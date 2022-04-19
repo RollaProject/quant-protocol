@@ -7,23 +7,23 @@ contract QTokenA is QTokenCore {
     constructor(
         address _underlyingAsset,
         address _strikeAsset,
-        address _oracle,
         address _priceRegistry,
         address _assetsRegistry,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        address _oracle,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     )
         public
         QTokenCore(
             _underlyingAsset,
             _strikeAsset,
-            _oracle,
             _priceRegistry,
             _assetsRegistry,
-            _strikePrice,
+            _oracle,
             _expiryTime,
-            _isCall
+            _isCall,
+            _strikePrice
         )
     {}
 }

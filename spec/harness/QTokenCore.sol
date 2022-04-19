@@ -7,23 +7,23 @@ contract QTokenCore is QToken {
     constructor(
         address _underlyingAsset,
         address _strikeAsset,
-        address _oracle,
         address _priceRegistry,
         address _assetsRegistry,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        address _oracle,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     )
         public
         QToken(
             _underlyingAsset,
             _strikeAsset,
-            _oracle,
             _priceRegistry,
             _assetsRegistry,
-            _strikePrice,
+            _oracle,
             _expiryTime,
-            _isCall
+            _isCall,
+            _strikePrice
         )
     {}
 
@@ -38,18 +38,18 @@ contract QTokenCore is QToken {
         address _underlyingAsset,
         address _strikeAsset,
         address _assetsRegistry,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) internal view override returns (string memory tokenName) {}
 
     function _qTokenSymbol(
         address _underlyingAsset,
         address _strikeAsset,
         address _assetsRegistry,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     ) internal view override returns (string memory tokenSymbol) {}
 
     function _getOptionType(bool _isCall)
