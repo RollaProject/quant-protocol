@@ -4,10 +4,8 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "../pricing/PriceRegistry.sol";
+import "../interfaces/IPriceRegistry.sol";
 import "../interfaces/IQToken.sol";
-import "../libraries/OptionsUtils.sol";
-import "../libraries/QuantMath.sol";
 import "./QTokenStringUtils.sol";
 
 /// @title Token that represents a user's long position
@@ -15,8 +13,6 @@ import "./QTokenStringUtils.sol";
 /// @notice Can be used by owners to exercise their options
 /// @dev Every option long position is an ERC20 token: https://eips.ethereum.org/EIPS/eip-20
 contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
-    using QuantMath for uint256;
-
     /// @inheritdoc IQToken
     address public immutable override underlyingAsset;
 
@@ -128,7 +124,7 @@ contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
     {
         if (block.timestamp > expiryTime) {
             if (
-                PriceRegistry(priceRegistry).hasSettlementPrice(
+                IPriceRegistry(priceRegistry).hasSettlementPrice(
                     oracle,
                     underlyingAsset,
                     expiryTime

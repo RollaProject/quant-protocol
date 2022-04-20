@@ -3,9 +3,6 @@ pragma solidity 0.8.13;
 
 import "../libraries/OptionsUtils.sol";
 import "../interfaces/IOptionsFactory.sol";
-import "../interfaces/IProviderOracleManager.sol";
-import "../interfaces/IOracleRegistry.sol";
-import "../interfaces/IAssetsRegistry.sol";
 import "../interfaces/ICollateralToken.sol";
 import "../interfaces/IPriceRegistry.sol";
 
@@ -18,15 +15,15 @@ contract OptionsFactory is IOptionsFactory {
     address[] public override qTokens;
 
     /// @inheritdoc IOptionsFactory
-    address public override strikeAsset;
+    address public immutable override strikeAsset;
 
-    ICollateralToken public override collateralToken;
+    address public immutable override collateralToken;
 
-    address public override controller;
+    address public immutable override controller;
 
-    address public override priceRegistry;
+    address public immutable override priceRegistry;
 
-    address public override assetsRegistry;
+    address public immutable override assetsRegistry;
 
     mapping(uint256 => address) private _collateralTokenIdToQTokenAddress;
 
@@ -69,7 +66,7 @@ contract OptionsFactory is IOptionsFactory {
         );
 
         strikeAsset = _strikeAsset;
-        collateralToken = ICollateralToken(_collateralToken);
+        collateralToken = _collateralToken;
         controller = _controller;
         priceRegistry = _priceRegistry;
         assetsRegistry = _assetsRegistry;
@@ -147,7 +144,10 @@ contract OptionsFactory is IOptionsFactory {
             qTokens.length
         );
 
-        collateralToken.createCollateralToken(newQToken, address(0));
+        ICollateralToken(collateralToken).createCollateralToken(
+            newQToken,
+            address(0)
+        );
     }
 
     /// @inheritdoc IOptionsFactory
@@ -212,12 +212,14 @@ contract OptionsFactory is IOptionsFactory {
             _strikePrice
         );
 
-        uint256 id = collateralToken.getCollateralTokenId(
+        uint256 id = ICollateralToken(collateralToken).getCollateralTokenId(
             qToken,
             _qTokenAsCollateral
         );
 
-        (address storedQToken, ) = collateralToken.idToInfo(id);
+        (address storedQToken, ) = ICollateralToken(collateralToken).idToInfo(
+            id
+        );
         return storedQToken != address(0) ? id : 0;
     }
 

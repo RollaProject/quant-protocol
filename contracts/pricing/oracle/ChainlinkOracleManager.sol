@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
-import "../PriceRegistry.sol";
+import "../../interfaces/IPriceRegistry.sol";
 import "./ProviderOracleManager.sol";
 import "../../libraries/QuantMath.sol";
 import "../../interfaces/IChainlinkOracleManager.sol";
@@ -87,7 +87,7 @@ contract ChainlinkOracleManager is
             true
         );
 
-        PriceRegistry(priceRegistry).setSettlementPrice(
+        IPriceRegistry(priceRegistry).setSettlementPrice(
             _asset,
             _expiryTimestamp,
             _price,
@@ -229,7 +229,7 @@ contract ChainlinkOracleManager is
             false
         );
 
-        PriceRegistry(priceRegistry).setSettlementPrice(
+        IPriceRegistry(priceRegistry).setSettlementPrice(
             _asset,
             _expiryTimestamp,
             price,

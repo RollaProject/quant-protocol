@@ -14,7 +14,7 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
     /// @inheritdoc IProviderOracleManager
     address[] public override assets;
 
-    address public priceRegistry;
+    address public immutable priceRegistry;
 
     constructor(address _priceRegistry) {
         require(

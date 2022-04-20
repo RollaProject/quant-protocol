@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../external/openzeppelin/ERC1155.sol";
 import "../interfaces/ICollateralToken.sol";
+import "../interfaces/IQToken.sol";
 
 /// @title Tokens representing a Quant user's short positions
 /// @author Rolla

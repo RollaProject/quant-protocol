@@ -2,6 +2,7 @@
 pragma solidity 0.8.13;
 
 import "./interfaces/IQuantCalculator.sol";
+import "./interfaces/ICollateralToken.sol";
 import "./interfaces/IOptionsFactory.sol";
 import "./interfaces/IQToken.sol";
 import "./interfaces/IPriceRegistry.sol";
@@ -96,8 +97,9 @@ contract QuantCalculator is IQuantCalculator {
             uint256 amountToClaim
         )
     {
-        ICollateralToken collateralToken = IOptionsFactory(optionsFactory)
-            .collateralToken();
+        ICollateralToken collateralToken = ICollateralToken(
+            IOptionsFactory(optionsFactory).collateralToken()
+        );
 
         (address _qTokenShort, address qTokenAsCollateral) = collateralToken
             .idToInfo(_collateralTokenId);

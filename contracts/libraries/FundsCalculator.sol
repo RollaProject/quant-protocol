@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import "./QuantMath.sol";
-import "../options/QToken.sol";
+import "../interfaces/IQToken.sol";
 import "../interfaces/IPriceRegistry.sol";
 
 /// @title For calculating collateral requirements and payouts for options and spreads
@@ -41,7 +41,7 @@ library FundsCalculator {
             QuantMath.FixedPointInt memory payoutAmount
         )
     {
-        QToken qToken = QToken(_qToken);
+        IQToken qToken = IQToken(_qToken);
         bool isCall = qToken.isCall();
 
         payoutToken = isCall ? qToken.underlyingAsset() : qToken.strikeAsset();
@@ -81,14 +81,14 @@ library FundsCalculator {
             QuantMath.FixedPointInt memory collateralAmount
         )
     {
-        QToken qTokenToMint = QToken(_qTokenToMint);
+        IQToken qTokenToMint = IQToken(_qTokenToMint);
         uint256 qTokenToMintStrikePrice = qTokenToMint.strikePrice();
 
         uint256 qTokenForCollateralStrikePrice;
 
         // check if we're getting the collateral requirement for a spread
         if (_qTokenForCollateral != address(0)) {
-            QToken qTokenForCollateral = QToken(_qTokenForCollateral);
+            IQToken qTokenForCollateral = IQToken(_qTokenForCollateral);
             qTokenForCollateralStrikePrice = qTokenForCollateral.strikePrice();
 
             // Check that expiries match

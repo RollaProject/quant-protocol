@@ -69,7 +69,7 @@ library OptionsUtils {
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @return the id that a CollateralToken would have
     function getTargetCollateralTokenId(
-        ICollateralToken _collateralToken,
+        address _collateralToken,
         address _underlyingAsset,
         address _qTokenAsCollateral,
         address _strikeAsset,
@@ -91,7 +91,10 @@ library OptionsUtils {
             _strikePrice
         );
         return
-            _collateralToken.getCollateralTokenId(qToken, _qTokenAsCollateral);
+            ICollateralToken(_collateralToken).getCollateralTokenId(
+                qToken,
+                _qTokenAsCollateral
+            );
     }
 
     /// @notice Checks if the given option parameters are valid for creation in the Quant Protocol

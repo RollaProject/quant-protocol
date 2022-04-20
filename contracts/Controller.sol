@@ -12,11 +12,9 @@ import "./utils/OperateProxy.sol";
 import "./interfaces/IQToken.sol";
 import "./interfaces/IOracleRegistry.sol";
 import "./interfaces/IController.sol";
-import "./interfaces/IOperateProxy.sol";
 import "./interfaces/IQuantCalculator.sol";
 import "./interfaces/IOptionsFactory.sol";
 import "./interfaces/IAssetsRegistry.sol";
-import "./libraries/QuantMath.sol";
 import "./libraries/Actions.sol";
 
 /// @title The main entry point in the Quant Protocol
@@ -29,20 +27,19 @@ import "./libraries/Actions.sol";
 /// OptionsFactory first.
 contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     using SafeERC20 for IERC20;
-    using QuantMath for QuantMath.FixedPointInt;
     using Actions for ActionArgs;
 
     /// @inheritdoc IController
-    address public override optionsFactory;
+    address public immutable override optionsFactory;
 
-    OperateProxy public operateProxy;
+    OperateProxy public immutable operateProxy;
 
     /// @inheritdoc IController
-    address public override quantCalculator;
+    address public immutable override quantCalculator;
 
-    address public oracleRegistry;
+    address public immutable oracleRegistry;
 
-    CollateralToken public collateralToken;
+    CollateralToken public immutable collateralToken;
 
     constructor(
         string memory _name,

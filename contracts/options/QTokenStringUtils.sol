@@ -2,7 +2,6 @@
 pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
 import "../interfaces/IAssetsRegistry.sol";
 
