@@ -5,6 +5,7 @@ import "../../contracts/interfaces/IQuantCalculator.sol";
 import "../../contracts/interfaces/IOptionsFactory.sol";
 import "../../contracts/interfaces/IQToken.sol";
 import "../../contracts/interfaces/IPriceRegistry.sol";
+import "../../contracts/interfaces/ICollateralToken.sol";
 
 contract QuantCalculatorHarness is IQuantCalculator {
     modifier validQToken(address _qToken) {
@@ -95,15 +96,14 @@ contract QuantCalculatorHarness is IQuantCalculator {
         )
     {
         amountToClaim = _amount == 0
-            ? IOptionsFactory(optionsFactory).collateralToken().balanceOf(
-                msgSender,
-                _collateralTokenId
-            )
+            ? ICollateralToken(
+                IOptionsFactory(optionsFactory).collateralToken()
+            ).balanceOf(msgSender, _collateralTokenId)
             : _amount;
 
-        (address _qTokenShort, address qTokenAsCollateral) = IOptionsFactory(
-            optionsFactory
-        ).collateralToken().idToInfo(_collateralTokenId);
+        (address _qTokenShort, address qTokenAsCollateral) = ICollateralToken(
+            IOptionsFactory(optionsFactory).collateralToken()
+        ).idToInfo(_collateralTokenId);
 
         returnableCollateral = getClaimableCollateralValue(
             _collateralTokenId,
