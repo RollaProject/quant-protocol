@@ -78,7 +78,6 @@ contract QToken is ERC20, IQToken {
         onlyController
     {
         _mint(account, amount);
-        emit QTokenMinted(account, amount);
     }
 
     /// @inheritdoc IQToken
@@ -88,6 +87,5 @@ contract QToken is ERC20, IQToken {
         onlyController
     {
         _burn(account, amount);
-        emit QTokenBurned(account, amount);
     }
 }
