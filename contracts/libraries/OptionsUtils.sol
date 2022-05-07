@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
-import "@openzeppelin/contracts/utils/Create2.sol";
+import "@rolla-finance/clones-with-immutable-args/ClonesWithImmutableArgs.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
 import "../options/QToken.sol";
 import "../interfaces/ICollateralToken.sol";
 import "../interfaces/IOracleRegistry.sol";
 import "../interfaces/IProviderOracleManager.sol";
 import "../interfaces/IQToken.sol";
 import "../interfaces/IAssetsRegistry.sol";
+
+struct QTokenMetadata {
+    uint256[] name;
+    uint256[] symbol;
+}
 
 /// @title Options utilities for Quant's QToken and CollateralToken
 /// @author Rolla
@@ -16,79 +23,50 @@ library OptionsUtils {
     /// @notice constant salt because options will only be deployed with the same parameters once
     bytes32 public constant SALT = bytes32("ROLLA.FINANCE");
 
-    /// @notice get the address at which a new QToken with the given parameters would be deployed
-    /// @notice return the exact address the QToken will be deployed at with OpenZeppelin's Create2
-    /// library computeAddress function
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _oracle price oracle for the option underlying
-    /// @param _priceRegistry address of the PriceRegistry contract
-    /// @param _assetsRegistry address of the AssetsRegistry contract
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @return the address where a QToken would be deployed
-    function getTargetQTokenAddress(
-        address _underlyingAsset,
-        address _strikeAsset,
-        address _priceRegistry,
-        address _assetsRegistry,
-        address _oracle,
-        uint88 _expiryTime,
-        bool _isCall,
-        uint256 _strikePrice
-    ) internal view returns (address) {
-        bytes32 bytecodeHash = keccak256(
-            abi.encodePacked(
-                type(QToken).creationCode,
-                abi.encode(
-                    _underlyingAsset,
-                    _strikeAsset,
-                    _priceRegistry,
-                    _assetsRegistry,
-                    _oracle,
-                    _expiryTime,
-                    _isCall,
-                    _strikePrice
-                )
-            )
-        );
+    function bytesToUint256Array(bytes memory _data)
+        internal
+        returns (uint256[] memory result)
+    {
+        result = new uint256[](4);
 
-        return Create2.computeAddress(SALT, bytecodeHash);
+        assembly {
+            let len := mload(_data)
+            if iszero(
+                call(
+                    gas(),
+                    0x04,
+                    0,
+                    add(_data, 0x20),
+                    len,
+                    add(result, 0x20),
+                    len
+                )
+            ) {
+                invalid()
+            }
+        }
     }
 
-    /// @notice get the id that a CollateralToken with the given parameters would have
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _oracle price oracle for the option underlying
-    /// @param _priceRegistry address of the PriceRegistry contract
-    /// @param _assetsRegistry address of the AssetsRegistry contract
-    /// @param _qTokenAsCollateral initial spread collateral
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @return the id that a CollateralToken would have
+    function getTargetQTokenAddress(
+        address implementation,
+        bytes memory qTokenCloneData
+    ) internal view returns (address predicted) {
+        (predicted, ) = ClonesWithImmutableArgs.predictDeterministicAddress(
+            implementation,
+            SALT,
+            qTokenCloneData
+        );
+    }
+
     function getTargetCollateralTokenId(
         address _collateralToken,
-        address _underlyingAsset,
         address _qTokenAsCollateral,
-        address _strikeAsset,
-        address _priceRegistry,
-        address _assetsRegistry,
-        address _oracle,
-        uint88 _expiryTime,
-        bool _isCall,
-        uint256 _strikePrice
+        address _qTokenImplementation,
+        bytes memory _qTokenCloneData
     ) internal view returns (uint256) {
         address qToken = getTargetQTokenAddress(
-            _underlyingAsset,
-            _strikeAsset,
-            _priceRegistry,
-            _assetsRegistry,
-            _oracle,
-            _expiryTime,
-            _isCall,
-            _strikePrice
+            _qTokenImplementation,
+            _qTokenCloneData
         );
         return
             ICollateralToken(_collateralToken).getCollateralTokenId(
@@ -116,16 +94,16 @@ library OptionsUtils {
             "OptionsFactory: given expiry time is in the past"
         );
 
-        require(
-            IOracleRegistry(_oracleRegistry).isOracleRegistered(_oracle),
-            "OptionsFactory: Oracle is not registered in OracleRegistry"
-        );
+        // require(
+        //     IOracleRegistry(_oracleRegistry).isOracleRegistered(_oracle),
+        //     "OptionsFactory: Oracle is not registered in OracleRegistry"
+        // );
 
-        require(
-            IProviderOracleManager(_oracle).getAssetOracle(_underlyingAsset) !=
-                address(0),
-            "OptionsFactory: Asset does not exist in oracle"
-        );
+        // require(
+        //     IProviderOracleManager(_oracle).getAssetOracle(_underlyingAsset) !=
+        //         address(0),
+        //     "OptionsFactory: Asset does not exist in oracle"
+        // );
 
         require(
             IProviderOracleManager(_oracle).isValidOption(
@@ -178,6 +156,261 @@ library OptionsUtils {
                 .assetProperties(_qToken.underlyingAsset());
         } else {
             payoutDecimals = _strikeAssetDecimals;
+        }
+    }
+
+    /// @notice get the ERC20 token symbol and decimals from the AssetsRegistry
+    /// @dev the asset is assumed to be in the AssetsRegistry since QTokens
+    /// must be created through the OptionsFactory, which performs that check
+    /// @param _asset address of the asset in the AssetsRegistry
+    /// @param _assetsRegistry address of the AssetsRegistry contract
+    /// @return assetSymbol string stored as the ERC20 token symbol
+    /// @return assetDecimals uint8 stored as the ERC20 token decimals
+    function assetSymbolAndDecimals(address _asset, address _assetsRegistry)
+        internal
+        view
+        returns (string memory assetSymbol, uint8 assetDecimals)
+    {
+        bool isRegistered;
+        (, assetSymbol, assetDecimals, isRegistered) = IAssetsRegistry(
+            _assetsRegistry
+        ).assetProperties(_asset);
+
+        require(isRegistered, "OptionsUtils: asset is not in the registry");
+    }
+
+    /// @notice generates the name for an option
+    /// @param _underlyingAsset asset that the option references
+    /// @param _strikeAsset asset that the option is settled on
+    /// @param _assetsRegistry address of the AssetsRegistry
+    /// @param _expiryTime expiration timestamp as a unix timestamp
+    /// @param _isCall true if it's a call option, false if it's a put option
+    /// @param _strikePrice strike price with as many decimals in the strike asset
+    /// @return qTokenMetadata name string for the QToken
+    function getQTokenMetadata(
+        address _underlyingAsset,
+        address _strikeAsset,
+        address _assetsRegistry,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
+    ) internal returns (QTokenMetadata memory qTokenMetadata) {
+        (string memory underlying, ) = assetSymbolAndDecimals(
+            _underlyingAsset,
+            _assetsRegistry
+        );
+        (, uint8 strikePriceDecimals) = assetSymbolAndDecimals(
+            _strikeAsset,
+            _assetsRegistry
+        );
+        string memory displayStrikePrice = displayedStrikePrice(
+            _strikePrice,
+            strikePriceDecimals
+        );
+
+        // convert the expiry to a readable string
+        (uint256 year, uint256 month, uint256 day) = DateTime.timestampToDate(
+            _expiryTime
+        );
+
+        // get option type string
+        (string memory typeSymbol, string memory typeFull) = getOptionType(
+            _isCall
+        );
+
+        // get option month string
+        (string memory monthSymbol, string memory monthFull) = getMonth(month);
+
+        /// concatenated name and symbol strings
+        qTokenMetadata = QTokenMetadata({
+            name: bytesToUint256Array(
+                abi.encodePacked(
+                    "ROLLA",
+                    " ",
+                    underlying,
+                    " ",
+                    uintToChars(day),
+                    "-",
+                    monthFull,
+                    "-",
+                    Strings.toString(year),
+                    " ",
+                    displayStrikePrice,
+                    " ",
+                    typeFull
+                )
+            ),
+            symbol: bytesToUint256Array(
+                abi.encodePacked(
+                    "ROLLA",
+                    "-",
+                    underlying,
+                    "-",
+                    uintToChars(day),
+                    monthSymbol,
+                    Strings.toString(year),
+                    "-",
+                    displayStrikePrice,
+                    "-",
+                    typeSymbol
+                )
+            )
+        });
+    }
+
+    function getQTokenImmutableArgs(
+        uint8 _optionsDecimals,
+        address _underlyingAsset,
+        address _strikeAsset,
+        address _assetsRegistry,
+        address _oracle,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice,
+        address _controller
+    ) internal returns (bytes memory data) {
+        QTokenMetadata memory qTokenMetadata = OptionsUtils.getQTokenMetadata(
+            _underlyingAsset,
+            _strikeAsset,
+            _assetsRegistry,
+            _expiryTime,
+            _isCall,
+            _strikePrice
+        );
+
+        data = abi.encodePacked(
+            qTokenMetadata.name,
+            qTokenMetadata.symbol,
+            _optionsDecimals,
+            _underlyingAsset,
+            _strikeAsset,
+            _oracle,
+            _expiryTime,
+            _isCall,
+            _strikePrice,
+            _controller
+        );
+    }
+
+    /// @dev convert the option strike price scaled to a human readable value
+    /// @param _strikePrice the option strike price scaled by 1e20
+    /// @return strike price string
+    function displayedStrikePrice(
+        uint256 _strikePrice,
+        uint8 _strikePriceDecimals
+    ) internal pure returns (string memory) {
+        uint256 strikePriceScale = 10**_strikePriceDecimals;
+        uint256 remainder = _strikePrice % strikePriceScale;
+        uint256 quotient = _strikePrice / strikePriceScale;
+        string memory quotientStr = Strings.toString(quotient);
+
+        if (remainder == 0) {
+            return quotientStr;
+        }
+
+        uint256 trailingZeroes;
+        while (remainder % 10 == 0) {
+            remainder /= 10;
+            trailingZeroes++;
+        }
+
+        // pad the number with "1 + starting zeroes"
+        remainder += 10**(_strikePriceDecimals - trailingZeroes);
+
+        string memory tmp = Strings.toString(remainder);
+        tmp = slice(tmp, 1, (1 + _strikePriceDecimals) - trailingZeroes);
+
+        return string(abi.encodePacked(quotientStr, ".", tmp));
+    }
+
+    /// @dev get the string representation of the option type
+    /// @return a 1 character representation of the option type
+    /// @return a full length string of the option type
+    function getOptionType(bool _isCall)
+        internal
+        pure
+        returns (string memory, string memory)
+    {
+        return _isCall ? ("C", "Call") : ("P", "Put");
+    }
+
+    /// @dev get the representation of a number using 2 characters, adding a leading 0 if it's one digit,
+    /// and two trailing digits if it's a 3 digit number
+    /// @return 2 characters that correspond to a number
+    function uintToChars(uint256 _number)
+        internal
+        pure
+        returns (string memory)
+    {
+        if (_number > 99) {
+            _number %= 100;
+        }
+
+        string memory str = Strings.toString(_number);
+
+        if (_number < 10) {
+            return string(abi.encodePacked("0", str));
+        }
+
+        return str;
+    }
+
+    /// @dev cut a string into string[start:end]
+    /// @param _s string to cut
+    /// @param _start the starting index
+    /// @param _end the ending index (not inclusive)
+    /// @return the indexed string
+    function slice(
+        string memory _s,
+        uint256 _start,
+        uint256 _end
+    ) internal pure returns (string memory) {
+        uint256 range = _end - _start;
+        bytes memory slice_ = new bytes(range);
+        for (uint256 i = 0; i < range; ) {
+            slice_[i] = bytes(_s)[_start + i];
+            unchecked {
+                ++i;
+            }
+        }
+
+        return string(slice_);
+    }
+
+    /// @dev get the string representations of a month
+    /// @return a 3 character representation
+    /// @return a full length string representation
+    function getMonth(uint256 _month)
+        internal
+        pure
+        returns (string memory, string memory)
+    {
+        if (_month == 1) {
+            return ("JAN", "January");
+        } else if (_month == 2) {
+            return ("FEB", "February");
+        } else if (_month == 3) {
+            return ("MAR", "March");
+        } else if (_month == 4) {
+            return ("APR", "April");
+        } else if (_month == 5) {
+            return ("MAY", "May");
+        } else if (_month == 6) {
+            return ("JUN", "June");
+        } else if (_month == 7) {
+            return ("JUL", "July");
+        } else if (_month == 8) {
+            return ("AUG", "August");
+        } else if (_month == 9) {
+            return ("SEP", "September");
+        } else if (_month == 10) {
+            return ("OCT", "October");
+        } else if (_month == 11) {
+            return ("NOV", "November");
+        } else if (_month == 12) {
+            return ("DEC", "December");
+        } else {
+            revert("OptionsUtils: invalid month");
         }
     }
 }

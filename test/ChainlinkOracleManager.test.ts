@@ -191,7 +191,7 @@ describe("Chainlink Oracle Manager", async function () {
 
       //price should not be set initially
       await expect(
-        priceRegistry.getSettlementPrice(oracleManager.address, assetOne, 32)
+        priceRegistry.getSettlementPrice(oracleManager.address, 32, assetOne)
       ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
 
       await expect(
@@ -206,8 +206,8 @@ describe("Chainlink Oracle Manager", async function () {
       expect(
         await priceRegistry.getSettlementPrice(
           oracleManager.address,
-          assetOne,
-          32
+          32,
+          assetOne
         )
       ).to.equal(420);
 
@@ -215,8 +215,8 @@ describe("Chainlink Oracle Manager", async function () {
       const priceWithDecimals =
         await priceRegistry.getSettlementPriceWithDecimals(
           oracleManager.address,
-          assetOne,
-          32
+          32,
+          assetOne
         );
 
       expect(priceWithDecimals[0]).to.equal(BigNumber.from("42001"));
@@ -238,7 +238,7 @@ describe("Chainlink Oracle Manager", async function () {
 
       //price should not be set initially
       await expect(
-        priceRegistry.getSettlementPrice(oracleManager.address, assetOne, 32)
+        priceRegistry.getSettlementPrice(oracleManager.address, 32, assetOne)
       ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
 
       await expect(
@@ -253,8 +253,8 @@ describe("Chainlink Oracle Manager", async function () {
       expect(
         await priceRegistry.getSettlementPrice(
           oracleManager.address,
-          assetOne,
-          32
+          32,
+          assetOne
         )
       ).to.equal(420);
 
@@ -262,8 +262,8 @@ describe("Chainlink Oracle Manager", async function () {
       const priceWithDecimals =
         await priceRegistry.getSettlementPriceWithDecimals(
           oracleManager.address,
-          assetOne,
-          32
+          32,
+          assetOne
         );
 
       expect(priceWithDecimals[0]).to.equal(BigNumber.from("42001"));
@@ -315,7 +315,7 @@ describe("Chainlink Oracle Manager", async function () {
 
       //price should not be set initially
       await expect(
-        priceRegistry.getSettlementPrice(oracleManager.address, assetOne, 30)
+        priceRegistry.getSettlementPrice(oracleManager.address, 30, assetOne)
       ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
 
       await expect(
@@ -330,8 +330,8 @@ describe("Chainlink Oracle Manager", async function () {
       expect(
         await priceRegistry.getSettlementPrice(
           oracleManager.address,
-          assetOne,
-          30
+          30,
+          assetOne
         )
       ).to.equal(420);
 
@@ -339,8 +339,8 @@ describe("Chainlink Oracle Manager", async function () {
       const priceWithDecimals =
         await priceRegistry.getSettlementPriceWithDecimals(
           oracleManager.address,
-          assetOne,
-          30
+          30,
+          assetOne
         );
 
       expect(priceWithDecimals[0]).to.equal(BigNumber.from("42001"));
@@ -429,7 +429,7 @@ describe("Chainlink Oracle Manager", async function () {
 
       //price should not be set initially
       await expect(
-        priceRegistry.getSettlementPrice(oracleManager.address, assetOne, 22)
+        priceRegistry.getSettlementPrice(oracleManager.address, 22, assetOne)
       ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
 
       await expect(
@@ -444,8 +444,8 @@ describe("Chainlink Oracle Manager", async function () {
       expect(
         await priceRegistry.getSettlementPrice(
           oracleManager.address,
-          assetOne,
-          22
+          22,
+          assetOne
         )
       ).to.equal(420);
 
@@ -453,8 +453,8 @@ describe("Chainlink Oracle Manager", async function () {
       const priceWithDecimals =
         await priceRegistry.getSettlementPriceWithDecimals(
           oracleManager.address,
-          assetOne,
-          22
+          22,
+          assetOne
         );
 
       expect(priceWithDecimals[0]).to.equal(BigNumber.from("42001"));
@@ -472,7 +472,7 @@ describe("Chainlink Oracle Manager", async function () {
 
       //price should not be set initially
       await expect(
-        priceRegistry.getSettlementPrice(oracleManager.address, assetOne, 22)
+        priceRegistry.getSettlementPrice(oracleManager.address, 22, assetOne)
       ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
 
       await expect(
@@ -487,8 +487,8 @@ describe("Chainlink Oracle Manager", async function () {
       expect(
         await priceRegistry.getSettlementPrice(
           oracleManager.address,
-          assetOne,
-          22
+          22,
+          assetOne
         )
       ).to.equal(420);
 
@@ -496,8 +496,8 @@ describe("Chainlink Oracle Manager", async function () {
       const priceWithDecimals =
         await priceRegistry.getSettlementPriceWithDecimals(
           oracleManager.address,
-          assetOne,
-          22
+          22,
+          assetOne
         );
 
       expect(priceWithDecimals[0]).to.equal(BigNumber.from("42001"));
@@ -549,7 +549,7 @@ describe("Chainlink Oracle Manager", async function () {
 
       //price should not be set initially
       await expect(
-        priceRegistry.getSettlementPrice(oracleManager.address, assetOne, 30)
+        priceRegistry.getSettlementPrice(oracleManager.address, 30, assetOne)
       ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
 
       await expect(
@@ -564,8 +564,8 @@ describe("Chainlink Oracle Manager", async function () {
       expect(
         await priceRegistry.getSettlementPrice(
           oracleManager.address,
-          assetOne,
-          30
+          30,
+          assetOne
         )
       ).to.equal(420);
 
@@ -573,8 +573,8 @@ describe("Chainlink Oracle Manager", async function () {
       const priceWithDecimals =
         await priceRegistry.getSettlementPriceWithDecimals(
           oracleManager.address,
-          assetOne,
-          30
+          30,
+          assetOne
         );
 
       expect(priceWithDecimals[0]).to.equal(BigNumber.from("42001"));

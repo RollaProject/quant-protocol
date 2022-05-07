@@ -8,8 +8,17 @@ import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
 import "hardhat-gas-reporter";
-import { HardhatUserConfig } from "hardhat/config";
+import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from "hardhat/builtin-tasks/task-names";
+import { HardhatUserConfig, subtask } from "hardhat/config";
 import "solidity-coverage";
+
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
+  async (_, __, runSuper) => {
+    const paths = await runSuper();
+
+    return paths.filter((p: string) => !p.endsWith(".t.sol"));
+  }
+);
 
 dotenv.config();
 
@@ -54,8 +63,9 @@ const config: HardhatUserConfig = {
       // https://hardhat.org/hardhat-network/#solidity-optimizer-support
       optimizer: {
         enabled: true,
-        runs: 200,
+        runs: 1000000,
       },
+      viaIR: true,
       outputSelection: {
         "*": {
           "*": [

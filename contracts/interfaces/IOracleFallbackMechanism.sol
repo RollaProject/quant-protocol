@@ -8,7 +8,7 @@ interface IOracleFallbackMechanism {
     /// @param _price price to submit
     function setExpiryPriceInRegistryFallback(
         address _asset,
-        uint256 _expiryTimestamp,
+        uint88 _expiryTimestamp,
         uint256 _price
     ) external;
 }

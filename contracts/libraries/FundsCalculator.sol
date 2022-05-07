@@ -35,7 +35,7 @@ library FundsCalculator {
         IPriceRegistry.PriceWithDecimals memory _expiryPrice
     )
         internal
-        view
+        pure
         returns (
             address payoutToken,
             QuantMath.FixedPointInt memory payoutAmount
@@ -75,7 +75,7 @@ library FundsCalculator {
         uint8 _strikeAssetDecimals
     )
         internal
-        view
+        pure
         returns (
             address collateral,
             QuantMath.FixedPointInt memory collateralAmount

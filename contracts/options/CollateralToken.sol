@@ -27,8 +27,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     /// @inheritdoc ICollateralToken
     mapping(uint256 => CollateralTokenInfo) public override idToInfo;
 
-    /// @inheritdoc ICollateralToken
-    uint256[] public override collateralTokenIds;
+    // uint256[] public override collateralTokenIds;
 
     // Signature nonce per address
     mapping(address => uint256) public nonces;
@@ -79,24 +78,19 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
             "CollateralToken: Can only create a collateral token with different tokens"
         );
 
-        require(
-            idToInfo[id].qTokenAddress == address(0),
-            "CollateralToken: this token has already been created"
-        );
+        // require(
+        //     idToInfo[id].qTokenAddress == address(0),
+        //     "CollateralToken: this token has already been created"
+        // );
 
         idToInfo[id] = CollateralTokenInfo({
             qTokenAddress: _qTokenAddress,
             qTokenAsCollateral: _qTokenAsCollateral
         });
 
-        collateralTokenIds.push(id);
+        // collateralTokenIds.push(id);
 
-        emit CollateralTokenCreated(
-            _qTokenAddress,
-            _qTokenAsCollateral,
-            id,
-            collateralTokenIds.length
-        );
+        emit CollateralTokenCreated(_qTokenAddress, _qTokenAsCollateral, id);
     }
 
     /// @inheritdoc ICollateralToken
@@ -197,45 +191,14 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     }
 
     /// @inheritdoc ICollateralToken
-    function getCollateralTokensLength()
-        external
-        view
-        override
-        returns (uint256)
-    {
-        return collateralTokenIds.length;
-    }
-
-    /// @inheritdoc ICollateralToken
-    function getCollateralTokenInfo(uint256 id)
-        external
-        view
-        override
-        returns (QTokensDetails memory qTokensDetails)
-    {
-        CollateralTokenInfo memory info = idToInfo[id];
-
-        require(
-            info.qTokenAddress != address(0),
-            "CollateralToken: Invalid id"
-        );
-
-        IQToken.QTokenInfo memory shortDetails = IQToken(info.qTokenAddress)
-            .getQTokenInfo();
-
-        qTokensDetails.underlyingAsset = shortDetails.underlyingAsset;
-        qTokensDetails.strikeAsset = shortDetails.strikeAsset;
-        qTokensDetails.oracle = shortDetails.oracle;
-        qTokensDetails.shortStrikePrice = shortDetails.strikePrice;
-        qTokensDetails.expiryTime = shortDetails.expiryTime;
-        qTokensDetails.isCall = shortDetails.isCall;
-        qTokensDetails.longStrikePrice = 0;
-        if (info.qTokenAsCollateral != address(0)) {
-            // the given id is for a CollateralToken representing a spread
-            qTokensDetails.longStrikePrice = IQToken(info.qTokenAsCollateral)
-                .strikePrice();
-        }
-    }
+    // function getCollateralTokensLength()
+    //     external
+    //     view
+    //     override
+    //     returns (uint256)
+    // {
+    //     return collateralTokenIds.length;
+    // }
 
     /// @inheritdoc ICollateralToken
     function getCollateralTokenId(address _qToken, address _qTokenAsCollateral)

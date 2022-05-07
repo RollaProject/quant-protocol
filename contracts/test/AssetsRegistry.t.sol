@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.13;
 
-import "ds-test/test.sol";
-import "contracts/options/AssetsRegistry.sol";
-import "forge-std/stdlib.sol";
-import "forge-std/Vm.sol";
+import "forge-std/Test.sol";
+import "../options/AssetsRegistry.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract ERC20WithDecimals is ERC20 {
@@ -35,9 +33,7 @@ contract SimpleERC20 {
     }
 }
 
-contract AssetsRegistryTest is DSTest {
-    Vm public constant vm = Vm(HEVM_ADDRESS);
-
+contract AssetsRegistryTest is Test {
     AssetsRegistry public assetsRegistry;
 
     address public quantConfig;

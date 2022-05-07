@@ -22,7 +22,7 @@ describe("Actions lib", () => {
   describe("Test parseMintOptionArgs", () => {
     it("Should revert when passing 0 as the amount", async () => {
       await expect(
-        lib.testParseMintOptionArgs({
+        lib.parseMintOptionArgsTest({
           actionType: ActionType.MintOption,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
@@ -36,7 +36,7 @@ describe("Actions lib", () => {
 
     it("Should parse valid parameters correctly", async () => {
       expect(
-        await lib.testParseMintOptionArgs({
+        await lib.parseMintOptionArgsTest({
           actionType: ActionType.MintOption,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
@@ -52,7 +52,7 @@ describe("Actions lib", () => {
   describe("Test parseMintSpreadArgs", () => {
     it("Should revert when passing 0 as the amount", async () => {
       await expect(
-        lib.testParseMintSpreadArgs({
+        lib.parseMintSpreadArgsTest({
           actionType: ActionType.MintSpread,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
@@ -66,7 +66,7 @@ describe("Actions lib", () => {
 
     it("Should parse valid parameters correctly", async () => {
       expect(
-        await lib.testParseMintSpreadArgs({
+        await lib.parseMintSpreadArgsTest({
           actionType: ActionType.MintSpread,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
@@ -82,7 +82,7 @@ describe("Actions lib", () => {
   describe("Test parseExerciseArgs", () => {
     it("Should parse valid parameters correctly", async () => {
       expect(
-        await lib.testParseExerciseArgs({
+        await lib.parseExerciseArgsTest({
           actionType: ActionType.Exercise,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
@@ -98,7 +98,7 @@ describe("Actions lib", () => {
   describe("Test parseClaimCollateralArgs", () => {
     it("Should parse valid parameters correctly", async () => {
       expect(
-        await lib.testParseClaimCollateralArgs({
+        await lib.parseClaimCollateralArgsTest({
           actionType: ActionType.ClaimCollateral,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
@@ -114,7 +114,7 @@ describe("Actions lib", () => {
   describe("Test parseNeutralizeArgs", () => {
     it("Should parse valid parameters correctly", async () => {
       expect(
-        await lib.testParseNeutralizeArgs({
+        await lib.parseNeutralizeArgsTest({
           actionType: ActionType.Neutralize,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
@@ -130,7 +130,7 @@ describe("Actions lib", () => {
   describe("Test parseQTokenPermitArgs", () => {
     it("Should parse valid parameters correctly", async () => {
       expect(
-        await lib.testParseQTokenPermitArgs(
+        await lib.parseQTokenPermitArgsTest(
           encodeQTokenPermitArgs({
             qToken: AddressZero,
             owner: AddressZero,
@@ -158,7 +158,7 @@ describe("Actions lib", () => {
   describe("Test parseCollateralTokenApprovalArgs", () => {
     it("Should parse valid parameters correctly", async () => {
       expect(
-        await lib.testParseCollateralTokenApprovalArgs(
+        await lib.parseCollateralTokenApprovalArgsTest(
           encodeCollateralTokenApprovalArgs({
             owner: AddressZero,
             operator: AddressZero,
@@ -188,7 +188,7 @@ describe("Actions lib", () => {
       const callee = ethers.Wallet.createRandom().address;
       const data = "0xd6cafe";
       expect(
-        await lib.testParseCallArgs({
+        await lib.parseCallArgsTest({
           actionType: ActionType.Call,
           qToken: AddressZero,
           secondaryAddress: AddressZero,
