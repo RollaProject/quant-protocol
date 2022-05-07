@@ -4,13 +4,12 @@ pragma solidity 0.8.13;
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "../external/openzeppelin/ERC1155.sol";
+import "@rari-capital/solmate/src/tokens/ERC1155.sol";
 import "../interfaces/ICollateralToken.sol";
-import "../interfaces/IQToken.sol";
 
 /// @title Tokens representing a Quant user's short positions
 /// @author Rolla
-/// @notice Can be used by owners to claim their collateral
+/// @notice Can be used by holders to claim their collateral
 /// @dev This is a multi-token contract that implements the ERC1155 token standard:
 /// https://eips.ethereum.org/EIPS/eip-1155
 contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
@@ -32,11 +31,13 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     // Signature nonce per address
     mapping(address => uint256) public nonces;
 
+    string private immutable _uri;
+
     // keccak256(
-    //     "metaSetApprovalForAll(address owner,address operator,bool approved,uint256 nonce,uint256 deadline)"
+    //     "metaSetApprovalForAll(address cTokenOwner,address operator,bool approved,uint256 nonce,uint256 deadline)"
     // );
     bytes32 private constant _META_APPROVAL_TYPEHASH =
-        0xf8f9aaf28cf20cd45b21061d07505fa1da285124284441ea655b9eb837ed89b7;
+        0x8733d126a676f1e83270eccfbe576f65af55d3ff784c4dc4884be48932f47c81;
 
     address private _optionsFactory;
 
@@ -49,12 +50,8 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
         string memory _name,
         string memory _version,
         string memory uri_
-    )
-        ERC1155(uri_)
-        EIP712(_name, _version)
-    // solhint-disable-next-line no-empty-blocks
-    {
-
+    ) EIP712(_name, _version) {
+        _uri = uri_;
     }
 
     function setOptionsFactory(address optionsFactory_) external onlyOwner {
@@ -78,17 +75,10 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
             "CollateralToken: Can only create a collateral token with different tokens"
         );
 
-        // require(
-        //     idToInfo[id].qTokenAddress == address(0),
-        //     "CollateralToken: this token has already been created"
-        // );
-
         idToInfo[id] = CollateralTokenInfo({
             qTokenAddress: _qTokenAddress,
             qTokenAsCollateral: _qTokenAsCollateral
         });
-
-        // collateralTokenIds.push(id);
 
         emit CollateralTokenCreated(_qTokenAddress, _qTokenAsCollateral, id);
     }
@@ -100,56 +90,20 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
         uint256 amount
     ) external override onlyOwner {
         _mint(recipient, collateralTokenId, amount, "");
-        emit CollateralTokenMinted(recipient, collateralTokenId, amount);
     }
 
     /// @inheritdoc ICollateralToken
     function burnCollateralToken(
-        address owner,
+        address cTokenOwner,
         uint256 collateralTokenId,
         uint256 amount
     ) external override onlyOwner {
-        _burn(owner, collateralTokenId, amount);
-        emit CollateralTokenBurned(owner, collateralTokenId, amount);
-    }
-
-    /// @inheritdoc ICollateralToken
-    function mintCollateralTokenBatch(
-        address recipient,
-        uint256[] calldata ids,
-        uint256[] calldata amounts
-    ) external override onlyOwner {
-        uint256 length = ids.length;
-        for (uint256 i = 0; i < length; ) {
-            emit CollateralTokenMinted(recipient, ids[i], amounts[i]);
-            unchecked {
-                ++i;
-            }
-        }
-
-        _mintBatch(recipient, ids, amounts, "");
-    }
-
-    /// @inheritdoc ICollateralToken
-    function burnCollateralTokenBatch(
-        address owner,
-        uint256[] calldata ids,
-        uint256[] calldata amounts
-    ) external override onlyOwner {
-        _burnBatch(owner, ids, amounts);
-
-        uint256 length = ids.length;
-        for (uint256 i = 0; i < length; ) {
-            emit CollateralTokenBurned(owner, ids[i], amounts[i]);
-            unchecked {
-                ++i;
-            }
-        }
+        _burn(cTokenOwner, collateralTokenId, amount);
     }
 
     /// @inheritdoc ICollateralToken
     function metaSetApprovalForAll(
-        address owner,
+        address cTokenOwner,
         address operator,
         bool approved,
         uint256 nonce,
@@ -158,7 +112,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
         bytes32 r,
         bytes32 s
     ) external override {
-        require(nonce == nonces[owner], "CollateralToken: invalid nonce");
+        require(nonce == nonces[cTokenOwner], "CollateralToken: invalid nonce");
 
         // solhint-disable-next-line not-rely-on-time
         require(
@@ -169,7 +123,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
         bytes32 structHash = keccak256(
             abi.encode(
                 _META_APPROVAL_TYPEHASH,
-                owner,
+                cTokenOwner,
                 operator,
                 approved,
                 nonce,
@@ -181,24 +135,20 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
 
         address signer = hash.recover(v, r, s);
 
-        require(signer == owner, "CollateralToken: invalid signature");
+        require(signer == cTokenOwner, "CollateralToken: invalid signature");
 
         unchecked {
-            nonces[owner]++;
+            nonces[cTokenOwner]++;
         }
-        _operatorApprovals[owner][operator] = approved;
-        emit ApprovalForAll(owner, operator, approved);
+
+        isApprovedForAll[cTokenOwner][operator] = approved;
+
+        emit ApprovalForAll(cTokenOwner, operator, approved);
     }
 
-    /// @inheritdoc ICollateralToken
-    // function getCollateralTokensLength()
-    //     external
-    //     view
-    //     override
-    //     returns (uint256)
-    // {
-    //     return collateralTokenIds.length;
-    // }
+    function uri(uint256) public view override returns (string memory uri_) {
+        uri_ = _uri;
+    }
 
     /// @inheritdoc ICollateralToken
     function getCollateralTokenId(address _qToken, address _qTokenAsCollateral)
