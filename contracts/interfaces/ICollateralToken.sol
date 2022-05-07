@@ -27,26 +27,6 @@ interface ICollateralToken is IERC1155 {
         uint256 id
     );
 
-    /// @notice event emitted when CollateralTokens are minted
-    /// @param recipient address that received the minted CollateralTokens
-    /// @param id unique id of the minted CollateralToken
-    /// @param amount the amount of CollateralToken minted
-    event CollateralTokenMinted(
-        address indexed recipient,
-        uint256 indexed id,
-        uint256 amount
-    );
-
-    /// @notice event emitted when CollateralTokens are burned
-    /// @param owner address that the CollateralToken was burned from
-    /// @param id unique id of the burned CollateralToken
-    /// @param amount the amount of CollateralToken burned
-    event CollateralTokenBurned(
-        address indexed owner,
-        uint256 indexed id,
-        uint256 amount
-    );
-
     /// @notice Create new CollateralTokens
     /// @param _qTokenAddress address of the corresponding QToken
     /// @param _qTokenAsCollateral QToken address of an option used as collateral in a spread
@@ -76,32 +56,6 @@ interface ICollateralToken is IERC1155 {
         uint256 amount
     ) external;
 
-    /// @notice Batched minting of multiple CollateralTokens for a given account
-    /// @dev Should be used when minting multiple CollateralTokens for a single user,
-    /// i.e., when a user buys more than one short position through the interface
-    /// @param recipient address to receive the minted tokens
-    /// @param ids array of CollateralToken ids to be minted
-    /// @param amounts array of amounts of tokens to be minted
-    /// @dev ids and amounts must have the same length
-    function mintCollateralTokenBatch(
-        address recipient,
-        uint256[] calldata ids,
-        uint256[] calldata amounts
-    ) external;
-
-    /// @notice Batched burning of multiple CollateralTokens from a given account
-    /// @dev Should be used when burning multiple CollateralTokens for a single user,
-    /// i.e., when a user sells more than one short position through the interface
-    /// @param owner address to burn tokens from
-    /// @param ids array of CollateralToken ids to be burned
-    /// @param amounts array of amounts of tokens to be burned
-    /// @dev ids and amounts shoud have the same length
-    function burnCollateralTokenBatch(
-        address owner,
-        uint256[] calldata ids,
-        uint256[] calldata amounts
-    ) external;
-
     /// @notice Set approval for all IDs by providing parameters to setApprovalForAll
     /// alongside a valid signature (r, s, v)
     /// @dev This method is implemented by following EIP-712: https://eips.ethereum.org/EIPS/eip-712
@@ -126,12 +80,6 @@ interface ICollateralToken is IERC1155 {
 
     /// @notice mapping of CollateralToken ids to their respective info struct
     function idToInfo(uint256) external view returns (address, address);
-
-    /// @notice array of all the created CollateralToken ids
-    // function collateralTokenIds(uint256) external view returns (uint256);
-
-    /// @notice get the total amount of collateral tokens created
-    // function getCollateralTokensLength() external view returns (uint256);
 
     /// @notice Returns a unique CollateralToken id based on its parameters
     /// @param _qToken the address of the corresponding QToken

@@ -94,6 +94,7 @@
     "@openzeppelin/contracts": "^4.5.0",
     "@openzeppelin/contracts-upgradeable": "^4.5.1",
     "@quant-finance/solidity-datetime": "^2.1.0",
+    "@rari-capital/solmate": "^6.2.0",
     "@rolla-finance/clones-with-immutable-args": "1.4.0"
   },
   "files": [
