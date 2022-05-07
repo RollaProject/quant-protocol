@@ -135,80 +135,6 @@ contract OptionsFactory is IOptionsFactory {
     }
 
     /// @inheritdoc IOptionsFactory
-    function getTargetCollateralTokenId(
-        address _underlyingAsset,
-        address _qTokenAsCollateral,
-        address _oracle,
-        uint88 _expiryTime,
-        bool _isCall,
-        uint256 _strikePrice
-    ) public override returns (uint256) {
-        QTokenMetadata memory qTokenMetadata = OptionsUtils.getQTokenMetadata(
-            _underlyingAsset,
-            strikeAsset,
-            assetsRegistry,
-            _expiryTime,
-            _isCall,
-            _strikePrice
-        );
-
-        bytes memory data = abi.encodePacked(
-            qTokenMetadata.name,
-            qTokenMetadata.symbol,
-            optionsDecimals,
-            _underlyingAsset,
-            strikeAsset,
-            _oracle,
-            _expiryTime,
-            _isCall,
-            _strikePrice,
-            controller
-        );
-
-        return
-            OptionsUtils.getTargetCollateralTokenId(
-                collateralToken,
-                _qTokenAsCollateral,
-                address(implementation),
-                data
-            );
-    }
-
-    /// @inheritdoc IOptionsFactory
-    function getTargetQTokenAddress(
-        address _underlyingAsset,
-        address _oracle,
-        uint88 _expiryTime,
-        bool _isCall,
-        uint256 _strikePrice
-    ) external override returns (address) {
-        QTokenMetadata memory qTokenMetadata = OptionsUtils.getQTokenMetadata(
-            _underlyingAsset,
-            strikeAsset,
-            assetsRegistry,
-            _expiryTime,
-            _isCall,
-            _strikePrice
-        );
-
-        bytes memory data = abi.encodePacked(
-            qTokenMetadata.name,
-            qTokenMetadata.symbol,
-            optionsDecimals,
-            _underlyingAsset,
-            strikeAsset,
-            _oracle,
-            _expiryTime,
-            _isCall,
-            _strikePrice,
-            controller
-        );
-
-        return
-            OptionsUtils.getTargetQTokenAddress(address(implementation), data);
-    }
-
-    /// @inheritdoc IOptionsFactory
     function getCollateralToken(
         address _underlyingAsset,
         address _qTokenAsCollateral,
@@ -216,8 +142,8 @@ contract OptionsFactory is IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) external override returns (uint256) {
-        address qToken = getQToken(
+    ) external view override returns (uint256 id, bool exists) {
+        (address qToken, ) = getQToken(
             _underlyingAsset,
             _oracle,
             _expiryTime,
@@ -225,15 +151,14 @@ contract OptionsFactory is IOptionsFactory {
             _strikePrice
         );
 
-        uint256 id = ICollateralToken(collateralToken).getCollateralTokenId(
+        id = ICollateralToken(collateralToken).getCollateralTokenId(
             qToken,
             _qTokenAsCollateral
         );
 
-        (address storedQToken, ) = ICollateralToken(collateralToken).idToInfo(
-            id
-        );
-        return storedQToken != address(0) ? id : 0;
+        (qToken, ) = ICollateralToken(collateralToken).idToInfo(id);
+
+        exists = qToken != address(0);
     }
 
     /// @inheritdoc IOptionsFactory
@@ -243,16 +168,23 @@ contract OptionsFactory is IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) public override returns (address) {
-        uint256 collateralTokenId = getTargetCollateralTokenId(
+    ) public view override returns (address qToken, bool exists) {
+        bytes memory data = OptionsUtils.getQTokenImmutableArgs(
+            optionsDecimals,
             _underlyingAsset,
-            address(0),
+            strikeAsset,
+            assetsRegistry,
             _oracle,
             _expiryTime,
             _isCall,
-            _strikePrice
+            _strikePrice,
+            controller
         );
 
-        return address(0);
+        (qToken, exists) = ClonesWithImmutableArgs.predictDeterministicAddress(
+            address(implementation),
+            OptionsUtils.SALT,
+            data
+        );
     }
 }
