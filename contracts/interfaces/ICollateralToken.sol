@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-
 /// @title Tokens representing a Quant user's short positions
 /// @author Rolla
 /// @notice Can be used by owners to claim their collateral
-interface ICollateralToken is IERC1155 {
+interface ICollateralToken {
     struct QTokensDetails {
         address underlyingAsset;
         address strikeAsset;
