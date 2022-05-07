@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
+import {ClonesWithImmutableArgs} from "@rolla-finance/clones-with-immutable-args/ClonesWithImmutableArgs.sol";
+import {QToken} from "././QToken.sol";
 import "../libraries/OptionsUtils.sol";
 import "../interfaces/IOptionsFactory.sol";
 import "../interfaces/ICollateralToken.sol";
@@ -11,8 +13,7 @@ import "../interfaces/IPriceRegistry.sol";
 /// @notice Creates tokens for long (QToken) and short (CollateralToken) positions
 /// @dev This contract follows the factory design pattern
 contract OptionsFactory is IOptionsFactory {
-    /// @inheritdoc IOptionsFactory
-    address[] public override qTokens;
+    using ClonesWithImmutableArgs for address;
 
     /// @inheritdoc IOptionsFactory
     address public immutable override strikeAsset;
@@ -25,12 +26,12 @@ contract OptionsFactory is IOptionsFactory {
 
     address public immutable override assetsRegistry;
 
-    mapping(uint256 => address) private _collateralTokenIdToQTokenAddress;
+    QToken public immutable implementation;
+
+    uint8 public immutable override optionsDecimals = 18;
 
     /// @inheritdoc IOptionsFactory
-    mapping(address => uint256)
-        public
-        override qTokenAddressToCollateralTokenId;
+    mapping(address => bool) public override isQToken;
 
     /// @notice Initializes a new options factory
     /// @param _strikeAsset address of the asset used to denominate strike prices
@@ -42,7 +43,8 @@ contract OptionsFactory is IOptionsFactory {
         address _collateralToken,
         address _controller,
         address _priceRegistry,
-        address _assetsRegistry
+        address _assetsRegistry,
+        QToken _implementation
     ) {
         require(
             _strikeAsset != address(0),
@@ -64,12 +66,17 @@ contract OptionsFactory is IOptionsFactory {
             _assetsRegistry != address(0),
             "OptionsFactory: invalid assets registry address"
         );
+        require(
+            address(_implementation) != address(0),
+            "OptionsFactory: invalid QToken implementation address"
+        );
 
         strikeAsset = _strikeAsset;
         collateralToken = _collateralToken;
         controller = _controller;
         priceRegistry = _priceRegistry;
         assetsRegistry = _assetsRegistry;
+        implementation = _implementation;
     }
 
     /// @inheritdoc IOptionsFactory
@@ -93,44 +100,27 @@ contract OptionsFactory is IOptionsFactory {
             _strikePrice
         );
 
-        newCollateralTokenId = OptionsUtils.getTargetCollateralTokenId(
-            collateralToken,
+        bytes memory data = OptionsUtils.getQTokenImmutableArgs(
+            optionsDecimals,
             _underlyingAsset,
-            address(0),
             strikeAsset,
-            priceRegistry,
             assetsRegistry,
             _oracle,
             _expiryTime,
             _isCall,
-            _strikePrice
+            _strikePrice,
+            controller
         );
 
-        require(
-            _collateralTokenIdToQTokenAddress[newCollateralTokenId] ==
-                address(0),
-            "option already created"
+        newQToken = address(implementation).cloneDeterministic(
+            OptionsUtils.SALT,
+            data
         );
 
-        newQToken = address(
-            new QToken{salt: OptionsUtils.SALT}(
-                _underlyingAsset,
-                strikeAsset,
-                priceRegistry,
-                assetsRegistry,
-                _oracle,
-                _expiryTime,
-                _isCall,
-                _strikePrice
-            )
-        );
+        newCollateralTokenId = ICollateralToken(collateralToken)
+            .createCollateralToken(newQToken, address(0));
 
-        QToken(newQToken).transferOwnership(controller);
-
-        _collateralTokenIdToQTokenAddress[newCollateralTokenId] = newQToken;
-        qTokens.push(newQToken);
-
-        qTokenAddressToCollateralTokenId[newQToken] = newCollateralTokenId;
+        isQToken[newQToken] = true;
 
         emit OptionCreated(
             newQToken,
@@ -140,13 +130,7 @@ contract OptionsFactory is IOptionsFactory {
             _expiryTime,
             _isCall,
             _strikePrice,
-            newCollateralTokenId,
-            qTokens.length
-        );
-
-        ICollateralToken(collateralToken).createCollateralToken(
-            newQToken,
-            address(0)
+            newCollateralTokenId
         );
     }
 
@@ -158,19 +142,35 @@ contract OptionsFactory is IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) external view override returns (uint256) {
+    ) public override returns (uint256) {
+        QTokenMetadata memory qTokenMetadata = OptionsUtils.getQTokenMetadata(
+            _underlyingAsset,
+            strikeAsset,
+            assetsRegistry,
+            _expiryTime,
+            _isCall,
+            _strikePrice
+        );
+
+        bytes memory data = abi.encodePacked(
+            qTokenMetadata.name,
+            qTokenMetadata.symbol,
+            optionsDecimals,
+            _underlyingAsset,
+            strikeAsset,
+            _oracle,
+            _expiryTime,
+            _isCall,
+            _strikePrice,
+            controller
+        );
+
         return
             OptionsUtils.getTargetCollateralTokenId(
                 collateralToken,
-                _underlyingAsset,
                 _qTokenAsCollateral,
-                strikeAsset,
-                priceRegistry,
-                assetsRegistry,
-                _oracle,
-                _expiryTime,
-                _isCall,
-                _strikePrice
+                address(implementation),
+                data
             );
     }
 
@@ -181,18 +181,31 @@ contract OptionsFactory is IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) external view override returns (address) {
+    ) external override returns (address) {
+        QTokenMetadata memory qTokenMetadata = OptionsUtils.getQTokenMetadata(
+            _underlyingAsset,
+            strikeAsset,
+            assetsRegistry,
+            _expiryTime,
+            _isCall,
+            _strikePrice
+        );
+
+        bytes memory data = abi.encodePacked(
+            qTokenMetadata.name,
+            qTokenMetadata.symbol,
+            optionsDecimals,
+            _underlyingAsset,
+            strikeAsset,
+            _oracle,
+            _expiryTime,
+            _isCall,
+            _strikePrice,
+            controller
+        );
+
         return
-            OptionsUtils.getTargetQTokenAddress(
-                _underlyingAsset,
-                strikeAsset,
-                priceRegistry,
-                assetsRegistry,
-                _oracle,
-                _expiryTime,
-                _isCall,
-                _strikePrice
-            );
+            OptionsUtils.getTargetQTokenAddress(address(implementation), data);
     }
 
     /// @inheritdoc IOptionsFactory
@@ -203,7 +216,7 @@ contract OptionsFactory is IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) external view override returns (uint256) {
+    ) external override returns (uint256) {
         address qToken = getQToken(
             _underlyingAsset,
             _oracle,
@@ -224,36 +237,22 @@ contract OptionsFactory is IOptionsFactory {
     }
 
     /// @inheritdoc IOptionsFactory
-    function getOptionsLength() external view override returns (uint256) {
-        return qTokens.length;
-    }
-
-    /// @inheritdoc IOptionsFactory
-    function isQToken(address _qToken) external view override returns (bool) {
-        return qTokenAddressToCollateralTokenId[_qToken] != 0;
-    }
-
-    /// @inheritdoc IOptionsFactory
     function getQToken(
         address _underlyingAsset,
         address _oracle,
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) public view override returns (address) {
-        uint256 collateralTokenId = OptionsUtils.getTargetCollateralTokenId(
-            collateralToken,
+    ) public override returns (address) {
+        uint256 collateralTokenId = getTargetCollateralTokenId(
             _underlyingAsset,
             address(0),
-            strikeAsset,
-            priceRegistry,
-            assetsRegistry,
             _oracle,
             _expiryTime,
             _isCall,
             _strikePrice
         );
 
-        return _collateralTokenIdToQTokenAddress[collateralTokenId];
+        return address(0);
     }
 }

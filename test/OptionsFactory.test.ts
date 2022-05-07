@@ -134,10 +134,6 @@ describe("OptionsFactory", () => {
 
   describe("createOption", () => {
     it("Anyone should be able to create new options", async () => {
-      expect(await optionsFactory.getOptionsLength()).to.equal(
-        ethers.BigNumber.from("0")
-      );
-
       const qTokenAddress = await optionsFactory.getTargetQTokenAddress(
         ...samplePutOptionParameters
       );
@@ -159,10 +155,6 @@ describe("OptionsFactory", () => {
           collateralTokenId,
           ethers.BigNumber.from("1")
         );
-
-      expect(await optionsFactory.qTokens(ethers.BigNumber.from("0"))).to.equal(
-        qTokenAddress
-      );
 
       expect(
         await collateralToken.collateralTokenIds(ethers.BigNumber.from("0"))
@@ -341,22 +333,6 @@ describe("OptionsFactory", () => {
       expect(
         await optionsFactory.getQToken(...samplePutOptionParameters)
       ).to.equal(qTokenAddress);
-    });
-  });
-
-  describe("getOptionsLength", () => {
-    it("Should return the correct number of options created by the factory", async () => {
-      expect(await optionsFactory.getOptionsLength()).to.equal(
-        ethers.BigNumber.from("0")
-      );
-
-      await optionsFactory
-        .connect(secondAccount)
-        .createOption(...samplePutOptionParameters);
-
-      expect(await optionsFactory.getOptionsLength()).to.equal(
-        ethers.BigNumber.from("1")
-      );
     });
   });
 });

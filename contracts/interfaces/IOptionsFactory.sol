@@ -11,8 +11,7 @@ interface IOptionsFactory {
         uint88 expiry,
         bool isCall,
         uint256 strikePrice,
-        uint256 collateralTokenId,
-        uint256 allOptionsLength
+        uint256 collateralTokenId
     );
 
     /// @notice Creates new options (QToken + CollateralToken)
@@ -30,15 +29,7 @@ interface IOptionsFactory {
         uint256 _strikePrice
     ) external returns (address, uint256);
 
-    /// @notice array of all the created QTokens
-    function qTokens(uint256) external view returns (address);
-
     function collateralToken() external view returns (address);
-
-    function qTokenAddressToCollateralTokenId(address)
-        external
-        view
-        returns (uint256);
 
     /// @notice get the address at which a new QToken with the given parameters would be deployed
     /// @notice return the exact address the QToken will be deployed at with OpenZeppelin's Create2
@@ -55,7 +46,7 @@ interface IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) external view returns (address);
+    ) external returns (address);
 
     /// @notice get the id that a CollateralToken with the given parameters would have
     /// @param _underlyingAsset asset that the option references
@@ -72,7 +63,7 @@ interface IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) external view returns (uint256);
+    ) external returns (uint256);
 
     /// @notice get the CollateralToken id for an already created CollateralToken,
     /// if no QToken has been created with these parameters, it will return 0
@@ -90,7 +81,7 @@ interface IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) external view returns (uint256);
+    ) external returns (uint256);
 
     /// @notice get the QToken address for an already created QToken, if no QToken has been created
     /// with these parameters, it will return the zero address
@@ -106,11 +97,7 @@ interface IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) external view returns (address);
-
-    /// @notice get the total number of options created by the factory
-    /// @return length of the options array
-    function getOptionsLength() external view returns (uint256);
+    ) external returns (address);
 
     /// @notice checks if an address is a QToken
     /// @return true if the given address represents a registered QToken.
@@ -126,4 +113,6 @@ interface IOptionsFactory {
     function priceRegistry() external view returns (address);
 
     function assetsRegistry() external view returns (address);
+
+    function optionsDecimals() external view returns (uint8);
 }

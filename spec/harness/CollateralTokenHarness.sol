@@ -13,13 +13,13 @@ contract CollateralTokenHarness is CollateralToken {
     ////////////////////////////////////////////////////////////////////////////
     //                        Getters for The Internals                       //
     ////////////////////////////////////////////////////////////////////////////
-    function getCollateralTokenId(uint256 tokenId)
-        public
-        view
-        returns (uint256)
-    {
-        return collateralTokenIds[tokenId];
-    }
+    // function getCollateralTokenId(uint256 tokenId)
+    //     public
+    //     view
+    //     returns (uint256)
+    // {
+    //     return collateralTokenIds[tokenId];
+    // }
 
     function getCollateralTokenInfoTokenAddress(uint256 collateralTokenInfoId)
         public
@@ -42,16 +42,16 @@ contract CollateralTokenHarness is CollateralToken {
         return true;
     }
 
-    function collateralTokenIdsContainsId(uint256 key, uint256 i)
-        public
-        view
-        returns (bool)
-    {
-        if (collateralTokenIds[i] == key) {
-            return true;
-        }
-        return false;
-    }
+    // function collateralTokenIdsContainsId(uint256 key, uint256 i)
+    //     public
+    //     view
+    //     returns (bool)
+    // {
+    //     if (collateralTokenIds[i] == key) {
+    //         return true;
+    //     }
+    //     return false;
+    // }
 
     function tokenSuppliesContainsCollateralToken(uint256 key)
         public

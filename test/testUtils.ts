@@ -11,13 +11,13 @@ import {
 } from "ethers";
 import { waffle } from "hardhat";
 import { hexToNumber } from "web3-utils";
+import MockERC20JSON from "../artifacts/contracts/mocks/MockERC20.sol/MockERC20.json";
 import AssetsRegistryJSON from "../artifacts/contracts/options/AssetsRegistry.sol/AssetsRegistry.json";
 import CollateralTokenJSON from "../artifacts/contracts/options/CollateralToken.sol/CollateralToken.json";
 import OptionsFactoryJSON from "../artifacts/contracts/options/OptionsFactory.sol/OptionsFactory.json";
 import QTokenJSON from "../artifacts/contracts/options/QToken.sol/QToken.json";
 import OracleRegistryJSON from "../artifacts/contracts/pricing/OracleRegistry.sol/OracleRegistry.json";
 import QuantCalculatorJSON from "../artifacts/contracts/QuantCalculator.sol/QuantCalculator.json";
-import MockERC20JSON from "../artifacts/contracts/test/MockERC20.sol/MockERC20.json";
 import {
   AssetsRegistry,
   OptionsFactory,

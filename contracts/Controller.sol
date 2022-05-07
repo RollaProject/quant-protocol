@@ -5,11 +5,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./QuantCalculator.sol";
+import "./options/QToken.sol";
 import "./options/CollateralToken.sol";
 import "./options/OptionsFactory.sol";
 import "./utils/EIP712MetaTransaction.sol";
 import "./utils/OperateProxy.sol";
-import "./interfaces/IQToken.sol";
 import "./interfaces/IOracleRegistry.sol";
 import "./interfaces/IController.sol";
 import "./interfaces/IQuantCalculator.sol";
@@ -48,7 +48,8 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         address _oracleRegistry,
         address _strikeAsset,
         address _priceRegistry,
-        address _assetsRegistry
+        address _assetsRegistry,
+        QToken _qTokenImplementation
     ) EIP712MetaTransaction(_name, _version) {
         require(
             _oracleRegistry != address(0),
@@ -78,7 +79,8 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
                 address(collateralToken),
                 address(this),
                 _priceRegistry,
-                _assetsRegistry
+                _assetsRegistry,
+                _qTokenImplementation
             )
         );
 
@@ -201,7 +203,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         address _qToken,
         uint256 _amount
     ) internal {
-        IQToken qToken = IQToken(_qToken);
+        QToken qToken = QToken(_qToken);
 
         // get the collateral required to mint the specified amount of options
         // the zero address is passed as the second argument as it's only used
@@ -258,8 +260,8 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             "Controller: Can only create a spread with different tokens"
         );
 
-        IQToken qTokenToMint = IQToken(_qTokenToMint);
-        IQToken qTokenForCollateral = IQToken(_qTokenForCollateral);
+        QToken qTokenToMint = QToken(_qTokenToMint);
+        QToken qTokenForCollateral = QToken(_qTokenForCollateral);
 
         // Calculate the extra collateral required to create the spread.
         // A positive value for debit spreads and zero for credit spreads.
@@ -336,7 +338,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     /// @param _qToken The QToken representing the long position to be closed.
     /// @param _amount The amount of options to exercise.
     function _exercise(address _qToken, uint256 _amount) internal {
-        IQToken qToken = IQToken(_qToken);
+        QToken qToken = QToken(_qToken);
         require(
             block.timestamp > qToken.expiryTime(),
             "Controller: Can not exercise options before their expiry"
@@ -446,7 +448,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         );
 
         //get the amount of QTokens owned
-        uint256 qTokensOwned = IQToken(qTokenShort).balanceOf(_msgSender());
+        uint256 qTokensOwned = QToken(qTokenShort).balanceOf(_msgSender());
 
         // the size of the position that can be neutralized
         uint256 maxNeutralizable = qTokensOwned < collateralTokensOwned
@@ -472,7 +474,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         ).getNeutralizationPayout(qTokenShort, qTokenLong, amountToNeutralize);
 
         // burn the short tokens
-        IQToken(qTokenShort).burn(_msgSender(), amountToNeutralize);
+        QToken(qTokenShort).burn(_msgSender(), amountToNeutralize);
 
         // burn the long tokens
         collateralToken.burnCollateralToken(
@@ -486,7 +488,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
 
         //give the user their long tokens (if any, in case of CollateralTokens representing a spread)
         if (qTokenLong != address(0)) {
-            IQToken(qTokenLong).mint(_msgSender(), amountToNeutralize);
+            QToken(qTokenLong).mint(_msgSender(), amountToNeutralize);
         }
 
         emit NeutralizePosition(
@@ -522,15 +524,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             "Controller: not a QToken for calling permit"
         );
 
-        IQToken(_qToken).permit(
-            _owner,
-            _spender,
-            _value,
-            _deadline,
-            _v,
-            _r,
-            _s
-        );
+        QToken(_qToken).permit(_owner, _spender, _value, _deadline, _v, _r, _s);
     }
 
     /// @notice Allows a CollateralToken owner to either approve an operator address
@@ -581,7 +575,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     /// @param _qToken The address of the QToken to check.
     function _checkIfUnexpiredQToken(address _qToken) internal view {
         require(
-            IQToken(_qToken).expiryTime() > block.timestamp,
+            QToken(_qToken).expiryTime() > block.timestamp,
             "Controller: Cannot mint expired options"
         );
     }
@@ -592,7 +586,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     function _checkIfActiveOracle(address _qToken) internal view {
         require(
             IOracleRegistry(oracleRegistry).isOracleActive(
-                IQToken(_qToken).oracle()
+                QToken(_qToken).oracle()
             ),
             "Controller: Can't mint an options position as the oracle is inactive"
         );

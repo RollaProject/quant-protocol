@@ -19,7 +19,7 @@ describe("SignedConverter lib", () => {
       const expectedInt = 5;
 
       assert.equal(
-        (await lib.testFromUint(uint)).toNumber(),
+        (await lib.fromUintTest(uint)).toNumber(),
         expectedInt,
         "conversion from uint to int mismatch"
       );
@@ -28,13 +28,13 @@ describe("SignedConverter lib", () => {
     it("It should revert converting an unsigned integer greater than 2^255  signed integer", async () => {
       const uint =
         "57896044618658097711785492504343953926634992332820282019728792003956564819968"; // 2**255
-      await expect(lib.testFromUint(uint)).to.be.revertedWith(
+      await expect(lib.fromUintTest(uint)).to.be.revertedWith(
         "QuantMath: out of int range"
       );
 
       const uint2 =
         "57896044618658097711785492504343953926634992332820282019728792003956564819969"; // 2 ** 255 + 1;
-      await expect(lib.testFromUint(uint2)).to.be.revertedWith(
+      await expect(lib.fromUintTest(uint2)).to.be.revertedWith(
         "QuantMath: out of int range"
       );
     });
@@ -43,7 +43,7 @@ describe("SignedConverter lib", () => {
       const uint =
         "5789604461865809771178549250434395392663499233282028201972879200395656481996"; //2 ** 255 - 1;
       assert.equal(
-        (await lib.testFromUint(uint)).toString(),
+        (await lib.fromUintTest(uint)).toString(),
         uint.toString(),
         "conversion from int to uint mismatch"
       );
@@ -52,7 +52,7 @@ describe("SignedConverter lib", () => {
     it("Should revert when trying to convert from negative signed integer to unsigned integer", async () => {
       const int = -3;
 
-      await expect(lib.testFromInt(int)).to.be.revertedWith(
+      await expect(lib.fromIntTest(int)).to.be.revertedWith(
         "QuantMath: negative int"
       );
     });
@@ -61,7 +61,7 @@ describe("SignedConverter lib", () => {
       const expectedUint = 3;
 
       assert.equal(
-        (await lib.testFromInt(int)).toNumber(),
+        (await lib.fromIntTest(int)).toNumber(),
         expectedUint,
         "conversion from int to uint mismatch"
       );

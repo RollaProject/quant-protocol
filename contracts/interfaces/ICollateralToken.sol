@@ -21,12 +21,10 @@ interface ICollateralToken is IERC1155 {
     /// @param qTokenAddress address of the corresponding QToken
     /// @param qTokenAsCollateral QToken address of an option used as collateral in a spread
     /// @param id unique id of the created CollateralToken
-    /// @param allCollateralTokensLength the updated number of already created CollateralTokens
     event CollateralTokenCreated(
         address indexed qTokenAddress,
         address qTokenAsCollateral,
-        uint256 id,
-        uint256 allCollateralTokensLength
+        uint256 id
     );
 
     /// @notice event emitted when CollateralTokens are minted
@@ -130,16 +128,10 @@ interface ICollateralToken is IERC1155 {
     function idToInfo(uint256) external view returns (address, address);
 
     /// @notice array of all the created CollateralToken ids
-    function collateralTokenIds(uint256) external view returns (uint256);
+    // function collateralTokenIds(uint256) external view returns (uint256);
 
     /// @notice get the total amount of collateral tokens created
-    function getCollateralTokensLength() external view returns (uint256);
-
-    /// @notice get the details of the QTokens related to a given CollateralToken id
-    function getCollateralTokenInfo(uint256 id)
-        external
-        view
-        returns (QTokensDetails memory);
+    // function getCollateralTokensLength() external view returns (uint256);
 
     /// @notice Returns a unique CollateralToken id based on its parameters
     /// @param _qToken the address of the corresponding QToken

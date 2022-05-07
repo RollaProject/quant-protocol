@@ -159,7 +159,7 @@ describe("Controller", async () => {
     ];
   };
 
-  const testMintingOptions = async (
+  const minTesttingOptions = async (
     qTokenToMintAddress: string,
     optionsAmount: BigNumber,
     qTokenForCollateralAddress: string = AddressZero,
@@ -1317,21 +1317,21 @@ describe("Controller", async () => {
     });
 
     it("Users should be able to mint CALL options positions to their own address", async () => {
-      await testMintingOptions(
+      await minTesttingOptions(
         qTokenCall2000.address,
         ethers.utils.parseEther("2")
       );
     });
 
     it("Users should be able to mint PUT options positions to their own address", async () => {
-      await testMintingOptions(
+      await minTesttingOptions(
         qTokenPut1400.address,
         ethers.utils.parseEther("2")
       );
     });
 
     it("Users should be able to mint CALL options positions to another address", async () => {
-      await testMintingOptions(
+      await minTesttingOptions(
         qTokenCall2000.address,
         ethers.utils.parseEther("2"),
         AddressZero,
@@ -1340,7 +1340,7 @@ describe("Controller", async () => {
     });
 
     it("Users should be able to mint PUT options positions to another address", async () => {
-      await testMintingOptions(
+      await minTesttingOptions(
         qTokenPut1400.address,
         ethers.utils.parseEther("2"),
         AddressZero,
@@ -1487,7 +1487,7 @@ describe("Controller", async () => {
     });
 
     it("Users should be able to create a PUT Credit spread", async () => {
-      await testMintingOptions(
+      await minTesttingOptions(
         qTokenPut1400.address,
         ethers.utils.parseEther("1"),
         qTokenPut400.address
@@ -1495,7 +1495,7 @@ describe("Controller", async () => {
     });
 
     it("Users should be able to create a PUT Debit spread", async () => {
-      await testMintingOptions(
+      await minTesttingOptions(
         qTokenPut400.address,
         ethers.utils.parseEther("2"),
         qTokenPut1400.address
@@ -1503,7 +1503,7 @@ describe("Controller", async () => {
     });
 
     it("Users should be able to create a CALL Credit Spread", async () => {
-      await testMintingOptions(
+      await minTesttingOptions(
         qTokenCall2880.address,
         ethers.utils.parseEther("1"),
         qTokenCall3520.address
@@ -1511,7 +1511,7 @@ describe("Controller", async () => {
     });
 
     it("Users should be able to create a CALL Debit Spread", async () => {
-      await testMintingOptions(
+      await minTesttingOptions(
         qTokenCall3520.address,
         ethers.utils.parseEther("1"),
         qTokenCall2880.address
@@ -3146,7 +3146,6 @@ describe("Controller", async () => {
         controller.address
       );
 
-      const optionsLength = await optionsFactory.getOptionsLength();
       const targetQTokenAddress = await optionsFactory.getTargetQTokenAddress(
         ...newQTokenParams
       );
@@ -3197,9 +3196,6 @@ describe("Controller", async () => {
         .to.emit(operateProxy, "FunctionCallExecuted")
         .withArgs(secondAccount.address, createOptionReturnData);
 
-      expect(await optionsFactory.getOptionsLength()).to.equal(
-        optionsLength.add(1)
-      );
       expect(await optionsFactory.getQToken(...newQTokenParams)).to.equal(
         targetQTokenAddress
       );
