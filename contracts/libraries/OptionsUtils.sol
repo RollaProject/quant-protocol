@@ -25,17 +25,17 @@ library OptionsUtils {
 
     function bytesToUint256Array(bytes memory _data)
         internal
+        view
         returns (uint256[] memory result)
     {
         result = new uint256[](4);
 
-        assembly {
+        assembly ("memory-safe") {
             let len := mload(_data)
             if iszero(
-                call(
+                staticcall(
                     gas(),
                     0x04,
-                    0,
                     add(_data, 0x20),
                     len,
                     add(result, 0x20),
@@ -45,34 +45,6 @@ library OptionsUtils {
                 invalid()
             }
         }
-    }
-
-    function getTargetQTokenAddress(
-        address implementation,
-        bytes memory qTokenCloneData
-    ) internal view returns (address predicted) {
-        (predicted, ) = ClonesWithImmutableArgs.predictDeterministicAddress(
-            implementation,
-            SALT,
-            qTokenCloneData
-        );
-    }
-
-    function getTargetCollateralTokenId(
-        address _collateralToken,
-        address _qTokenAsCollateral,
-        address _qTokenImplementation,
-        bytes memory _qTokenCloneData
-    ) internal view returns (uint256) {
-        address qToken = getTargetQTokenAddress(
-            _qTokenImplementation,
-            _qTokenCloneData
-        );
-        return
-            ICollateralToken(_collateralToken).getCollateralTokenId(
-                qToken,
-                _qTokenAsCollateral
-            );
     }
 
     /// @notice Checks if the given option parameters are valid for creation in the Quant Protocol
@@ -93,17 +65,6 @@ library OptionsUtils {
             _expiryTime > block.timestamp,
             "OptionsFactory: given expiry time is in the past"
         );
-
-        // require(
-        //     IOracleRegistry(_oracleRegistry).isOracleRegistered(_oracle),
-        //     "OptionsFactory: Oracle is not registered in OracleRegistry"
-        // );
-
-        // require(
-        //     IProviderOracleManager(_oracle).getAssetOracle(_underlyingAsset) !=
-        //         address(0),
-        //     "OptionsFactory: Asset does not exist in oracle"
-        // );
 
         require(
             IProviderOracleManager(_oracle).isValidOption(
@@ -194,7 +155,7 @@ library OptionsUtils {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) internal returns (QTokenMetadata memory qTokenMetadata) {
+    ) internal view returns (QTokenMetadata memory qTokenMetadata) {
         (string memory underlying, ) = assetSymbolAndDecimals(
             _underlyingAsset,
             _assetsRegistry
@@ -268,7 +229,7 @@ library OptionsUtils {
         bool _isCall,
         uint256 _strikePrice,
         address _controller
-    ) internal returns (bytes memory data) {
+    ) internal view returns (bytes memory data) {
         QTokenMetadata memory qTokenMetadata = OptionsUtils.getQTokenMetadata(
             _underlyingAsset,
             _strikeAsset,
