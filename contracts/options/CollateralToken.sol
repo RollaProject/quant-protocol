@@ -31,7 +31,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     // Signature nonce per address
     mapping(address => uint256) public nonces;
 
-    string private immutable _uri;
+    string private _uri;
 
     // keccak256(
     //     "metaSetApprovalForAll(address cTokenOwner,address operator,bool approved,uint256 nonce,uint256 deadline)"

@@ -1,24 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
-import {IERC20 as OzERC20Interface} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
-
 /// @title Token that represents a user's long position
 /// @author Rolla
 /// @notice Can be used by owners to exercise their options
 /// @dev Every option long position is an ERC20 token: https://eips.ethereum.org/EIPS/eip-20
 interface IQToken {
-    /// @notice event emitted when QTokens are minted
-    /// @param account account the QToken was minted to
-    /// @param amount the amount of QToken minted
-    event QTokenMinted(address indexed account, uint256 amount);
-
-    /// @notice event emitted when QTokens are burned
-    /// @param account account the QToken was burned from
-    /// @param amount the amount of QToken burned
-    event QTokenBurned(address indexed account, uint256 amount);
-
     /// @notice mint option token for an account
     /// @param account account to mint token to
     /// @param amount amount to mint

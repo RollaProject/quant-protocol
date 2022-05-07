@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.13;
 
+import "./options/CollateralToken.sol";
 import "./interfaces/IQuantCalculator.sol";
-import "./interfaces/ICollateralToken.sol";
 import "./interfaces/IOptionsFactory.sol";
 import "./interfaces/IQToken.sol";
 import "./interfaces/IPriceRegistry.sol";
@@ -98,7 +98,7 @@ contract QuantCalculator is IQuantCalculator {
             uint256 amountToClaim
         )
     {
-        ICollateralToken collateralToken = ICollateralToken(
+        CollateralToken collateralToken = CollateralToken(
             IOptionsFactory(optionsFactory).collateralToken()
         );
 

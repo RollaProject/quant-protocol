@@ -6,6 +6,5 @@ import "../options/QToken.sol";
 contract ExternalQToken is QToken {
     function permissionlessMint(address account, uint256 amount) external {
         _mint(account, amount);
-        emit QTokenMinted(account, amount);
     }
 }
