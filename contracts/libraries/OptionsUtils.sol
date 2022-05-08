@@ -18,28 +18,47 @@ struct QTokenMetadata {
 
 /// @title Options utilities for Quant's QToken and CollateralToken
 /// @author Rolla
-/// @dev This library must be deployed and linked while deploying contracts that use it
 library OptionsUtils {
-    /// @notice constant salt because options will only be deployed with the same parameters once
+    /// @notice salt to be used with CREATE2 when creating new options
+    /// @dev constant salt because options will only be deployed with the same parameters once
     bytes32 public constant SALT = bytes32("ROLLA.FINANCE");
 
+    /// @notice Splits a dinamically-sized byte array into an array of unsigned integers
+    /// in which each element represents a 32 byte chunk of the original data
+    /// @dev Uses the identity precompile to copy data from memory to memory
+    /// @param _data the original bytes to be converted to an array of uint256 values
+    /// @return result an array of uint256 values that represent 32 byte chunks of the original data
     function bytesToUint256Array(bytes memory _data)
         internal
         view
         returns (uint256[] memory result)
     {
+        // the data will be converted into an array of uint256 with a total length of 128 bytes,
+        // which is enough to safely cover QToken names and symbols with a strike price up to the
+        // max uint256 and an ERC20 underlying token symbol with 20+ characters
         result = new uint256[](4);
 
+        // annotate the assembly block below as memory-safe since the input data length is checked before
+        // being copied to the uint256 array with a maximum length of 128 bytes, and so that the compiler
+        // can move local variables from stack to memory to avoid stack-too-deep errors and perform
+        // additional memory optimizations
         assembly ("memory-safe") {
+            // get the length of the input data
             let len := mload(_data)
-            if iszero(
-                staticcall(
-                    gas(),
-                    0x04,
-                    add(_data, 0x20),
-                    len,
-                    add(result, 0x20),
-                    len
+
+            // can end execution with the INVALID opcode due to either the input data being
+            // too large or the staticcall to the identity precompile failing
+            if or(
+                gt(len, 0x80), // the data passed in can't be larger than 128 bytes
+                iszero(
+                    staticcall(
+                        gas(), // forward all the gas available to the call
+                        0x04, // the address of the identity (datacopy) precompiled contract
+                        add(_data, 0x20), // position of the input bytes in memory, after the 32 bytes for the length
+                        len, // size of the input bytes in memory
+                        add(result, 0x20), // position of the output area in memory, after the 32 bytes for the length
+                        len // size of the output in memory, same as the input
+                    )
                 )
             ) {
                 invalid()
