@@ -6,7 +6,6 @@ import {QToken} from "././QToken.sol";
 import "../libraries/OptionsUtils.sol";
 import "../interfaces/IOptionsFactory.sol";
 import "../interfaces/ICollateralToken.sol";
-import "../interfaces/IPriceRegistry.sol";
 
 /// @title Factory contract for Quant options
 /// @author Rolla
@@ -18,16 +17,22 @@ contract OptionsFactory is IOptionsFactory {
     /// @inheritdoc IOptionsFactory
     address public immutable override strikeAsset;
 
+    /// @inheritdoc IOptionsFactory
     address public immutable override collateralToken;
 
+    /// @inheritdoc IOptionsFactory
     address public immutable override controller;
 
-    address public immutable override priceRegistry;
+    /// @inheritdoc IOptionsFactory
+    address public immutable override oracleRegistry;
 
+    /// @inheritdoc IOptionsFactory
     address public immutable override assetsRegistry;
 
+    /// @inheritdoc IOptionsFactory
     QToken public immutable implementation;
 
+    /// @inheritdoc IOptionsFactory
     uint8 public immutable override optionsDecimals = 18;
 
     /// @inheritdoc IOptionsFactory
@@ -38,11 +43,15 @@ contract OptionsFactory is IOptionsFactory {
     /// for options created through this factory
     /// @param _collateralToken address of the CollateralToken contract
     /// @param _controller address of the Quant Controller contract
+    /// @param _oracleRegistry address of the OracleRegistry contract
+    /// @param _assetsRegistry address of the AssetsRegistry contract
+    /// @param _implementation a QToken implementation contract, to be used when creating QToken clones
+    /// for the options created through this factory
     constructor(
         address _strikeAsset,
         address _collateralToken,
         address _controller,
-        address _priceRegistry,
+        address _oracleRegistry,
         address _assetsRegistry,
         QToken _implementation
     ) {
@@ -59,8 +68,8 @@ contract OptionsFactory is IOptionsFactory {
             "OptionsFactory: invalid controller address"
         );
         require(
-            _priceRegistry != address(0),
-            "OptionsFactory: invalid price registry address"
+            _oracleRegistry != address(0),
+            "OptionsFactory: invalid oracle registry address"
         );
         require(
             _assetsRegistry != address(0),
@@ -74,7 +83,7 @@ contract OptionsFactory is IOptionsFactory {
         strikeAsset = _strikeAsset;
         collateralToken = _collateralToken;
         controller = _controller;
-        priceRegistry = _priceRegistry;
+        oracleRegistry = _oracleRegistry;
         assetsRegistry = _assetsRegistry;
         implementation = _implementation;
     }
@@ -92,7 +101,7 @@ contract OptionsFactory is IOptionsFactory {
         returns (address newQToken, uint256 newCollateralTokenId)
     {
         OptionsUtils.validateOptionParameters(
-            IPriceRegistry(priceRegistry).oracleRegistry(),
+            oracleRegistry,
             _underlyingAsset,
             assetsRegistry,
             _oracle,
@@ -118,7 +127,7 @@ contract OptionsFactory is IOptionsFactory {
         );
 
         newCollateralTokenId = ICollateralToken(collateralToken)
-            .createCollateralToken(newQToken, address(0));
+            .createOptionCollateralToken(newQToken);
 
         isQToken[newQToken] = true;
 

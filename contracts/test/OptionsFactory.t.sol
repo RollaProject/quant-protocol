@@ -66,7 +66,7 @@ contract OptionsFactoryTest is Test {
             address(BUSD),
             address(collateralToken),
             controller,
-            priceRegistry,
+            oracleRegistry,
             address(assetsRegistry),
             implementation
         );

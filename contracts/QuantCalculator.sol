@@ -132,9 +132,12 @@ contract QuantCalculator is IQuantCalculator {
             ? collateralToken.balanceOf(_user, _collateralTokenId)
             : _amount;
 
-        IPriceRegistry.PriceWithDecimals memory expiryPrice = IPriceRegistry(
-            priceRegistry
-        ).getSettlementPriceWithDecimals(oracle, expiryTime, underlyingAsset);
+        PriceWithDecimals memory expiryPrice = IPriceRegistry(priceRegistry)
+            .getSettlementPriceWithDecimals(
+                oracle,
+                expiryTime,
+                underlyingAsset
+            );
 
         address qTokenLong;
         QuantMath.FixedPointInt memory payoutFromLong;
@@ -289,9 +292,12 @@ contract QuantCalculator is IQuantCalculator {
             assetsRegistry
         );
 
-        IPriceRegistry.PriceWithDecimals memory expiryPrice = IPriceRegistry(
-            priceRegistry
-        ).getSettlementPriceWithDecimals(oracle, expiryTime, underlyingAsset);
+        PriceWithDecimals memory expiryPrice = IPriceRegistry(priceRegistry)
+            .getSettlementPriceWithDecimals(
+                oracle,
+                expiryTime,
+                underlyingAsset
+            );
 
         (payoutToken, payout) = FundsCalculator.getPayout(
             _qToken,
