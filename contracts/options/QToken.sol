@@ -58,6 +58,7 @@ contract QToken is ERC20, IQToken {
         return _getArgUint256(0x149);
     }
 
+    /// @inheritdoc IQToken
     function controller() public pure override returns (address _controller) {
         return _getArgAddress(0x169);
     }
@@ -66,6 +67,7 @@ contract QToken is ERC20, IQToken {
     /// ERC20 minting and burning logic
     /// -----------------------------------------------------------------------
 
+    /// @notice Checks if the caller is the configured Quant Controller contract
     modifier onlyController() {
         require(msg.sender == controller(), "QToken: caller != controller");
         _;
