@@ -67,10 +67,11 @@ library OptionsUtils {
     }
 
     /// @notice Checks if the given option parameters are valid for creation in the Quant Protocol
+    /// @param _oracleRegistry oracle registry to validate the passed _oracle against
     /// @param _underlyingAsset asset that the option is for
+    /// @param _assetsRegistry address of the AssetsRegistry contract
     /// @param _oracle price oracle for the option underlying
     /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _assetsRegistry address of the AssetsRegistry contract
     /// @param _strikePrice strike price with as many decimals in the strike asset
     function validateOptionParameters(
         address _oracleRegistry,
@@ -166,7 +167,7 @@ library OptionsUtils {
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @return qTokenMetadata name string for the QToken
+    /// @return qTokenMetadata name and symbol for the QToken
     function getQTokenMetadata(
         address _underlyingAsset,
         address _strikeAsset,
@@ -238,6 +239,18 @@ library OptionsUtils {
         });
     }
 
+    /// @notice Gets the encoded immutable arguments for creating a QToken clone
+    /// using the ClonesWithImmutableArgs library
+    /// @param _optionsDecimals the amount of decimals in QToken amounts
+    /// @param _underlyingAsset address of the option underlying asset
+    /// @param _strikeAsset asset that the option is settled on
+    /// @param _assetsRegistry address of the AssetsRegistry contract
+    /// @param _oracle price oracle for the option's underlying asset
+    /// @param _expiryTime option expiration timestamp as a unix timestamp
+    /// @param _isCall true if it's a call option, false if it's a put option
+    /// @param _strikePrice strike price with as many decimals in the strike asset
+    /// @param _controller address of the Quant Controller contract
+    /// @return data encoded data for creating a QToken clone
     function getQTokenImmutableArgs(
         uint8 _optionsDecimals,
         address _underlyingAsset,
@@ -273,7 +286,8 @@ library OptionsUtils {
     }
 
     /// @dev convert the option strike price scaled to a human readable value
-    /// @param _strikePrice the option strike price scaled by 1e20
+    /// @param _strikePrice the option strike price scaled by the strike asset decimals
+    /// @param _strikePriceDecimals the amount of decimals in the strike asset
     /// @return strike price string
     function displayedStrikePrice(
         uint256 _strikePrice,
