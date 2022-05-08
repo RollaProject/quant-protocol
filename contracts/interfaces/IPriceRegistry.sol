@@ -8,14 +8,14 @@ enum PriceStatus {
     SETTLED
 }
 
+struct PriceWithDecimals {
+    uint256 price;
+    uint8 decimals;
+}
+
 /// @title For centrally managing a log of settlement prices, for each option.
 /// @author Rolla
 interface IPriceRegistry {
-    struct PriceWithDecimals {
-        uint256 price;
-        uint8 decimals;
-    }
-
     event PriceStored(
         address indexed _oracle,
         address indexed _asset,

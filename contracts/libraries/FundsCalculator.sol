@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "./QuantMath.sol";
 import "../interfaces/IQToken.sol";
-import "../interfaces/IPriceRegistry.sol";
+import {PriceWithDecimals} from "../interfaces/IPriceRegistry.sol";
 
 /// @title For calculating collateral requirements and payouts for options and spreads
 /// in a fixed point format
@@ -32,7 +32,7 @@ library FundsCalculator {
         uint256 _amount,
         uint8 _optionsDecimals,
         uint8 _strikeAssetDecimals,
-        IPriceRegistry.PriceWithDecimals memory _expiryPrice
+        PriceWithDecimals memory _expiryPrice
     )
         internal
         pure
@@ -149,7 +149,7 @@ library FundsCalculator {
         uint256 _amount,
         uint8 _optionsDecimals,
         uint8 _strikeAssetDecimals,
-        IPriceRegistry.PriceWithDecimals memory _expiryPrice
+        PriceWithDecimals memory _expiryPrice
     ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
         FundsCalculator.OptionPayoutInput memory payoutInput = FundsCalculator
             .OptionPayoutInput(

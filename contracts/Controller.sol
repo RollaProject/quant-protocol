@@ -78,7 +78,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
                 _strikeAsset,
                 address(collateralToken),
                 address(this),
-                _priceRegistry,
+                _oracleRegistry,
                 _assetsRegistry,
                 _qTokenImplementation
             )
@@ -307,7 +307,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         if (qTokenAsCollateral == address(0)) {
             require(
                 collateralTokenId ==
-                    collateralToken.createCollateralToken(
+                    collateralToken.createSpreadCollateralToken(
                         _qTokenToMint,
                         _qTokenForCollateral
                     ),

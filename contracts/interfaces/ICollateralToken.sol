@@ -25,11 +25,24 @@ interface ICollateralToken {
         uint256 id
     );
 
-    /// @notice Create new CollateralTokens
+    /// @notice Sets the the address for the OptionsFactory
+    /// @param optionsFactory_ address of the OptionsFactory
+    /// @dev This function will only be called once, in the Controller constructor, right after
+    /// the CollateralToken contract is deployed with the Controller being its owner
+    function setOptionsFactory(address optionsFactory_) external;
+
+    /// @notice Create a new CollateralToken for a given QToken
     /// @param _qTokenAddress address of the corresponding QToken
+    /// @return id the id for the CollateralToken created with the given arguments
+    function createOptionCollateralToken(address _qTokenAddress)
+        external
+        returns (uint256 id);
+
+    /// @notice Create a new CollateralToken for a given spread
+    /// @param _qTokenAddress QToken address of an option being minted in a spread
     /// @param _qTokenAsCollateral QToken address of an option used as collateral in a spread
     /// @return id the id for the CollateralToken created with the given arguments
-    function createCollateralToken(
+    function createSpreadCollateralToken(
         address _qTokenAddress,
         address _qTokenAsCollateral
     ) external returns (uint256 id);

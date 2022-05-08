@@ -26,11 +26,10 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     /// @inheritdoc ICollateralToken
     mapping(uint256 => CollateralTokenInfo) public override idToInfo;
 
-    // uint256[] public override collateralTokenIds;
-
     // Signature nonce per address
     mapping(address => uint256) public nonces;
 
+    // base URI for ERC1155 token metadata
     string private _uri;
 
     // keccak256(
@@ -39,7 +38,17 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     bytes32 private constant _META_APPROVAL_TYPEHASH =
         0x8733d126a676f1e83270eccfbe576f65af55d3ff784c4dc4884be48932f47c81;
 
+    // address of the OptionsFactory that will be able to create new CollateralTokens
     address private _optionsFactory;
+
+    modifier onlyOwnerOrFactory() {
+        require(
+            msg.sender == owner() || msg.sender == _optionsFactory,
+            "CollateralToken: caller is not owner or OptionsFactory"
+        );
+
+        _;
+    }
 
     /// @notice Initializes a new ERC1155 multi-token contract for representing
     /// users' short positions
@@ -54,21 +63,34 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
         _uri = uri_;
     }
 
+    /// @inheritdoc ICollateralToken
     function setOptionsFactory(address optionsFactory_) external onlyOwner {
         _optionsFactory = optionsFactory_;
     }
 
     /// @inheritdoc ICollateralToken
-    function createCollateralToken(
+    function createOptionCollateralToken(address _qTokenAddress)
+        external
+        override
+        onlyOwnerOrFactory
+        returns (uint256 id)
+    {
+        id = getCollateralTokenId(_qTokenAddress, address(0));
+
+        idToInfo[id] = CollateralTokenInfo({
+            qTokenAddress: _qTokenAddress,
+            qTokenAsCollateral: address(0)
+        });
+
+        emit CollateralTokenCreated(_qTokenAddress, address(0), id);
+    }
+
+    /// @inheritdoc ICollateralToken
+    function createSpreadCollateralToken(
         address _qTokenAddress,
         address _qTokenAsCollateral
-    ) external override returns (uint256 id) {
+    ) external override onlyOwnerOrFactory returns (uint256 id) {
         id = getCollateralTokenId(_qTokenAddress, _qTokenAsCollateral);
-
-        require(
-            msg.sender == owner() || msg.sender == _optionsFactory,
-            "CollateralToken: caller is not owner or OptionsFactory"
-        );
 
         require(
             _qTokenAddress != _qTokenAsCollateral,
@@ -146,6 +168,8 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
         emit ApprovalForAll(cTokenOwner, operator, approved);
     }
 
+    /// @notice Gets the URI for the CollateralToken metadata
+    /// @return uri_ URI for the CollateralToken metadata
     function uri(uint256) public view override returns (string memory uri_) {
         uri_ = _uri;
     }

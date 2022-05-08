@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity >=0.8.0;
+pragma solidity 0.8.13;
 
 import {Clone} from "@rolla-finance/clones-with-immutable-args/Clone.sol";
 
 /// @notice Modern and gas efficient ERC20 + EIP-2612 implementation.
-/// @author Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/tokens/ERC20.sol)
+/// @author zefram.eth (https://github.com/ZeframLou/vested-erc20/blob/main/src/lib/ERC20.sol)
+/// @author Modified from Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/tokens/ERC20.sol)
 /// @author Modified from Uniswap (https://github.com/Uniswap/uniswap-v2-core/blob/master/contracts/UniswapV2ERC20.sol)
 /// @dev Do not manually set balances without updating totalSupply, as the sum of all user balances must not exceed it.
+/// @dev Modified by Rolla to include name and symbol represented as uint256 arrays with 4 elements (128 bytes).
+/// @dev The original ERC20 implementation with Clone from clones-with-immutable-args written by zefram.eth included
+/// name and symbol with 32 bytes each, which would not be enough for Quant's QToken possibly long names and symbols.
 abstract contract ERC20 is Clone {
     /*///////////////////////////////////////////////////////////////
                                   EVENTS
