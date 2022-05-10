@@ -107,6 +107,8 @@ const config: HardhatUserConfig = {
       `https://api.bscscan.com/api?module=proxy&action=eth_gasPrice&apikey=${process.env.BSCSCAN_API_KEY}`,
   },
 
+  paths: { cache: "hh-cache" },
+
   tenderly: {
     project: process.env.ETH_NETWORK
       ? `rolla-v1-${process.env.ETH_NETWORK}`
