@@ -4,18 +4,16 @@ import {
   BigNumberish,
   BytesLike,
   Contract,
-  ethers,
   providers,
   Signer,
   Wallet,
 } from "ethers";
-import { waffle } from "hardhat";
+import { ethers, waffle } from "hardhat";
 import { hexToNumber } from "web3-utils";
 import MockERC20JSON from "../artifacts/contracts/mocks/MockERC20.sol/MockERC20.json";
 import AssetsRegistryJSON from "../artifacts/contracts/options/AssetsRegistry.sol/AssetsRegistry.json";
 import CollateralTokenJSON from "../artifacts/contracts/options/CollateralToken.sol/CollateralToken.json";
 import OptionsFactoryJSON from "../artifacts/contracts/options/OptionsFactory.sol/OptionsFactory.json";
-import QTokenJSON from "../artifacts/contracts/options/QToken.sol/QToken.json";
 import OracleRegistryJSON from "../artifacts/contracts/pricing/OracleRegistry.sol/OracleRegistry.json";
 import QuantCalculatorJSON from "../artifacts/contracts/QuantCalculator.sol/QuantCalculator.json";
 import {
@@ -23,6 +21,7 @@ import {
   OptionsFactory,
   OracleRegistry,
   QuantCalculator,
+  SimpleOptionsFactory,
 } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
@@ -64,11 +63,37 @@ const mockERC20 = async (
   );
 };
 
+const deploySimpleOptionsFactory = async (
+  assetsRegistry: string
+): Promise<SimpleOptionsFactory> => {
+  const ClonesWithImmutableArgsFactory = await ethers.getContractFactory(
+    "ClonesWithImmutableArgs"
+  );
+
+  const ClonesWithImmutableArgs = (
+    await ClonesWithImmutableArgsFactory.deploy()
+  ).address;
+
+  const SimpleOptionsFactory = await ethers.getContractFactory(
+    "SimpleOptionsFactory",
+    {
+      libraries: {
+        ClonesWithImmutableArgs,
+      },
+    }
+  );
+  const optionsFactory = <SimpleOptionsFactory>(
+    await SimpleOptionsFactory.deploy(assetsRegistry)
+  );
+
+  return optionsFactory;
+};
+
 const deployQToken = async (
   deployer: Signer,
   underlyingAsset: string,
   strikeAsset: string,
-  priceRegistry: string,
+  simpleOptionsFactory: SimpleOptionsFactory,
   assetsRegistry: string,
   oracle: string = ethers.Wallet.createRandom().address,
   expiryTime: BigNumber = ethers.BigNumber.from(
@@ -77,18 +102,31 @@ const deployQToken = async (
   isCall = false,
   strikePrice = ethers.BigNumber.from("1400000000")
 ): Promise<QToken> => {
-  const qToken = <QToken>(
-    await deployContract(deployer, QTokenJSON, [
-      underlyingAsset,
-      strikeAsset,
-      priceRegistry,
-      assetsRegistry,
-      oracle,
-      expiryTime,
-      isCall,
-      strikePrice,
-    ])
+  const controller = await deployer.getAddress(); // will be the address with permission to mint and burn QTokens
+
+  await simpleOptionsFactory.createOption(
+    underlyingAsset,
+    strikeAsset,
+    oracle,
+    expiryTime,
+    isCall,
+    strikePrice,
+    controller
   );
+
+  const [qTokenAddress] = await simpleOptionsFactory.getQToken(
+    underlyingAsset,
+    strikeAsset,
+    oracle,
+    expiryTime,
+    isCall,
+    strikePrice,
+    controller
+  );
+
+  const QToken = await ethers.getContractFactory("QToken");
+
+  const qToken = <QToken>QToken.attach(qTokenAddress);
 
   return qToken;
 };
@@ -276,7 +314,7 @@ const getApprovalForAllSignedData = (
   verifyingContract: string
 ): SignedTransactionData => {
   const message = {
-    owner: ownerWallet.address,
+    cTokenOwner: ownerWallet.address,
     operator,
     approved,
     nonce,
@@ -345,6 +383,12 @@ export enum ActionType {
   Call,
 }
 
+export enum PriceStatus {
+  ACTIVE,
+  AWAITING_SETTLEMENT_PRICE,
+  SETTLED,
+}
+
 export type ActionArgs = {
   actionType: ActionType;
   qToken: string;
@@ -405,7 +449,7 @@ export const setQTokenBalance = async (
   user: string,
   amount: BigNumber
 ): Promise<void> => {
-  const qTokenBalancesSlot = 0;
+  const qTokenBalancesSlot = "0x1";
 
   const userBalanceSlot = ethers.utils.solidityKeccak256(
     ["uint256", "uint256"],
@@ -415,7 +459,7 @@ export const setQTokenBalance = async (
   await setStorageAt(qToken, userBalanceSlot, toBytes32(amount));
 
   // also need to increase the totalSupply
-  const totalSupplySlot = "0x2";
+  const totalSupplySlot = "0x0";
   const totalSupply = BigNumber.from(
     await provider.getStorageAt(qToken, totalSupplySlot)
   );
@@ -424,9 +468,29 @@ export const setQTokenBalance = async (
   await setStorageAt(qToken, totalSupplySlot, toBytes32(newTotalSupply));
 };
 
+export const customError = (errorName: string, ...args: any[]): string => {
+  let argumentString = "";
+
+  if (Array.isArray(args) && args.length) {
+    // add quotation marks to first argument if it is of string type
+    if (typeof args[0] === "string") {
+      args[0] = `"${args[0]}"`;
+    }
+
+    // add joining comma and quotation marks to all subsequent arguments, if they are of string type
+    argumentString = args.reduce(function (acc: string, cur: any) {
+      if (typeof cur === "string") return `${acc}, "${cur}"`;
+      else return `${acc}, ${cur.toString()}`;
+    });
+  }
+
+  return `'${errorName}(${argumentString})'`;
+};
+
 export {
   deployCollateralToken,
   deployOptionsFactory,
+  deploySimpleOptionsFactory,
   deployQToken,
   deployAssetsRegistry,
   deployOracleRegistry,

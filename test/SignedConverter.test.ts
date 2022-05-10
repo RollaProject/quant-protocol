@@ -29,13 +29,13 @@ describe("SignedConverter lib", () => {
       const uint =
         "57896044618658097711785492504343953926634992332820282019728792003956564819968"; // 2**255
       await expect(lib.fromUintTest(uint)).to.be.revertedWith(
-        "QuantMath: out of int range"
+        "function was called with incorrect parameters"
       );
 
       const uint2 =
         "57896044618658097711785492504343953926634992332820282019728792003956564819969"; // 2 ** 255 + 1;
       await expect(lib.fromUintTest(uint2)).to.be.revertedWith(
-        "QuantMath: out of int range"
+        "function was called with incorrect parameters"
       );
     });
 

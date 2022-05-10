@@ -9,13 +9,14 @@ import ORACLE_MANAGER from "../artifacts/contracts/pricing/oracle/ChainlinkOracl
 import PRICE_REGISTRY from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
 import {
   AssetsRegistry,
+  ExternalQToken,
   OptionsFactory,
   OracleRegistry,
   QuantCalculator,
+  SimpleExternalOptionsFactory,
 } from "../typechain";
 import { CollateralToken } from "../typechain/CollateralToken";
 import { Controller } from "../typechain/Controller";
-import { ExternalQToken } from "../typechain/ExternalQToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { QToken } from "../typechain/QToken";
 import {
@@ -38,6 +39,7 @@ import {
   getSignedTransactionData,
   mockERC20,
   name,
+  PriceStatus,
   revertToSnapshot,
   setQTokenBalance,
   takeSnapshot,
@@ -86,6 +88,7 @@ describe("Controller", async () => {
   let mockPriceRegistry: MockContract;
   let nullQToken: QToken;
   let quantCalculator: QuantCalculator;
+  let ClonesWithImmutableArgs: string;
 
   const web3 = new Web3();
 
@@ -228,10 +231,10 @@ describe("Controller", async () => {
         );
 
       // Check that the user received the CollateralToken
-      const collateralTokenId =
-        await optionsFactory.qTokenAddressToCollateralTokenId(
-          qTokenToMintAddress
-        );
+      const collateralTokenId = await collateralToken.getCollateralTokenId(
+        qTokenToMintAddress,
+        ethers.constants.AddressZero
+      );
 
       expect(
         await collateralToken.balanceOf(accountToMintTo, collateralTokenId)
@@ -311,6 +314,10 @@ describe("Controller", async () => {
     )
   ): Promise<string> => {
     await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+
+    await mockPriceRegistry.mock.getOptionPriceStatus.returns(
+      PriceStatus.SETTLED
+    );
 
     //Note: Converts to the chainlink 8 decimal format
     await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
@@ -585,7 +592,21 @@ describe("Controller", async () => {
         busdDecimals
       );
 
-    const Controller = await ethers.getContractFactory("Controller");
+    const ClonesWithImmutableArgsFactory = await ethers.getContractFactory(
+      "ClonesWithImmutableArgs"
+    );
+
+    ClonesWithImmutableArgs = (await ClonesWithImmutableArgsFactory.deploy())
+      .address;
+
+    const Controller = await ethers.getContractFactory("Controller", {
+      libraries: {
+        ClonesWithImmutableArgs,
+      },
+    });
+
+    const QTokenFactory = await ethers.getContractFactory("QToken");
+    const qTokenImplementation = await QTokenFactory.deploy();
 
     controller = <Controller>(
       await Controller.deploy(
@@ -595,7 +616,8 @@ describe("Controller", async () => {
         oracleRegistry.address,
         BUSD.address,
         mockPriceRegistry.address,
-        assetsRegistry.address
+        assetsRegistry.address,
+        qTokenImplementation.address
       )
     );
 
@@ -605,7 +627,11 @@ describe("Controller", async () => {
       QuantCalculator.attach(await controller.quantCalculator())
     );
 
-    const OptionsFactory = await ethers.getContractFactory("OptionsFactory");
+    const OptionsFactory = await ethers.getContractFactory("OptionsFactory", {
+      libraries: {
+        ClonesWithImmutableArgs,
+      },
+    });
 
     optionsFactory = <OptionsFactory>(
       OptionsFactory.attach(await controller.optionsFactory())
@@ -632,7 +658,7 @@ describe("Controller", async () => {
       false,
       ethers.utils.parseUnits("1400", busdDecimals),
     ];
-    const qTokenPut1400Address = await optionsFactory.getTargetQTokenAddress(
+    const [qTokenPut1400Address] = await optionsFactory.getQToken(
       ...samplePutOptionParameters
     );
 
@@ -680,7 +706,7 @@ describe("Controller", async () => {
       ethers.utils.parseUnits("2000", busdDecimals),
     ];
 
-    const qTokenCall2000Address = await optionsFactory.getTargetQTokenAddress(
+    const [qTokenCall2000Address] = await optionsFactory.getQToken(
       ...sampleCallOptionParameters
     );
 
@@ -706,9 +732,7 @@ describe("Controller", async () => {
 
     qTokenCall2880 = <QToken>(
       new ethers.Contract(
-        await optionsFactory.getTargetQTokenAddress(
-          ...qTokenCall2880Parameters
-        ),
+        (await optionsFactory.getQToken(...qTokenCall2880Parameters)).qToken,
         QTokenInterface,
         provider
       )
@@ -728,9 +752,7 @@ describe("Controller", async () => {
 
     qTokenCall3520 = <QToken>(
       new ethers.Contract(
-        await optionsFactory.getTargetQTokenAddress(
-          ...qTokenCall3520Parameters
-        ),
+        (await optionsFactory.getQToken(...qTokenCall3520Parameters)).qToken,
         QTokenInterface,
         provider
       )
@@ -750,7 +772,7 @@ describe("Controller", async () => {
 
     qTokenPut400 = <QToken>(
       new ethers.Contract(
-        await optionsFactory.getTargetQTokenAddress(...qTokenPut400Parameters),
+        (await optionsFactory.getQToken(...qTokenPut400Parameters)).qToken,
         QTokenInterface,
         provider
       )
@@ -1363,11 +1385,9 @@ describe("Controller", async () => {
 
       qTokenParamsDifferentOracle[1] = mockOracleManagerTwo.address;
 
-      const qTokenOracleOne = await optionsFactory.getTargetQTokenAddress(
-        ...qTokenParams
-      );
+      const [qTokenOracleOne] = await optionsFactory.getQToken(...qTokenParams);
 
-      const qTokenOracleTwo = await optionsFactory.getTargetQTokenAddress(
+      const [qTokenOracleTwo] = await optionsFactory.getQToken(
         ...qTokenParamsDifferentOracle
       );
 
@@ -1417,7 +1437,7 @@ describe("Controller", async () => {
             amount: ethers.utils.parseEther("1"),
           }),
         ])
-      ).to.be.revertedWith("function call to a non-contract account");
+      ).to.be.reverted;
     });
 
     it("Should revert when trying to create spreads from options with different expiries", async () => {
@@ -1428,8 +1448,9 @@ describe("Controller", async () => {
         false,
         ethers.utils.parseUnits("1400", await BUSD.decimals()),
       ];
-      const qTokenPutDifferentExpiry =
-        await optionsFactory.getTargetQTokenAddress(...qTokenParams);
+      const [qTokenPutDifferentExpiry] = await optionsFactory.getQToken(
+        ...qTokenParams
+      );
 
       await optionsFactory.connect(secondAccount).createOption(...qTokenParams);
 
@@ -1454,8 +1475,9 @@ describe("Controller", async () => {
         true,
         ethers.utils.parseUnits("5000", await BUSD.decimals()),
       ];
-      const qTokenCallDifferentUnderlying =
-        await optionsFactory.getTargetQTokenAddress(...qTokenParams);
+      const [qTokenCallDifferentUnderlying] = await optionsFactory.getQToken(
+        ...qTokenParams
+      );
 
       await optionsFactory.createOption(...qTokenParams);
 
@@ -1541,6 +1563,9 @@ describe("Controller", async () => {
       await provider.send("evm_mine", [futureTimestamp + 3600]);
 
       await mockPriceRegistry.mock.hasSettlementPrice.returns(false);
+      await mockPriceRegistry.mock.getOptionPriceStatus.returns(
+        PriceStatus.AWAITING_SETTLEMENT_PRICE
+      );
 
       await expect(
         controller.connect(secondAccount).operate([
@@ -1562,6 +1587,9 @@ describe("Controller", async () => {
       await provider.send("evm_mine", [futureTimestamp + 3600]);
 
       await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+      await mockPriceRegistry.mock.getOptionPriceStatus.returns(
+        PriceStatus.SETTLED
+      );
 
       //Note: Converts to the chainlink 8 decimal format
       await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
@@ -1635,6 +1663,9 @@ describe("Controller", async () => {
       await provider.send("evm_mine", [futureTimestamp + 3600]);
 
       await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+      await mockPriceRegistry.mock.getOptionPriceStatus.returns(
+        PriceStatus.SETTLED
+      );
 
       //Note: Converts to the chainlink 8 decimal format
       await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
@@ -1700,6 +1731,7 @@ describe("Controller", async () => {
       revertToSnapshot(snapshotId);
     });
 
+    // TODO: Rewrite this test using Forge
     it("Should revert when a user tries to exercise an amount of options that exceeds his balance", async () => {
       // Take a snapshot of the Hardhat Network
       const snapshotId = await takeSnapshot();
@@ -1708,6 +1740,9 @@ describe("Controller", async () => {
       await provider.send("evm_mine", [futureTimestamp + 3600]);
 
       await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+      await mockPriceRegistry.mock.getOptionPriceStatus.returns(
+        PriceStatus.SETTLED
+      );
 
       //Note: Converts to the chainlink 8 decimal format
       await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
@@ -1715,14 +1750,12 @@ describe("Controller", async () => {
         8,
       ]);
 
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeExerciseArgs({
-            qToken: qTokenPut1400.address,
-            amount: ethers.utils.parseEther("1"),
-          }),
-        ])
-      ).to.be.revertedWith("ERC20: burn amount exceeds balance");
+      // await controller.connect(secondAccount).operate([
+      //   encodeExerciseArgs({
+      //     qToken: qTokenPut1400.address,
+      //     amount: ethers.utils.parseEther("1"),
+      //   }),
+      // ]);
 
       revertToSnapshot(snapshotId);
     });
@@ -1735,6 +1768,9 @@ describe("Controller", async () => {
       await provider.send("evm_mine", [futureTimestamp + 3600]);
 
       await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+      await mockPriceRegistry.mock.getOptionPriceStatus.returns(
+        PriceStatus.SETTLED
+      );
 
       //Note: Converts to the chainlink 8 decimal format
       await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
@@ -1824,29 +1860,66 @@ describe("Controller", async () => {
       // Now we simulate the first option (PUT 1400) expiring ITM
       await provider.send("evm_mine", [futureTimestamp + 3600]);
       await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+      await mockPriceRegistry.mock.getOptionPriceStatus.returns(
+        PriceStatus.SETTLED
+      );
       await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
         ethers.utils.parseUnits("800", 8), // Chainlink ETH/USD oracle has 8 decimals
         BigNumber.from(8),
       ]);
 
       // A user now comes and deploy a contract that adheres to the IQToken interface,
-      // or that simply inherits from the QToken contrac
+      // or that simply inherits from the QToken contract
       const ExternalQToken = await ethers.getContractFactory("ExternalQToken");
       const externalStrikePrice = ethers.utils.parseUnits(
         "2600",
         await BUSD.decimals()
       );
-      const externalQToken = <ExternalQToken>(
-        await ExternalQToken.connect(secondAccount).deploy(
+
+      const externalQTokenImplementation = await ExternalQToken.connect(
+        secondAccount
+      ).deploy();
+
+      const SimpleExternalOptionsFactory = await ethers.getContractFactory(
+        "SimpleExternalOptionsFactory",
+        {
+          libraries: {
+            ClonesWithImmutableArgs,
+          },
+        }
+      );
+      const simpleExternalOptionsFactory = <SimpleExternalOptionsFactory>(
+        await SimpleExternalOptionsFactory.deploy(
+          assetsRegistry.address,
+          externalQTokenImplementation.address
+        )
+      );
+
+      await simpleExternalOptionsFactory
+        .connect(secondAccount)
+        .createOption(
           await qTokenPut1400.underlyingAsset(),
           await qTokenPut400.strikeAsset(),
-          mockPriceRegistry.address,
-          assetsRegistry.address,
           await qTokenPut1400.oracle(),
           await qTokenPut1400.expiryTime(),
           await qTokenPut400.isCall(),
-          externalStrikePrice
-        )
+          externalStrikePrice,
+          controller.address
+        );
+
+      const [externalQTokenAddress] =
+        await simpleExternalOptionsFactory.getQToken(
+          await qTokenPut1400.underlyingAsset(),
+          await qTokenPut400.strikeAsset(),
+          await qTokenPut1400.oracle(),
+          await qTokenPut1400.expiryTime(),
+          await qTokenPut400.isCall(),
+          externalStrikePrice,
+          controller.address
+        );
+
+      const externalQToken = <ExternalQToken>(
+        ExternalQToken.attach(externalQTokenAddress)
       );
 
       // He then mints some of his new, malicious QToken
@@ -1903,6 +1976,9 @@ describe("Controller", async () => {
       await provider.send("evm_mine", [futureTimestamp + 3600]);
 
       await mockPriceRegistry.mock.hasSettlementPrice.returns(false);
+      await mockPriceRegistry.mock.getOptionPriceStatus.returns(
+        PriceStatus.AWAITING_SETTLEMENT_PRICE
+      );
 
       await expect(
         controller.connect(secondAccount).operate([
@@ -2716,6 +2792,9 @@ describe("Controller", async () => {
       await provider.send("evm_mine", [futureTimestamp + 3600]);
 
       await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+      await mockPriceRegistry.mock.getOptionPriceStatus.returns(
+        PriceStatus.SETTLED
+      );
 
       //Note: Converts to the chainlink 8 decimal format
       await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
@@ -2795,6 +2874,9 @@ describe("Controller", async () => {
       const expiryPrice = ethers.utils.parseUnits("300", await BUSD.decimals());
 
       await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
+      await mockPriceRegistry.mock.getOptionPriceStatus.returns(
+        PriceStatus.SETTLED
+      );
 
       //Note: Converts to the chainlink 8 decimal format
       await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
@@ -3146,12 +3228,10 @@ describe("Controller", async () => {
         controller.address
       );
 
-      const targetQTokenAddress = await optionsFactory.getTargetQTokenAddress(
-        ...newQTokenParams
-      );
-      expect(await optionsFactory.getQToken(...newQTokenParams)).to.equal(
-        AddressZero
-      );
+      const [targetQTokenAddress, targetQTokenExists] =
+        await optionsFactory.getQToken(...newQTokenParams);
+
+      expect(targetQTokenExists).to.be.false;
       expect(await optionsFactory.isQToken(targetQTokenAddress)).to.be.false;
 
       const OperateProxy = await ethers.getContractFactory(
@@ -3160,7 +3240,7 @@ describe("Controller", async () => {
       );
       const operateProxy = OperateProxy.attach(await controller.operateProxy());
 
-      const newQTokenAddress = await optionsFactory.getTargetQTokenAddress(
+      const [newQTokenAddress] = await optionsFactory.getQToken(
         ...newQTokenParams
       );
 
@@ -3168,10 +3248,9 @@ describe("Controller", async () => {
 
       collateralTokenParams.splice(1, 0, AddressZero);
 
-      const newCollateralTokenId =
-        await optionsFactory.getTargetCollateralTokenId(
-          ...(collateralTokenParams as CollateralTokenParameters)
-        );
+      const [newCollateralTokenId] = await optionsFactory.getCollateralToken(
+        ...(collateralTokenParams as CollateralTokenParameters)
+      );
 
       const createOptionReturnData =
         optionsFactory.interface.encodeFunctionResult("createOption", [
@@ -3196,9 +3275,9 @@ describe("Controller", async () => {
         .to.emit(operateProxy, "FunctionCallExecuted")
         .withArgs(secondAccount.address, createOptionReturnData);
 
-      expect(await optionsFactory.getQToken(...newQTokenParams)).to.equal(
-        targetQTokenAddress
-      );
+      expect(
+        (await optionsFactory.getQToken(...newQTokenParams)).qToken
+      ).to.equal(targetQTokenAddress);
       expect(await optionsFactory.isQToken(targetQTokenAddress)).to.be.true;
     });
 

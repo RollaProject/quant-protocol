@@ -35,7 +35,7 @@ export const actionType = [
 ];
 
 export const metaApprovalType = [
-  { name: "owner", type: "address" },
+  { name: "cTokenOwner", type: "address" },
   { name: "operator", type: "address" },
   { name: "approved", type: "bool" },
   { name: "nonce", type: "uint256" },
