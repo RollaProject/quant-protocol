@@ -38,41 +38,18 @@ abstract contract ERC20 is Clone {
                             EIP-2612 STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    uint256 internal immutable INITIAL_CHAIN_ID = block.chainid;
-
-    bytes32 internal immutable INITIAL_DOMAIN_SEPARATOR =
-        computeDomainSeparator();
-
     mapping(address => uint256) public nonces;
 
     /*///////////////////////////////////////////////////////////////
                                METADATA
     //////////////////////////////////////////////////////////////*/
 
-    function name() external pure returns (string memory) {
-        uint256[] memory nameBytes32Array = _getArgUint256Array(0, 4);
-        return
-            string(
-                abi.encodePacked(
-                    nameBytes32Array[0],
-                    nameBytes32Array[1],
-                    nameBytes32Array[2],
-                    nameBytes32Array[3]
-                )
-            );
+    function name() external view returns (string memory nameStr) {
+        nameStr = _get128BytesStringArg(0);
     }
 
-    function symbol() external pure returns (string memory) {
-        uint256[] memory symbolBytes32Array = _getArgUint256Array(0x80, 4);
-        return
-            string(
-                abi.encodePacked(
-                    symbolBytes32Array[0],
-                    symbolBytes32Array[1],
-                    symbolBytes32Array[2],
-                    symbolBytes32Array[3]
-                )
-            );
+    function symbol() external view returns (string memory symbolStr) {
+        symbolStr = _get128BytesStringArg(0x80);
     }
 
     function decimals() external pure returns (uint8) {
@@ -190,22 +167,15 @@ abstract contract ERC20 is Clone {
     }
 
     function DOMAIN_SEPARATOR() public view virtual returns (bytes32) {
-        return
-            block.chainid == INITIAL_CHAIN_ID
-                ? INITIAL_DOMAIN_SEPARATOR
-                : computeDomainSeparator();
-    }
+        bytes32 nameHash = keccak256(bytes(_get128BytesStringArg(0)));
 
-    function computeDomainSeparator() internal view virtual returns (bytes32) {
         return
             keccak256(
                 abi.encode(
                     keccak256(
                         "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
                     ),
-                    keccak256(
-                        bytes(string(abi.encodePacked(_getArgUint256(0))))
-                    ), // name
+                    nameHash,
                     keccak256("1"),
                     block.chainid,
                     address(this)
@@ -239,5 +209,105 @@ abstract contract ERC20 is Clone {
         }
 
         emit Transfer(from, address(0), amount);
+    }
+
+    /// @notice Read a 128 bytes string stored as a uint256 array in the immutable args,
+    /// removing the trailing zero bytes on the right
+    /// @param stringArgOffset The offset of the string immutable arg in the packed data
+    /// @return stringArg The string immutable arg, in memory
+    function _get128BytesStringArg(uint256 stringArgOffset)
+        private
+        view
+        returns (string memory stringArg)
+    {
+        uint256[] memory stringArgBytes32Array = _getArgUint256Array(
+            stringArgOffset,
+            4 // array of uint256 with 4 elements (128 bytes)
+        );
+
+        uint256 zeroBytes = 0;
+
+        for (uint256 i = 0; i < 4; ) {
+            uint256 word = stringArgBytes32Array[i];
+            if (_hasZeroByte(word)) {
+                zeroBytes += _countZeroBytes(word);
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        uint256 strLength = uint256(128) - zeroBytes;
+
+        assembly {
+            // allocate memory for the output string
+            stringArg := mload(0x40)
+            // update the free memory pointer, padding the string length
+            // (which is stored before the string contents) to 32 bytes
+            mstore(
+                0x40,
+                add(stringArg, and(add(add(strLength, 0x20), 0x1f), not(0x1f)))
+            )
+            // store the string length in memory
+            mstore(stringArg, strLength)
+
+            // use the identity precompile to copy the non-zero bytes in memory
+            // from the uint256 array to the output string
+            if iszero(
+                staticcall(
+                    gas(),
+                    0x04,
+                    add(stringArgBytes32Array, 0x20),
+                    strLength,
+                    add(stringArg, 0x20),
+                    strLength
+                )
+            ) {
+                invalid()
+            }
+        }
+    }
+
+    /// @notice Determine if a word has a zero byte
+    /// @dev https://graphics.stanford.edu/~seander/bithacks.html#ZeroInWord
+    /// @param word 256-bit word to check if any 8-bit byte in it is 0
+    /// @return hasZeroByte true if any 8-bit byte in word is 0
+    function _hasZeroByte(uint256 word)
+        private
+        pure
+        returns (bool hasZeroByte)
+    {
+        uint256 const = 0x7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F;
+
+        assembly {
+            hasZeroByte := not(
+                or(or(add(and(word, const), const), word), const)
+            )
+        }
+    }
+
+    /// @notice Count the consecutive zero bytes (trailing) on the right linearly
+    /// @dev https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightLinear
+    /// @dev O(trailing zero bits)
+    /// @param word 256-bit word input to count zero bytes on the right
+    /// @return number of consecutive zero bytes
+    function _countZeroBytes(uint256 word) private pure returns (uint256) {
+        uint256 c = 256; // all the bits are zero if the word is zero
+
+        assembly {
+            if word {
+                word := shr(1, xor(word, sub(word, 1)))
+                for {
+                    c := 0
+                } word {
+                    c := add(c, 1)
+                } {
+                    word := shr(1, word)
+                }
+            }
+        }
+
+        return c / 8;
     }
 }
