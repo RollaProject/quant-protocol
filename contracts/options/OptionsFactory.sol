@@ -2,7 +2,7 @@
 pragma solidity 0.8.13;
 
 import {ClonesWithImmutableArgs} from "@rolla-finance/clones-with-immutable-args/ClonesWithImmutableArgs.sol";
-import {QToken} from "././QToken.sol";
+import {QToken} from "./QToken.sol";
 import "../libraries/OptionsUtils.sol";
 import "../interfaces/IOptionsFactory.sol";
 import "../interfaces/ICollateralToken.sol";
