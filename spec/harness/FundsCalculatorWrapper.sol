@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 import {FundsCalculator} from "../../contracts/libraries/FundsCalculator.sol";
 import {QuantMath} from "../../contracts/libraries/QuantMath.sol";
 import {SignedConverter} from "../../contracts/libraries/SignedConverter.sol";
-import {IPriceRegistry} from "../../contracts/interfaces/IPriceRegistry.sol";
+import {PriceWithDecimals} from "../../contracts/interfaces/IPriceRegistry.sol";
 
 contract FundsCalculatorWrapper {
     using QuantMath for uint256;
@@ -108,8 +108,10 @@ contract FundsCalculatorWrapper {
         uint8 _expiryDecimals
     ) public returns (int256 payoutAmount) {
         QuantMath.FixedPointInt memory payoutAmountStruct;
-        IPriceRegistry.PriceWithDecimals memory expiryPrice = IPriceRegistry
-            .PriceWithDecimals(_expiryPrice, _expiryDecimals);
+        PriceWithDecimals memory expiryPrice = PriceWithDecimals(
+            _expiryPrice,
+            _expiryDecimals
+        );
 
         payoutAmountStruct = FundsCalculator.getPayoutAmount(
             _isCall,
