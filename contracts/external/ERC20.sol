@@ -240,7 +240,7 @@ abstract contract ERC20 is Clone {
 
         uint256 strLength = uint256(128) - zeroBytes;
 
-        assembly {
+        assembly ("memory-safe") {
             // allocate memory for the output string
             stringArg := mload(0x40)
             // update the free memory pointer, padding the string length
@@ -280,7 +280,7 @@ abstract contract ERC20 is Clone {
     {
         uint256 const = 0x7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F;
 
-        assembly {
+        assembly ("memory-safe") {
             hasZeroByte := not(
                 or(or(add(and(word, const), const), word), const)
             )
@@ -295,7 +295,7 @@ abstract contract ERC20 is Clone {
     function _countZeroBytes(uint256 word) private pure returns (uint256) {
         uint256 c = 256; // all the bits are zero if the word is zero
 
-        assembly {
+        assembly ("memory-safe") {
             if word {
                 word := shr(1, xor(word, sub(word, 1)))
                 for {

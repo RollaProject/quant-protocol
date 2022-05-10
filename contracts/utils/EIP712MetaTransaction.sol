@@ -104,7 +104,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
             // We explicitly trigger invalid opcode to consume all gas and bubble-up the effects, since
             // neither revert or assert consume all gas since Solidity 0.8.0
             // https://docs.soliditylang.org/en/v0.8.0/control-structures.html#panic-via-assert-and-error-via-require
-            assembly {
+            assembly ("memory-safe") {
                 invalid()
             }
         }
@@ -134,7 +134,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
         if (msg.sender == address(this)) {
             bytes memory array = msg.data;
             uint256 index = msg.data.length;
-            assembly {
+            assembly ("memory-safe") {
                 // Load the 32 bytes word from memory with the address on the lower 20 bytes, and mask those.
                 sender := and(
                     mload(add(array, index)),
