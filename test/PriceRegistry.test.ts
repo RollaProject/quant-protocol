@@ -53,36 +53,36 @@ describe("PriceRegistry", () => {
     const price = ethers.utils.parseUnits("10", strikeAssetDecimals);
 
     expect(
-      priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
+      priceRegistry.getSettlementPrice(oracle, timestamp, assetOne)
     ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
     expect(
-      await priceRegistry.hasSettlementPrice(oracle, assetOne, timestamp)
+      await priceRegistry.hasSettlementPrice(oracle, timestamp, assetOne)
     ).to.equal(false);
 
     expect(
       await priceRegistry
         .connect(admin)
-        .setSettlementPrice(assetOne, timestamp, price, strikeAssetDecimals)
+        .setSettlementPrice(assetOne, timestamp, strikeAssetDecimals, price)
     )
       .to.emit(priceRegistry, "PriceStored")
       .withArgs(
         await admin.getAddress(),
         assetOne,
         timestamp,
-        price,
-        strikeAssetDecimals
+        strikeAssetDecimals,
+        price
       );
 
     expect(
-      await priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
+      await priceRegistry.getSettlementPrice(oracle, timestamp, assetOne)
     ).to.equal(price);
     expect(
-      await priceRegistry.hasSettlementPrice(oracle, assetOne, timestamp)
+      await priceRegistry.hasSettlementPrice(oracle, timestamp, assetOne)
     ).to.equal(true);
     expect(
       priceRegistry
         .connect(admin)
-        .setSettlementPrice(assetOne, timestamp, 40, strikeAssetDecimals)
+        .setSettlementPrice(assetOne, timestamp, strikeAssetDecimals, 40)
     ).to.be.revertedWith(
       "PriceRegistry: Settlement price has already been set"
     );
@@ -93,18 +93,18 @@ describe("PriceRegistry", () => {
     const price = ethers.utils.parseUnits("10", 2);
 
     expect(
-      priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
+      priceRegistry.getSettlementPrice(oracle, timestamp, assetOne)
     ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
     expect(
-      await priceRegistry.hasSettlementPrice(oracle, assetOne, timestamp)
+      await priceRegistry.hasSettlementPrice(oracle, timestamp, assetOne)
     ).to.equal(false);
 
     await priceRegistry
       .connect(admin)
-      .setSettlementPrice(assetOne, timestamp, price, 2);
+      .setSettlementPrice(assetOne, timestamp, 2, price);
 
     expect(
-      await priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
+      await priceRegistry.getSettlementPrice(oracle, timestamp, assetOne)
     ).to.equal(ethers.utils.parseUnits("10", strikeAssetDecimals));
   });
 
@@ -113,18 +113,18 @@ describe("PriceRegistry", () => {
     const price = ethers.utils.parseUnits("10", 24);
 
     expect(
-      priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
+      priceRegistry.getSettlementPrice(oracle, timestamp, assetOne)
     ).to.be.revertedWith("PriceRegistry: No settlement price has been set");
     expect(
-      await priceRegistry.hasSettlementPrice(oracle, assetOne, timestamp)
+      await priceRegistry.hasSettlementPrice(oracle, timestamp, assetOne)
     ).to.equal(false);
 
     await priceRegistry
       .connect(admin)
-      .setSettlementPrice(assetOne, timestamp, price, 24);
+      .setSettlementPrice(assetOne, timestamp, 24, price);
 
     expect(
-      await priceRegistry.getSettlementPrice(oracle, assetOne, timestamp)
+      await priceRegistry.getSettlementPrice(oracle, timestamp, assetOne)
     ).to.equal(ethers.utils.parseUnits("10", strikeAssetDecimals));
   });
 
@@ -135,8 +135,8 @@ describe("PriceRegistry", () => {
         .setSettlementPrice(
           assetOne,
           Math.round(Date.now() / 1000) + 100000,
-          40,
-          strikeAssetDecimals
+          strikeAssetDecimals,
+          40
         )
     ).to.be.revertedWith(
       "PriceRegistry: Can't set a price for a time in the future"
@@ -147,7 +147,7 @@ describe("PriceRegistry", () => {
     await expect(
       priceRegistry
         .connect(secondAccount)
-        .setSettlementPrice(assetOne, 1, 40, strikeAssetDecimals)
+        .setSettlementPrice(assetOne, 1, strikeAssetDecimals, 40)
     ).to.be.revertedWith(
       "PriceRegistry: Price submitter is not an active oracle"
     );

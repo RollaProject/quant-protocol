@@ -81,7 +81,22 @@ describe("OptionsFactory", () => {
 
     await mockPriceRegistry.mock.oracleRegistry.returns(oracleRegistry.address);
 
-    const Controller = await ethers.getContractFactory("Controller");
+    const QToken = await ethers.getContractFactory("QToken");
+    const qTokenImplementation = await QToken.deploy();
+
+    const ClonesWithImmutableArgsFactory = await ethers.getContractFactory(
+      "ClonesWithImmutableArgs"
+    );
+    const ClonesWithImmutableArgs = await (
+      await ClonesWithImmutableArgsFactory.deploy()
+    ).address;
+
+    const Controller = await ethers.getContractFactory("Controller", {
+      libraries: {
+        ClonesWithImmutableArgs,
+      },
+    });
+
     const controller = <Controller>(
       await Controller.deploy(
         name,
@@ -90,7 +105,8 @@ describe("OptionsFactory", () => {
         oracleRegistry.address,
         BUSD.address,
         mockPriceRegistry.address,
-        assetsRegistry.address
+        assetsRegistry.address,
+        qTokenImplementation.address
       )
     );
 
@@ -99,7 +115,10 @@ describe("OptionsFactory", () => {
       CollateralToken.attach(await controller.collateralToken())
     );
 
-    const OptionsFactory = await ethers.getContractFactory("OptionsFactory");
+    const OptionsFactory = await ethers.getContractFactory("OptionsFactory", {
+      libraries: { ClonesWithImmutableArgs },
+    });
+
     optionsFactory = <OptionsFactory>(
       OptionsFactory.attach(await controller.optionsFactory())
     );
@@ -134,11 +153,11 @@ describe("OptionsFactory", () => {
 
   describe("createOption", () => {
     it("Anyone should be able to create new options", async () => {
-      const qTokenAddress = await optionsFactory.getTargetQTokenAddress(
+      const [qTokenAddress] = await optionsFactory.getQToken(
         ...samplePutOptionParameters
       );
 
-      const collateralTokenId = await optionsFactory.getTargetCollateralTokenId(
+      const [collateralTokenId] = await optionsFactory.getCollateralToken(
         ...sampleCollateralTokenParameters
       );
 
@@ -152,35 +171,46 @@ describe("OptionsFactory", () => {
           qTokenAddress,
           await secondAccount.getAddress(),
           ...samplePutOptionParameters,
-          collateralTokenId,
-          ethers.BigNumber.from("1")
+          collateralTokenId
         );
 
       expect(
-        await collateralToken.collateralTokenIds(ethers.BigNumber.from("0"))
-      ).to.equal(collateralTokenId);
+        (await collateralToken.idToInfo(collateralTokenId)).qTokenAddress
+      ).to.equal(qTokenAddress);
     });
 
     it("Should revert when trying to create an option if the oracle is not registered in the oracle registry", async () => {
+      const unregisteredOracle = await deployMockContract(
+        deployer,
+        ORACLE_MANAGER.abi
+      );
+
+      await unregisteredOracle.mock.isValidOption.returns(true);
+
       await expect(
         optionsFactory
           .connect(secondAccount)
           .createOption(
             WETH.address,
-            ethers.constants.AddressZero,
+            unregisteredOracle.address,
             ethers.BigNumber.from(futureTimestamp),
             false,
             ethers.utils.parseUnits("1400", await BUSD.decimals())
           )
       ).to.be.revertedWith(
-        "OptionsFactory: Oracle is not registered in OracleRegistry"
+        "OptionsFactory: Oracle is not active in the OracleRegistry"
       );
     });
 
     it("Should revert when trying to make an option for an asset not registered in the oracle", async () => {
-      //Set the oracle to the zero address, signifying the asset not being registed
-      await mockOracleManager.mock.getAssetOracle.returns(
+      //Set the WETH oracle to the zero address, signifying the asset not being registered
+      await mockOracleManager.mock.assetOracles.returns(
         ethers.constants.AddressZero
+      );
+
+      await mockOracleManager.mock.isValidOption.returns(
+        (await mockOracleManager.assetOracles(WETH.address)) !=
+          ethers.constants.AddressZero
       );
 
       await expect(
@@ -193,7 +223,9 @@ describe("OptionsFactory", () => {
             false,
             ethers.utils.parseUnits("1400", await BUSD.decimals())
           )
-      ).to.be.revertedWith("OptionsFactory: Asset does not exist in oracle");
+      ).to.be.revertedWith(
+        "OptionsFactory: Oracle doesn't support the given option"
+      );
     });
 
     it("Should revert when trying to create an option with a deactivated oracle", async () => {
@@ -239,7 +271,7 @@ describe("OptionsFactory", () => {
         optionsFactory
           .connect(secondAccount)
           .createOption(...samplePutOptionParameters)
-      ).to.be.revertedWith("option already created");
+      ).to.be.revertedWith("reverted with an unrecognized custom error");
     });
 
     it("Should revert when trying to create a PUT option with a strike price of 0", async () => {
@@ -303,36 +335,46 @@ describe("OptionsFactory", () => {
   });
 
   describe("getCollateralToken", () => {
-    it("Should return the ID of the correct CollateralToken", async () => {
-      const collateralTokenId = await optionsFactory.getTargetCollateralTokenId(
-        ...sampleCollateralTokenParameters
-      );
+    it("Should return the ID of the correct CollateralToken after the option creation", async () => {
+      const [collateralTokenId, exists] =
+        await optionsFactory.getCollateralToken(
+          ...sampleCollateralTokenParameters
+        );
+
+      expect(exists).to.be.false;
 
       await optionsFactory
         .connect(secondAccount)
         .createOption(...samplePutOptionParameters);
 
-      expect(
+      const [collateralTokenId2, exists2] =
         await optionsFactory.getCollateralToken(
           ...sampleCollateralTokenParameters
-        )
-      ).to.equal(collateralTokenId);
+        );
+
+      expect(collateralTokenId).to.equal(collateralTokenId2);
+      expect(exists2).to.be.true;
     });
   });
 
   describe("getQToken", () => {
-    it("Should return the address of the correct QToken", async () => {
-      const qTokenAddress = await optionsFactory.getTargetQTokenAddress(
+    it("Should return the address of the correct QToken after the option creation", async () => {
+      const [qTokenAddress, exists] = await optionsFactory.getQToken(
         ...samplePutOptionParameters
       );
+
+      expect(exists).to.be.false;
 
       await optionsFactory
         .connect(secondAccount)
         .createOption(...samplePutOptionParameters);
 
-      expect(
-        await optionsFactory.getQToken(...samplePutOptionParameters)
-      ).to.equal(qTokenAddress);
+      const [qTokenAddress2, exists2] = await optionsFactory.getQToken(
+        ...samplePutOptionParameters
+      );
+
+      expect(qTokenAddress).to.equal(qTokenAddress2);
+      expect(exists2).to.be.true;
     });
   });
 });
