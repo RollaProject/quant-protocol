@@ -16,7 +16,7 @@ perl -0777 -i -pe 's/require\(\s*IOracleRegistry\(\s*IOptionsFactory\(optionsFac
 # QuantCalculator simplification
 perl -0777 -i -pe 's/address public immutable override optionsFactory;/address public immutable override optionsFactory ;\n
      \/\/ add expiry price
-     IPriceRegistry.PriceWithDecimals expiryPrice;/g' contracts/QuantCalculator.sol
+     PriceWithDecimals expiryPrice;/g' contracts/QuantCalculator.sol
 
 
 perl -0777 -i -pe 's/IPriceRegistry priceRegistry =\s*IPriceRegistry\(\s*IOptionsFactory\(optionsFactory\).quantConfig\(\).protocolAddresses\(\s*ProtocolValue.encode\("priceRegistry"\)\s*\)\s*\);/\/\/ IPriceRegistry priceRegistry =
@@ -27,14 +27,14 @@ perl -0777 -i -pe 's/IPriceRegistry priceRegistry =\s*IPriceRegistry\(\s*IOption
             \/\/ \);/g' contracts/QuantCalculator.sol
 
 
-perl -0777 -i -pe 's/IPriceRegistry.PriceWithDecimals memory expiryPrice =\s*priceRegistry.getSettlementPriceWithDecimals\(\s*qTokenShort.oracle\(\),\s*qTokenShort.underlyingAsset\(\),\s*qTokenShort.expiryTime\(\)\s*\);/\/\/ IPriceRegistry.PriceWithDecimals memory expiryPrice =
+perl -0777 -i -pe 's/PriceWithDecimals memory expiryPrice =\s*priceRegistry.getSettlementPriceWithDecimals\(\s*qTokenShort.oracle\(\),\s*qTokenShort.underlyingAsset\(\),\s*qTokenShort.expiryTime\(\)\s*\);/\/\/ PriceWithDecimals memory expiryPrice =
             \/\/ priceRegistry.getSettlementPriceWithDecimals\(
             \/\/     qTokenShort.oracle\(\),
             \/\/     qTokenShort.underlyingAsset\(\),
             \/\/     qTokenShort.expiryTime\(\)
             \/\/ \);/g' contracts/QuantCalculator.sol
 
-perl -0777 -i -pe 's/IPriceRegistry.PriceWithDecimals memory expiryPrice =\s*priceRegistry.getSettlementPriceWithDecimals\(\s*qToken.oracle\(\),\s*underlyingAsset,\s*qToken.expiryTime\(\)\s*\);/\/\/ IPriceRegistry.PriceWithDecimals memory expiryPrice =
+perl -0777 -i -pe 's/PriceWithDecimals memory expiryPrice =\s*priceRegistry.getSettlementPriceWithDecimals\(\s*qToken.oracle\(\),\s*underlyingAsset,\s*qToken.expiryTime\(\)\s*\);/\/\/ PriceWithDecimals memory expiryPrice =
             \/\/ priceRegistry.getSettlementPriceWithDecimals\(
             \/\/     qToken.oracle\(\),
             \/\/     underlyingAsset,
