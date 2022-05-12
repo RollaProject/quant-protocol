@@ -5,7 +5,7 @@ import "../../contracts/interfaces/IQuantCalculator.sol";
 import "../../contracts/interfaces/IOptionsFactory.sol";
 import "../../contracts/interfaces/IQToken.sol";
 import "../../contracts/interfaces/IPriceRegistry.sol";
-import "../../contracts/interfaces/ICollateralToken.sol";
+import "../../contracts/options/CollateralToken.sol";
 
 contract QuantCalculatorHarness is IQuantCalculator {
     modifier validQToken(address _qToken) {
@@ -40,7 +40,7 @@ contract QuantCalculatorHarness is IQuantCalculator {
     mapping(address => mapping(address => mapping(uint256 => uint256)))
         public neutralizationPayout;
 
-    uint8 public constant override OPTIONS_DECIMALS = 0;
+    uint8 public constant OPTIONS_DECIMALS = 0;
 
     IQuantCalculator calcOriginal;
     uint8 public override strikeAssetDecimals;
@@ -96,12 +96,11 @@ contract QuantCalculatorHarness is IQuantCalculator {
         )
     {
         amountToClaim = _amount == 0
-            ? ICollateralToken(
-                IOptionsFactory(optionsFactory).collateralToken()
-            ).balanceOf(msgSender, _collateralTokenId)
+            ? CollateralToken(IOptionsFactory(optionsFactory).collateralToken())
+                .balanceOf(msgSender, _collateralTokenId)
             : _amount;
 
-        (address _qTokenShort, address qTokenAsCollateral) = ICollateralToken(
+        (address _qTokenShort, address qTokenAsCollateral) = CollateralToken(
             IOptionsFactory(optionsFactory).collateralToken()
         ).idToInfo(_collateralTokenId);
 
@@ -162,7 +161,15 @@ contract QuantCalculatorHarness is IQuantCalculator {
         )
     {
         IQToken qToken = IQToken(_qToken);
-        isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
+
+        isSettled =
+            IPriceRegistry(calcOriginal.priceRegistry()).getOptionPriceStatus(
+                qToken.oracle(),
+                qToken.expiryTime(),
+                qToken.underlyingAsset()
+            ) ==
+            PriceStatus.SETTLED;
+
         payoutAmount = getExercisePayoutValue(_qToken, _amount);
         payoutToken = qTokenToCollateralType[_qToken];
     }

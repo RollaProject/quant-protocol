@@ -4,7 +4,7 @@ pragma solidity 0.8.13;
 import "../../contracts/libraries/Actions.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../contracts/Controller.sol";
-import "../../contracts/interfaces/IQToken.sol";
+import "../../contracts/options/QToken.sol";
 import "../../contracts/interfaces/IOptionsFactory.sol";
 
 contract ControllerHarness is Controller {
@@ -18,9 +18,9 @@ contract ControllerHarness is Controller {
         address _oracleRegistry,
         address _strikeAsset,
         address _priceRegistry,
-        address _assetsRegistry
+        address _assetsRegistry,
+        QToken _implementation
     )
-        public
         Controller(
             _name,
             _version,
@@ -28,7 +28,8 @@ contract ControllerHarness is Controller {
             _oracleRegistry,
             _strikeAsset,
             _priceRegistry,
-            _assetsRegistry
+            _assetsRegistry,
+            _implementation
         )
     {}
 
@@ -89,6 +90,6 @@ contract ControllerHarness is Controller {
     }
 
     function getExpiryTime(address qToken) public view returns (uint256) {
-        return IQToken(qToken).expiryTime();
+        return QToken(qToken).expiryTime();
     }
 }
