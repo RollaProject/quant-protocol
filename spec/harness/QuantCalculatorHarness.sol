@@ -40,11 +40,11 @@ contract QuantCalculatorHarness is IQuantCalculator {
     mapping(address => mapping(address => mapping(uint256 => uint256)))
         public neutralizationPayout;
 
-    uint8 public constant OPTIONS_DECIMALS = 0;
-
     IQuantCalculator calcOriginal;
     uint8 public override strikeAssetDecimals;
     address public override optionsFactory;
+    address public override assetsRegistry;
+    address public override priceRegistry;
 
     mapping(address => address) public qTokenToCollateralType;
 
@@ -172,5 +172,9 @@ contract QuantCalculatorHarness is IQuantCalculator {
 
         payoutAmount = getExercisePayoutValue(_qToken, _amount);
         payoutToken = qTokenToCollateralType[_qToken];
+    }
+
+    function optionsDecimals() external view returns (uint8) {
+        return 0;
     }
 }
