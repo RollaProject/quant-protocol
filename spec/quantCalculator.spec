@@ -138,8 +138,8 @@ rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFact
     collateralAsset,
     amountToClaim = calculateClaimableCollateral(e, collateralTokenId, amount, e.msg.sender);
 
-    assert collateral == payoutToken;
-    // assert payoutToken == collateralAsset, "getExercisePayout and calculateClaimableCollateral return different ERC20 token";
+    assert collateral == payoutToken, "getCollateralRequirement and getExercisePayout return different ERC20 token";
+    assert payoutToken == collateralAsset, "getExercisePayout and calculateClaimableCollateral return different ERC20 token";
 }
 
 ////////////////////////////////////////////////////////////////////////////
