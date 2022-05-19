@@ -61,6 +61,7 @@ methods {
 	isQToken(address _qToken) returns (bool) => DISPATCHER(true)
 	collateralToken() => NONDET
 	quantConfig() => NONDET
+	createSpreadCollateralToken(address, address) returns(uint256) => DISPATCHER(true)
 	
 	// CollateralToken
 	mintCollateralToken(address,uint256,uint256) => DISPATCHER(true)
@@ -210,7 +211,7 @@ invariant balanceVSsupply(uint collateralTokenId, address qToken, env e)
 */
 rule validQtoken(method f)  
 		filtered { f -> f.selector != certorafallback_0().selector &&
-						f.selector != mintSpread(address,address,uint256).selector &&
+						// f.selector != mintSpread(address,address,uint256).selector &&
 						f.selector != executeMetaTransaction((uint256,uint256,address,(uint8,address,address,address,uint256,uint256,bytes)[]),uint256,bytes32,bytes32,uint8).selector }
 {
 	address qToken; 
