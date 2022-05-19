@@ -1,2 +1,7 @@
-contracts/libraries/external/strings.sol
-contracts/external/openzeppelin/ERC1155.sol
+contracts/test/
+contracts/mocks/
+contracts/external/ERC20.sol
+contracts/libraries/OptionsUtils.sol
+contracts/options/QToken.sol
+contracts/utils/EIP712MetaTransaction.sol
+spec/
