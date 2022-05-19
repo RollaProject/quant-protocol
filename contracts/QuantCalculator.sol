@@ -27,9 +27,11 @@ contract QuantCalculator is IQuantCalculator {
     /// @inheritdoc IQuantCalculator
     address public immutable override optionsFactory;
 
-    address public immutable assetsRegistry;
+    /// @inheritdoc IQuantCalculator
+    address public immutable override assetsRegistry;
 
-    address public immutable priceRegistry;
+    /// @inheritdoc IQuantCalculator
+    address public immutable override priceRegistry;
 
     /// @notice Checks that the QToken was created through the configured OptionsFactory
     modifier validQToken(address _qToken) {

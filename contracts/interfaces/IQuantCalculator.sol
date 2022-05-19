@@ -91,4 +91,10 @@ interface IQuantCalculator {
 
     /// @notice The address of the factory contract that creates Quant options
     function optionsFactory() external view returns (address);
+
+    /// @notice The address of the AssetsRegistry contract
+    function assetsRegistry() external view returns (address);
+
+    /// @notice The address of the PriceRegistry contract
+    function priceRegistry() external view returns (address);
 }
