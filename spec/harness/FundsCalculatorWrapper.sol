@@ -1,4 +1,4 @@
-pragma solidity 0.8.13;
+pragma solidity 0.8.14;
 
 import {FundsCalculator} from "../../contracts/libraries/FundsCalculator.sol";
 import {QuantMath} from "../../contracts/libraries/QuantMath.sol";
