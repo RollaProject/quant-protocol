@@ -5,3 +5,5 @@ contracts/libraries/OptionsUtils.sol
 contracts/options/QToken.sol
 contracts/utils/EIP712MetaTransaction.sol
 spec/
+.certora_config/
+lib/

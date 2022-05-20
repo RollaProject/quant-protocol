@@ -10,3 +10,5 @@ contracts/external/ERC20.sol
 contracts/utils/EIP712MetaTransaction.sol
 spec/
 out/
+.certora_config/
+lib/
