@@ -117,3 +117,5 @@ perl -0777 -i -pe 's/import {ClonesWithImmutableArgs} from "\@rolla-finance\/clo
 perl -0777 -i -pe 's/implementation = _implementation;\n/implementation = _implementation;\n\n\t\tclonesWrapper = new ClonesWithImmutableArgsWrapper\(\);\n/g' contracts/options/OptionsFactory.sol
 perl -0777 -i -pe 's/newQToken = address\(implementation\).cloneDeterministic\(\n/newQToken = clonesWrapper.cloneDeterministic\(\n\t\t\taddress\(implementation\),\n/g' contracts/options/OptionsFactory.sol
 perl -0777 -i -pe 's/\(qToken, exists\) = ClonesWithImmutableArgs.predictDeterministicAddress\(\n/\(qToken, exists\) = clonesWrapper.predictDeterministicAddress\(\n/g' contracts/options/OptionsFactory.sol
+perl -0777 -i -pe 's/abstract contract ERC20 is Clone/abstract contract RollaERC20 is Clone/g' contracts/external/ERC20.sol
+perl -0777 -i -pe 's/contract QToken is ERC20, IQToken/contract QToken is RollaERC20, IQToken/g' contracts/options/QToken.sol
