@@ -48,10 +48,6 @@ library OptionsUtils {
             // get the length of the input data
             let len := mload(_data)
 
-            // store the length of the data in the last byte of the output location in memory,
-            // i.e. the 128th byte in the uint256 array
-            mstore(add(result, 0x80), shl(0xf8, len))
-
             // can end execution with the INVALID opcode due to either the input data being
             // too large or the staticcall to the identity precompile failing
             if or(
@@ -69,6 +65,13 @@ library OptionsUtils {
             ) {
                 invalid()
             }
+
+            // store the length of the data in the last byte of the output location in memory,
+            // i.e. the 128th byte in the uint256 array
+            mstore(
+                add(result, 0x80),
+                xor(mload(add(result, 0x80)), shl(0xf8, len))
+            )
         }
     }
 
