@@ -15,6 +15,7 @@ import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { expect, provider } from "./setup";
 import {
+  customError,
   deployAssetsRegistry,
   deployOracleRegistry,
   erc1155Uri,
@@ -84,18 +85,7 @@ describe("OptionsFactory", () => {
     const QToken = await ethers.getContractFactory("QToken");
     const qTokenImplementation = await QToken.deploy();
 
-    const ClonesWithImmutableArgsFactory = await ethers.getContractFactory(
-      "ClonesWithImmutableArgs"
-    );
-    const ClonesWithImmutableArgs = await (
-      await ClonesWithImmutableArgsFactory.deploy()
-    ).address;
-
-    const Controller = await ethers.getContractFactory("Controller", {
-      libraries: {
-        ClonesWithImmutableArgs,
-      },
-    });
+    const Controller = await ethers.getContractFactory("Controller");
 
     const controller = <Controller>(
       await Controller.deploy(
@@ -115,9 +105,7 @@ describe("OptionsFactory", () => {
       CollateralToken.attach(await controller.collateralToken())
     );
 
-    const OptionsFactory = await ethers.getContractFactory("OptionsFactory", {
-      libraries: { ClonesWithImmutableArgs },
-    });
+    const OptionsFactory = await ethers.getContractFactory("OptionsFactory");
 
     optionsFactory = <OptionsFactory>(
       OptionsFactory.attach(await controller.optionsFactory())
@@ -271,7 +259,7 @@ describe("OptionsFactory", () => {
         optionsFactory
           .connect(secondAccount)
           .createOption(...samplePutOptionParameters)
-      ).to.be.revertedWith("reverted with an unrecognized custom error");
+      ).to.be.revertedWith(customError("CreateFail"));
     });
 
     it("Should revert when trying to create a PUT option with a strike price of 0", async () => {

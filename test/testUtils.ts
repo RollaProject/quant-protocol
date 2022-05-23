@@ -70,17 +70,8 @@ const deploySimpleOptionsFactory = async (
     "ClonesWithImmutableArgs"
   );
 
-  const ClonesWithImmutableArgs = (
-    await ClonesWithImmutableArgsFactory.deploy()
-  ).address;
-
   const SimpleOptionsFactory = await ethers.getContractFactory(
-    "SimpleOptionsFactory",
-    {
-      libraries: {
-        ClonesWithImmutableArgs,
-      },
-    }
+    "SimpleOptionsFactory"
   );
   const optionsFactory = <SimpleOptionsFactory>(
     await SimpleOptionsFactory.deploy(assetsRegistry)

@@ -63,21 +63,8 @@ describe("QToken", async () => {
 
     scaledStrikePrice = ethers.utils.parseUnits("1400", await BUSD.decimals());
 
-    const ClonesWithImmutableArgsFactory = await ethers.getContractFactory(
-      "ClonesWithImmutableArgs"
-    );
-
-    const ClonesWithImmutableArgs = await (
-      await ClonesWithImmutableArgsFactory.deploy()
-    ).address;
-
     const SimpleOptionsFactory = await ethers.getContractFactory(
-      "SimpleOptionsFactory",
-      {
-        libraries: {
-          ClonesWithImmutableArgs,
-        },
-      }
+      "SimpleOptionsFactory"
     );
 
     simpleOptionsFactory = <SimpleOptionsFactory>(

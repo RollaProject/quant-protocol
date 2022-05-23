@@ -592,18 +592,7 @@ describe("Controller", async () => {
         busdDecimals
       );
 
-    const ClonesWithImmutableArgsFactory = await ethers.getContractFactory(
-      "ClonesWithImmutableArgs"
-    );
-
-    ClonesWithImmutableArgs = (await ClonesWithImmutableArgsFactory.deploy())
-      .address;
-
-    const Controller = await ethers.getContractFactory("Controller", {
-      libraries: {
-        ClonesWithImmutableArgs,
-      },
-    });
+    const Controller = await ethers.getContractFactory("Controller");
 
     const QTokenFactory = await ethers.getContractFactory("QToken");
     const qTokenImplementation = await QTokenFactory.deploy();
@@ -627,11 +616,7 @@ describe("Controller", async () => {
       QuantCalculator.attach(await controller.quantCalculator())
     );
 
-    const OptionsFactory = await ethers.getContractFactory("OptionsFactory", {
-      libraries: {
-        ClonesWithImmutableArgs,
-      },
-    });
+    const OptionsFactory = await ethers.getContractFactory("OptionsFactory");
 
     optionsFactory = <OptionsFactory>(
       OptionsFactory.attach(await controller.optionsFactory())
@@ -1881,12 +1866,7 @@ describe("Controller", async () => {
       ).deploy();
 
       const SimpleExternalOptionsFactory = await ethers.getContractFactory(
-        "SimpleExternalOptionsFactory",
-        {
-          libraries: {
-            ClonesWithImmutableArgs,
-          },
-        }
+        "SimpleExternalOptionsFactory"
       );
       const simpleExternalOptionsFactory = <SimpleExternalOptionsFactory>(
         await SimpleExternalOptionsFactory.deploy(
