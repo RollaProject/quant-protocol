@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.14;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {SafeTransferLib, ERC20 as IERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import "@rari-capital/solmate/src/utils/ReentrancyGuard.sol";
 import "./QuantCalculator.sol";
 import "./options/QToken.sol";
 import "./options/CollateralToken.sol";
@@ -26,7 +25,7 @@ import "./libraries/Actions.sol";
 /// @dev The Controller holds all the collateral used to mint options. Options need to be created through the
 /// OptionsFactory first.
 contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
-    using SafeERC20 for IERC20;
+    using SafeTransferLib for IERC20;
     using Actions for ActionArgs;
 
     /// @inheritdoc IController
