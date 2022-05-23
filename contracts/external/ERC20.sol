@@ -212,7 +212,7 @@ abstract contract ERC20 is Clone {
     }
 
     /// @notice Read a 128 bytes string stored as a uint256 array in the immutable args,
-    /// removing the trailing zero bytes on the right
+    /// where the last byte is the length of the string.
     /// @param stringArgOffset The offset of the string immutable arg in the packed data
     /// @return stringArg The string immutable arg, in memory
     function _get128BytesStringArg(uint256 stringArgOffset)
@@ -225,22 +225,11 @@ abstract contract ERC20 is Clone {
             4 // array of uint256 with 4 elements (128 bytes)
         );
 
-        uint256 zeroBytes = 0;
-
-        for (uint256 i = 0; i < 4; ) {
-            uint256 word = stringArgBytes32Array[i];
-            if (_hasZeroByte(word)) {
-                zeroBytes += _countZeroBytes(word);
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        uint256 strLength = uint256(128) - zeroBytes;
-
         assembly ("memory-safe") {
+            // read the length of the string, which should be stored as the 128th byte
+            // in the array
+            let strLength := shr(0xf8, mload(add(stringArgBytes32Array, 0x80)))
+
             // allocate memory for the output string
             stringArg := mload(0x40)
             // update the free memory pointer, padding the string length
@@ -252,7 +241,7 @@ abstract contract ERC20 is Clone {
             // store the string length in memory
             mstore(stringArg, strLength)
 
-            // use the identity precompile to copy the non-zero bytes in memory
+            // use the identity precompile to copy the bytes in memory
             // from the uint256 array to the output string
             if iszero(
                 staticcall(
@@ -267,47 +256,5 @@ abstract contract ERC20 is Clone {
                 invalid()
             }
         }
-    }
-
-    /// @notice Determine if a word has a zero byte
-    /// @dev https://graphics.stanford.edu/~seander/bithacks.html#ZeroInWord
-    /// @param word 256-bit word to check if any 8-bit byte in it is 0
-    /// @return hasZeroByte true if any 8-bit byte in word is 0
-    function _hasZeroByte(uint256 word)
-        private
-        pure
-        returns (bool hasZeroByte)
-    {
-        uint256 const = 0x7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F;
-
-        assembly ("memory-safe") {
-            hasZeroByte := not(
-                or(or(add(and(word, const), const), word), const)
-            )
-        }
-    }
-
-    /// @notice Count the consecutive zero bytes (trailing) on the right linearly
-    /// @dev https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightLinear
-    /// @dev O(trailing zero bits)
-    /// @param word 256-bit word input to count zero bytes on the right
-    /// @return number of consecutive zero bytes
-    function _countZeroBytes(uint256 word) private pure returns (uint256) {
-        uint256 c = 256; // all the bits are zero if the word is zero
-
-        assembly ("memory-safe") {
-            if word {
-                word := shr(1, xor(word, sub(word, 1)))
-                for {
-                    c := 0
-                } word {
-                    c := add(c, 1)
-                } {
-                    word := shr(1, word)
-                }
-            }
-        }
-
-        return c / 8;
     }
 }

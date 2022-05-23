@@ -27,19 +27,21 @@ library OptionsUtils {
     /// in which each element represents a 32 byte chunk of the original data
     /// @dev Uses the identity precompile to copy data from memory to memory
     /// @param _data the original bytes to be converted to an array of uint256 values
-    /// @return result an array of uint256 values that represent 32 byte chunks of the original data
+    /// @return result an array of uint256 values that represent 32 byte chunks of the original data,
+    /// in which the last byte represent the length of the original data
     function bytesToUint256Array(bytes memory _data)
         internal
         view
         returns (uint256[] memory result)
     {
-        // the data will be converted into an array of uint256 with a total length of 128 bytes,
+        // The data will be converted into an array of uint256 with a total length of 128 bytes,
         // which is enough to safely cover QToken names and symbols with a strike price up to the
-        // max uint256 and an ERC20 underlying token symbol with 20+ characters
+        // max uint256 and an ERC20 underlying token symbol with 20+ characters.
+        // The last byte stores the length of the data, and the first 127 bytes store the actual data.
         result = new uint256[](4);
 
         // annotate the assembly block below as memory-safe since the input data length is checked before
-        // being copied to the uint256 array with a maximum length of 128 bytes, and so that the compiler
+        // being copied to the uint256 array with a maximum length of 127 bytes, and so that the compiler
         // can move local variables from stack to memory to avoid stack-too-deep errors and perform
         // additional memory optimizations
         assembly ("memory-safe") {
@@ -49,7 +51,7 @@ library OptionsUtils {
             // can end execution with the INVALID opcode due to either the input data being
             // too large or the staticcall to the identity precompile failing
             if or(
-                gt(len, 0x80), // the data passed in can't be larger than 128 bytes
+                gt(len, 0x7f), // the data passed in can't be larger than 127 bytes
                 iszero(
                     staticcall(
                         gas(), // forward all the gas available to the call
@@ -63,6 +65,13 @@ library OptionsUtils {
             ) {
                 invalid()
             }
+
+            // store the length of the data in the last byte of the output location in memory,
+            // i.e. the 128th byte in the uint256 array
+            mstore(
+                add(result, 0x80),
+                xor(mload(add(result, 0x80)), shl(0xf8, len))
+            )
         }
     }
 
