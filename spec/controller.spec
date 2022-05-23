@@ -340,7 +340,7 @@ rule integrityOfTotals(uint256 collateralTokenId, uint256 amount, method f){
 	Formula:  (_, payoutToken, _ ) = getExercisePayout && (_, calculateClaimableCollateral, _ calculateClaimableCollateral(collateralTokenId,x,u) => payoutToken == calculateClaimableCollateral
 	Notes: 
 */
-rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFactory) {
+rule getSameToken(uint256 collateralTokenId, uint256 amount, address _optionsFactory) {
     env e;
     address collateralAsset;
 	address qToken;

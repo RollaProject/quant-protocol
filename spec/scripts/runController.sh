@@ -6,5 +6,4 @@ spec/harness/DummyERC20B.sol spec/harness/QTokenA.sol spec/harness/QTokenB.sol \
 	--link ControllerHarness:quantCalculator=QuantCalculatorHarness \
 	--optimistic_loop \
 	--cache controllerQuant \
-	--msg "Controller" \
-	--debug
+	--msg "Controller"
