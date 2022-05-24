@@ -5,6 +5,7 @@ import "@rolla-finance/clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
 import "../options/QToken.sol";
+import "../utils/CustomErrors.sol";
 import "../interfaces/ICollateralToken.sol";
 import "../interfaces/IOracleRegistry.sol";
 import "../interfaces/IProviderOracleManager.sol";
@@ -22,6 +23,8 @@ library OptionsUtils {
     /// @notice salt to be used with CREATE2 when creating new options
     /// @dev constant salt because options will only be deployed with the same parameters once
     bytes32 public constant SALT = bytes32("ROLLA.FINANCE");
+
+    uint8 public constant STRIKE_PRICE_DECIMALS = 18;
 
     /// @notice Splits a dinamically-sized byte array into an array of unsigned integers
     /// in which each element represents a 32 byte chunk of the original data
@@ -48,22 +51,40 @@ library OptionsUtils {
             // get the length of the input data
             let len := mload(_data)
 
-            // can end execution with the INVALID opcode due to either the input data being
-            // too large or the staticcall to the identity precompile failing
-            if or(
-                gt(len, 0x7f), // the data passed in can't be larger than 127 bytes
-                iszero(
-                    staticcall(
-                        gas(), // forward all the gas available to the call
-                        0x04, // the address of the identity (datacopy) precompiled contract
-                        add(_data, 0x20), // position of the input bytes in memory, after the 32 bytes for the length
-                        len, // size of the input bytes in memory
-                        add(result, 0x20), // position of the output area in memory, after the 32 bytes for the length
-                        len // size of the output in memory, same as the input
-                    )
+            // end execution with a custom DataSizeLimitExceeded error if the input data
+            // is larger than 127 bytes
+            if gt(len, 0x7f) {
+                mstore(
+                    DataSizeLimitExceeded_error_sig_ptr,
+                    DataSizeLimitExceeded_error_signature
+                )
+                mstore(DataSizeLimitExceeded_error_datasize_ptr, len)
+                revert(
+                    DataSizeLimitExceeded_error_sig_ptr,
+                    DataSizeLimitExceeded_error_length
+                )
+            }
+
+            // revert with a custom IdentityPrecompileFailure error if the staticcall to
+            // the identity precompile fails
+            if iszero(
+                staticcall(
+                    gas(), // forward all the gas available to the call
+                    0x04, // the address of the identity (datacopy) precompiled contract
+                    add(_data, 0x20), // position of the input bytes in memory, after the 32 bytes for the length
+                    len, // size of the input bytes in memory
+                    add(result, 0x20), // position of the output area in memory, after the 32 bytes for the length
+                    len // size of the output in memory, same as the input
                 )
             ) {
-                invalid()
+                mstore(
+                    IdentityPrecompileFailure_error_sig_ptr,
+                    IdentityPrecompileFailure_error_signature
+                )
+                revert(
+                    IdentityPrecompileFailure_error_sig_ptr,
+                    IdentityPrecompileFailure_error_length
+                )
             }
 
             // store the length of the data in the last byte of the output location in memory,
@@ -132,46 +153,40 @@ library OptionsUtils {
     }
 
     /// @notice Gets the amount of decimals for an option exercise payout
-    /// @param _strikeAssetDecimals decimals of the strike asset
     /// @param _qToken address of the option's QToken contract
     /// @param _assetsRegistry address of the AssetsRegistry contract
     /// @return payoutDecimals amount of decimals for the option exercise payout
-    function getPayoutDecimals(
-        uint8 _strikeAssetDecimals,
-        IQToken _qToken,
-        address _assetsRegistry
-    ) internal view returns (uint8 payoutDecimals) {
+    function getPayoutDecimals(IQToken _qToken, address _assetsRegistry)
+        internal
+        view
+        returns (uint8 payoutDecimals)
+    {
         if (_qToken.isCall()) {
             (, , payoutDecimals, ) = IAssetsRegistry(_assetsRegistry)
                 .assetProperties(_qToken.underlyingAsset());
         } else {
-            payoutDecimals = _strikeAssetDecimals;
+            payoutDecimals = STRIKE_PRICE_DECIMALS;
         }
     }
 
-    /// @notice get the ERC20 token symbol and decimals from the AssetsRegistry
+    /// @notice get the ERC20 token symbol from the AssetsRegistry
     /// @dev the asset is assumed to be in the AssetsRegistry since QTokens
     /// must be created through the OptionsFactory, which performs that check
     /// @param _asset address of the asset in the AssetsRegistry
     /// @param _assetsRegistry address of the AssetsRegistry contract
-    /// @return assetSymbol string stored as the ERC20 token symbol
-    /// @return assetDecimals uint8 stored as the ERC20 token decimals
-    function assetSymbolAndDecimals(address _asset, address _assetsRegistry)
+    /// @return assetSymbol_ string stored as the ERC20 token symbol
+    function assetSymbol(address _asset, address _assetsRegistry)
         internal
         view
-        returns (string memory assetSymbol, uint8 assetDecimals)
+        returns (string memory assetSymbol_)
     {
-        bool isRegistered;
-        (, assetSymbol, assetDecimals, isRegistered) = IAssetsRegistry(
-            _assetsRegistry
-        ).assetProperties(_asset);
-
-        require(isRegistered, "OptionsUtils: asset is not in the registry");
+        (, assetSymbol_, , ) = IAssetsRegistry(_assetsRegistry).assetProperties(
+            _asset
+        );
     }
 
-    /// @notice generates the name for an option
+    /// @notice generates the name and symbol for an option
     /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the option is settled on
     /// @param _assetsRegistry address of the AssetsRegistry
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
@@ -179,24 +194,17 @@ library OptionsUtils {
     /// @return qTokenMetadata name and symbol for the QToken
     function getQTokenMetadata(
         address _underlyingAsset,
-        address _strikeAsset,
         address _assetsRegistry,
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
     ) internal view returns (QTokenMetadata memory qTokenMetadata) {
-        (string memory underlying, ) = assetSymbolAndDecimals(
+        string memory underlying = assetSymbol(
             _underlyingAsset,
             _assetsRegistry
         );
-        (, uint8 strikePriceDecimals) = assetSymbolAndDecimals(
-            _strikeAsset,
-            _assetsRegistry
-        );
-        string memory displayStrikePrice = displayedStrikePrice(
-            _strikePrice,
-            strikePriceDecimals
-        );
+
+        string memory displayStrikePrice = displayedStrikePrice(_strikePrice);
 
         // convert the expiry to a readable string
         (uint256 year, uint256 month, uint256 day) = DateTime.timestampToDate(
@@ -214,35 +222,39 @@ library OptionsUtils {
         /// concatenated name and symbol strings
         qTokenMetadata = QTokenMetadata({
             name: bytesToUint256Array(
-                abi.encodePacked(
-                    "ROLLA",
-                    " ",
-                    underlying,
-                    " ",
-                    uintToChars(day),
-                    "-",
-                    monthFull,
-                    "-",
-                    Strings.toString(year),
-                    " ",
-                    displayStrikePrice,
-                    " ",
-                    typeFull
+                bytes(
+                    string.concat(
+                        "ROLLA",
+                        " ",
+                        underlying,
+                        " ",
+                        uintToChars(day),
+                        "-",
+                        monthFull,
+                        "-",
+                        Strings.toString(year),
+                        " ",
+                        displayStrikePrice,
+                        " ",
+                        typeFull
+                    )
                 )
             ),
             symbol: bytesToUint256Array(
-                abi.encodePacked(
-                    "ROLLA",
-                    "-",
-                    underlying,
-                    "-",
-                    uintToChars(day),
-                    monthSymbol,
-                    Strings.toString(year),
-                    "-",
-                    displayStrikePrice,
-                    "-",
-                    typeSymbol
+                bytes(
+                    string.concat(
+                        "ROLLA",
+                        "-",
+                        underlying,
+                        "-",
+                        uintToChars(day),
+                        monthSymbol,
+                        Strings.toString(year),
+                        "-",
+                        displayStrikePrice,
+                        "-",
+                        typeSymbol
+                    )
                 )
             )
         });
@@ -271,9 +283,8 @@ library OptionsUtils {
         uint256 _strikePrice,
         address _controller
     ) internal view returns (bytes memory data) {
-        QTokenMetadata memory qTokenMetadata = OptionsUtils.getQTokenMetadata(
+        QTokenMetadata memory qTokenMetadata = getQTokenMetadata(
             _underlyingAsset,
-            _strikeAsset,
             _assetsRegistry,
             _expiryTime,
             _isCall,
@@ -296,13 +307,13 @@ library OptionsUtils {
 
     /// @dev convert the option strike price scaled to a human readable value
     /// @param _strikePrice the option strike price scaled by the strike asset decimals
-    /// @param _strikePriceDecimals the amount of decimals in the strike asset
     /// @return strike price string
-    function displayedStrikePrice(
-        uint256 _strikePrice,
-        uint8 _strikePriceDecimals
-    ) internal pure returns (string memory) {
-        uint256 strikePriceScale = 10**_strikePriceDecimals;
+    function displayedStrikePrice(uint256 _strikePrice)
+        internal
+        pure
+        returns (string memory)
+    {
+        uint256 strikePriceScale = 10**STRIKE_PRICE_DECIMALS;
         uint256 remainder = _strikePrice % strikePriceScale;
         uint256 quotient = _strikePrice / strikePriceScale;
         string memory quotientStr = Strings.toString(quotient);
@@ -318,10 +329,10 @@ library OptionsUtils {
         }
 
         // pad the number with "1 + starting zeroes"
-        remainder += 10**(_strikePriceDecimals - trailingZeroes);
+        remainder += 10**(STRIKE_PRICE_DECIMALS - trailingZeroes);
 
         string memory tmp = Strings.toString(remainder);
-        tmp = slice(tmp, 1, (1 + _strikePriceDecimals) - trailingZeroes);
+        tmp = slice(tmp, 1, (1 + STRIKE_PRICE_DECIMALS) - trailingZeroes);
 
         return string(abi.encodePacked(quotientStr, ".", tmp));
     }

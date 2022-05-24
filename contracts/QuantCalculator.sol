@@ -57,10 +57,10 @@ contract QuantCalculator is IQuantCalculator {
         _;
     }
 
-    /// @param _strikeAssetDecimals the number of decimals used to denominate strike prices
     /// @param _optionsFactory the address of the OptionsFactory contract
+    /// @param _assetsRegistry the address of the AssetsRegistry contract
+    /// @param _priceRegistry the address of the PriceRegistry contract
     constructor(
-        uint8 _strikeAssetDecimals,
         address _optionsFactory,
         address _assetsRegistry,
         address _priceRegistry
@@ -79,7 +79,7 @@ contract QuantCalculator is IQuantCalculator {
         );
 
         optionsDecimals = IOptionsFactory(_optionsFactory).optionsDecimals();
-        strikeAssetDecimals = _strikeAssetDecimals;
+        strikeAssetDecimals = OptionsUtils.STRIKE_PRICE_DECIMALS;
         optionsFactory = _optionsFactory;
         assetsRegistry = _assetsRegistry;
         priceRegistry = _priceRegistry;
@@ -160,7 +160,6 @@ contract QuantCalculator is IQuantCalculator {
         }
 
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
-            strikeAssetDecimals,
             qTokenShort,
             assetsRegistry
         );
@@ -203,7 +202,6 @@ contract QuantCalculator is IQuantCalculator {
         returns (address collateralType, uint256 collateralOwed)
     {
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
-            strikeAssetDecimals,
             IQToken(_qTokenShort),
             assetsRegistry
         );
@@ -237,7 +235,6 @@ contract QuantCalculator is IQuantCalculator {
     {
         QuantMath.FixedPointInt memory collateralAmountFP;
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
-            strikeAssetDecimals,
             IQToken(_qTokenToMint),
             assetsRegistry
         );
@@ -289,7 +286,6 @@ contract QuantCalculator is IQuantCalculator {
         QuantMath.FixedPointInt memory payout;
 
         uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
-            strikeAssetDecimals,
             qToken,
             assetsRegistry
         );

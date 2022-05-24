@@ -2,6 +2,7 @@
 pragma solidity 0.8.14;
 
 import {Clone} from "@rolla-finance/clones-with-immutable-args/Clone.sol";
+import "../utils/CustomErrors.sol";
 
 /// @notice Modern and gas efficient ERC20 + EIP-2612 implementation.
 /// @author zefram.eth (https://github.com/ZeframLou/vested-erc20/blob/main/src/lib/ERC20.sol)
@@ -253,7 +254,14 @@ abstract contract ERC20 is Clone {
                     strLength
                 )
             ) {
-                invalid()
+                mstore(
+                    IdentityPrecompileFailure_error_sig_ptr,
+                    IdentityPrecompileFailure_error_signature
+                )
+                revert(
+                    IdentityPrecompileFailure_error_sig_ptr,
+                    IdentityPrecompileFailure_error_length
+                )
             }
         }
     }
