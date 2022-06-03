@@ -44,39 +44,6 @@ contract ControllerHarness is Controller {
         return IERC20(t).balanceOf(u);
     }
 
-    ////////////////////////////////////////////////////////////////////////////
-    //                       Each operation wrapper                           //
-    ////////////////////////////////////////////////////////////////////////////
-    function mintOptionsPosition(
-        address to,
-        address qToken,
-        uint256 amount
-    ) public {
-        _mintOptionsPosition(to, qToken, amount);
-    }
-
-    function mintSpread(
-        address qToken,
-        address qTokenForCollateral,
-        uint256 amount
-    ) public {
-        _mintSpread(qToken, qTokenForCollateral, amount);
-    }
-
-    function exercise(address qToken, uint256 amount) public {
-        _exercise(qToken, amount);
-    }
-
-    function claimCollateral(uint256 collateralTokenId, uint256 amount) public {
-        _claimCollateral(collateralTokenId, amount);
-    }
-
-    function neutralizePosition(uint256 collateralTokenId, uint256 amount)
-        public
-    {
-        _neutralizePosition(collateralTokenId, amount);
-    }
-
     function operate(ActionArgs[] memory _actions)
         external
         override

@@ -178,6 +178,51 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         return true;
     }
 
+    /// @inheritdoc IController
+    function mintOptionsPosition(
+        address _to,
+        address _qToken,
+        uint256 _amount
+    ) external override nonReentrant {
+        _mintOptionsPosition(_to, _qToken, _amount);
+    }
+
+    /// @inheritdoc IController
+    function mintSpread(
+        address _qTokenToMint,
+        address _qTokenForCollateral,
+        uint256 _amount
+    ) external override nonReentrant {
+        _mintSpread(_qTokenToMint, _qTokenForCollateral, _amount);
+    }
+
+    /// @inheritdoc IController
+    function exercise(address _qToken, uint256 _amount)
+        external
+        override
+        nonReentrant
+    {
+        _exercise(_qToken, _amount);
+    }
+
+    /// @inheritdoc IController
+    function claimCollateral(uint256 _collateralTokenId, uint256 _amount)
+        external
+        override
+        nonReentrant
+    {
+        _claimCollateral(_collateralTokenId, _amount);
+    }
+
+    /// @inheritdoc IController
+    function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
+        external
+        override
+        nonReentrant
+    {
+        _neutralizePosition(_collateralTokenId, _amount);
+    }
+
     /// @notice Mints options for a given QToken, which must have been previously created in
     /// the configured OptionsFactory.
     /// @dev The caller (or signer in case of meta transactions) must first approve the Controller
