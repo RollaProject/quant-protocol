@@ -33,7 +33,7 @@ jobs:
             ${{ runner.os }}-yarnv1-dist-
 
       - name: Installing dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install
 
       - name: Set up Python 3.6
         uses: actions/setup-python@v2
@@ -86,7 +86,7 @@ jobs:
             ${{ runner.os }}-yarnv1-dist-
 
       - name: Installing dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install
 
       - name: Set up Python 3.6
         uses: actions/setup-python@v2
