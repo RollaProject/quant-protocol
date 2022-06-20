@@ -41,10 +41,10 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     // address of the OptionsFactory that will be able to create new CollateralTokens
     address private _optionsFactory;
 
-    modifier onlyOwnerOrFactory() {
+    modifier onlyFactory() {
         require(
-            msg.sender == owner() || msg.sender == _optionsFactory,
-            "CollateralToken: caller is not owner or OptionsFactory"
+            msg.sender == _optionsFactory,
+            "CollateralToken: caller is not OptionsFactory"
         );
 
         _;
@@ -72,7 +72,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     function createOptionCollateralToken(address _qTokenAddress)
         external
         override
-        onlyOwnerOrFactory
+        onlyFactory
         returns (uint256 id)
     {
         id = getCollateralTokenId(_qTokenAddress, address(0));
@@ -89,7 +89,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     function createSpreadCollateralToken(
         address _qTokenAddress,
         address _qTokenAsCollateral
-    ) external override onlyOwnerOrFactory returns (uint256 id) {
+    ) external override onlyOwner returns (uint256 id) {
         id = getCollateralTokenId(_qTokenAddress, _qTokenAsCollateral);
 
         require(

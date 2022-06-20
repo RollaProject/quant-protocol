@@ -246,9 +246,7 @@ describe("CollateralToken", () => {
           qToken,
           ethers.constants.AddressZero
         )
-      ).to.be.revertedWith(
-        "CollateralToken: caller is not owner or OptionsFactory"
-      );
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("Should revert when trying to create a collateral token with the qToken and qTokenAsCollateral being equal", async () => {
@@ -260,18 +258,20 @@ describe("CollateralToken", () => {
     });
 
     it("Should emit the CollateralTokenCreated event", async () => {
+      const qTokenAsCollateral = ethers.Wallet.createRandom().address;
+
       await expect(
         await collateralToken
           .connect(deployer)
-          .createOptionCollateralToken(qToken.address)
+          .createSpreadCollateralToken(qToken.address, qTokenAsCollateral)
       )
         .to.emit(collateralToken, "CollateralTokenCreated")
         .withArgs(
           qToken.address,
-          ethers.constants.AddressZero,
+          qTokenAsCollateral,
           await collateralToken.getCollateralTokenId(
             qToken.address,
-            ethers.constants.AddressZero
+            qTokenAsCollateral
           )
         );
     });
