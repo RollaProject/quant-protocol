@@ -5,96 +5,31 @@ import "@rolla-finance/clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
 import "../options/QToken.sol";
-import "../utils/CustomErrors.sol";
 import "../interfaces/ICollateralToken.sol";
 import "../interfaces/IOracleRegistry.sol";
 import "../interfaces/IProviderOracleManager.sol";
 import "../interfaces/IQToken.sol";
 import "../interfaces/IAssetsRegistry.sol";
 
-struct QTokenMetadata {
-    uint256[] name;
-    uint256[] symbol;
-}
-
 /// @title Options utilities for Quant's QToken and CollateralToken
 /// @author Rolla
 library OptionsUtils {
     /// @notice salt to be used with CREATE2 when creating new options
     /// @dev constant salt because options will only be deployed with the same parameters once
-    bytes32 public constant SALT = bytes32("ROLLA.FINANCE");
+    bytes32 internal constant SALT = bytes32("ROLLA.FINANCE");
 
-    uint8 public constant STRIKE_PRICE_DECIMALS = 18;
+    uint8 internal constant STRIKE_PRICE_DECIMALS = 18;
 
-    /// @notice Splits a dinamically-sized byte array into an array of unsigned integers
-    /// in which each element represents a 32 byte chunk of the original data
-    /// @dev Uses the identity precompile to copy data from memory to memory
-    /// @param _data the original bytes to be converted to an array of uint256 values
-    /// @return result an array of uint256 values that represent 32 byte chunks of the original data,
-    /// in which the last byte represent the length of the original data
-    function bytesToUint256Array(bytes memory _data)
-        internal
-        view
-        returns (uint256[] memory result)
-    {
-        // The data will be converted into an array of uint256 with a total length of 128 bytes,
-        // which is enough to safely cover QToken names and symbols with a strike price up to the
-        // max uint256 and an ERC20 underlying token symbol with 20+ characters.
-        // The last byte stores the length of the data, and the first 127 bytes store the actual data.
-        result = new uint256[](4);
+    // abi.encodeWithSignature("DataSizeLimitExceeded(uint256)");
+    uint256 internal constant DataSizeLimitExceeded_error_signature = (
+        0x5307a82000000000000000000000000000000000000000000000000000000000
+    );
 
-        // annotate the assembly block below as memory-safe since the input data length is checked before
-        // being copied to the uint256 array with a maximum length of 127 bytes, and so that the compiler
-        // can move local variables from stack to memory to avoid stack-too-deep errors and perform
-        // additional memory optimizations
-        assembly ("memory-safe") {
-            // get the length of the input data
-            let len := mload(_data)
+    uint256 internal constant DataSizeLimitExceeded_error_sig_ptr = 0x0;
 
-            // end execution with a custom DataSizeLimitExceeded error if the input data
-            // is larger than 127 bytes
-            if gt(len, 0x7f) {
-                mstore(
-                    DataSizeLimitExceeded_error_sig_ptr,
-                    DataSizeLimitExceeded_error_signature
-                )
-                mstore(DataSizeLimitExceeded_error_datasize_ptr, len)
-                revert(
-                    DataSizeLimitExceeded_error_sig_ptr,
-                    DataSizeLimitExceeded_error_length
-                )
-            }
+    uint256 internal constant DataSizeLimitExceeded_error_datasize_ptr = 0x4;
 
-            // revert with a custom IdentityPrecompileFailure error if the staticcall to
-            // the identity precompile fails
-            if iszero(
-                staticcall(
-                    gas(), // forward all the gas available to the call
-                    0x04, // the address of the identity (datacopy) precompiled contract
-                    add(_data, 0x20), // position of the input bytes in memory, after the 32 bytes for the length
-                    len, // size of the input bytes in memory
-                    add(result, 0x20), // position of the output area in memory, after the 32 bytes for the length
-                    len // size of the output in memory, same as the input
-                )
-            ) {
-                mstore(
-                    IdentityPrecompileFailure_error_sig_ptr,
-                    IdentityPrecompileFailure_error_signature
-                )
-                revert(
-                    IdentityPrecompileFailure_error_sig_ptr,
-                    IdentityPrecompileFailure_error_length
-                )
-            }
-
-            // store the length of the data in the last byte of the output location in memory,
-            // i.e. the 128th byte in the uint256 array
-            mstore(
-                add(result, 0x80),
-                xor(mload(add(result, 0x80)), shl(0xf8, len))
-            )
-        }
-    }
+    uint256 internal constant DataSizeLimitExceeded_error_length = 0x24; // 4 + 32 == 36
 
     /// @notice Checks if the given option parameters are valid for creation in the Quant Protocol
     /// @param _oracleRegistry oracle registry to validate the passed _oracle against
@@ -191,14 +126,14 @@ library OptionsUtils {
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _isCall true if it's a call option, false if it's a put option
     /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @return qTokenMetadata name and symbol for the QToken
+    /// @return name and symbol for the QToken
     function getQTokenMetadata(
         address _underlyingAsset,
         address _assetsRegistry,
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) internal view returns (QTokenMetadata memory qTokenMetadata) {
+    ) internal view returns (string memory name, string memory symbol) {
         string memory underlying = assetSymbol(
             _underlyingAsset,
             _assetsRegistry
@@ -219,45 +154,40 @@ library OptionsUtils {
         // get option month string
         (string memory monthSymbol, string memory monthFull) = getMonth(month);
 
-        /// concatenated name and symbol strings
-        qTokenMetadata = QTokenMetadata({
-            name: bytesToUint256Array(
-                bytes(
-                    string.concat(
-                        "ROLLA",
-                        " ",
-                        underlying,
-                        " ",
-                        uintToChars(day),
-                        "-",
-                        monthFull,
-                        "-",
-                        Strings.toString(year),
-                        " ",
-                        displayStrikePrice,
-                        " ",
-                        typeFull
-                    )
-                )
-            ),
-            symbol: bytesToUint256Array(
-                bytes(
-                    string.concat(
-                        "ROLLA",
-                        "-",
-                        underlying,
-                        "-",
-                        uintToChars(day),
-                        monthSymbol,
-                        Strings.toString(year),
-                        "-",
-                        displayStrikePrice,
-                        "-",
-                        typeSymbol
-                    )
-                )
-            )
-        });
+        // concatenated name and symbol strings
+        name = string.concat(
+            "ROLLA",
+            " ",
+            underlying,
+            " ",
+            uintToChars(day),
+            "-",
+            monthFull,
+            "-",
+            Strings.toString(year),
+            " ",
+            displayStrikePrice,
+            " ",
+            typeFull
+        );
+
+        normalizeStringImmutableArg(name);
+
+        symbol = string.concat(
+            "ROLLA",
+            "-",
+            underlying,
+            "-",
+            uintToChars(day),
+            monthSymbol,
+            Strings.toString(year),
+            "-",
+            displayStrikePrice,
+            "-",
+            typeSymbol
+        );
+
+        normalizeStringImmutableArg(symbol);
     }
 
     /// @notice Gets the encoded immutable arguments for creating a QToken clone
@@ -283,7 +213,7 @@ library OptionsUtils {
         uint256 _strikePrice,
         address _controller
     ) internal view returns (bytes memory data) {
-        QTokenMetadata memory qTokenMetadata = getQTokenMetadata(
+        (string memory name, string memory symbol) = getQTokenMetadata(
             _underlyingAsset,
             _assetsRegistry,
             _expiryTime,
@@ -292,8 +222,8 @@ library OptionsUtils {
         );
 
         data = abi.encodePacked(
-            qTokenMetadata.name,
-            qTokenMetadata.symbol,
+            name,
+            symbol,
             _optionsDecimals,
             _underlyingAsset,
             _strikeAsset,
@@ -303,6 +233,40 @@ library OptionsUtils {
             _strikePrice,
             _controller
         );
+    }
+
+    /// @notice Normalize a string in memory so that it occupies 128 bytes to be
+    /// used with the ClonesWithImmutableArgs library. The last (128th) byte stores
+    /// the length of the string, and the first 127 bytes store the actual string content.
+    function normalizeStringImmutableArg(string memory s) internal pure {
+        assembly ("memory-safe") {
+            // get the original length of the string
+            let len := mload(s)
+
+            // end execution with a custom DataSizeLimitExceeded error if the input data
+            // is larger than 127 bytes
+            if gt(len, 0x7f) {
+                mstore(
+                    DataSizeLimitExceeded_error_sig_ptr,
+                    DataSizeLimitExceeded_error_signature
+                )
+                mstore(DataSizeLimitExceeded_error_datasize_ptr, len)
+                revert(
+                    DataSizeLimitExceeded_error_sig_ptr,
+                    DataSizeLimitExceeded_error_length
+                )
+            }
+
+            // store the new length of the string as 128 bytes
+            mstore(s, 0x80)
+
+            // update the free memory pointer, padding the new string length to 32 bytes
+            mstore(0x40, add(s, and(add(add(0x80, 0x20), 0x1f), not(0x1f))))
+
+            // store the original length of the string in the last byte of the output
+            // location in memory, i.e. the 128th byte
+            mstore(add(s, 0x80), xor(mload(add(s, 0x80)), shl(0xf8, len)))
+        }
     }
 
     /// @dev convert the option strike price scaled to a human readable value
