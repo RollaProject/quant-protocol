@@ -2,7 +2,6 @@
 pragma solidity 0.8.14;
 
 import {Clone} from "@rolla-finance/clones-with-immutable-args/Clone.sol";
-import "../utils/CustomErrors.sol";
 
 /// @notice Modern and gas efficient ERC20 + EIP-2612 implementation.
 /// @author zefram.eth (https://github.com/ZeframLou/vested-erc20/blob/main/src/lib/ERC20.sol)
@@ -45,11 +44,11 @@ abstract contract ERC20 is Clone {
                                METADATA
     //////////////////////////////////////////////////////////////*/
 
-    function name() external view returns (string memory nameStr) {
+    function name() external pure returns (string memory nameStr) {
         nameStr = _get128BytesStringArg(0);
     }
 
-    function symbol() external view returns (string memory symbolStr) {
+    function symbol() external pure returns (string memory symbolStr) {
         symbolStr = _get128BytesStringArg(0x80);
     }
 
@@ -212,57 +211,40 @@ abstract contract ERC20 is Clone {
         emit Transfer(from, address(0), amount);
     }
 
-    /// @notice Read a 128 bytes string stored as a uint256 array in the immutable args,
-    /// where the last byte is the length of the string.
+    /// @notice Read a 128 bytes string stored as a uint256 array in the immutable args
+    /// (calldata), in which the last byte is the length of the string.
     /// @param stringArgOffset The offset of the string immutable arg in the packed data
     /// @return stringArg The string immutable arg, in memory
     function _get128BytesStringArg(uint256 stringArgOffset)
         private
-        view
+        pure
         returns (string memory stringArg)
     {
-        uint256[] memory stringArgBytes32Array = _getArgUint256Array(
-            stringArgOffset,
-            4 // array of uint256 with 4 elements (128 bytes)
-        );
+        uint256 immutableArgsOffset = _getImmutableArgsOffset();
 
         assembly ("memory-safe") {
+            // get the offset of the start of the string in the calldata
+            let strStart := add(immutableArgsOffset, stringArgOffset)
+
             // read the length of the string, which should be stored as the 128th byte
-            // in the array
-            let strLength := shr(0xf8, mload(add(stringArgBytes32Array, 0x80)))
+            // in the uint256 array
+            let strLength := shr(0xf8, calldataload(add(strStart, 0x60)))
 
             // allocate memory for the output string
             stringArg := mload(0x40)
+
             // update the free memory pointer, padding the string length
             // (which is stored before the string contents) to 32 bytes
             mstore(
                 0x40,
                 add(stringArg, and(add(add(strLength, 0x20), 0x1f), not(0x1f)))
             )
+
             // store the string length in memory
             mstore(stringArg, strLength)
 
-            // use the identity precompile to copy the bytes in memory
-            // from the uint256 array to the output string
-            if iszero(
-                staticcall(
-                    gas(),
-                    0x04,
-                    add(stringArgBytes32Array, 0x20),
-                    strLength,
-                    add(stringArg, 0x20),
-                    strLength
-                )
-            ) {
-                mstore(
-                    IdentityPrecompileFailure_error_sig_ptr,
-                    IdentityPrecompileFailure_error_signature
-                )
-                revert(
-                    IdentityPrecompileFailure_error_sig_ptr,
-                    IdentityPrecompileFailure_error_length
-                )
-            }
+            // copy the string from calldata to memory
+            calldatacopy(add(stringArg, 0x20), strStart, strLength)
         }
     }
 }
