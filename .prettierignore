@@ -2,7 +2,6 @@ coverage/
 artifacts/
 typechain/
 cache/
-contracts/test/
 contracts/options/QToken.sol
 contracts/mocks/
 contracts/libraries/OptionsUtils.sol

@@ -928,10 +928,10 @@
     path-browserify "^1.0.0"
     url "^0.11.0"
 
-"@rolla-finance/clones-with-immutable-args@^1.7.0":
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/@rolla-finance/clones-with-immutable-args/-/clones-with-immutable-args-1.7.0.tgz#e99d7c036757aa3eb8af6ec95646a4cfe95949d5"
-  integrity sha512-uAHQJPpFhkcemC93zTnDJCnDZgHZozV/+VljvdgA/QDYFZx3EbO4RNQH+BVBXNVBmykhKCVvSszWvh0cHcyI9g==
+"@rolla-finance/clones-with-immutable-args@^1.8.0":
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@rolla-finance/clones-with-immutable-args/-/clones-with-immutable-args-1.8.0.tgz#5205db9f92e4c5cdacdafac1ef191c758844cc7d"
+  integrity sha512-kjClBrKaDs5wZQ0ZY6KmVR2ZTd87aY8SzUe46Q6VFZWcmNiCYAH2GY2HqUbdhw82Fnkb+n9hmSkqyI0rCJpHBg==
 
 "@sentry/core@5.30.0":
   version "5.30.0"
@@ -9159,10 +9159,10 @@ solc@^0.6.3, solc@^0.6.7:
     semver "^5.5.0"
     tmp "0.0.33"
 
-solc@^0.8.14-fixed:
-  version "0.8.14-fixed"
-  resolved "https://registry.yarnpkg.com/solc/-/solc-0.8.14-fixed.tgz#a730a1e8259ac06313f6b7287df046ebe1dddc13"
-  integrity sha512-jFYa2fKbk95olckuDbhs9kbtaUhLRllM7aC++mLinJBUcdHbaHVM8LxHaJpOIDdnHBV9TpIP4XBybVugqMDyhA==
+solc@^0.8.15:
+  version "0.8.15"
+  resolved "https://registry.yarnpkg.com/solc/-/solc-0.8.15.tgz#d274dca4d5a8b7d3c9295d4cbdc9291ee1c52152"
+  integrity sha512-Riv0GNHNk/SddN/JyEuFKwbcWcEeho15iyupTSHw5Np6WuXA5D8kEHbyzDHi6sqmvLzu2l+8b1YmL8Ytple+8w==
   dependencies:
     command-exists "^1.2.8"
     commander "^8.1.0"
@@ -9211,10 +9211,10 @@ solidity-comments-extractor@^0.0.7:
   resolved "https://registry.yarnpkg.com/solidity-comments-extractor/-/solidity-comments-extractor-0.0.7.tgz#99d8f1361438f84019795d928b931f4e5c39ca19"
   integrity sha512-wciNMLg/Irp8OKGrh3S2tfvZiZ0NEyILfcRCXCD4mp7SgK/i9gzLfhY2hY7VMCQJ3kH9UB9BzNdibIVMchzyYw==
 
-solidity-coverage@^0.7.15:
-  version "0.7.20"
-  resolved "https://registry.yarnpkg.com/solidity-coverage/-/solidity-coverage-0.7.20.tgz#246e9b0dd62f698bb8ddeecdcc46cab26c48b637"
-  integrity sha512-edOXTugUYdqxrtEnIn4vgrGjLPxdexcL0WD8LzAvVA3d1dwgcfRO3k8xQR02ZQnOnWMBi8Cqs0F+kAQQp3JW8g==
+solidity-coverage@^0.7.21:
+  version "0.7.21"
+  resolved "https://registry.yarnpkg.com/solidity-coverage/-/solidity-coverage-0.7.21.tgz#20c5615a3a543086b243c2ca36e2951a75316b40"
+  integrity sha512-O8nuzJ9yXiKUx3NdzVvHrUW0DxoNVcGzq/I7NzewNO9EZE3wYAQ4l8BwcnV64r4aC/HB6Vnw/q2sF0BQHv/3fg==
   dependencies:
     "@solidity-parser/parser" "^0.14.0"
     "@truffle/provider" "^0.2.24"

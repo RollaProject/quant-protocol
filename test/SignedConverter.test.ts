@@ -49,13 +49,6 @@ describe("SignedConverter lib", () => {
       );
     });
 
-    it("Should revert when trying to convert from negative signed integer to unsigned integer", async () => {
-      const int = -3;
-
-      await expect(lib.fromIntTest(int)).to.be.revertedWith(
-        "QuantMath: negative int"
-      );
-    });
     it("Should convert from positive signed integer to unsigned integer", async () => {
       const int = 3;
       const expectedUint = 3;

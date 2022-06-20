@@ -1,18 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.14;
+pragma solidity 0.8.15;
 
 import "forge-std/Test.sol";
 import {OptionsFactory} from "../options/OptionsFactory.sol";
 import {CollateralToken} from "../options/CollateralToken.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {BEP20} from "../mocks/BEP20.sol";
+import {ERC20 as SolmateERC20} from "solmate/tokens/ERC20.sol";
 import {AssetsRegistry} from "../options/AssetsRegistry.sol";
 import {OracleRegistry} from "../pricing/OracleRegistry.sol";
 import {ChainlinkOracleManager} from "../pricing/oracle/ChainlinkOracleManager.sol";
 import {ProviderOracleManager} from "../pricing/oracle/ProviderOracleManager.sol";
 import {PriceRegistry} from "../pricing/PriceRegistry.sol";
 import {QToken} from "../options/QToken.sol";
+
+contract ERC20 is SolmateERC20 {
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals
+    ) SolmateERC20(_name, _symbol, _decimals) {}
+}
 
 contract OptionsFactoryTest is Test {
     address deployer = address(this);
@@ -26,13 +34,17 @@ contract OptionsFactoryTest is Test {
     QToken implementation;
     AssetsRegistry assetsRegistry;
 
-    BEP20 BUSD; // 18 decimals
-    BEP20 WBNB; // 18 decimals
+    ERC20 BUSD; // 18 decimals
+    ERC20 WBNB; // 18 decimals
     string constant protocolName = "Quant Protocol";
     string constant protocolVersion = "1.0.0";
+    string constant uri = "https://tokens.rolla.finance/{id}.json";
+
+    uint256 constant TIMESTAMP = 1655333455;
 
     function setUp() public {
         // vm.startPrank(deployer);
+        vm.warp(TIMESTAMP);
 
         collateralToken = new CollateralToken(
             protocolName,
@@ -43,19 +55,8 @@ contract OptionsFactoryTest is Test {
         // Deploy and configure the AssetsRegistry
         assetsRegistry = new AssetsRegistry();
 
-        uint256 unscaledInitialSupply = 10000000;
-        BUSD = new BEP20(
-            "Binance USD",
-            "BUSD",
-            18,
-            unscaledInitialSupply * 10**18
-        );
-        WBNB = new BEP20(
-            "Wrapped BNB",
-            "WBNB",
-            18,
-            unscaledInitialSupply * 10**18
-        );
+        BUSD = new ERC20("Binance USD", "BUSD", 18);
+        WBNB = new ERC20("Wrapped BNB", "WBNB", 18);
 
         assetsRegistry.addAssetWithOptionalERC20Methods(address(BUSD));
         assetsRegistry.addAssetWithOptionalERC20Methods(address(WBNB));
@@ -148,6 +149,68 @@ contract OptionsFactoryTest is Test {
         );
     }
 
+    function testCreatedOptionParams(
+        string memory underlyingName,
+        string memory underlyingSymbol,
+        uint8 underlyingDecimals,
+        address oracle,
+        uint32 expiryTime,
+        bool isCall,
+        uint256 strikePrice
+    ) public {
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSelector(
+                bytes4(keccak256(bytes("getAssetOracle(address)")))
+            ),
+            abi.encode(address(BUSD)) // can be any non-zero address
+        );
+
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSelector(
+                bytes4(
+                    keccak256(bytes("isValidOption(address,uint88,uint256)"))
+                )
+            ),
+            abi.encode(true)
+        );
+
+        vm.assume(expiryTime > TIMESTAMP);
+        uint256 underlyingNameLength = bytes(underlyingName).length;
+        uint256 underlyingSymbolLength = bytes(underlyingSymbol).length;
+        vm.assume(underlyingNameLength > 0 && underlyingNameLength <= 15);
+        vm.assume(underlyingSymbolLength > 0 && underlyingSymbolLength <= 15);
+        vm.assume(strikePrice > 0);
+
+        ERC20 underlying = new ERC20(
+            underlyingName,
+            underlyingSymbol,
+            underlyingDecimals
+        );
+
+        assetsRegistry.addAssetWithOptionalERC20Methods(address(underlying));
+
+        (address qTokenAddress, ) = optionsFactory.createOption(
+            address(underlying),
+            oracle,
+            expiryTime,
+            isCall,
+            strikePrice
+        );
+
+        QToken qToken = QToken(qTokenAddress);
+
+        assertEq(qToken.decimals(), optionsFactory.optionsDecimals());
+        assertEq(qToken.underlyingAsset(), address(underlying));
+        assertEq(qToken.strikeAsset(), address(BUSD));
+        assertEq(qToken.oracle(), oracle);
+        assertEq(qToken.expiryTime(), expiryTime);
+        assertEq(qToken.isCall(), isCall);
+        assertEq(qToken.strikePrice(), strikePrice);
+        assertEq(qToken.controller(), controller);
+    }
+
     function testCreatedOptionParams() public {
         uint88 expiryTime = 2282899998;
         bool isCall = true;
@@ -180,15 +243,7 @@ contract OptionsFactoryTest is Test {
         new QToken();
     }
 
-    // function testOption
-
-    function testOptionCreationMultiple() public // uint256 strikePrice,
-    // uint256 expiryTimestamp,
-    // bool isCall
-    {
-        // vm.assume(strikePrice > 0);
-        // vm.assume(expiryTimestamp > block.timestamp);
-
+    function testOptionCreationMultiple() public {
         uint256 strikePrice = 100000;
         uint88 expiryTimestamp = uint88(block.timestamp + 3600);
         bool isCall = true;
@@ -209,20 +264,20 @@ contract OptionsFactoryTest is Test {
             strikePrice + 100000
         );
 
-        // optionsFactory.createOption(
-        //     address(WBNB),
-        //     chainlinkOracleManager,
-        //     expiryTimestamp + 4800,
-        //     isCall,
-        //     strikePrice + 100000
-        // );
+        optionsFactory.createOption(
+            address(WBNB),
+            chainlinkOracleManager,
+            expiryTimestamp + 4800,
+            isCall,
+            strikePrice + 100000
+        );
 
-        // optionsFactory.createOption(
-        //     address(WBNB),
-        //     address(chainlinkOracleManager),
-        //     expiryTimestamp,
-        //     !isCall,
-        //     strikePrice
-        // );
+        optionsFactory.createOption(
+            address(WBNB),
+            address(chainlinkOracleManager),
+            expiryTimestamp,
+            !isCall,
+            strikePrice
+        );
     }
 }
