@@ -157,17 +157,6 @@ describe("QuantMath lib", () => {
         "multiplication result mismatch"
       );
     });
-
-    // TODO: rewrite this using Forge
-    it("Should return overflow error when number is too big", async () => {
-      // max int: 2^255 = 5.7896045e+76
-      const b = { value: ethers.utils.parseUnits("2", "40") };
-      const c = { value: ethers.utils.parseUnits("3", "40") };
-      // this should overflow because 6e+76 > Max Int
-      // await expect(lib.mulTest(b, c)).to.be.revertedWith(
-      //   "reverted with panic code 0x11 (Arithmetic operation underflowed or overflowed outside of an unchecked block)"
-      // );
-    });
   });
 
   describe("Test div", () => {
