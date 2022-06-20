@@ -19,7 +19,7 @@
 */
 
 methods {
-	getCollateralTokenId(address, address) returns uint envfree
+	getCollateralTokenId(uint) returns uint envfree
 	getCollateralTokenInfoTokenAddress(uint) returns address envfree
 	getCollateralTokenInfoTokenAsCollateral(uint) returns address envfree
 	idToInfoContainsId(uint) returns bool envfree
@@ -66,7 +66,9 @@ hook Sload uint256 balance balanceOf[KEY uint256 collateralTokenId][KEY address 
 /* 	Rule: TotalSupply is the sum of balances    
  	Description:  
 	Formula: totalSupplies[collateralTokenId] = sum balanceOf[collateralTokenId][x] for all x
-*/
+
+	NOTE: The CollateralToken contract doesn't keep track of the totalSupply anymore, as it was
+	not a part of the ERC1155 standard and just incurred extra gas costs.
 invariant sumBalancesVsTotalSupplies(uint collateralTokenId)
 	sumBalances(collateralTokenId) == tokenSupplies(collateralTokenId) 
 	{
@@ -78,15 +80,15 @@ invariant sumBalancesVsTotalSupplies(uint collateralTokenId)
 		} 
 
 	}
-
+*/
 
 
 /* 	Rule: Uniqueness collateralTokenIds    
- 	Description:  Each collateralTokenId is unique
-	Formula: getCollateralTokenId(a, b) = getCollateralTokenId(c, d) => a = c & b = d
+ 	Description:  Each entry in collateralTokenIds is unique
+	Formula: collateralTokenIds[i] = collateralTokenIds[j] => i = j
 */
-invariant uniqueCollateralTokenId(address a, address b, address c, address d)
-	getCollateralTokenId(a, b) == getCollateralTokenId(c, d) => a == c && b == d
+invariant uniqueCollateralTokenId(uint i, uint j)
+	getCollateralTokenId(i) == getCollateralTokenId(j) => i == j
 
 
 ////////////////////////////////////////////////////////////////////////////

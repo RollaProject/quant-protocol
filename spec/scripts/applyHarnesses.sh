@@ -119,3 +119,9 @@ perl -0777 -i -pe 's/newQToken = address\(implementation\).cloneDeterministic\(\
 perl -0777 -i -pe 's/\(qToken, exists\) = ClonesWithImmutableArgs.predictDeterministicAddress\(\n/\(qToken, exists\) = clonesWrapper.predictDeterministicAddress\(\n/g' contracts/options/OptionsFactory.sol
 perl -0777 -i -pe 's/abstract contract ERC20 is Clone/abstract contract RollaERC20 is Clone/g' contracts/external/ERC20.sol
 perl -0777 -i -pe 's/contract QToken is ERC20, IQToken/contract QToken is RollaERC20, IQToken/g' contracts/options/QToken.sol
+
+# Add collateralTokendIds to the CollateralToken
+perl -0777 -i -pe 's/override idToInfo;\n/override idToInfo;\n\n    uint256[] public collateralTokenIds;\n/g' contracts/options/CollateralToken.sol
+perl -0777 -i -pe 's/emit CollateralTokenCreated\(_qTokenAddress, address\(0\), id\);/collateralTokenIds.push\(id\);\n\n        emit CollateralTokenCreated\(_qTokenAddress, address\(0\), id\);/g' contracts/options/CollateralToken.sol
+perl -0777 -i -pe 's/emit CollateralTokenCreated\(_qTokenAddress, _qTokenAsCollateral, id\);/collateralTokenIds.push\(id\);\n\n        emit CollateralTokenCreated\(_qTokenAddress, _qTokenAsCollateral, id\);/g' contracts/options/CollateralToken.sol
+perl -0777 -i -pe 's/}\n}/}\n    function getCollateralTokensLength\(\) external view returns \(uint256\) {\n        return collateralTokenIds.length;\n    }\n}/g' contracts/options/CollateralToken.sol
