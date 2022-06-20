@@ -1716,35 +1716,6 @@ describe("Controller", async () => {
       revertToSnapshot(snapshotId);
     });
 
-    // TODO: Rewrite this test using Forge
-    it("Should revert when a user tries to exercise an amount of options that exceeds his balance", async () => {
-      // Take a snapshot of the Hardhat Network
-      const snapshotId = await takeSnapshot();
-
-      // Increase time to one hour past the expiry
-      await provider.send("evm_mine", [futureTimestamp + 3600]);
-
-      await mockPriceRegistry.mock.hasSettlementPrice.returns(true);
-      await mockPriceRegistry.mock.getOptionPriceStatus.returns(
-        PriceStatus.SETTLED
-      );
-
-      //Note: Converts to the chainlink 8 decimal format
-      await mockPriceRegistry.mock.getSettlementPriceWithDecimals.returns([
-        ethers.utils.parseUnits("200", 8),
-        8,
-      ]);
-
-      // await controller.connect(secondAccount).operate([
-      //   encodeExerciseArgs({
-      //     qToken: qTokenPut1400.address,
-      //     amount: ethers.utils.parseEther("1"),
-      //   }),
-      // ]);
-
-      revertToSnapshot(snapshotId);
-    });
-
     it("Burns the QTokens but don't transfer anything when options expire OTM", async () => {
       // Take a snapshot of the Hardhat Network
       const snapshotId = await takeSnapshot();
