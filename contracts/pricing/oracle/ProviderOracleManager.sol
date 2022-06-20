@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../../interfaces/IProviderOracleManager.sol";
@@ -14,7 +14,7 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
     /// @inheritdoc IProviderOracleManager
     address[] public override assets;
 
-    address public priceRegistry;
+    address public immutable priceRegistry;
 
     constructor(address _priceRegistry) {
         require(
@@ -48,7 +48,7 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
     /// @inheritdoc IProviderOracleManager
     function setExpiryPriceInRegistry(
         address _asset,
-        uint256 _expiryTimestamp,
+        uint88 _expiryTimestamp,
         bytes memory _calldata
     ) external virtual override;
 
@@ -67,7 +67,7 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
 
     function isValidOption(
         address _underlyingAsset,
-        uint256 _expiryTime,
+        uint88 _expiryTime,
         uint256 _strikePrice
     ) external view virtual override returns (bool);
 

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 import "./QuantMath.sol";
-import "../options/QToken.sol";
-import "../interfaces/IPriceRegistry.sol";
+import "../interfaces/IQToken.sol";
+import {PriceWithDecimals} from "../interfaces/IPriceRegistry.sol";
 
 /// @title For calculating collateral requirements and payouts for options and spreads
 /// in a fixed point format
@@ -32,16 +32,16 @@ library FundsCalculator {
         uint256 _amount,
         uint8 _optionsDecimals,
         uint8 _strikeAssetDecimals,
-        IPriceRegistry.PriceWithDecimals memory _expiryPrice
+        PriceWithDecimals memory _expiryPrice
     )
         internal
-        view
+        pure
         returns (
             address payoutToken,
             QuantMath.FixedPointInt memory payoutAmount
         )
     {
-        QToken qToken = QToken(_qToken);
+        IQToken qToken = IQToken(_qToken);
         bool isCall = qToken.isCall();
 
         payoutToken = isCall ? qToken.underlyingAsset() : qToken.strikeAsset();
@@ -75,20 +75,20 @@ library FundsCalculator {
         uint8 _strikeAssetDecimals
     )
         internal
-        view
+        pure
         returns (
             address collateral,
             QuantMath.FixedPointInt memory collateralAmount
         )
     {
-        QToken qTokenToMint = QToken(_qTokenToMint);
+        IQToken qTokenToMint = IQToken(_qTokenToMint);
         uint256 qTokenToMintStrikePrice = qTokenToMint.strikePrice();
 
         uint256 qTokenForCollateralStrikePrice;
 
         // check if we're getting the collateral requirement for a spread
         if (_qTokenForCollateral != address(0)) {
-            QToken qTokenForCollateral = QToken(_qTokenForCollateral);
+            IQToken qTokenForCollateral = IQToken(_qTokenForCollateral);
             qTokenForCollateralStrikePrice = qTokenForCollateral.strikePrice();
 
             // Check that expiries match
@@ -149,7 +149,7 @@ library FundsCalculator {
         uint256 _amount,
         uint8 _optionsDecimals,
         uint8 _strikeAssetDecimals,
-        IPriceRegistry.PriceWithDecimals memory _expiryPrice
+        PriceWithDecimals memory _expiryPrice
     ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
         FundsCalculator.OptionPayoutInput memory payoutInput = FundsCalculator
             .OptionPayoutInput(

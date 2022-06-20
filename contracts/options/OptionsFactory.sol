@@ -1,51 +1,59 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
+import {ClonesWithImmutableArgs} from "@rolla-finance/clones-with-immutable-args/ClonesWithImmutableArgs.sol";
+import {QToken} from "./QToken.sol";
 import "../libraries/OptionsUtils.sol";
 import "../interfaces/IOptionsFactory.sol";
-import "../interfaces/IProviderOracleManager.sol";
-import "../interfaces/IOracleRegistry.sol";
-import "../interfaces/IAssetsRegistry.sol";
 import "../interfaces/ICollateralToken.sol";
-import "../interfaces/IPriceRegistry.sol";
 
 /// @title Factory contract for Quant options
 /// @author Rolla
 /// @notice Creates tokens for long (QToken) and short (CollateralToken) positions
 /// @dev This contract follows the factory design pattern
 contract OptionsFactory is IOptionsFactory {
-    /// @inheritdoc IOptionsFactory
-    address[] public override qTokens;
+    using ClonesWithImmutableArgs for address;
 
     /// @inheritdoc IOptionsFactory
-    address public override strikeAsset;
-
-    ICollateralToken public override collateralToken;
-
-    address public override controller;
-
-    address public override priceRegistry;
-
-    address public override assetsRegistry;
-
-    mapping(uint256 => address) private _collateralTokenIdToQTokenAddress;
+    address public immutable override strikeAsset;
 
     /// @inheritdoc IOptionsFactory
-    mapping(address => uint256)
-        public
-        override qTokenAddressToCollateralTokenId;
+    address public immutable override collateralToken;
+
+    /// @inheritdoc IOptionsFactory
+    address public immutable override controller;
+
+    /// @inheritdoc IOptionsFactory
+    address public immutable override oracleRegistry;
+
+    /// @inheritdoc IOptionsFactory
+    address public immutable override assetsRegistry;
+
+    /// @inheritdoc IOptionsFactory
+    QToken public immutable implementation;
+
+    /// @inheritdoc IOptionsFactory
+    uint8 public immutable override optionsDecimals = 18;
+
+    /// @inheritdoc IOptionsFactory
+    mapping(address => bool) public override isQToken;
 
     /// @notice Initializes a new options factory
     /// @param _strikeAsset address of the asset used to denominate strike prices
     /// for options created through this factory
     /// @param _collateralToken address of the CollateralToken contract
     /// @param _controller address of the Quant Controller contract
+    /// @param _oracleRegistry address of the OracleRegistry contract
+    /// @param _assetsRegistry address of the AssetsRegistry contract
+    /// @param _implementation a QToken implementation contract, to be used when creating QToken clones
+    /// for the options created through this factory
     constructor(
         address _strikeAsset,
         address _collateralToken,
         address _controller,
-        address _priceRegistry,
-        address _assetsRegistry
+        address _oracleRegistry,
+        address _assetsRegistry,
+        QToken _implementation
     ) {
         require(
             _strikeAsset != address(0),
@@ -60,198 +68,132 @@ contract OptionsFactory is IOptionsFactory {
             "OptionsFactory: invalid controller address"
         );
         require(
-            _priceRegistry != address(0),
-            "OptionsFactory: invalid price registry address"
+            _oracleRegistry != address(0),
+            "OptionsFactory: invalid oracle registry address"
         );
         require(
             _assetsRegistry != address(0),
             "OptionsFactory: invalid assets registry address"
         );
+        require(
+            address(_implementation) != address(0),
+            "OptionsFactory: invalid QToken implementation address"
+        );
 
         strikeAsset = _strikeAsset;
-        collateralToken = ICollateralToken(_collateralToken);
+        collateralToken = _collateralToken;
         controller = _controller;
-        priceRegistry = _priceRegistry;
+        oracleRegistry = _oracleRegistry;
         assetsRegistry = _assetsRegistry;
+        implementation = _implementation;
     }
 
     /// @inheritdoc IOptionsFactory
     function createOption(
         address _underlyingAsset,
         address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
     )
         external
         override
         returns (address newQToken, uint256 newCollateralTokenId)
     {
         OptionsUtils.validateOptionParameters(
-            IPriceRegistry(priceRegistry).oracleRegistry(),
+            oracleRegistry,
             _underlyingAsset,
-            _oracle,
             assetsRegistry,
+            _oracle,
             _expiryTime,
             _strikePrice
         );
 
-        newCollateralTokenId = OptionsUtils.getTargetCollateralTokenId(
-            collateralToken,
+        bytes memory data = OptionsUtils.getQTokenImmutableArgs(
+            optionsDecimals,
             _underlyingAsset,
             strikeAsset,
-            _oracle,
-            priceRegistry,
             assetsRegistry,
-            address(0),
-            _strikePrice,
+            _oracle,
             _expiryTime,
-            _isCall
+            _isCall,
+            _strikePrice,
+            controller
         );
 
-        require(
-            _collateralTokenIdToQTokenAddress[newCollateralTokenId] ==
-                address(0),
-            "option already created"
+        newQToken = address(implementation).cloneDeterministic(
+            OptionsUtils.SALT,
+            data
         );
 
-        newQToken = address(
-            new QToken{salt: OptionsUtils.SALT}(
-                _underlyingAsset,
-                strikeAsset,
-                _oracle,
-                priceRegistry,
-                assetsRegistry,
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            )
-        );
+        newCollateralTokenId = ICollateralToken(collateralToken)
+            .createOptionCollateralToken(newQToken);
 
-        QToken(newQToken).transferOwnership(controller);
-
-        _collateralTokenIdToQTokenAddress[newCollateralTokenId] = newQToken;
-        qTokens.push(newQToken);
-
-        qTokenAddressToCollateralTokenId[newQToken] = newCollateralTokenId;
+        isQToken[newQToken] = true;
 
         emit OptionCreated(
             newQToken,
             msg.sender,
             _underlyingAsset,
             _oracle,
-            _strikePrice,
             _expiryTime,
-            newCollateralTokenId,
-            qTokens.length,
-            _isCall
+            _isCall,
+            _strikePrice,
+            newCollateralTokenId
         );
-
-        collateralToken.createCollateralToken(newQToken, address(0));
-    }
-
-    /// @inheritdoc IOptionsFactory
-    function getTargetCollateralTokenId(
-        address _underlyingAsset,
-        address _oracle,
-        address _qTokenAsCollateral,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
-    ) external view override returns (uint256) {
-        return
-            OptionsUtils.getTargetCollateralTokenId(
-                collateralToken,
-                _underlyingAsset,
-                strikeAsset,
-                _oracle,
-                priceRegistry,
-                assetsRegistry,
-                _qTokenAsCollateral,
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            );
-    }
-
-    /// @inheritdoc IOptionsFactory
-    function getTargetQTokenAddress(
-        address _underlyingAsset,
-        address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
-    ) external view override returns (address) {
-        return
-            OptionsUtils.getTargetQTokenAddress(
-                _underlyingAsset,
-                strikeAsset,
-                _oracle,
-                priceRegistry,
-                assetsRegistry,
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            );
     }
 
     /// @inheritdoc IOptionsFactory
     function getCollateralToken(
         address _underlyingAsset,
-        address _oracle,
         address _qTokenAsCollateral,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
-    ) external view override returns (uint256) {
-        address qToken = getQToken(
+        address _oracle,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
+    ) external view override returns (uint256 id, bool exists) {
+        (address qToken, ) = getQToken(
             _underlyingAsset,
             _oracle,
-            _strikePrice,
             _expiryTime,
-            _isCall
+            _isCall,
+            _strikePrice
         );
 
-        uint256 id = collateralToken.getCollateralTokenId(
+        id = ICollateralToken(collateralToken).getCollateralTokenId(
             qToken,
             _qTokenAsCollateral
         );
 
-        (address storedQToken, ) = collateralToken.idToInfo(id);
-        return storedQToken != address(0) ? id : 0;
-    }
+        (qToken, ) = ICollateralToken(collateralToken).idToInfo(id);
 
-    /// @inheritdoc IOptionsFactory
-    function getOptionsLength() external view override returns (uint256) {
-        return qTokens.length;
-    }
-
-    /// @inheritdoc IOptionsFactory
-    function isQToken(address _qToken) external view override returns (bool) {
-        return qTokenAddressToCollateralTokenId[_qToken] != 0;
+        exists = qToken != address(0);
     }
 
     /// @inheritdoc IOptionsFactory
     function getQToken(
         address _underlyingAsset,
         address _oracle,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
-    ) public view override returns (address) {
-        uint256 collateralTokenId = OptionsUtils.getTargetCollateralTokenId(
-            collateralToken,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
+    ) public view override returns (address qToken, bool exists) {
+        bytes memory data = OptionsUtils.getQTokenImmutableArgs(
+            optionsDecimals,
             _underlyingAsset,
             strikeAsset,
-            _oracle,
-            priceRegistry,
             assetsRegistry,
-            address(0),
-            _strikePrice,
+            _oracle,
             _expiryTime,
-            _isCall
+            _isCall,
+            _strikePrice,
+            controller
         );
 
-        return _collateralTokenIdToQTokenAddress[collateralTokenId];
+        (qToken, exists) = ClonesWithImmutableArgs.predictDeterministicAddress(
+            address(implementation),
+            OptionsUtils.SALT,
+            data
+        );
     }
 }

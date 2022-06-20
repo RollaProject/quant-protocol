@@ -61,6 +61,7 @@ methods {
 	isQToken(address _qToken) returns (bool) => DISPATCHER(true)
 	collateralToken() => NONDET
 	quantConfig() => NONDET
+	createSpreadCollateralToken(address, address) returns(uint256) => DISPATCHER(true)
 	
 	// CollateralToken
 	mintCollateralToken(address,uint256,uint256) => DISPATCHER(true)
@@ -338,7 +339,7 @@ rule integrityOfTotals(uint256 collateralTokenId, uint256 amount, method f){
 	Formula:  (_, payoutToken, _ ) = getExercisePayout && (_, calculateClaimableCollateral, _ calculateClaimableCollateral(collateralTokenId,x,u) => payoutToken == calculateClaimableCollateral
 	Notes: 
 */
-rule getSameToken(uint256 collateralTokenId, uint256 amount, address optionsFactory) {
+rule getSameToken(uint256 collateralTokenId, uint256 amount, address _optionsFactory) {
     env e;
     address collateralAsset;
 	address qToken;

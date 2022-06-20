@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 import "../../contracts/interfaces/IQuantCalculator.sol";
 import "../../contracts/interfaces/IOptionsFactory.sol";
 import "../../contracts/interfaces/IQToken.sol";
 import "../../contracts/interfaces/IPriceRegistry.sol";
+import "../../contracts/options/CollateralToken.sol";
 
 contract QuantCalculatorHarness is IQuantCalculator {
     modifier validQToken(address _qToken) {
@@ -39,11 +40,11 @@ contract QuantCalculatorHarness is IQuantCalculator {
     mapping(address => mapping(address => mapping(uint256 => uint256)))
         public neutralizationPayout;
 
-    uint8 public constant override OPTIONS_DECIMALS = 0;
-
     IQuantCalculator calcOriginal;
     uint8 public override strikeAssetDecimals;
     address public override optionsFactory;
+    address public override assetsRegistry;
+    address public override priceRegistry;
 
     mapping(address => address) public qTokenToCollateralType;
 
@@ -95,15 +96,13 @@ contract QuantCalculatorHarness is IQuantCalculator {
         )
     {
         amountToClaim = _amount == 0
-            ? IOptionsFactory(optionsFactory).collateralToken().balanceOf(
-                msgSender,
-                _collateralTokenId
-            )
+            ? CollateralToken(IOptionsFactory(optionsFactory).collateralToken())
+                .balanceOf(msgSender, _collateralTokenId)
             : _amount;
 
-        (address _qTokenShort, address qTokenAsCollateral) = IOptionsFactory(
-            optionsFactory
-        ).collateralToken().idToInfo(_collateralTokenId);
+        (address _qTokenShort, address qTokenAsCollateral) = CollateralToken(
+            IOptionsFactory(optionsFactory).collateralToken()
+        ).idToInfo(_collateralTokenId);
 
         returnableCollateral = getClaimableCollateralValue(
             _collateralTokenId,
@@ -162,8 +161,20 @@ contract QuantCalculatorHarness is IQuantCalculator {
         )
     {
         IQToken qToken = IQToken(_qToken);
-        isSettled = qToken.getOptionPriceStatus() == PriceStatus.SETTLED;
+
+        isSettled =
+            IPriceRegistry(calcOriginal.priceRegistry()).getOptionPriceStatus(
+                qToken.oracle(),
+                qToken.expiryTime(),
+                qToken.underlyingAsset()
+            ) ==
+            PriceStatus.SETTLED;
+
         payoutAmount = getExercisePayoutValue(_qToken, _amount);
         payoutToken = qTokenToCollateralType[_qToken];
+    }
+
+    function optionsDecimals() external view returns (uint8) {
+        return 0;
     }
 }

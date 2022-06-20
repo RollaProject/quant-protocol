@@ -46,11 +46,11 @@ methods {
 // the sum of all u. balances(cid,u)
 ghost sumBalances(uint256) returns uint256;
 
-hook Sstore _balances[KEY uint256 collateralTokenId][KEY address user] uint256 balance (uint256 oldBalance) STORAGE {
+hook Sstore balanceOf[KEY address user][KEY uint256 collateralTokenId] uint256 balance (uint256 oldBalance) STORAGE {
     havoc sumBalances assuming sumBalances@new(collateralTokenId) == sumBalances@old(collateralTokenId) + balance - oldBalance && (forall uint256 x.  x != collateralTokenId  => sumBalances@new(x) == sumBalances@old(x));
 }
 /*
-hook Sload uint256 balance _balances[KEY uint256 collateralTokenId][KEY address user] STORAGE {
+hook Sload uint256 balance balanceOf[KEY uint256 collateralTokenId][KEY address user] STORAGE {
     require sumBalances(collateralTokenId) >= balance;
 }
 */
@@ -65,20 +65,22 @@ hook Sload uint256 balance _balances[KEY uint256 collateralTokenId][KEY address 
 
 /* 	Rule: TotalSupply is the sum of balances    
  	Description:  
-	Formula: totalSupplies[collateralTokenId] = sum _balances[collateralTokenId][x] for all x
-*/
+	Formula: totalSupplies[collateralTokenId] = sum balanceOf[collateralTokenId][x] for all x
+
+	NOTE: The CollateralToken contract doesn't keep track of the totalSupply anymore, as it was
+	not a part of the ERC1155 standard and just incurred extra gas costs.
 invariant sumBalancesVsTotalSupplies(uint collateralTokenId)
 	sumBalances(collateralTokenId) == tokenSupplies(collateralTokenId) 
 	{
-		preserved burnCollateralTokenBatch(address a,uint256[] b,uint256[] c) with (env e){
+		preserved burnCollateralToken(address a,uint256 b,uint256 c) with (env e){
 			require false;
 		} 
-		preserved mintCollateralTokenBatch(address a,uint256[] b,uint256[] c) with (env e){
+		preserved mintCollateralToken(address a,uint256 b,uint256 c) with (env e){
 			require false;
 		} 
 
 	}
-
+*/
 
 
 /* 	Rule: Uniqueness collateralTokenIds    
@@ -98,7 +100,7 @@ invariant uniqueCollateralTokenId(uint i, uint j)
 /* 	Rule: Integrity of collateralTokenInfo    
  	Description:  Creating a new pair of QTokens creates the collateralTokenInfo
 	Formula: { } 
-			collateralTokenInfoId = createCollateralToken(qTokenAddress, qTokenAsCollateral)
+			collateralTokenInfoId = createSpreadCollateralToken(qTokenAddress, qTokenAsCollateral)
 			{ (qTokenAddress, qTokenAsCollateral) = getCollateralTokenInfo(collateralTokenInfoId) }
 */
 rule integrityOfCollateralTokenInfo(address _qTokenAddress, address _qTokenAsCollateral)
@@ -106,7 +108,7 @@ rule integrityOfCollateralTokenInfo(address _qTokenAddress, address _qTokenAsCol
 	env e;
 	uint collateralTokenInfoId;
 
-	collateralTokenInfoId = createCollateralToken(e, _qTokenAddress, _qTokenAsCollateral);
+	collateralTokenInfoId = createSpreadCollateralToken(e, _qTokenAddress, _qTokenAsCollateral);
 
 	assert(_qTokenAddress == getCollateralTokenInfoTokenAddress(collateralTokenInfoId) && _qTokenAsCollateral == getCollateralTokenInfoTokenAsCollateral(collateralTokenInfoId));
 }
@@ -114,7 +116,7 @@ rule integrityOfCollateralTokenInfo(address _qTokenAddress, address _qTokenAsCol
 /* 	Rule: Integrity of collateralToken 
  	Description:  Each collateralToken has an entry in  the collateralTokenInfo
 	Formula: { i = collateralTokenIds.length } 
-			collateralTokenInfoId = createCollateralToken(qToken, qTokenAsCollateral)
+			collateralTokenInfoId = createSpreadCollateralToken(qToken, qTokenAsCollateral)
 			{ idToInfo[collateralTokenInfoId].qTokenAddress != 0 && collateralTokenIds[i] == key }
 */
 rule validityOfCollateralToken(address _qTokenAddress, address _qTokenAsCollateral)
@@ -124,7 +126,7 @@ rule validityOfCollateralToken(address _qTokenAddress, address _qTokenAsCollater
 	uint collateralTokenInfoId;
 
 	require _qTokenAddress != 0;
-	collateralTokenInfoId = createCollateralToken(e, _qTokenAddress, _qTokenAsCollateral);
+	collateralTokenInfoId = createSpreadCollateralToken(e, _qTokenAddress, _qTokenAsCollateral);
 
 	assert(idToInfoContainsId(collateralTokenInfoId) && collateralTokenIdsContainsId(collateralTokenInfoId, i));
 }
@@ -150,7 +152,7 @@ rule integrityOfMinting(address _qTokenAddress, address _qTokenAsCollateral, add
 /* 	Rule: Integrity of token supply on Minting 
  	Description:  Once minting, the collateralToken has an entry in the tokenSupplies array
 	Formula: { amount > 0 } 
-			collateralTokenInfoId = createCollateralToken(qToken, qTokenAsCollateral);
+			collateralTokenInfoId = createSpreadCollateralToken(qToken, qTokenAsCollateral);
 			mintCollateralToken(e, _recipient, collateralTokenInfoId, _amount);
 			{ tokenSupplies[collateralTokenInfoId] != 0 }
 */
@@ -159,7 +161,7 @@ rule integrityOfTotalSupplyOnMinting(address _qTokenAddress, address _qTokenAsCo
 	env e;
 	uint256 collateralTokenInfoId;
 	require _amount > 0;
-	collateralTokenInfoId = createCollateralToken(e, _qTokenAddress, _qTokenAsCollateral);
+	collateralTokenInfoId = createSpreadCollateralToken(e, _qTokenAddress, _qTokenAsCollateral);
 	mintCollateralToken(e, _recipient, collateralTokenInfoId, _amount);
 
 	assert(tokenSuppliesContainsCollateralToken(collateralTokenInfoId));

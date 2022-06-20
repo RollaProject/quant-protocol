@@ -8,8 +8,17 @@ import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
 import "hardhat-gas-reporter";
-import { HardhatUserConfig } from "hardhat/config";
+import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from "hardhat/builtin-tasks/task-names";
+import { HardhatUserConfig, subtask } from "hardhat/config";
 import "solidity-coverage";
+
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(
+  async (_, __, runSuper) => {
+    const paths = await runSuper();
+
+    return paths.filter((p: string) => !p.endsWith(".t.sol"));
+  }
+);
 
 dotenv.config();
 
@@ -43,7 +52,7 @@ const config: HardhatUserConfig = {
     },
   },
   solidity: {
-    version: "0.8.13",
+    version: "0.8.15",
     settings: {
       metadata: {
         // do not include the metadata hash, since this is machine dependent
@@ -54,8 +63,9 @@ const config: HardhatUserConfig = {
       // https://hardhat.org/hardhat-network/#solidity-optimizer-support
       optimizer: {
         enabled: true,
-        runs: 200,
+        runs: 1000000,
       },
+      viaIR: true,
       outputSelection: {
         "*": {
           "*": [
@@ -96,6 +106,8 @@ const config: HardhatUserConfig = {
       process.env.GAS_PRICE_API ||
       `https://api.bscscan.com/api?module=proxy&action=eth_gasPrice&apikey=${process.env.BSCSCAN_API_KEY}`,
   },
+
+  paths: { cache: "hh-cache" },
 
   tenderly: {
     project: process.env.ETH_NETWORK

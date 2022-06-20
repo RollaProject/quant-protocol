@@ -2,3 +2,12 @@ coverage/
 artifacts/
 typechain/
 cache/
+contracts/options/QToken.sol
+contracts/mocks/
+contracts/libraries/OptionsUtils.sol
+contracts/external/ERC20.sol
+contracts/utils/EIP712MetaTransaction.sol
+spec/
+out/
+.certora_config/
+lib/

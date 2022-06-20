@@ -11,8 +11,8 @@ describe("OracleRegistry", () => {
   let oracleRegistry: OracleRegistry;
   let deployer: Signer;
   let secondAccount: Signer;
-  const oracleOne = "0x000000000000000000000000000000000000000A";
-  const oracleTwo = "0x000000000000000000000000000000000000000B";
+  const oracleOne = "0xc61Da13fef930E1Ef8DF714BDC3cED4d60D6204b";
+  const oracleTwo = "0x6c99ebC5e73347585DDE7acDa5BA360a5Cf7e5eB";
 
   beforeEach(async () => {
     [deployer, secondAccount] = provider.getWallets();
@@ -25,12 +25,8 @@ describe("OracleRegistry", () => {
   it("Should allow multiple oracles to be added to the registry", async () => {
     expect(await oracleRegistry.getOraclesLength()).to.equal(0);
 
-    await expect(oracleRegistry.getOracleId(oracleOne)).to.be.revertedWith(
-      "OracleRegistry: Oracle doesn't exist in registry"
-    );
-    await expect(oracleRegistry.getOracleId(oracleTwo)).to.be.revertedWith(
-      "OracleRegistry: Oracle doesn't exist in registry"
-    );
+    await expect(oracleRegistry.getOracleId(oracleOne)).to.be.reverted;
+    await expect(oracleRegistry.getOracleId(oracleTwo)).to.be.reverted;
     expect(await oracleRegistry.isOracleRegistered(oracleOne)).to.equal(false);
     expect(await oracleRegistry.isOracleRegistered(oracleTwo)).to.equal(false);
 
@@ -48,9 +44,7 @@ describe("OracleRegistry", () => {
   });
 
   it("Oracle should be inactive by default and should be able to be activated and deactivated", async () => {
-    await expect(oracleRegistry.getOracleId(oracleOne)).to.be.revertedWith(
-      "OracleRegistry: Oracle doesn't exist in registry"
-    );
+    await expect(oracleRegistry.getOracleId(oracleOne)).to.be.reverted;
 
     expect(await oracleRegistry.isOracleRegistered(oracleOne)).to.equal(false);
 

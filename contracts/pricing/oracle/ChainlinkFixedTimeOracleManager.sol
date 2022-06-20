@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 import "./ChainlinkOracleManager.sol";
 import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
@@ -12,13 +12,13 @@ contract ChainlinkFixedTimeOracleManager is
     ChainlinkOracleManager,
     IChainlinkFixedTimeOracleManager
 {
-    mapping(uint256 => bool) public override chainlinkFixedTimeUpdates;
+    mapping(uint24 => bool) public override chainlinkFixedTimeUpdates;
 
     /// @param _fallbackPeriodSeconds amount of seconds before fallback price submitter can submit
     constructor(
         address _priceRegistry,
         uint8 _strikeAssetDecimals,
-        uint256 _fallbackPeriodSeconds
+        uint88 _fallbackPeriodSeconds
     )
         ChainlinkOracleManager(
             _priceRegistry,
@@ -31,7 +31,7 @@ contract ChainlinkFixedTimeOracleManager is
     }
 
     /// @inheritdoc IChainlinkFixedTimeOracleManager
-    function setFixedTimeUpdate(uint256 fixedTime, bool isValidTime)
+    function setFixedTimeUpdate(uint24 fixedTime, bool isValidTime)
         external
         override
         onlyOwner
@@ -44,7 +44,7 @@ contract ChainlinkFixedTimeOracleManager is
     /// @inheritdoc IProviderOracleManager
     function isValidOption(
         address _underlyingAsset,
-        uint256 _expiryTime,
+        uint88 _expiryTime,
         uint256
     )
         external
@@ -52,7 +52,7 @@ contract ChainlinkFixedTimeOracleManager is
         override(ChainlinkOracleManager, IProviderOracleManager)
         returns (bool)
     {
-        uint256 timeInSeconds = _expiryTime % 86400;
+        uint24 timeInSeconds = uint24(_expiryTime % 86400);
         return
             assetOracles[_underlyingAsset] != address(0) &&
             chainlinkFixedTimeUpdates[timeInSeconds];
@@ -67,7 +67,7 @@ contract ChainlinkFixedTimeOracleManager is
     /// @return roundId for the expiry time
     function _getExpiryPrice(
         IEACAggregatorProxy aggregator,
-        uint256 _expiryTimestamp,
+        uint88 _expiryTimestamp,
         uint256 _roundIdAfterExpiry,
         uint256 _expiryRoundId
     ) internal view override returns (uint256, uint256) {

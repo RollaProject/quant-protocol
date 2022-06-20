@@ -19,7 +19,7 @@ interface IProviderOracleManager {
     /// @param _calldata additional parameter that the method may need to execute
     function setExpiryPriceInRegistry(
         address _asset,
-        uint256 _expiryTimestamp,
+        uint88 _expiryTimestamp,
         bytes memory _calldata
     ) external;
 
@@ -48,7 +48,7 @@ interface IProviderOracleManager {
     /// @param _strikePrice the strike price of the option
     function isValidOption(
         address _underlyingAsset,
-        uint256 _expiryTime,
+        uint88 _expiryTime,
         uint256 _strikePrice
     ) external view returns (bool);
 }

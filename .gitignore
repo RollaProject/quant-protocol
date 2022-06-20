@@ -135,3 +135,6 @@ last_conf*
 
 #Foundry
 out/
+
+# Hardhat compilation cache
+hh-cache/

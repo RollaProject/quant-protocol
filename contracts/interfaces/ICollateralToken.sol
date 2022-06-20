@@ -1,60 +1,48 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "./IQToken.sol";
-
 /// @title Tokens representing a Quant user's short positions
 /// @author Rolla
 /// @notice Can be used by owners to claim their collateral
-interface ICollateralToken is IERC1155 {
+interface ICollateralToken {
     struct QTokensDetails {
         address underlyingAsset;
         address strikeAsset;
         address oracle;
+        uint88 expiryTime;
+        bool isCall;
         uint256 shortStrikePrice;
         uint256 longStrikePrice;
-        uint256 expiryTime;
-        bool isCall;
     }
 
     /// @notice event emitted when a new CollateralToken is created
     /// @param qTokenAddress address of the corresponding QToken
     /// @param qTokenAsCollateral QToken address of an option used as collateral in a spread
     /// @param id unique id of the created CollateralToken
-    /// @param allCollateralTokensLength the updated number of already created CollateralTokens
     event CollateralTokenCreated(
         address indexed qTokenAddress,
         address qTokenAsCollateral,
-        uint256 id,
-        uint256 allCollateralTokensLength
+        uint256 id
     );
 
-    /// @notice event emitted when CollateralTokens are minted
-    /// @param recipient address that received the minted CollateralTokens
-    /// @param id unique id of the minted CollateralToken
-    /// @param amount the amount of CollateralToken minted
-    event CollateralTokenMinted(
-        address indexed recipient,
-        uint256 indexed id,
-        uint256 amount
-    );
+    /// @notice Sets the the address for the OptionsFactory
+    /// @param optionsFactory_ address of the OptionsFactory
+    /// @dev This function will only be called once, in the Controller constructor, right after
+    /// the CollateralToken contract is deployed with the Controller being its owner
+    function setOptionsFactory(address optionsFactory_) external;
 
-    /// @notice event emitted when CollateralTokens are burned
-    /// @param owner address that the CollateralToken was burned from
-    /// @param id unique id of the burned CollateralToken
-    /// @param amount the amount of CollateralToken burned
-    event CollateralTokenBurned(
-        address indexed owner,
-        uint256 indexed id,
-        uint256 amount
-    );
-
-    /// @notice Create new CollateralTokens
+    /// @notice Create a new CollateralToken for a given QToken
     /// @param _qTokenAddress address of the corresponding QToken
+    /// @return id the id for the CollateralToken created with the given arguments
+    function createOptionCollateralToken(address _qTokenAddress)
+        external
+        returns (uint256 id);
+
+    /// @notice Create a new CollateralToken for a given spread
+    /// @param _qTokenAddress QToken address of an option being minted in a spread
     /// @param _qTokenAsCollateral QToken address of an option used as collateral in a spread
     /// @return id the id for the CollateralToken created with the given arguments
-    function createCollateralToken(
+    function createSpreadCollateralToken(
         address _qTokenAddress,
         address _qTokenAsCollateral
     ) external returns (uint256 id);
@@ -77,32 +65,6 @@ interface ICollateralToken is IERC1155 {
         address owner,
         uint256 collateralTokenId,
         uint256 amount
-    ) external;
-
-    /// @notice Batched minting of multiple CollateralTokens for a given account
-    /// @dev Should be used when minting multiple CollateralTokens for a single user,
-    /// i.e., when a user buys more than one short position through the interface
-    /// @param recipient address to receive the minted tokens
-    /// @param ids array of CollateralToken ids to be minted
-    /// @param amounts array of amounts of tokens to be minted
-    /// @dev ids and amounts must have the same length
-    function mintCollateralTokenBatch(
-        address recipient,
-        uint256[] calldata ids,
-        uint256[] calldata amounts
-    ) external;
-
-    /// @notice Batched burning of multiple CollateralTokens from a given account
-    /// @dev Should be used when burning multiple CollateralTokens for a single user,
-    /// i.e., when a user sells more than one short position through the interface
-    /// @param owner address to burn tokens from
-    /// @param ids array of CollateralToken ids to be burned
-    /// @param amounts array of amounts of tokens to be burned
-    /// @dev ids and amounts shoud have the same length
-    function burnCollateralTokenBatch(
-        address owner,
-        uint256[] calldata ids,
-        uint256[] calldata amounts
     ) external;
 
     /// @notice Set approval for all IDs by providing parameters to setApprovalForAll
@@ -129,18 +91,6 @@ interface ICollateralToken is IERC1155 {
 
     /// @notice mapping of CollateralToken ids to their respective info struct
     function idToInfo(uint256) external view returns (address, address);
-
-    /// @notice array of all the created CollateralToken ids
-    function collateralTokenIds(uint256) external view returns (uint256);
-
-    /// @notice get the total amount of collateral tokens created
-    function getCollateralTokensLength() external view returns (uint256);
-
-    /// @notice get the details of the QTokens related to a given CollateralToken id
-    function getCollateralTokenInfo(uint256 id)
-        external
-        view
-        returns (QTokensDetails memory);
 
     /// @notice Returns a unique CollateralToken id based on its parameters
     /// @param _qToken the address of the corresponding QToken

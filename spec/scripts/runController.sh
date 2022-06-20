@@ -5,6 +5,5 @@ spec/harness/DummyERC20B.sol spec/harness/QTokenA.sol spec/harness/QTokenB.sol \
 	--verify ControllerHarness:spec/controller.spec --settings -ciMode=true,-optimisticReturnsize=true,-ignoreViewFunctions,-postProcessCounterExamples=true,-enableStorageAnalysis=true \
 	--link ControllerHarness:quantCalculator=QuantCalculatorHarness \
 	--optimistic_loop \
-	--staging \
 	--cache controllerQuant \
 	--msg "Controller"

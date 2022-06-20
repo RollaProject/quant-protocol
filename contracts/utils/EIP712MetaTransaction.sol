@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../interfaces/IEIP712MetaTransaction.sol";
-import "../interfaces/IController.sol";
 import "../libraries/Actions.sol";
-import {ActionArgs} from "../libraries/Actions.sol";
 
 /// @title Contract to be inherited by contracts that want to support meta transactions.
 /// @author Rolla
@@ -93,10 +91,8 @@ abstract contract EIP712MetaTransaction is EIP712 {
             gas: gasLimit
         }(
             abi.encodePacked(
-                abi.encodeWithSelector(
-                    IController(address(this)).operate.selector,
-                    metaAction.actions
-                ),
+                // Controller.operate.selector
+                abi.encodeWithSelector(0x7b7bed54, metaAction.actions),
                 metaAction.from
             )
         );
@@ -108,7 +104,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
             // We explicitly trigger invalid opcode to consume all gas and bubble-up the effects, since
             // neither revert or assert consume all gas since Solidity 0.8.0
             // https://docs.soliditylang.org/en/v0.8.0/control-structures.html#panic-via-assert-and-error-via-require
-            assembly {
+            assembly ("memory-safe") {
                 invalid()
             }
         }
@@ -138,7 +134,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
         if (msg.sender == address(this)) {
             bytes memory array = msg.data;
             uint256 index = msg.data.length;
-            assembly {
+            assembly ("memory-safe") {
                 // Load the 32 bytes word from memory with the address on the lower 20 bytes, and mask those.
                 sender := and(
                     mload(add(array, index)),

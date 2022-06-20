@@ -10,7 +10,7 @@ interface IChainlinkOracleManager is
 {
     event PriceRegistrySubmission(
         address asset,
-        uint256 expiryTimestamp,
+        uint88 expiryTimestamp,
         uint256 price,
         uint256 expiryRoundId,
         address priceSubmitter,
@@ -23,7 +23,7 @@ interface IChainlinkOracleManager is
     /// @param _roundIdAfterExpiry the chainlink round id immediately after the expiry timestamp
     function setExpiryPriceInRegistryByRound(
         address _asset,
-        uint256 _expiryTimestamp,
+        uint88 _expiryTimestamp,
         uint256 _roundIdAfterExpiry
     ) external;
 
@@ -33,7 +33,7 @@ interface IChainlinkOracleManager is
     /// @param _asset address of asset to search price for
     /// @param _expiryTimestamp expiry timestamp to find the price at or before
     /// @return the round id immediately after the timestamp submitted
-    function searchRoundToSubmit(address _asset, uint256 _expiryTimestamp)
+    function searchRoundToSubmit(address _asset, uint88 _expiryTimestamp)
         external
         view
         returns (uint80);

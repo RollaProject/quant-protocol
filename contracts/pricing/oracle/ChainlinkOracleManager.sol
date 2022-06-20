@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
-import "../PriceRegistry.sol";
+import "../../interfaces/IPriceRegistry.sol";
 import "./ProviderOracleManager.sol";
 import "../../libraries/QuantMath.sol";
 import "../../interfaces/IChainlinkOracleManager.sol";
@@ -31,7 +31,7 @@ contract ChainlinkOracleManager is
     constructor(
         address _priceRegistry,
         uint8 _strikeAssetDecimals,
-        uint256 _fallbackPeriodSeconds
+        uint88 _fallbackPeriodSeconds
     ) ProviderOracleManager(_priceRegistry) {
         fallbackPeriodSeconds = _fallbackPeriodSeconds;
         strikeAssetDecimals = _strikeAssetDecimals;
@@ -40,7 +40,7 @@ contract ChainlinkOracleManager is
     /// @inheritdoc IChainlinkOracleManager
     function setExpiryPriceInRegistryByRound(
         address _asset,
-        uint256 _expiryTimestamp,
+        uint88 _expiryTimestamp,
         uint256 _roundIdAfterExpiry
     ) external override {
         _setExpiryPriceInRegistryByRound(
@@ -53,7 +53,7 @@ contract ChainlinkOracleManager is
     /// @inheritdoc IProviderOracleManager
     function setExpiryPriceInRegistry(
         address _asset,
-        uint256 _expiryTimestamp,
+        uint88 _expiryTimestamp,
         bytes memory
     ) external override(ProviderOracleManager, IProviderOracleManager) {
         //search and get round
@@ -70,7 +70,7 @@ contract ChainlinkOracleManager is
     /// @inheritdoc IOracleFallbackMechanism
     function setExpiryPriceInRegistryFallback(
         address _asset,
-        uint256 _expiryTimestamp,
+        uint88 _expiryTimestamp,
         uint256 _price
     ) external override onlyOwner {
         require(
@@ -87,11 +87,11 @@ contract ChainlinkOracleManager is
             true
         );
 
-        PriceRegistry(priceRegistry).setSettlementPrice(
+        IPriceRegistry(priceRegistry).setSettlementPrice(
             _asset,
             _expiryTimestamp,
-            _price,
-            IEACAggregatorProxy(getAssetOracle(_asset)).decimals()
+            IEACAggregatorProxy(getAssetOracle(_asset)).decimals(),
+            _price
         );
     }
 
@@ -120,7 +120,7 @@ contract ChainlinkOracleManager is
     /// @inheritdoc IProviderOracleManager
     function isValidOption(
         address _underlyingAsset,
-        uint256,
+        uint88,
         uint256
     )
         external
@@ -133,7 +133,7 @@ contract ChainlinkOracleManager is
     }
 
     /// @inheritdoc IChainlinkOracleManager
-    function searchRoundToSubmit(address _asset, uint256 _expiryTimestamp)
+    function searchRoundToSubmit(address _asset, uint88 _expiryTimestamp)
         public
         view
         override
@@ -187,7 +187,7 @@ contract ChainlinkOracleManager is
     /// @param _roundIdAfterExpiry the chainlink round id immediately after the option expired
     function _setExpiryPriceInRegistryByRound(
         address _asset,
-        uint256 _expiryTimestamp,
+        uint88 _expiryTimestamp,
         uint256 _roundIdAfterExpiry
     ) internal {
         address assetOracle = getAssetOracle(_asset);
@@ -195,8 +195,7 @@ contract ChainlinkOracleManager is
         IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
 
         require(
-            aggregator.getTimestamp(uint256(_roundIdAfterExpiry)) >
-                _expiryTimestamp,
+            aggregator.getTimestamp(_roundIdAfterExpiry) > _expiryTimestamp,
             "ChainlinkOracleManager: The round posted is not after the expiry timestamp"
         );
 
@@ -229,17 +228,17 @@ contract ChainlinkOracleManager is
             false
         );
 
-        PriceRegistry(priceRegistry).setSettlementPrice(
+        IPriceRegistry(priceRegistry).setSettlementPrice(
             _asset,
             _expiryTimestamp,
-            price,
-            aggregator.decimals()
+            aggregator.decimals(),
+            price
         );
     }
 
     function _getExpiryPrice(
         IEACAggregatorProxy aggregator,
-        uint256,
+        uint88,
         uint256,
         uint256 _expiryRoundId
     ) internal view virtual returns (uint256, uint256) {
@@ -256,7 +255,7 @@ contract ChainlinkOracleManager is
     /// @return a binary search result object representing lowest and highest possible rounds of the timestamp
     function _binarySearchStep(
         IEACAggregatorProxy aggregator,
-        uint256 _expiryTimestamp,
+        uint88 _expiryTimestamp,
         uint80 _firstRoundProxy,
         uint80 _lastRoundProxy
     ) internal view returns (BinarySearchResult memory) {

@@ -84,12 +84,17 @@ interface IQuantCalculator {
     ) external view returns (address collateralType, uint256 collateralOwed);
 
     /// @notice The amount of decimals for Quant options
-    // solhint-disable-next-line func-name-mixedcase
-    function OPTIONS_DECIMALS() external view returns (uint8);
+    function optionsDecimals() external view returns (uint8);
 
     /// @notice The amount of decimals for the strike asset used in the Quant Protocol
     function strikeAssetDecimals() external view returns (uint8);
 
     /// @notice The address of the factory contract that creates Quant options
     function optionsFactory() external view returns (address);
+
+    /// @notice The address of the AssetsRegistry contract
+    function assetsRegistry() external view returns (address);
+
+    /// @notice The address of the PriceRegistry contract
+    function priceRegistry() external view returns (address);
 }

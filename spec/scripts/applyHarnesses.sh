@@ -16,7 +16,7 @@ perl -0777 -i -pe 's/require\(\s*IOracleRegistry\(\s*IOptionsFactory\(optionsFac
 # QuantCalculator simplification
 perl -0777 -i -pe 's/address public immutable override optionsFactory;/address public immutable override optionsFactory ;\n
      \/\/ add expiry price
-     IPriceRegistry.PriceWithDecimals expiryPrice;/g' contracts/QuantCalculator.sol
+     PriceWithDecimals expiryPrice;/g' contracts/QuantCalculator.sol
 
 
 perl -0777 -i -pe 's/IPriceRegistry priceRegistry =\s*IPriceRegistry\(\s*IOptionsFactory\(optionsFactory\).quantConfig\(\).protocolAddresses\(\s*ProtocolValue.encode\("priceRegistry"\)\s*\)\s*\);/\/\/ IPriceRegistry priceRegistry =
@@ -27,21 +27,21 @@ perl -0777 -i -pe 's/IPriceRegistry priceRegistry =\s*IPriceRegistry\(\s*IOption
             \/\/ \);/g' contracts/QuantCalculator.sol
 
 
-perl -0777 -i -pe 's/IPriceRegistry.PriceWithDecimals memory expiryPrice =\s*priceRegistry.getSettlementPriceWithDecimals\(\s*qTokenShort.oracle\(\),\s*qTokenShort.underlyingAsset\(\),\s*qTokenShort.expiryTime\(\)\s*\);/\/\/ IPriceRegistry.PriceWithDecimals memory expiryPrice =
+perl -0777 -i -pe 's/PriceWithDecimals memory expiryPrice =\s*priceRegistry.getSettlementPriceWithDecimals\(\s*qTokenShort.oracle\(\),\s*qTokenShort.underlyingAsset\(\),\s*qTokenShort.expiryTime\(\)\s*\);/\/\/ PriceWithDecimals memory expiryPrice =
             \/\/ priceRegistry.getSettlementPriceWithDecimals\(
             \/\/     qTokenShort.oracle\(\),
             \/\/     qTokenShort.underlyingAsset\(\),
             \/\/     qTokenShort.expiryTime\(\)
             \/\/ \);/g' contracts/QuantCalculator.sol
 
-perl -0777 -i -pe 's/IPriceRegistry.PriceWithDecimals memory expiryPrice =\s*priceRegistry.getSettlementPriceWithDecimals\(\s*qToken.oracle\(\),\s*underlyingAsset,\s*qToken.expiryTime\(\)\s*\);/\/\/ IPriceRegistry.PriceWithDecimals memory expiryPrice =
+perl -0777 -i -pe 's/PriceWithDecimals memory expiryPrice =\s*priceRegistry.getSettlementPriceWithDecimals\(\s*qToken.oracle\(\),\s*underlyingAsset,\s*qToken.expiryTime\(\)\s*\);/\/\/ PriceWithDecimals memory expiryPrice =
             \/\/ priceRegistry.getSettlementPriceWithDecimals\(
             \/\/     qToken.oracle\(\),
             \/\/     underlyingAsset,
             \/\/     qToken.expiryTime\(\)
             \/\/ \);/g' contracts/QuantCalculator.sol
 
-perl -0777 -i -pe 's/isSettled = qToken.getOptionPriceStatus\(\) == PriceStatus.SETTLED;/isSettled = true;/g' contracts/QuantCalculator.sol
+perl -0777 -i -pe 's/isSettled =(.+?)IPriceRegistry\(priceRegistry\).getOptionPriceStatus\((.+?)oracle,(.+?)expiryTime,(.+?)underlyingAsset(.+?)\) ==(.+?)PriceStatus.SETTLED;/isSettled = true;/gs' contracts/QuantCalculator.sol
 
 # Decimal simplification
 perl -0777 -i -pe 's/\(\(_a.div\(10\*\*exp\)\).uintToInt\(\)\);\s*} else \{/\(\(_a.div\(10\*\*exp\)\).uintToInt\(\)\);
@@ -94,8 +94,34 @@ perl -0777 -i -pe 's/\(collateralStrikePrice.sub\(mintStrikePrice\)\).div\(\n\s*
     }/g' contracts/libraries/FundsCalculator.sol
 
 # Add tokenSupplies to CollateralToken
-perl -0777 -i -pe 's/override collateralTokenIds;\n/override collateralTokenIds;\n\n    mapping\(uint256 => uint256\) public tokenSupplies;\n/g' contracts/options/CollateralToken.sol
-perl -0777 -i -pe 's/emit CollateralTokenMinted\(recipient, collateralTokenId, amount\);\n/tokenSupplies[collateralTokenId] += amount;\n\n\t\temit CollateralTokenMinted\(recipient, collateralTokenId, amount\);\n/g' contracts/options/CollateralToken.sol
-perl -0777 -i -pe 's/emit CollateralTokenBurned\(owner, collateralTokenId, amount\);/tokenSupplies[collateralTokenId] -= amount;\n\n\t\temit CollateralTokenBurned\(owner, collateralTokenId, amount\);/g' contracts/options/CollateralToken.sol
-perl -0777 -i -pe 's/emit CollateralTokenMinted\(recipient, ids\[i\], amounts\[i\]\);/tokenSupplies[ids[i]] += amounts[i];\n\t\t\temit CollateralTokenMinted\(recipient, ids[i], amounts[i]\);/g' contracts/options/CollateralToken.sol
-perl -0777 -i -pe 's/emit CollateralTokenBurned\(owner, ids\[i\], amounts\[i\]\);/tokenSupplies[ids[i]] -= amounts[i];\n\t\t\temit CollateralTokenBurned(owner, ids[i], amounts[i]);/g' contracts/options/CollateralToken.sol
+perl -0777 -i -pe 's/address private _optionsFactory;\n/address private _optionsFactory;\n\n    mapping\(uint256 => uint256\) public tokenSupplies;\n/g' contracts/options/CollateralToken.sol
+perl -0777 -i -pe 's/_mint\(recipient, collateralTokenId, amount, ""\);\n/tokenSupplies[collateralTokenId] += amount;\n\n\t\t_mint\(recipient, collateralTokenId, amount, ""\);\n/g' contracts/options/CollateralToken.sol
+perl -0777 -i -pe 's/_burn\(cTokenOwner, collateralTokenId, amount\);\n/tokenSupplies[collateralTokenId] -= amount;\n\n\t\t_burn\(cTokenOwner, collateralTokenId, amount\);\n/g' contracts/options/CollateralToken.sol
+
+# Make QToken public pure functions virtual and view
+perl -0777 -i -pe 's/pure\n/view\n\t\tvirtual\n/g' contracts/options/QToken.sol
+perl -0777 -i -pe 's/pure /view virtual /g' contracts/options/QToken.sol
+perl -0777 -i -pe 's/public/external/g' contracts/options/QToken.sol
+perl -0777 -i -pe 's/msg.sender == controller\(\)/msg.sender != address\(0\)/g' contracts/options/QToken.sol
+perl -0777 -i -pe 's/pure/view/g' contracts/interfaces/IQToken.sol
+perl -0777 -i -pe 's/pure/view/' contracts/libraries/FundsCalculator.sol
+perl -0777 -i -pe 's/pure/view/' contracts/libraries/FundsCalculator.sol
+
+# Remove unchecked blocks from ERC20
+perl -0777 -i -pe 's/unchecked {\s*(.*)\s*}/$1/g' contracts/external/ERC20.sol
+
+# Add the ClonesWithImmutableArgsWrapper contract to the OptionsFactory
+perl -0777 -i -pe 's/QToken public immutable implementation;\n/QToken public immutable implementation;\n\n\tClonesWithImmutableArgsWrapper public immutable clonesWrapper;\n\n/g' contracts/options/OptionsFactory.sol
+perl -0777 -i -pe 's/using ClonesWithImmutableArgs for address;\n//g' contracts/options/OptionsFactory.sol
+perl -0777 -i -pe 's/import {ClonesWithImmutableArgs} from "\@rolla-finance\/clones-with-immutable-args\/ClonesWithImmutableArgs.sol";/import "..\/..\/spec\/harness\/ClonesWithImmutableArgsWrapper.sol";/g' contracts/options/OptionsFactory.sol
+perl -0777 -i -pe 's/implementation = _implementation;\n/implementation = _implementation;\n\n\t\tclonesWrapper = new ClonesWithImmutableArgsWrapper\(\);\n/g' contracts/options/OptionsFactory.sol
+perl -0777 -i -pe 's/newQToken = address\(implementation\).cloneDeterministic\(\n/newQToken = clonesWrapper.cloneDeterministic\(\n\t\t\taddress\(implementation\),\n/g' contracts/options/OptionsFactory.sol
+perl -0777 -i -pe 's/\(qToken, exists\) = ClonesWithImmutableArgs.predictDeterministicAddress\(\n/\(qToken, exists\) = clonesWrapper.predictDeterministicAddress\(\n/g' contracts/options/OptionsFactory.sol
+perl -0777 -i -pe 's/abstract contract ERC20 is Clone/abstract contract RollaERC20 is Clone/g' contracts/external/ERC20.sol
+perl -0777 -i -pe 's/contract QToken is ERC20, IQToken/contract QToken is RollaERC20, IQToken/g' contracts/options/QToken.sol
+
+# Add collateralTokendIds to the CollateralToken
+perl -0777 -i -pe 's/override idToInfo;\n/override idToInfo;\n\n    uint256[] public collateralTokenIds;\n/g' contracts/options/CollateralToken.sol
+perl -0777 -i -pe 's/emit CollateralTokenCreated\(_qTokenAddress, address\(0\), id\);/collateralTokenIds.push\(id\);\n\n        emit CollateralTokenCreated\(_qTokenAddress, address\(0\), id\);/g' contracts/options/CollateralToken.sol
+perl -0777 -i -pe 's/emit CollateralTokenCreated\(_qTokenAddress, _qTokenAsCollateral, id\);/collateralTokenIds.push\(id\);\n\n        emit CollateralTokenCreated\(_qTokenAddress, _qTokenAsCollateral, id\);/g' contracts/options/CollateralToken.sol
+perl -0777 -i -pe 's/}\n}/}\n    function getCollateralTokensLength\(\) external view returns \(uint256\) {\n        return collateralTokenIds.length;\n    }\n}/g' contracts/options/CollateralToken.sol

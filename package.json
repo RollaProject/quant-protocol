@@ -1,6 +1,6 @@
 {
   "name": "@rolla-contracts/quant-protocol",
-  "version": "0.11.2",
+  "version": "0.13.9",
   "description": "Smart contracts for the Quant Protocol.",
   "scripts": {
     "build": "hardhat compile",
@@ -76,14 +76,13 @@
     "hardhat-gas-reporter": "^1.0.6",
     "husky": "^4.3.8",
     "path": "^0.12.7",
-    "prettier": "^2.2.1",
-    "prettier-plugin-solidity": "^1.0.0-beta.4",
+    "prettier": "^2.6.2",
+    "prettier-plugin-solidity": "^1.0.0-beta.19",
     "shelljs": "^0.8.4",
-    "solc": "0.7.6",
-    "solc-0.7.6": "npm:solc@^0.7.6",
-    "solhint": "^3.3.4",
+    "solc": "^0.8.15",
+    "solhint": "^3.3.7",
     "solhint-plugin-prettier": "^0.0.5",
-    "solidity-coverage": "^0.7.15",
+    "solidity-coverage": "^0.7.21",
     "solidity-docgen": "^0.5.13",
     "ts-node": "^9.1.1",
     "typechain": "^7.0.0",
@@ -93,7 +92,9 @@
   "dependencies": {
     "@openzeppelin/contracts": "^4.5.0",
     "@openzeppelin/contracts-upgradeable": "^4.5.1",
-    "@quant-finance/solidity-datetime": "^2.1.0"
+    "@quant-finance/solidity-datetime": "^2.1.0",
+    "@rari-capital/solmate": "^6.3.0",
+    "@rolla-finance/clones-with-immutable-args": "^1.8.0"
   },
   "files": [
     "contracts",

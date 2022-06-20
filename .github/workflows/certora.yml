@@ -33,7 +33,7 @@ jobs:
             ${{ runner.os }}-yarnv1-dist-
 
       - name: Installing dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install
 
       - name: Set up Python 3.6
         uses: actions/setup-python@v2
@@ -46,7 +46,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          wget https://github.com/ethereum/solidity/releases/download/v0.8.13/solc-static-linux
+          wget https://github.com/ethereum/solidity/releases/download/v0.8.15/solc-static-linux
           chmod +x solc-static-linux
           sudo mv solc-static-linux /usr/local/bin/solc          
           pip3 install certora-cli
@@ -86,7 +86,7 @@ jobs:
             ${{ runner.os }}-yarnv1-dist-
 
       - name: Installing dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install
 
       - name: Set up Python 3.6
         uses: actions/setup-python@v2
@@ -99,7 +99,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          wget https://github.com/ethereum/solidity/releases/download/v0.8.13/solc-static-linux
+          wget https://github.com/ethereum/solidity/releases/download/v0.8.15/solc-static-linux
           chmod +x solc-static-linux
           sudo mv solc-static-linux /usr/local/bin/solc          
           pip3 install certora-cli

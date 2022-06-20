@@ -1,154 +1,93 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "../pricing/PriceRegistry.sol";
+import "../external/ERC20.sol";
 import "../interfaces/IQToken.sol";
-import "../libraries/OptionsUtils.sol";
-import "../libraries/QuantMath.sol";
-import "./QTokenStringUtils.sol";
 
 /// @title Token that represents a user's long position
 /// @author Rolla
 /// @notice Can be used by owners to exercise their options
 /// @dev Every option long position is an ERC20 token: https://eips.ethereum.org/EIPS/eip-20
-contract QToken is ERC20Permit, QTokenStringUtils, IQToken, Ownable {
-    using QuantMath for uint256;
+contract QToken is ERC20, IQToken {
+    /// -----------------------------------------------------------------------
+    /// Immutable parameters
+    /// -----------------------------------------------------------------------
 
     /// @inheritdoc IQToken
-    address public immutable override underlyingAsset;
-
-    /// @inheritdoc IQToken
-    address public immutable override strikeAsset;
-
-    /// @inheritdoc IQToken
-    address public immutable override oracle;
-
-    /// @inheritdoc IQToken
-    address public immutable priceRegistry;
-
-    /// @inheritdoc IQToken
-    uint256 public immutable override strikePrice;
-
-    /// @inheritdoc IQToken
-    uint256 public immutable override expiryTime;
-
-    /// @inheritdoc IQToken
-    bool public immutable override isCall;
-
-    /// @notice Configures the parameters of a new option token
-    /// @param _underlyingAsset asset that the option references
-    /// @param _strikeAsset asset that the strike is denominated in
-    /// @param _oracle price oracle for the underlying
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _isCall true if it's a call option, false if it's a put option
-    constructor(
-        address _underlyingAsset,
-        address _strikeAsset,
-        address _oracle,
-        address _priceRegistry,
-        address _assetsRegistry,
-        uint256 _strikePrice,
-        uint256 _expiryTime,
-        bool _isCall
-    )
-        ERC20(
-            _qTokenName(
-                _underlyingAsset,
-                _strikeAsset,
-                _assetsRegistry,
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            ),
-            _qTokenSymbol(
-                _underlyingAsset,
-                _strikeAsset,
-                _assetsRegistry,
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            )
-        )
-        ERC20Permit(
-            _qTokenName(
-                _underlyingAsset,
-                _strikeAsset,
-                _assetsRegistry,
-                _strikePrice,
-                _expiryTime,
-                _isCall
-            )
-        )
+    function underlyingAsset()
+        public
+        pure
+        override
+        returns (address _underlyingAsset)
     {
-        require(
-            _underlyingAsset != address(0),
-            "QToken: invalid underlying asset address"
-        );
-        require(
-            _strikeAsset != address(0),
-            "QToken: invalid strike asset address"
-        );
-        require(_oracle != address(0), "QToken: invalid oracle address");
-        require(
-            _priceRegistry != address(0),
-            "QToken: invalid price registry address"
-        );
-
-        underlyingAsset = _underlyingAsset;
-        strikeAsset = _strikeAsset;
-        oracle = _oracle;
-        priceRegistry = _priceRegistry;
-        strikePrice = _strikePrice;
-        expiryTime = _expiryTime;
-        isCall = _isCall;
+        return _getArgAddress(0x101);
     }
 
     /// @inheritdoc IQToken
-    function mint(address account, uint256 amount) external override onlyOwner {
+    function strikeAsset()
+        external
+        pure
+        override
+        returns (address _strikeAsset)
+    {
+        return _getArgAddress(0x115);
+    }
+
+    /// @inheritdoc IQToken
+    function oracle() public pure override returns (address _oracle) {
+        return _getArgAddress(0x129);
+    }
+
+    /// @inheritdoc IQToken
+    function expiryTime() public pure override returns (uint88 _expiryTime) {
+        return _getArgUint88(0x13d);
+    }
+
+    /// @inheritdoc IQToken
+    function isCall() external pure override returns (bool _isCall) {
+        return _getArgBool(0x148);
+    }
+
+    /// @inheritdoc IQToken
+    function strikePrice()
+        external
+        pure
+        override
+        returns (uint256 _strikePrice)
+    {
+        return _getArgUint256(0x149);
+    }
+
+    /// @inheritdoc IQToken
+    function controller() public pure override returns (address _controller) {
+        return _getArgAddress(0x169);
+    }
+
+    /// -----------------------------------------------------------------------
+    /// ERC20 minting and burning logic
+    /// -----------------------------------------------------------------------
+
+    /// @notice Checks if the caller is the configured Quant Controller contract
+    modifier onlyController() {
+        require(msg.sender == controller(), "QToken: caller != controller");
+        _;
+    }
+
+    /// @inheritdoc IQToken
+    function mint(address account, uint256 amount)
+        external
+        override
+        onlyController
+    {
         _mint(account, amount);
-        emit QTokenMinted(account, amount);
     }
 
     /// @inheritdoc IQToken
-    function burn(address account, uint256 amount) external override onlyOwner {
+    function burn(address account, uint256 amount)
+        external
+        override
+        onlyController
+    {
         _burn(account, amount);
-        emit QTokenBurned(account, amount);
-    }
-
-    /// @inheritdoc IQToken
-    function getOptionPriceStatus()
-        external
-        view
-        override
-        returns (PriceStatus)
-    {
-        if (block.timestamp > expiryTime) {
-            if (
-                PriceRegistry(priceRegistry).hasSettlementPrice(
-                    oracle,
-                    underlyingAsset,
-                    expiryTime
-                )
-            ) {
-                return PriceStatus.SETTLED;
-            }
-            return PriceStatus.AWAITING_SETTLEMENT_PRICE;
-        } else {
-            return PriceStatus.ACTIVE;
-        }
-    }
-
-    /// @inheritdoc IQToken
-    function getQTokenInfo()
-        external
-        view
-        override
-        returns (QTokenInfo memory)
-    {
-        return OptionsUtils.getQTokenInfo(address(this));
     }
 }
