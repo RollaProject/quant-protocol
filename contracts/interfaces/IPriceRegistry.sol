@@ -78,5 +78,6 @@ interface IPriceRegistry {
         address _asset
     ) external view returns (bool);
 
+    // @notice The address of the OracleRegistry contract
     function oracleRegistry() external view returns (address);
 }

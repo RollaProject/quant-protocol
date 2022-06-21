@@ -8,7 +8,8 @@ import {Clone} from "@rolla-finance/clones-with-immutable-args/Clone.sol";
 /// @author Modified from Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/tokens/ERC20.sol)
 /// @author Modified from Uniswap (https://github.com/Uniswap/uniswap-v2-core/blob/master/contracts/UniswapV2ERC20.sol)
 /// @dev Do not manually set balances without updating totalSupply, as the sum of all user balances must not exceed it.
-/// @dev Modified by Rolla to include name and symbol represented as uint256 arrays with 4 elements (128 bytes).
+/// @dev Modified by Rolla to include name and symbol as 128 bytes strings, where the first 127 bytes are used to store
+/// the string contents and the last 128th byte stores the original length of the string, which is limited to 127 bytes.
 /// @dev The original ERC20 implementation with Clone from clones-with-immutable-args written by zefram.eth included
 /// name and symbol with 32 bytes each, which would not be enough for Quant's QToken possibly long names and symbols.
 abstract contract ERC20 is Clone {
@@ -44,11 +45,11 @@ abstract contract ERC20 is Clone {
                                METADATA
     //////////////////////////////////////////////////////////////*/
 
-    function name() external pure returns (string memory nameStr) {
+    function name() external pure returns (string calldata nameStr) {
         nameStr = _get128BytesStringArg(0);
     }
 
-    function symbol() external pure returns (string memory symbolStr) {
+    function symbol() external pure returns (string calldata symbolStr) {
         symbolStr = _get128BytesStringArg(0x80);
     }
 
@@ -211,40 +212,31 @@ abstract contract ERC20 is Clone {
         emit Transfer(from, address(0), amount);
     }
 
-    /// @notice Read a 128 bytes string stored as a uint256 array in the immutable args
-    /// (calldata), in which the last byte is the length of the string.
+    /// @notice Read a 128 bytes string stored in the immutable args (calldata),
+    /// in which the last byte is the length of the string.
     /// @param stringArgOffset The offset of the string immutable arg in the packed data
-    /// @return stringArg The string immutable arg, in memory
+    /// @return stringArg The string immutable arg
     function _get128BytesStringArg(uint256 stringArgOffset)
         private
         pure
-        returns (string memory stringArg)
+        returns (string calldata stringArg)
     {
-        uint256 immutableArgsOffset = _getImmutableArgsOffset();
-
         assembly ("memory-safe") {
+            // get the offset of the packed immutable args in calldata
+            let immutableArgsOffset := sub(
+                calldatasize(),
+                add(shr(240, calldataload(sub(calldatasize(), 2))), 2)
+            )
+
             // get the offset of the start of the string in the calldata
             let strStart := add(immutableArgsOffset, stringArgOffset)
 
-            // read the length of the string, which should be stored as the 128th byte
-            // in the uint256 array
+            // read the length of the string, which should be stored as its 128th byte
             let strLength := shr(0xf8, calldataload(add(strStart, 0x60)))
 
-            // allocate memory for the output string
-            stringArg := mload(0x40)
-
-            // update the free memory pointer, padding the string length
-            // (which is stored before the string contents) to 32 bytes
-            mstore(
-                0x40,
-                add(stringArg, and(add(add(strLength, 0x20), 0x1f), not(0x1f)))
-            )
-
-            // store the string length in memory
-            mstore(stringArg, strLength)
-
-            // copy the string from calldata to memory
-            calldatacopy(add(stringArg, 0x20), strStart, strLength)
+            // set the returned calldata string offset and length
+            stringArg.offset := strStart
+            stringArg.length := strLength
         }
     }
 }

@@ -13,6 +13,7 @@ contract PriceRegistry is IPriceRegistry {
 
     uint8 private immutable _strikeAssetDecimals;
 
+    /// @inheritdoc IPriceRegistry
     address public immutable oracleRegistry;
 
     /// @dev oracle => asset => expiry => price
