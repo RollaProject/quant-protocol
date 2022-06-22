@@ -99,8 +99,8 @@ library FundsCalculator {
 
             // Check that the underlyings match
             require(
-                qTokenToMint.underlyingAsset() ==
-                    qTokenForCollateral.underlyingAsset(),
+                qTokenToMint.underlyingAsset()
+                    == qTokenForCollateral.underlyingAsset(),
                 "Controller: Can't create spreads from options with different underlying assets"
             );
 
@@ -130,7 +130,8 @@ library FundsCalculator {
             _strikeAssetDecimals
         );
 
-        collateral = qTokenToMint.isCall()
+        collateral =
+            qTokenToMint.isCall()
             ? qTokenToMint.underlyingAsset()
             : qTokenToMint.strikeAsset();
     }
@@ -150,13 +151,17 @@ library FundsCalculator {
         uint8 _optionsDecimals,
         uint8 _strikeAssetDecimals,
         PriceWithDecimals memory _expiryPrice
-    ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
+    )
+        internal
+        pure
+        returns (QuantMath.FixedPointInt memory payoutAmount)
+    {
         FundsCalculator.OptionPayoutInput memory payoutInput = FundsCalculator
             .OptionPayoutInput(
-                _strikePrice.fromScaledUint(_strikeAssetDecimals),
-                _expiryPrice.price.fromScaledUint(_expiryPrice.decimals),
-                _amount.fromScaledUint(_optionsDecimals)
-            );
+            _strikePrice.fromScaledUint(_strikeAssetDecimals),
+            _expiryPrice.price.fromScaledUint(_expiryPrice.decimals),
+            _amount.fromScaledUint(_optionsDecimals)
+        );
 
         if (_isCall) {
             payoutAmount = getPayoutForCall(payoutInput);
@@ -170,15 +175,16 @@ library FundsCalculator {
     /// @return payoutAmount the amount to be payed out as a fixed point type
     function getPayoutForCall(
         FundsCalculator.OptionPayoutInput memory payoutInput
-    ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
-        payoutAmount = payoutInput.expiryPrice.isGreaterThan(
-            payoutInput.strikePrice
-        )
-            ? payoutInput
-                .expiryPrice
-                .sub(payoutInput.strikePrice)
-                .mul(payoutInput.amount, true)
-                .div(payoutInput.expiryPrice, true)
+    )
+        internal
+        pure
+        returns (QuantMath.FixedPointInt memory payoutAmount)
+    {
+        payoutAmount =
+            payoutInput.expiryPrice.isGreaterThan(payoutInput.strikePrice)
+            ? payoutInput.expiryPrice.sub(payoutInput.strikePrice).mul(
+                payoutInput.amount, true
+            ).div(payoutInput.expiryPrice, true)
             : int256(0).fromUnscaledInt();
     }
 
@@ -187,13 +193,15 @@ library FundsCalculator {
     /// @return payoutAmount the amount to be payed out as a fixed point type
     function getPayoutForPut(
         FundsCalculator.OptionPayoutInput memory payoutInput
-    ) internal pure returns (QuantMath.FixedPointInt memory payoutAmount) {
-        payoutAmount = payoutInput.strikePrice.isGreaterThan(
-            payoutInput.expiryPrice
-        )
-            ? (payoutInput.strikePrice.sub(payoutInput.expiryPrice)).mul(
-                payoutInput.amount,
-                true
+    )
+        internal
+        pure
+        returns (QuantMath.FixedPointInt memory payoutAmount)
+    {
+        payoutAmount =
+            payoutInput.strikePrice.isGreaterThan(payoutInput.expiryPrice)
+            ? payoutInput.strikePrice.sub(payoutInput.expiryPrice).mul(
+                payoutInput.amount, true
             )
             : int256(0).fromUnscaledInt();
     }
@@ -218,7 +226,11 @@ library FundsCalculator {
         uint8 _optionsDecimals,
         uint8 _underlyingDecimals,
         uint8 _strikeAssetDecimals
-    ) internal pure returns (QuantMath.FixedPointInt memory collateralAmount) {
+    )
+        internal
+        pure
+        returns (QuantMath.FixedPointInt memory collateralAmount)
+    {
         QuantMath.FixedPointInt memory collateralPerOption;
         if (_qTokenToMintIsCall) {
             collateralPerOption = getCallCollateralRequirement(
@@ -236,8 +248,7 @@ library FundsCalculator {
         }
 
         collateralAmount = _optionsAmount.fromScaledUint(_optionsDecimals).mul(
-            collateralPerOption,
-            false
+            collateralPerOption, false
         );
     }
 
@@ -256,21 +267,19 @@ library FundsCalculator {
         pure
         returns (QuantMath.FixedPointInt memory collateralPerOption)
     {
-        QuantMath.FixedPointInt
-            memory mintStrikePrice = _qTokenToMintStrikePrice.fromScaledUint(
-                _strikeAssetDecimals
-            );
-        QuantMath.FixedPointInt
-            memory collateralStrikePrice = _qTokenForCollateralStrikePrice
-                .fromScaledUint(_strikeAssetDecimals);
+        QuantMath.FixedPointInt memory mintStrikePrice =
+            _qTokenToMintStrikePrice.fromScaledUint(_strikeAssetDecimals);
+        QuantMath.FixedPointInt memory collateralStrikePrice =
+            _qTokenForCollateralStrikePrice.fromScaledUint(_strikeAssetDecimals);
 
         // Initially (non-spread) required collateral is the long strike price
         collateralPerOption = mintStrikePrice;
 
         if (_qTokenForCollateralStrikePrice > 0) {
-            collateralPerOption = mintStrikePrice.isGreaterThan(
-                collateralStrikePrice
-            )
+            collateralPerOption =
+                mintStrikePrice.isGreaterThan(
+                    collateralStrikePrice
+                )
                 ? mintStrikePrice.sub(collateralStrikePrice) // Put Credit Spread
                 : int256(0).fromUnscaledInt(); // Put Debit Spread
         }
@@ -293,27 +302,23 @@ library FundsCalculator {
         pure
         returns (QuantMath.FixedPointInt memory collateralPerOption)
     {
-        QuantMath.FixedPointInt
-            memory mintStrikePrice = _qTokenToMintStrikePrice.fromScaledUint(
-                _strikeAssetDecimals
-            );
-        QuantMath.FixedPointInt
-            memory collateralStrikePrice = _qTokenForCollateralStrikePrice
-                .fromScaledUint(_strikeAssetDecimals);
+        QuantMath.FixedPointInt memory mintStrikePrice =
+            _qTokenToMintStrikePrice.fromScaledUint(_strikeAssetDecimals);
+        QuantMath.FixedPointInt memory collateralStrikePrice =
+            _qTokenForCollateralStrikePrice.fromScaledUint(_strikeAssetDecimals);
 
         // Initially (non-spread) required collateral is the long strike price
-        collateralPerOption = (10**_underlyingDecimals).fromScaledUint(
-            _underlyingDecimals
-        );
+        collateralPerOption =
+            uint256(10 ** _underlyingDecimals).fromScaledUint(_underlyingDecimals);
 
         if (_qTokenForCollateralStrikePrice > 0) {
-            collateralPerOption = mintStrikePrice.isGreaterThanOrEqual(
-                collateralStrikePrice
-            )
+            collateralPerOption =
+                mintStrikePrice.isGreaterThanOrEqual(
+                    collateralStrikePrice
+                )
                 ? int256(0).fromUnscaledInt() // Call Debit Spread
-                : (collateralStrikePrice.sub(mintStrikePrice)).div(
-                    collateralStrikePrice,
-                    false
+                : collateralStrikePrice.sub(mintStrikePrice).div(
+                    collateralStrikePrice, false
                 ); // Call Credit Spread
         }
     }

@@ -91,18 +91,16 @@ interface IController {
     function operate(ActionArgs[] memory _actions) external;
 
     /// @notice Creates a new position with the given parameters
-    function mintOptionsPosition(
-        address _to,
-        address _qToken,
-        uint256 _amount
-    ) external;
+    function mintOptionsPosition(address _to, address _qToken, uint256 _amount)
+        external;
 
     /// @notice Creates a new spread position with the given parameters
     function mintSpread(
         address _qTokenToMint,
         address _qTokenForCollateral,
         uint256 _amount
-    ) external;
+    )
+        external;
 
     /// @notice Exercises the given long position
     function exercise(address _qToken, uint256 _amount) external;

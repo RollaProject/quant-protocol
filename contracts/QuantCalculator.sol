@@ -100,12 +100,11 @@ contract QuantCalculator is IQuantCalculator {
             uint256 amountToClaim
         )
     {
-        CollateralToken collateralToken = CollateralToken(
-            IOptionsFactory(optionsFactory).collateralToken()
-        );
+        CollateralToken collateralToken =
+            CollateralToken(IOptionsFactory(optionsFactory).collateralToken());
 
-        (address _qTokenShort, address qTokenAsCollateral) = collateralToken
-            .idToInfo(_collateralTokenId);
+        (address _qTokenShort, address qTokenAsCollateral) =
+            collateralToken.idToInfo(_collateralTokenId);
 
         require(
             _qTokenShort != address(0),
@@ -123,23 +122,19 @@ contract QuantCalculator is IQuantCalculator {
         );
         require(
             IPriceRegistry(priceRegistry).getOptionPriceStatus(
-                oracle,
-                expiryTime,
-                underlyingAsset
-            ) == PriceStatus.SETTLED,
+                    oracle, expiryTime, underlyingAsset
+                )
+                == PriceStatus.SETTLED,
             "Can not claim collateral before option is settled"
         );
 
-        amountToClaim = _amount == 0
+        amountToClaim =
+            _amount == 0
             ? collateralToken.balanceOf(_user, _collateralTokenId)
             : _amount;
 
         PriceWithDecimals memory expiryPrice = IPriceRegistry(priceRegistry)
-            .getSettlementPriceWithDecimals(
-                oracle,
-                expiryTime,
-                underlyingAsset
-            );
+            .getSettlementPriceWithDecimals(oracle, expiryTime, underlyingAsset);
 
         address qTokenLong;
         QuantMath.FixedPointInt memory payoutFromLong;
@@ -159,35 +154,32 @@ contract QuantCalculator is IQuantCalculator {
             payoutFromLong = int256(0).fromUnscaledInt();
         }
 
-        uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
-            qTokenShort,
-            assetsRegistry
-        );
+        uint8 payoutDecimals =
+            OptionsUtils.getPayoutDecimals(qTokenShort, assetsRegistry);
 
         QuantMath.FixedPointInt memory collateralRequirement;
         (collateralAsset, collateralRequirement) = FundsCalculator
             .getCollateralRequirement(
-                _qTokenShort,
-                qTokenLong,
-                amountToClaim,
-                optionsDecimals,
-                payoutDecimals,
-                strikeAssetDecimals
-            );
+            _qTokenShort,
+            qTokenLong,
+            amountToClaim,
+            optionsDecimals,
+            payoutDecimals,
+            strikeAssetDecimals
+        );
 
         (, QuantMath.FixedPointInt memory payoutFromShort) = FundsCalculator
             .getPayout(
-                _qTokenShort,
-                amountToClaim,
-                optionsDecimals,
-                strikeAssetDecimals,
-                expiryPrice
-            );
+            _qTokenShort,
+            amountToClaim,
+            optionsDecimals,
+            strikeAssetDecimals,
+            expiryPrice
+        );
 
-        returnableCollateral = payoutFromLong
-            .add(collateralRequirement)
-            .sub(payoutFromShort)
-            .toScaledUint(payoutDecimals, true);
+        returnableCollateral = payoutFromLong.add(collateralRequirement).sub(
+            payoutFromShort
+        ).toScaledUint(payoutDecimals, true);
     }
 
     /// @inheritdoc IQuantCalculator
@@ -201,21 +193,19 @@ contract QuantCalculator is IQuantCalculator {
         override
         returns (address collateralType, uint256 collateralOwed)
     {
-        uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
-            IQToken(_qTokenShort),
-            assetsRegistry
-        );
+        uint8 payoutDecimals =
+            OptionsUtils.getPayoutDecimals(IQToken(_qTokenShort), assetsRegistry);
 
         QuantMath.FixedPointInt memory collateralOwedFP;
         (collateralType, collateralOwedFP) = FundsCalculator
             .getCollateralRequirement(
-                _qTokenShort,
-                _qTokenLong,
-                _amountToNeutralize,
-                optionsDecimals,
-                payoutDecimals,
-                strikeAssetDecimals
-            );
+            _qTokenShort,
+            _qTokenLong,
+            _amountToNeutralize,
+            optionsDecimals,
+            payoutDecimals,
+            strikeAssetDecimals
+        );
 
         collateralOwed = collateralOwedFP.toScaledUint(payoutDecimals, true);
     }
@@ -234,25 +224,21 @@ contract QuantCalculator is IQuantCalculator {
         returns (address collateral, uint256 collateralAmount)
     {
         QuantMath.FixedPointInt memory collateralAmountFP;
-        uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
-            IQToken(_qTokenToMint),
-            assetsRegistry
-        );
+        uint8 payoutDecimals =
+            OptionsUtils.getPayoutDecimals(IQToken(_qTokenToMint), assetsRegistry);
 
         (collateral, collateralAmountFP) = FundsCalculator
             .getCollateralRequirement(
-                _qTokenToMint,
-                _qTokenForCollateral,
-                _amount,
-                optionsDecimals,
-                payoutDecimals,
-                strikeAssetDecimals
-            );
-
-        collateralAmount = collateralAmountFP.toScaledUint(
+            _qTokenToMint,
+            _qTokenForCollateral,
+            _amount,
+            optionsDecimals,
             payoutDecimals,
-            false
+            strikeAssetDecimals
         );
+
+        collateralAmount =
+            collateralAmountFP.toScaledUint(payoutDecimals, false);
     }
 
     /// @inheritdoc IQuantCalculator
@@ -261,11 +247,7 @@ contract QuantCalculator is IQuantCalculator {
         view
         override
         validQToken(_qToken)
-        returns (
-            bool isSettled,
-            address payoutToken,
-            uint256 payoutAmount
-        )
+        returns (bool isSettled, address payoutToken, uint256 payoutAmount)
     {
         IQToken qToken = IQToken(_qToken);
         address oracle = qToken.oracle();
@@ -274,35 +256,23 @@ contract QuantCalculator is IQuantCalculator {
 
         isSettled =
             IPriceRegistry(priceRegistry).getOptionPriceStatus(
-                oracle,
-                expiryTime,
-                underlyingAsset
-            ) ==
-            PriceStatus.SETTLED;
+                oracle, expiryTime, underlyingAsset
+            )
+            == PriceStatus.SETTLED;
         if (!isSettled) {
             return (isSettled, payoutToken, payoutAmount);
         }
 
         QuantMath.FixedPointInt memory payout;
 
-        uint8 payoutDecimals = OptionsUtils.getPayoutDecimals(
-            qToken,
-            assetsRegistry
-        );
+        uint8 payoutDecimals =
+            OptionsUtils.getPayoutDecimals(qToken, assetsRegistry);
 
         PriceWithDecimals memory expiryPrice = IPriceRegistry(priceRegistry)
-            .getSettlementPriceWithDecimals(
-                oracle,
-                expiryTime,
-                underlyingAsset
-            );
+            .getSettlementPriceWithDecimals(oracle, expiryTime, underlyingAsset);
 
         (payoutToken, payout) = FundsCalculator.getPayout(
-            _qToken,
-            _amount,
-            optionsDecimals,
-            strikeAssetDecimals,
-            expiryPrice
+            _qToken, _amount, optionsDecimals, strikeAssetDecimals, expiryPrice
         );
 
         payoutAmount = payout.toScaledUint(payoutDecimals, true);

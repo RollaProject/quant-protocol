@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import {ClonesWithImmutableArgs} from "@rolla-finance/clones-with-immutable-args/ClonesWithImmutableArgs.sol";
+import {ClonesWithImmutableArgs} from
+    "@rolla-finance/clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 import {QToken} from "./QToken.sol";
 import "../libraries/OptionsUtils.sol";
 import "../interfaces/IOptionsFactory.sol";
@@ -64,8 +65,7 @@ contract OptionsFactory is IOptionsFactory {
             "OptionsFactory: invalid CollateralToken address"
         );
         require(
-            _controller != address(0),
-            "OptionsFactory: invalid controller address"
+            _controller != address(0), "OptionsFactory: invalid controller address"
         );
         require(
             _oracleRegistry != address(0),
@@ -121,13 +121,11 @@ contract OptionsFactory is IOptionsFactory {
             controller
         );
 
-        newQToken = address(implementation).cloneDeterministic(
-            OptionsUtils.SALT,
-            data
-        );
+        newQToken =
+            address(implementation).cloneDeterministic(OptionsUtils.SALT, data);
 
-        newCollateralTokenId = ICollateralToken(collateralToken)
-            .createOptionCollateralToken(newQToken);
+        newCollateralTokenId =
+            ICollateralToken(collateralToken).createOptionCollateralToken(newQToken);
 
         isQToken[newQToken] = true;
 
@@ -140,7 +138,7 @@ contract OptionsFactory is IOptionsFactory {
             _isCall,
             _strikePrice,
             newCollateralTokenId
-        );
+            );
     }
 
     /// @inheritdoc IOptionsFactory
@@ -151,21 +149,20 @@ contract OptionsFactory is IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) external view override returns (uint256 id, bool exists) {
-        (address qToken, ) = getQToken(
-            _underlyingAsset,
-            _oracle,
-            _expiryTime,
-            _isCall,
-            _strikePrice
-        );
+    )
+        external
+        view
+        override
+        returns (uint256 id, bool exists)
+    {
+        (address qToken,) =
+            getQToken(_underlyingAsset, _oracle, _expiryTime, _isCall, _strikePrice);
 
         id = ICollateralToken(collateralToken).getCollateralTokenId(
-            qToken,
-            _qTokenAsCollateral
+            qToken, _qTokenAsCollateral
         );
 
-        (qToken, ) = ICollateralToken(collateralToken).idToInfo(id);
+        (qToken,) = ICollateralToken(collateralToken).idToInfo(id);
 
         exists = qToken != address(0);
     }
@@ -177,7 +174,12 @@ contract OptionsFactory is IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) public view override returns (address qToken, bool exists) {
+    )
+        public
+        view
+        override
+        returns (address qToken, bool exists)
+    {
         bytes memory data = OptionsUtils.getQTokenImmutableArgs(
             optionsDecimals,
             _underlyingAsset,
@@ -191,9 +193,7 @@ contract OptionsFactory is IOptionsFactory {
         );
 
         (qToken, exists) = ClonesWithImmutableArgs.predictDeterministicAddress(
-            address(implementation),
-            OptionsUtils.SALT,
-            data
+            address(implementation), OptionsUtils.SALT, data
         );
     }
 }

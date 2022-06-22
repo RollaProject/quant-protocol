@@ -59,16 +59,15 @@ contract BasicERC20 is Context, IERC20 {
      * - the caller must have allowance for ``sender``'s tokens of at least
      * `amount`.
      */
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) public virtual override returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount)
+        public
+        virtual
+        override
+        returns (bool)
+    {
         _transfer(sender, recipient, amount);
         _approve(
-            sender,
-            _msgSender(),
-            _allowances[sender][_msgSender()] -= amount
+            sender, _msgSender(), _allowances[sender][_msgSender()] -= amount
         );
         return true;
     }
@@ -91,9 +90,7 @@ contract BasicERC20 is Context, IERC20 {
         returns (bool)
     {
         _approve(
-            _msgSender(),
-            spender,
-            _allowances[_msgSender()][spender] + addedValue
+            _msgSender(), spender, _allowances[_msgSender()][spender] + addedValue
         );
         return true;
     }
@@ -172,11 +169,10 @@ contract BasicERC20 is Context, IERC20 {
      * - `recipient` cannot be the zero address.
      * - `sender` must have a balance of at least `amount`.
      */
-    function _transfer(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) internal virtual {
+    function _transfer(address sender, address recipient, uint256 amount)
+        internal
+        virtual
+    {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
@@ -187,7 +183,8 @@ contract BasicERC20 is Context, IERC20 {
         emit Transfer(sender, recipient, amount);
     }
 
-    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
+    /**
+     * @dev Creates `amount` tokens and assigns them to `account`, increasing
      * the total supply.
      *
      * Emits a {Transfer} event with `from` set to the zero address.
@@ -240,11 +237,10 @@ contract BasicERC20 is Context, IERC20 {
      * - `owner` cannot be the zero address.
      * - `spender` cannot be the zero address.
      */
-    function _approve(
-        address owner,
-        address spender,
-        uint256 amount
-    ) internal virtual {
+    function _approve(address owner, address spender, uint256 amount)
+        internal
+        virtual
+    {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
 
@@ -270,5 +266,8 @@ contract BasicERC20 is Context, IERC20 {
         address from,
         address to,
         uint256 amount // solhint-disable-next-line no-empty-blocks
-    ) internal virtual {}
+    )
+        internal
+        virtual
+    {}
 }

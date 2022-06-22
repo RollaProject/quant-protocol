@@ -38,7 +38,10 @@ interface IQuantCalculator {
         address _qTokenToMint,
         address _qTokenForCollateral,
         uint256 _amount
-    ) external view returns (address collateral, uint256 collateralAmount);
+    )
+        external
+        view
+        returns (address collateral, uint256 collateralAmount);
 
     /// @notice Calculates exercisable amount of an option post-expiry
     /// @param _qToken address of the qToken being exercised
@@ -54,11 +57,7 @@ interface IQuantCalculator {
     function getExercisePayout(address _qToken, uint256 _amount)
         external
         view
-        returns (
-            bool isSettled,
-            address payoutToken,
-            uint256 payoutAmount
-        );
+        returns (bool isSettled, address payoutToken, uint256 payoutAmount);
 
     /// @notice Calculates the amount that will be received from neutralizing an option or spread.
     /// Neutralizing is the opposite action to mint - you give collateral token and qToken and receive
@@ -81,7 +80,10 @@ interface IQuantCalculator {
         address _qTokenShort,
         address _qTokenLong,
         uint256 _amountToNeutralize
-    ) external view returns (address collateralType, uint256 collateralOwed);
+    )
+        external
+        view
+        returns (address collateralType, uint256 collateralOwed);
 
     /// @notice The amount of decimals for Quant options
     function optionsDecimals() external view returns (uint8);

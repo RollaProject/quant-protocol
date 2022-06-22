@@ -59,7 +59,12 @@ contract QToken is ERC20, IQToken {
     }
 
     /// @inheritdoc IQToken
-    function controller() public pure override returns (address _controller) {
+    function controller()
+        public
+        pure
+        override
+        returns (address _controller)
+    {
         return _getArgAddress(0x169);
     }
 

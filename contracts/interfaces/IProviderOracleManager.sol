@@ -21,7 +21,8 @@ interface IProviderOracleManager {
         address _asset,
         uint88 _expiryTimestamp,
         bytes memory _calldata
-    ) external;
+    )
+        external;
 
     /// @notice asset address => oracle address
     function assetOracles(address) external view returns (address);
@@ -50,5 +51,8 @@ interface IProviderOracleManager {
         address _underlyingAsset,
         uint88 _expiryTime,
         uint256 _strikePrice
-    ) external view returns (bool);
+    )
+        external
+        view
+        returns (bool);
 }

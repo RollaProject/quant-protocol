@@ -11,9 +11,7 @@ contract QuantMathTest is Test {
 
         vm.expectRevert(stdError.arithmeticError);
         QuantMath.mul(
-            QuantMath.fromUnscaledInt(a),
-            QuantMath.fromUnscaledInt(b),
-            true
+            QuantMath.fromUnscaledInt(a), QuantMath.fromUnscaledInt(b), true
         );
     }
 }

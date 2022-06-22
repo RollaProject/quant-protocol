@@ -55,11 +55,9 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     /// @param _name name for the domain typehash in EIP712 meta transactions
     /// @param _version version for the domain typehash in EIP712 meta transactions
     /// @param uri_ URI for ERC1155 tokens metadata
-    constructor(
-        string memory _name,
-        string memory _version,
-        string memory uri_
-    ) EIP712(_name, _version) {
+    constructor(string memory _name, string memory _version, string memory uri_)
+        EIP712(_name, _version)
+    {
         _uri = uri_;
     }
 
@@ -89,7 +87,12 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     function createSpreadCollateralToken(
         address _qTokenAddress,
         address _qTokenAsCollateral
-    ) external override onlyOwner returns (uint256 id) {
+    )
+        external
+        override
+        onlyOwner
+        returns (uint256 id)
+    {
         id = getCollateralTokenId(_qTokenAddress, _qTokenAsCollateral);
 
         require(
@@ -110,7 +113,11 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
         address recipient,
         uint256 collateralTokenId,
         uint256 amount
-    ) external override onlyOwner {
+    )
+        external
+        override
+        onlyOwner
+    {
         _mint(recipient, collateralTokenId, amount, "");
     }
 
@@ -119,7 +126,11 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
         address cTokenOwner,
         uint256 collateralTokenId,
         uint256 amount
-    ) external override onlyOwner {
+    )
+        external
+        override
+        onlyOwner
+    {
         _burn(cTokenOwner, collateralTokenId, amount);
     }
 
@@ -133,23 +144,20 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external override {
+    )
+        external
+        override
+    {
         require(nonce == nonces[cTokenOwner], "CollateralToken: invalid nonce");
 
         // solhint-disable-next-line not-rely-on-time
         require(
-            deadline >= block.timestamp,
-            "CollateralToken: expired deadline"
+            deadline >= block.timestamp, "CollateralToken: expired deadline"
         );
 
         bytes32 structHash = keccak256(
             abi.encode(
-                _META_APPROVAL_TYPEHASH,
-                cTokenOwner,
-                operator,
-                approved,
-                nonce,
-                deadline
+                _META_APPROVAL_TYPEHASH, cTokenOwner, operator, approved, nonce, deadline
             )
         );
 

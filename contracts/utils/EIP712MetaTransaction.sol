@@ -17,16 +17,14 @@ abstract contract EIP712MetaTransaction is EIP712 {
         ActionArgs[] actions;
     }
 
-    bytes32 private constant _META_ACTION_TYPEHASH =
-        keccak256(
-            // solhint-disable-next-line max-line-length
-            "MetaAction(uint256 nonce,uint256 deadline,address from,ActionArgs[] actions)ActionArgs(uint8 actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 secondaryUint,bytes data)"
-        );
-    bytes32 private constant _ACTION_TYPEHASH =
-        keccak256(
-            // solhint-disable-next-line max-line-length
-            "ActionArgs(uint8 actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 secondaryUint,bytes data)"
-        );
+    bytes32 private constant _META_ACTION_TYPEHASH = keccak256(
+        // solhint-disable-next-line max-line-length
+        "MetaAction(uint256 nonce,uint256 deadline,address from,ActionArgs[] actions)ActionArgs(uint8 actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 secondaryUint,bytes data)"
+    );
+    bytes32 private constant _ACTION_TYPEHASH = keccak256(
+        // solhint-disable-next-line max-line-length
+        "ActionArgs(uint8 actionType,address qToken,address secondaryAddress,address receiver,uint256 amount,uint256 secondaryUint,bytes data)"
+    );
 
     mapping(address => uint256) private _nonces;
 
@@ -70,7 +68,10 @@ abstract contract EIP712MetaTransaction is EIP712 {
         bytes32 r,
         bytes32 s,
         uint8 v
-    ) external returns (bool, bytes memory) {
+    )
+        external
+        returns (bool, bytes memory)
+    {
         require(
             _verify(metaAction.from, metaAction, r, s, v),
             "signer and signature don't match"
@@ -109,12 +110,8 @@ abstract contract EIP712MetaTransaction is EIP712 {
         }
 
         emit MetaTransactionExecuted(
-            metaAction.from,
-            payable(msg.sender),
-            success,
-            currentNonce,
-            returnData
-        );
+            metaAction.from, payable(msg.sender), success, currentNonce, returnData
+            );
 
         return (success, returnData);
     }
@@ -158,16 +155,17 @@ abstract contract EIP712MetaTransaction is EIP712 {
         bytes32 r,
         bytes32 s,
         uint8 v
-    ) internal view returns (bool) {
+    )
+        internal
+        view
+        returns (bool)
+    {
         require(metaAction.nonce == _nonces[user], "invalid nonce");
 
         require(metaAction.deadline >= block.timestamp, "expired deadline");
 
-        address signer = _hashTypedDataV4(_hashMetaAction(metaAction)).recover(
-            v,
-            r,
-            s
-        );
+        address signer =
+            _hashTypedDataV4(_hashMetaAction(metaAction)).recover(v, r, s);
 
         return signer == user;
     }
@@ -180,19 +178,18 @@ abstract contract EIP712MetaTransaction is EIP712 {
         pure
         returns (bytes32)
     {
-        return
-            keccak256(
-                abi.encode(
-                    _ACTION_TYPEHASH,
-                    action.actionType,
-                    action.qToken,
-                    action.secondaryAddress,
-                    action.receiver,
-                    action.amount,
-                    action.secondaryUint,
-                    keccak256(action.data)
-                )
-            );
+        return keccak256(
+            abi.encode(
+                _ACTION_TYPEHASH,
+                action.actionType,
+                action.qToken,
+                action.secondaryAddress,
+                action.receiver,
+                action.amount,
+                action.secondaryUint,
+                keccak256(action.data)
+            )
+        );
     }
 
     /// @notice Hashes an array of ActionArgs structs to be used with EIP712.
@@ -205,7 +202,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
     {
         bytes32[] memory hashedActions = new bytes32[](actions.length);
         uint256 length = actions.length;
-        for (uint256 i = 0; i < length; ) {
+        for (uint256 i = 0; i < length;) {
             hashedActions[i] = _hashAction(actions[i]);
             unchecked {
                 ++i;
@@ -222,17 +219,14 @@ abstract contract EIP712MetaTransaction is EIP712 {
         pure
         returns (bytes32)
     {
-        return
-            keccak256(
-                abi.encode(
-                    _META_ACTION_TYPEHASH,
-                    metaAction.nonce,
-                    metaAction.deadline,
-                    metaAction.from,
-                    keccak256(
-                        abi.encodePacked(_hashActions(metaAction.actions))
-                    )
-                )
-            );
+        return keccak256(
+            abi.encode(
+                _META_ACTION_TYPEHASH,
+                metaAction.nonce,
+                metaAction.deadline,
+                metaAction.from,
+                keccak256(abi.encodePacked(_hashActions(metaAction.actions)))
+            )
+        );
     }
 }

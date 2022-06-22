@@ -10,5 +10,6 @@ interface IOracleFallbackMechanism {
         address _asset,
         uint88 _expiryTimestamp,
         uint256 _price
-    ) external;
+    )
+        external;
 }

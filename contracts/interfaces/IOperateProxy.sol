@@ -3,10 +3,7 @@ pragma solidity ^0.8.0;
 
 interface IOperateProxy {
     /// @notice emitted when a external contract call is executed
-    event FunctionCallExecuted(
-        address indexed originalSender,
-        bytes returnData
-    );
+    event FunctionCallExecuted(address indexed originalSender, bytes returnData);
 
     /// @notice Makes a call to an external contract
     /// WARNING: DO NOT UNDER ANY CIRCUMSTANCES APPROVE THE OperateProxy TO

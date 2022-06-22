@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import {ClonesWithImmutableArgs} from "@rolla-finance/clones-with-immutable-args/ClonesWithImmutableArgs.sol";
+import {ClonesWithImmutableArgs} from
+    "@rolla-finance/clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 import {QToken} from "../options/QToken.sol";
 import {CollateralToken} from "../options/CollateralToken.sol";
 import "../libraries/OptionsUtils.sol";
@@ -35,7 +36,10 @@ contract SimpleExternalOptionsFactory {
         bool isCall,
         uint256 strikePrice,
         address controller
-    ) public returns (address newQToken, uint256 newCollateralTokenId) {
+    )
+        public
+        returns (address newQToken, uint256 newCollateralTokenId)
+    {
         bytes memory data = OptionsUtils.getQTokenImmutableArgs(
             optionsDecimals,
             underlyingAsset,
@@ -50,9 +54,8 @@ contract SimpleExternalOptionsFactory {
 
         newQToken = address(implementation).cloneDeterministic(salt, data);
 
-        newCollateralTokenId = collateralToken.createOptionCollateralToken(
-            newQToken
-        );
+        newCollateralTokenId =
+            collateralToken.createOptionCollateralToken(newQToken);
     }
 
     function getQToken(
@@ -63,7 +66,11 @@ contract SimpleExternalOptionsFactory {
         bool isCall,
         uint256 strikePrice,
         address controller
-    ) public view returns (address qToken, bool exists) {
+    )
+        public
+        view
+        returns (address qToken, bool exists)
+    {
         bytes memory data = OptionsUtils.getQTokenImmutableArgs(
             optionsDecimals,
             underlyingAsset,
@@ -77,9 +84,7 @@ contract SimpleExternalOptionsFactory {
         );
 
         (qToken, exists) = ClonesWithImmutableArgs.predictDeterministicAddress(
-            address(implementation),
-            salt,
-            data
+            address(implementation), salt, data
         );
     }
 
@@ -92,8 +97,12 @@ contract SimpleExternalOptionsFactory {
         bool isCall,
         uint256 strikePrice,
         address controller
-    ) public view returns (uint256 id, bool exists) {
-        (address qToken, ) = getQToken(
+    )
+        public
+        view
+        returns (uint256 id, bool exists)
+    {
+        (address qToken,) = getQToken(
             underlyingAsset,
             strikeAsset,
             oracle,
@@ -105,7 +114,7 @@ contract SimpleExternalOptionsFactory {
 
         id = collateralToken.getCollateralTokenId(qToken, qTokenAsCollateral);
 
-        (qToken, ) = collateralToken.idToInfo(id);
+        (qToken,) = collateralToken.idToInfo(id);
 
         exists = qToken != address(0);
     }

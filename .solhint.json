@@ -1,8 +1,6 @@
 {
   "extends": "solhint:recommended",
-  "plugins": ["prettier"],
   "rules": {
-    "prettier/prettier": "error",
     "code-complexity": ["error", 13],
     "function-max-lines": ["error", 120],
     "max-line-length": ["error", 120],

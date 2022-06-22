@@ -4,22 +4,24 @@ pragma solidity 0.8.15;
 import "forge-std/Test.sol";
 import {OptionsFactory} from "../options/OptionsFactory.sol";
 import {CollateralToken} from "../options/CollateralToken.sol";
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from
+    "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {TransparentUpgradeableProxy} from
+    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ERC20 as SolmateERC20} from "solmate/tokens/ERC20.sol";
 import {AssetsRegistry} from "../options/AssetsRegistry.sol";
 import {OracleRegistry} from "../pricing/OracleRegistry.sol";
-import {ChainlinkOracleManager} from "../pricing/oracle/ChainlinkOracleManager.sol";
-import {ProviderOracleManager} from "../pricing/oracle/ProviderOracleManager.sol";
+import {ChainlinkOracleManager} from
+    "../pricing/oracle/ChainlinkOracleManager.sol";
+import {ProviderOracleManager} from
+    "../pricing/oracle/ProviderOracleManager.sol";
 import {PriceRegistry} from "../pricing/PriceRegistry.sol";
 import {QToken} from "../options/QToken.sol";
 
 contract ERC20 is SolmateERC20 {
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        uint8 _decimals
-    ) SolmateERC20(_name, _symbol, _decimals) {}
+    constructor(string memory _name, string memory _symbol, uint8 _decimals)
+        SolmateERC20(_name, _symbol, _decimals)
+    {}
 }
 
 contract OptionsFactoryTest is Test {
@@ -87,43 +89,33 @@ contract OptionsFactoryTest is Test {
 
         vm.mockCall(
             priceRegistry,
-            abi.encodeWithSelector(
-                bytes4(keccak256(bytes("oracleRegistry()")))
-            ),
+            abi.encodeWithSelector(bytes4(keccak256(bytes("oracleRegistry()")))),
             abi.encode(oracleRegistry)
         );
 
         vm.mockCall(
             oracleRegistry,
-            abi.encodeWithSelector(
-                bytes4(keccak256(bytes("isOracleRegistered(address)")))
-            ),
+            abi.encodeWithSelector(bytes4(keccak256(bytes("isOracleRegistered(address)")))),
             abi.encode(true)
         );
 
         vm.mockCall(
             chainlinkOracleManager,
-            abi.encodeWithSelector(
-                bytes4(keccak256(bytes("getAssetOracle(address)")))
-            ),
+            abi.encodeWithSelector(bytes4(keccak256(bytes("getAssetOracle(address)")))),
             abi.encode(address(BUSD)) // can be any non-zero address
         );
 
         vm.mockCall(
             chainlinkOracleManager,
             abi.encodeWithSelector(
-                bytes4(
-                    keccak256(bytes("isValidOption(address,uint88,uint256)"))
-                )
+                bytes4(keccak256(bytes("isValidOption(address,uint88,uint256)")))
             ),
             abi.encode(true)
         );
 
         vm.mockCall(
             oracleRegistry,
-            abi.encodeWithSelector(
-                bytes4(keccak256(bytes("isOracleActive(address)")))
-            ),
+            abi.encodeWithSelector(bytes4(keccak256(bytes("isOracleActive(address)")))),
             abi.encode(true)
         );
     }
@@ -141,11 +133,7 @@ contract OptionsFactoryTest is Test {
 
     function testGas_create() public {
         optionsFactory.createOption(
-            address(WBNB),
-            chainlinkOracleManager,
-            2282899998,
-            true,
-            100000 ether
+            address(WBNB), chainlinkOracleManager, 2282899998, true, 100000 ether
         );
     }
 
@@ -157,21 +145,19 @@ contract OptionsFactoryTest is Test {
         uint32 expiryTime,
         bool isCall,
         uint256 strikePrice
-    ) public {
+    )
+        public
+    {
         vm.mockCall(
             oracle,
-            abi.encodeWithSelector(
-                bytes4(keccak256(bytes("getAssetOracle(address)")))
-            ),
+            abi.encodeWithSelector(bytes4(keccak256(bytes("getAssetOracle(address)")))),
             abi.encode(address(BUSD)) // can be any non-zero address
         );
 
         vm.mockCall(
             oracle,
             abi.encodeWithSelector(
-                bytes4(
-                    keccak256(bytes("isValidOption(address,uint88,uint256)"))
-                )
+                bytes4(keccak256(bytes("isValidOption(address,uint88,uint256)")))
             ),
             abi.encode(true)
         );
@@ -191,12 +177,8 @@ contract OptionsFactoryTest is Test {
 
         assetsRegistry.addAssetWithOptionalERC20Methods(address(underlying));
 
-        (address qTokenAddress, ) = optionsFactory.createOption(
-            address(underlying),
-            oracle,
-            expiryTime,
-            isCall,
-            strikePrice
+        (address qTokenAddress,) = optionsFactory.createOption(
+            address(underlying), oracle, expiryTime, isCall, strikePrice
         );
 
         QToken qToken = QToken(qTokenAddress);
@@ -217,11 +199,7 @@ contract OptionsFactoryTest is Test {
         uint256 strikePrice = 334 ether;
 
         (address qTokenAddress, uint256 cTokenId) = optionsFactory.createOption(
-            address(WBNB),
-            chainlinkOracleManager,
-            expiryTime,
-            isCall,
-            strikePrice
+            address(WBNB), chainlinkOracleManager, expiryTime, isCall, strikePrice
         );
 
         QToken qToken = QToken(qTokenAddress);

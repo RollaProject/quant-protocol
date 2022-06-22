@@ -45,7 +45,9 @@ interface ICollateralToken {
     function createSpreadCollateralToken(
         address _qTokenAddress,
         address _qTokenAsCollateral
-    ) external returns (uint256 id);
+    )
+        external
+        returns (uint256 id);
 
     /// @notice Mint CollateralTokens for a given account
     /// @param recipient address to receive the minted tokens
@@ -55,7 +57,8 @@ interface ICollateralToken {
         address recipient,
         uint256 collateralTokenId,
         uint256 amount
-    ) external;
+    )
+        external;
 
     /// @notice Mint CollateralTokens for a given account
     /// @param owner address to burn tokens from
@@ -65,7 +68,8 @@ interface ICollateralToken {
         address owner,
         uint256 collateralTokenId,
         uint256 amount
-    ) external;
+    )
+        external;
 
     /// @notice Set approval for all IDs by providing parameters to setApprovalForAll
     /// alongside a valid signature (r, s, v)
@@ -87,7 +91,8 @@ interface ICollateralToken {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external;
+    )
+        external;
 
     /// @notice mapping of CollateralToken ids to their respective info struct
     function idToInfo(uint256) external view returns (address, address);

@@ -32,8 +32,7 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
         onlyOwner
     {
         require(
-            _oracle != address(0),
-            "ProviderOracleManager: Oracle is zero address"
+            _oracle != address(0), "ProviderOracleManager: Oracle is zero address"
         );
         require(
             assetOracles[_asset] == address(0),
@@ -50,7 +49,10 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
         address _asset,
         uint88 _expiryTimestamp,
         bytes memory _calldata
-    ) external virtual override;
+    )
+        external
+        virtual
+        override;
 
     /// @inheritdoc IProviderOracleManager
     function getAssetsLength() external view override returns (uint256) {
@@ -69,7 +71,12 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
         address _underlyingAsset,
         uint88 _expiryTime,
         uint256 _strikePrice
-    ) external view virtual override returns (bool);
+    )
+        external
+        view
+        virtual
+        override
+        returns (bool);
 
     /// @inheritdoc IProviderOracleManager
     function getAssetOracle(address _asset)

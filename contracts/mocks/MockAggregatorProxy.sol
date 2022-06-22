@@ -30,7 +30,9 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         roundIdAnswers[_roundId] = _answer;
     }
 
-    function setLatestRoundData(RoundData calldata _latestRoundData) external {
+    function setLatestRoundData(RoundData calldata _latestRoundData)
+        external
+    {
         latestRoundDataValue = _latestRoundData;
     }
 
@@ -51,28 +53,23 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
     }
 
     // solhint-disable-next-line no-empty-blocks
-    function acceptOwnership() external override {
-        //noop
+    function acceptOwnership() external override { //noop
     }
 
     // solhint-disable-next-line no-empty-blocks
-    function confirmAggregator(address _aggregator) external override {
-        //noop
+    function confirmAggregator(address _aggregator) external override { //noop
     }
 
     // solhint-disable-next-line no-empty-blocks
-    function proposeAggregator(address _aggregator) external override {
-        //noop
+    function proposeAggregator(address _aggregator) external override { //noop
     }
 
     // solhint-disable-next-line no-empty-blocks
-    function setController(address _accessController) external override {
-        //noop
+    function setController(address _accessController) external override { //noop
     }
 
     // solhint-disable-next-line no-empty-blocks
-    function transferOwnership(address _to) external override {
-        //noop
+    function transferOwnership(address _to) external override { //noop
     }
 
     function getAnswer(uint256 _roundId)
@@ -168,7 +165,12 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         return address(0);
     }
 
-    function phaseAggregators(uint16) external pure override returns (address) {
+    function phaseAggregators(uint16)
+        external
+        pure
+        override
+        returns (address)
+    {
         return address(0);
     }
 

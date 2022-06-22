@@ -91,15 +91,15 @@ abstract contract ERC20 is Clone {
         return true;
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) public virtual returns (bool) {
+    function transferFrom(address from, address to, uint256 amount)
+        public
+        virtual
+        returns (bool)
+    {
         uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
 
-        if (allowed != type(uint256).max)
-            allowance[from][msg.sender] = allowed - amount;
+        if (allowed != type(uint256).max) allowance[from][msg.sender] =
+            allowed - amount;
 
         balanceOf[from] -= amount;
 
@@ -126,7 +126,10 @@ abstract contract ERC20 is Clone {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public virtual {
+    )
+        public
+        virtual
+    {
         require(deadline >= block.timestamp, "PERMIT_DEADLINE_EXPIRED");
 
         // Unchecked because the only math done is incrementing
@@ -170,18 +173,17 @@ abstract contract ERC20 is Clone {
     function DOMAIN_SEPARATOR() public view virtual returns (bytes32) {
         bytes32 nameHash = keccak256(bytes(_get128BytesStringArg(0)));
 
-        return
-            keccak256(
-                abi.encode(
-                    keccak256(
-                        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                    ),
-                    nameHash,
-                    keccak256("1"),
-                    block.chainid,
-                    address(this)
-                )
-            );
+        return keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
+                nameHash,
+                keccak256("1"),
+                block.chainid,
+                address(this)
+            )
+        );
     }
 
     /*///////////////////////////////////////////////////////////////

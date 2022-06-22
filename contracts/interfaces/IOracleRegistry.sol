@@ -32,7 +32,10 @@ interface IOracleRegistry {
 
     /// @notice Check if an oracle is registered in the registry
     /// @param _oracle the oracle to check
-    function isOracleRegistered(address _oracle) external view returns (bool);
+    function isOracleRegistered(address _oracle)
+        external
+        view
+        returns (bool);
 
     /// @notice Check if an oracle is active i.e. are we allowed to create options with this oracle
     /// @param _oracle the oracle to check
