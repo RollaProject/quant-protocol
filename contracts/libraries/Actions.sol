@@ -12,15 +12,21 @@ enum ActionType {
     Call
 }
 
-struct ActionArgs {
-    ActionType actionType; //type of action to perform
-    address qToken; //qToken to exercise or mint
-    address secondaryAddress; //secondary address depending on the action type
-    address receiver; //receiving address of minting or function call
-    uint256 amount; //amount of qTokens or collateral tokens
-    uint256 secondaryUint; //secondary uint depending on the action type
-    bytes data; //extra data for function calls
-}
+struct ActionArgs { //type of action to perform
+    //qToken to exercise or mint
+    //secondary address depending on the action type
+    //receiving address of minting or function call
+    //amount of qTokens or collateral tokens
+    //secondary uint depending on the action type
+    //extra data for function calls
+        ActionType actionType;
+        address qToken;
+        address secondaryAddress;
+        address receiver;
+        uint256 amount;
+        uint256 secondaryUint;
+        bytes data;
+    }
 
 /// @title Library to parse arguments for actions to be executed by the Controller
 /// @author Rolla
@@ -28,11 +34,7 @@ library Actions {
     function parseMintOptionArgs(ActionArgs memory _args)
         internal
         pure
-        returns (
-            address to,
-            address qToken,
-            uint256 amount
-        )
+        returns (address to, address qToken, uint256 amount)
     {
         require(_args.amount != 0, "Actions: cannot mint 0 options");
 
@@ -51,8 +53,7 @@ library Actions {
         )
     {
         require(
-            _args.amount != 0,
-            "Actions: cannot mint 0 options from spreads"
+            _args.amount != 0, "Actions: cannot mint 0 options from spreads"
         );
 
         qTokenToMint = _args.qToken;
@@ -124,10 +125,8 @@ library Actions {
             bytes32 s
         )
     {
-        (approved, v, r, s) = abi.decode(
-            _args.data,
-            (bool, uint8, bytes32, bytes32)
-        );
+        (approved, v, r, s) =
+            abi.decode(_args.data, (bool, uint8, bytes32, bytes32));
 
         owner = _args.secondaryAddress;
         operator = _args.receiver;

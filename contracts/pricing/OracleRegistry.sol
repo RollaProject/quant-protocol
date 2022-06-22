@@ -104,8 +104,7 @@ contract OracleRegistry is Ownable, IOracleRegistry {
     {
         uint248 oracleId = oracleInfo[_oracle].oracleId;
         require(
-            oracleId != 0,
-            "OracleRegistry: Oracle doesn't exist in registry"
+            oracleId != 0, "OracleRegistry: Oracle doesn't exist in registry"
         );
         return oracleId;
     }

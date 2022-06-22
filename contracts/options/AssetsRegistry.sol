@@ -37,20 +37,20 @@ contract AssetsRegistry is Ownable, IAssetsRegistry {
         string calldata _name,
         string calldata _symbol,
         uint8 _decimals
-    ) external override onlyOwner validAsset(_underlying) {
+    )
+        external
+        override
+        onlyOwner
+        validAsset(_underlying)
+    {
         require(
-            _underlying != address(0),
-            "AssetsRegistry: invalid underlying address"
+            _underlying != address(0), "AssetsRegistry: invalid underlying address"
         );
         require(bytes(_name).length > 0, "AssetsRegistry: invalid name");
         require(bytes(_symbol).length > 0, "AssetsRegistry: invalid symbol");
 
-        assetProperties[_underlying] = AssetProperties(
-            _name,
-            _symbol,
-            _decimals,
-            true
-        );
+        assetProperties[_underlying] =
+            AssetProperties(_name, _symbol, _decimals, true);
 
         registeredAssets.push(_underlying);
 
@@ -69,18 +69,13 @@ contract AssetsRegistry is Ownable, IAssetsRegistry {
 
         string memory symbol = ERC20(_underlying).symbol();
         require(
-            bytes(symbol).length > 0,
-            "AssetsRegistry: invalid empty symbol"
+            bytes(symbol).length > 0, "AssetsRegistry: invalid empty symbol"
         );
 
         uint8 decimals = ERC20(_underlying).decimals();
 
-        assetProperties[_underlying] = AssetProperties(
-            name,
-            symbol,
-            decimals,
-            true
-        );
+        assetProperties[_underlying] =
+            AssetProperties(name, symbol, decimals, true);
 
         registeredAssets.push(_underlying);
 

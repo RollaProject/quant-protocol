@@ -7,11 +7,7 @@ contract ActionsTester {
     function parseMintOptionArgsTest(ActionArgs memory args)
         external
         pure
-        returns (
-            address,
-            address,
-            uint256
-        )
+        returns (address, address, uint256)
     {
         return Actions.parseMintOptionArgs(args);
     }
@@ -19,11 +15,7 @@ contract ActionsTester {
     function parseMintSpreadArgsTest(ActionArgs memory args)
         external
         pure
-        returns (
-            address,
-            address,
-            uint256
-        )
+        returns (address, address, uint256)
     {
         return Actions.parseMintSpreadArgs(args);
     }

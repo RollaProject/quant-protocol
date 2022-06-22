@@ -32,7 +32,9 @@ contract ChainlinkOracleManager is
         address _priceRegistry,
         uint8 _strikeAssetDecimals,
         uint88 _fallbackPeriodSeconds
-    ) ProviderOracleManager(_priceRegistry) {
+    )
+        ProviderOracleManager(_priceRegistry)
+    {
         fallbackPeriodSeconds = _fallbackPeriodSeconds;
         strikeAssetDecimals = _strikeAssetDecimals;
     }
@@ -42,11 +44,12 @@ contract ChainlinkOracleManager is
         address _asset,
         uint88 _expiryTimestamp,
         uint256 _roundIdAfterExpiry
-    ) external override {
+    )
+        external
+        override
+    {
         _setExpiryPriceInRegistryByRound(
-            _asset,
-            _expiryTimestamp,
-            _roundIdAfterExpiry
+            _asset, _expiryTimestamp, _roundIdAfterExpiry
         );
     }
 
@@ -55,15 +58,16 @@ contract ChainlinkOracleManager is
         address _asset,
         uint88 _expiryTimestamp,
         bytes memory
-    ) external override(ProviderOracleManager, IProviderOracleManager) {
+    )
+        external
+        override (ProviderOracleManager, IProviderOracleManager)
+    {
         //search and get round
         uint80 roundAfterExpiry = searchRoundToSubmit(_asset, _expiryTimestamp);
 
         //submit price to registry
         _setExpiryPriceInRegistryByRound(
-            _asset,
-            _expiryTimestamp,
-            roundAfterExpiry
+            _asset, _expiryTimestamp, roundAfterExpiry
         );
     }
 
@@ -72,20 +76,19 @@ contract ChainlinkOracleManager is
         address _asset,
         uint88 _expiryTimestamp,
         uint256 _price
-    ) external override onlyOwner {
+    )
+        external
+        override
+        onlyOwner
+    {
         require(
             block.timestamp >= _expiryTimestamp + fallbackPeriodSeconds,
             "ChainlinkOracleManager: The fallback price period has not passed since the timestamp"
         );
 
         emit PriceRegistrySubmission(
-            _asset,
-            _expiryTimestamp,
-            _price,
-            0,
-            msg.sender,
-            true
-        );
+            _asset, _expiryTimestamp, _price, 0, msg.sender, true
+            );
 
         IPriceRegistry(priceRegistry).setSettlementPrice(
             _asset,
@@ -99,34 +102,24 @@ contract ChainlinkOracleManager is
     function getCurrentPrice(address _asset)
         external
         view
-        override(ProviderOracleManager, IProviderOracleManager)
+        override (ProviderOracleManager, IProviderOracleManager)
         returns (uint256)
     {
         address assetOracle = getAssetOracle(_asset);
         IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
-        (, int256 answer, , , ) = aggregator.latestRoundData();
-        require(
-            answer > 0,
-            "ChainlinkOracleManager: No pricing data available"
-        );
+        (, int256 answer,,,) = aggregator.latestRoundData();
+        require(answer > 0, "ChainlinkOracleManager: No pricing data available");
 
-        return
-            uint256(answer).fromScaledUint(aggregator.decimals()).toScaledUint(
-                strikeAssetDecimals,
-                true
-            );
+        return uint256(answer).fromScaledUint(aggregator.decimals())
+            .toScaledUint(strikeAssetDecimals, true);
     }
 
     /// @inheritdoc IProviderOracleManager
-    function isValidOption(
-        address _underlyingAsset,
-        uint88,
-        uint256
-    )
+    function isValidOption(address _underlyingAsset, uint88, uint256)
         external
         view
         virtual
-        override(ProviderOracleManager, IProviderOracleManager)
+        override (ProviderOracleManager, IProviderOracleManager)
         returns (bool)
     {
         return assetOracles[_underlyingAsset] != address(0);
@@ -153,7 +146,7 @@ contract ChainlinkOracleManager is
         uint16 phaseOffset = 64;
         uint16 phaseId = uint16(latestRound >> phaseOffset);
 
-        uint80 lowestPossibleRound = uint80((phaseId << phaseOffset) | 1);
+        uint80 lowestPossibleRound = uint80(phaseId << phaseOffset | 1);
         uint80 highestPossibleRound = latestRound;
         uint80 firstId = lowestPossibleRound;
         uint80 lastId = highestPossibleRound;
@@ -189,7 +182,9 @@ contract ChainlinkOracleManager is
         address _asset,
         uint88 _expiryTimestamp,
         uint256 _roundIdAfterExpiry
-    ) internal {
+    )
+        internal
+    {
         address assetOracle = getAssetOracle(_asset);
 
         IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
@@ -203,9 +198,8 @@ contract ChainlinkOracleManager is
         uint16 phaseId = uint16(_roundIdAfterExpiry >> phaseOffset);
 
         uint64 expiryRound = uint64(_roundIdAfterExpiry) - 1;
-        uint80 expiryRoundId = uint80(
-            (uint256(phaseId) << phaseOffset) | expiryRound
-        );
+        uint80 expiryRoundId =
+            uint80(uint256(phaseId) << phaseOffset | expiryRound);
 
         require(
             aggregator.getTimestamp(uint256(expiryRoundId)) <= _expiryTimestamp,
@@ -213,26 +207,15 @@ contract ChainlinkOracleManager is
         );
 
         (uint256 price, uint256 roundId) = _getExpiryPrice(
-            aggregator,
-            _expiryTimestamp,
-            _roundIdAfterExpiry,
-            expiryRoundId
+            aggregator, _expiryTimestamp, _roundIdAfterExpiry, expiryRoundId
         );
 
         emit PriceRegistrySubmission(
-            _asset,
-            _expiryTimestamp,
-            price,
-            roundId,
-            msg.sender,
-            false
-        );
+            _asset, _expiryTimestamp, price, roundId, msg.sender, false
+            );
 
         IPriceRegistry(priceRegistry).setSettlementPrice(
-            _asset,
-            _expiryTimestamp,
-            aggregator.decimals(),
-            price
+            _asset, _expiryTimestamp, aggregator.decimals(), price
         );
     }
 
@@ -241,10 +224,13 @@ contract ChainlinkOracleManager is
         uint88,
         uint256,
         uint256 _expiryRoundId
-    ) internal view virtual returns (uint256, uint256) {
-        (, int256 answer, , , ) = aggregator.getRoundData(
-            uint80(_expiryRoundId)
-        );
+    )
+        internal
+        view
+        virtual
+        returns (uint256, uint256)
+    {
+        (, int256 answer,,,) = aggregator.getRoundData(uint80(_expiryRoundId));
         return (uint256(answer), _expiryRoundId);
     }
 
@@ -258,40 +244,33 @@ contract ChainlinkOracleManager is
         uint88 _expiryTimestamp,
         uint80 _firstRoundProxy,
         uint80 _lastRoundProxy
-    ) internal view returns (BinarySearchResult memory) {
+    )
+        internal
+        view
+        returns (BinarySearchResult memory)
+    {
         uint16 phaseOffset = 64;
         uint16 phaseId = uint16(_lastRoundProxy >> phaseOffset);
 
         uint64 lastRoundId = uint64(_lastRoundProxy);
         uint64 firstRoundId = uint64(_firstRoundProxy);
 
-        uint80 roundToCheck = uint80(
-            (uint256(firstRoundId) + uint256(lastRoundId)) / 2
-        );
-        uint80 roundToCheckProxy = uint80(
-            (uint256(phaseId) << phaseOffset) | roundToCheck
-        );
+        uint80 roundToCheck =
+            uint80((uint256(firstRoundId) + uint256(lastRoundId)) / 2);
+        uint80 roundToCheckProxy =
+            uint80(uint256(phaseId) << phaseOffset | roundToCheck);
 
-        uint256 roundToCheckTimestamp = aggregator.getTimestamp(
-            uint256(roundToCheckProxy)
-        );
+        uint256 roundToCheckTimestamp =
+            aggregator.getTimestamp(uint256(roundToCheckProxy));
 
         if (roundToCheckTimestamp <= _expiryTimestamp) {
-            return
-                BinarySearchResult(
-                    roundToCheckProxy,
-                    _lastRoundProxy,
-                    roundToCheck,
-                    lastRoundId
-                );
+            return BinarySearchResult(
+                roundToCheckProxy, _lastRoundProxy, roundToCheck, lastRoundId
+            );
         }
 
-        return
-            BinarySearchResult(
-                _firstRoundProxy,
-                roundToCheckProxy,
-                firstRoundId,
-                roundToCheck
-            );
+        return BinarySearchResult(
+            _firstRoundProxy, roundToCheckProxy, firstRoundId, roundToCheck
+        );
     }
 }

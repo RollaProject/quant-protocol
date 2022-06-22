@@ -26,84 +26,132 @@ contract QuantMathTester {
         QuantMath.FixedPointInt memory a,
         uint256 decimals,
         bool roundDown
-    ) external pure returns (uint256) {
+    )
+        external
+        pure
+        returns (uint256)
+    {
         return QuantMath.toScaledUint(a, decimals, roundDown);
     }
 
     function addTest(
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b
-    ) external pure returns (QuantMath.FixedPointInt memory) {
+    )
+        external
+        pure
+        returns (QuantMath.FixedPointInt memory)
+    {
         return a.add(b);
     }
 
     function subTest(
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b
-    ) external pure returns (QuantMath.FixedPointInt memory) {
+    )
+        external
+        pure
+        returns (QuantMath.FixedPointInt memory)
+    {
         return a.sub(b);
     }
 
     function mulTest(
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b
-    ) external pure returns (QuantMath.FixedPointInt memory) {
+    )
+        external
+        pure
+        returns (QuantMath.FixedPointInt memory)
+    {
         return a.mul(b, true);
     }
 
     function divTest(
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b
-    ) external pure returns (QuantMath.FixedPointInt memory) {
+    )
+        external
+        pure
+        returns (QuantMath.FixedPointInt memory)
+    {
         return a.div(b, true);
     }
 
     function minTest(
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b
-    ) external pure returns (QuantMath.FixedPointInt memory) {
+    )
+        external
+        pure
+        returns (QuantMath.FixedPointInt memory)
+    {
         return QuantMath.min(a, b);
     }
 
     function maxTest(
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b
-    ) external pure returns (QuantMath.FixedPointInt memory) {
+    )
+        external
+        pure
+        returns (QuantMath.FixedPointInt memory)
+    {
         return QuantMath.max(a, b);
     }
 
     function isEqualTest(
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b
-    ) external pure returns (bool) {
+    )
+        external
+        pure
+        returns (bool)
+    {
         return a.isEqual(b);
     }
 
     function isGreaterThanTest(
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b
-    ) external pure returns (bool) {
+    )
+        external
+        pure
+        returns (bool)
+    {
         return a.isGreaterThan(b);
     }
 
     function isGreaterThanOrEqualTest(
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b
-    ) external pure returns (bool) {
+    )
+        external
+        pure
+        returns (bool)
+    {
         return a.isGreaterThanOrEqual(b);
     }
 
     function isLessThanTest(
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b
-    ) external pure returns (bool) {
+    )
+        external
+        pure
+        returns (bool)
+    {
         return a.isLessThan(b);
     }
 
     function isLessThanOrEqualTest(
         QuantMath.FixedPointInt memory a,
         QuantMath.FixedPointInt memory b
-    ) external pure returns (bool) {
+    )
+        external
+        pure
+        returns (bool)
+    {
         return a.isLessThanOrEqual(b);
     }
 }

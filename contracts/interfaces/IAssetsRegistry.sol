@@ -26,7 +26,8 @@ interface IAssetsRegistry {
         string calldata _name,
         string calldata _symbol,
         uint8 _decimals
-    ) external;
+    )
+        external;
 
     /// @notice Add a new asset to the registry, calling the optional ERC20 methods
     /// to get its name, symbol and decimals

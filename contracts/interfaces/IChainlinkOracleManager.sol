@@ -25,7 +25,8 @@ interface IChainlinkOracleManager is
         address _asset,
         uint88 _expiryTimestamp,
         uint256 _roundIdAfterExpiry
-    ) external;
+    )
+        external;
 
     function fallbackPeriodSeconds() external view returns (uint256);
 

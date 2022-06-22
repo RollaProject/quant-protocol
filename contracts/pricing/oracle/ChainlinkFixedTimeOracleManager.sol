@@ -26,9 +26,7 @@ contract ChainlinkFixedTimeOracleManager is
             _fallbackPeriodSeconds
         )
     // solhint-disable-next-line no-empty-blocks
-    {
-
-    }
+    {}
 
     /// @inheritdoc IChainlinkFixedTimeOracleManager
     function setFixedTimeUpdate(uint24 fixedTime, bool isValidTime)
@@ -49,13 +47,13 @@ contract ChainlinkFixedTimeOracleManager is
     )
         external
         view
-        override(ChainlinkOracleManager, IProviderOracleManager)
+        override (ChainlinkOracleManager, IProviderOracleManager)
         returns (bool)
     {
         uint24 timeInSeconds = uint24(_expiryTime % 86400);
-        return
-            assetOracles[_underlyingAsset] != address(0) &&
-            chainlinkFixedTimeUpdates[timeInSeconds];
+        return assetOracles[_underlyingAsset]
+            != address(0)
+            && chainlinkFixedTimeUpdates[timeInSeconds];
     }
 
     /// @notice Gets the price and roundId for a given expiry time.
@@ -70,19 +68,22 @@ contract ChainlinkFixedTimeOracleManager is
         uint88 _expiryTimestamp,
         uint256 _roundIdAfterExpiry,
         uint256 _expiryRoundId
-    ) internal view override returns (uint256, uint256) {
+    )
+        internal
+        view
+        override
+        returns (uint256, uint256)
+    {
         int256 price;
         uint256 roundId;
 
         if (
             aggregator.getTimestamp(uint256(_expiryRoundId)) == _expiryTimestamp
         ) {
-            (, price, , , ) = aggregator.getRoundData(uint80(_expiryRoundId));
+            (, price,,,) = aggregator.getRoundData(uint80(_expiryRoundId));
             roundId = _expiryRoundId;
         } else {
-            (, price, , , ) = aggregator.getRoundData(
-                uint80(_roundIdAfterExpiry)
-            );
+            (, price,,,) = aggregator.getRoundData(uint80(_roundIdAfterExpiry));
             roundId = _roundIdAfterExpiry;
         }
 

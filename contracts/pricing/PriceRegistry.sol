@@ -37,18 +37,20 @@ contract PriceRegistry is IPriceRegistry {
         uint88 _expiryTime,
         uint8 _settlementPriceDecimals,
         uint256 _settlementPrice
-    ) external override {
+    )
+        external
+        override
+    {
         address oracle = msg.sender;
 
         require(
-            IOracleRegistry(oracleRegistry).isOracleRegistered(oracle) &&
-                IOracleRegistry(oracleRegistry).isOracleActive(oracle),
+            IOracleRegistry(oracleRegistry).isOracleRegistered(oracle)
+                && IOracleRegistry(oracleRegistry).isOracleActive(oracle),
             "PriceRegistry: Price submitter is not an active oracle"
         );
 
-        uint256 currentSettlementPrice = _settlementPrices[oracle][_asset][
-            _expiryTime
-        ].price;
+        uint256 currentSettlementPrice =
+            _settlementPrices[oracle][_asset][_expiryTime].price;
 
         require(
             currentSettlementPrice == 0,
@@ -60,18 +62,12 @@ contract PriceRegistry is IPriceRegistry {
             "PriceRegistry: Can't set a price for a time in the future"
         );
 
-        _settlementPrices[oracle][_asset][_expiryTime] = PriceWithDecimals(
-            _settlementPrice,
-            _settlementPriceDecimals
-        );
+        _settlementPrices[oracle][_asset][_expiryTime] =
+            PriceWithDecimals(_settlementPrice, _settlementPriceDecimals);
 
         emit PriceStored(
-            oracle,
-            _asset,
-            _expiryTime,
-            _settlementPriceDecimals,
-            _settlementPrice
-        );
+            oracle, _asset, _expiryTime, _settlementPriceDecimals, _settlementPrice
+            );
     }
 
     /// @inheritdoc IPriceRegistry
@@ -97,28 +93,34 @@ contract PriceRegistry is IPriceRegistry {
         address _oracle,
         uint88 _expiryTime,
         address _asset
-    ) external view override returns (uint256) {
-        PriceWithDecimals memory settlementPrice = _settlementPrices[_oracle][
-            _asset
-        ][_expiryTime];
+    )
+        external
+        view
+        override
+        returns (uint256)
+    {
+        PriceWithDecimals memory settlementPrice =
+            _settlementPrices[_oracle][_asset][_expiryTime];
         require(
             settlementPrice.price != 0,
             "PriceRegistry: No settlement price has been set"
         );
 
         //convert price to the correct number of decimals
-        return
-            settlementPrice
-                .price
-                .fromScaledUint(settlementPrice.decimals)
-                .toScaledUint(_strikeAssetDecimals, true);
+        return settlementPrice.price.fromScaledUint(settlementPrice.decimals)
+            .toScaledUint(_strikeAssetDecimals, true);
     }
 
     function getOptionPriceStatus(
         address _oracle,
         uint88 _expiryTime,
         address _asset
-    ) external view override returns (PriceStatus) {
+    )
+        external
+        view
+        override
+        returns (PriceStatus)
+    {
         if (block.timestamp > _expiryTime) {
             if (hasSettlementPrice(_oracle, _expiryTime, _asset)) {
                 return PriceStatus.SETTLED;
@@ -134,7 +136,12 @@ contract PriceRegistry is IPriceRegistry {
         address _oracle,
         uint88 _expiryTime,
         address _asset
-    ) public view override returns (bool) {
+    )
+        public
+        view
+        override
+        returns (bool)
+    {
         return _settlementPrices[_oracle][_asset][_expiryTime].price != 0;
     }
 }

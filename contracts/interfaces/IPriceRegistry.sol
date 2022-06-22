@@ -34,7 +34,8 @@ interface IPriceRegistry {
         uint88 _expiryTime,
         uint8 _settlementPriceDecimals,
         uint256 _settlementPrice
-    ) external;
+    )
+        external;
 
     /// @notice Fetch the settlement price with decimals from an oracle for an asset at a particular timestamp.
     /// @param _oracle oracle which price should come from
@@ -45,7 +46,10 @@ interface IPriceRegistry {
         address _oracle,
         uint88 _expiryTime,
         address _asset
-    ) external view returns (PriceWithDecimals memory);
+    )
+        external
+        view
+        returns (PriceWithDecimals memory);
 
     /// @notice Fetch the settlement price from an oracle for an asset at a particular timestamp.
     /// @notice Rounds down if there's extra precision from the oracle
@@ -57,7 +61,10 @@ interface IPriceRegistry {
         address _oracle,
         uint88 _expiryTime,
         address _asset
-    ) external view returns (uint256);
+    )
+        external
+        view
+        returns (uint256);
 
     /// @notice Get the price status of the option.
     /// @return the price status of the option. option is either active, awaiting settlement price or settled
@@ -65,7 +72,10 @@ interface IPriceRegistry {
         address _oracle,
         uint88 _expiryTime,
         address _asset
-    ) external view returns (PriceStatus);
+    )
+        external
+        view
+        returns (PriceStatus);
 
     /// @notice Check if the settlement price for an asset exists from an oracle at a particular timestamp
     /// @param _oracle oracle from which price comes from
@@ -76,7 +86,10 @@ interface IPriceRegistry {
         address _oracle,
         uint88 _expiryTime,
         address _asset
-    ) external view returns (bool);
+    )
+        external
+        view
+        returns (bool);
 
     // @notice The address of the OracleRegistry contract
     function oracleRegistry() external view returns (address);

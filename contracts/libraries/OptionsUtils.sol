@@ -19,9 +19,8 @@ library OptionsUtils {
     uint8 internal constant STRIKE_PRICE_DECIMALS = 18;
 
     // abi.encodeWithSignature("DataSizeLimitExceeded(uint256)");
-    uint256 internal constant DataSizeLimitExceeded_error_signature = (
-        0x5307a82000000000000000000000000000000000000000000000000000000000
-    );
+    uint256 internal constant DataSizeLimitExceeded_error_signature =
+        0x5307a82000000000000000000000000000000000000000000000000000000000;
 
     uint256 internal constant DataSizeLimitExceeded_error_sig_ptr = 0x0;
 
@@ -43,7 +42,10 @@ library OptionsUtils {
         address _oracle,
         uint88 _expiryTime,
         uint256 _strikePrice
-    ) internal view {
+    )
+        internal
+        view
+    {
         require(
             _expiryTime > block.timestamp,
             "OptionsFactory: given expiry time is in the past"
@@ -51,9 +53,7 @@ library OptionsUtils {
 
         require(
             IProviderOracleManager(_oracle).isValidOption(
-                _underlyingAsset,
-                _expiryTime,
-                _strikePrice
+                _underlyingAsset, _expiryTime, _strikePrice
             ),
             "OptionsFactory: Oracle doesn't support the given option"
         );
@@ -80,9 +80,8 @@ library OptionsUtils {
         view
         returns (bool isRegistered)
     {
-        (, , , isRegistered) = IAssetsRegistry(_assetsRegistry).assetProperties(
-            _asset
-        );
+        (,,, isRegistered) =
+            IAssetsRegistry(_assetsRegistry).assetProperties(_asset);
     }
 
     /// @notice Gets the amount of decimals for an option exercise payout
@@ -95,7 +94,7 @@ library OptionsUtils {
         returns (uint8 payoutDecimals)
     {
         if (_qToken.isCall()) {
-            (, , payoutDecimals, ) = IAssetsRegistry(_assetsRegistry)
+            (,, payoutDecimals,) = IAssetsRegistry(_assetsRegistry)
                 .assetProperties(_qToken.underlyingAsset());
         } else {
             payoutDecimals = STRIKE_PRICE_DECIMALS;
@@ -113,9 +112,8 @@ library OptionsUtils {
         view
         returns (string memory assetSymbol_)
     {
-        (, assetSymbol_, , ) = IAssetsRegistry(_assetsRegistry).assetProperties(
-            _asset
-        );
+        (, assetSymbol_,,) =
+            IAssetsRegistry(_assetsRegistry).assetProperties(_asset);
     }
 
     /// @notice generates the name and symbol for an option
@@ -131,23 +129,23 @@ library OptionsUtils {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) internal view returns (string memory name, string memory symbol) {
-        string memory underlying = assetSymbol(
-            _underlyingAsset,
-            _assetsRegistry
-        );
+    )
+        internal
+        view
+        returns (string memory name, string memory symbol)
+    {
+        string memory underlying =
+            assetSymbol(_underlyingAsset, _assetsRegistry);
 
         string memory displayStrikePrice = displayedStrikePrice(_strikePrice);
 
         // convert the expiry to a readable string
-        (uint256 year, uint256 month, uint256 day) = DateTime.timestampToDate(
-            _expiryTime
-        );
+        (uint256 year, uint256 month, uint256 day) =
+            DateTime.timestampToDate(_expiryTime);
 
         // get option type string
-        (string memory typeSymbol, string memory typeFull) = getOptionType(
-            _isCall
-        );
+        (string memory typeSymbol, string memory typeFull) =
+            getOptionType(_isCall);
 
         // get option month string
         (string memory monthSymbol, string memory monthFull) = getMonth(month);
@@ -210,13 +208,13 @@ library OptionsUtils {
         bool _isCall,
         uint256 _strikePrice,
         address _controller
-    ) internal view returns (bytes memory data) {
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         (string memory name, string memory symbol) = getQTokenMetadata(
-            _underlyingAsset,
-            _assetsRegistry,
-            _expiryTime,
-            _isCall,
-            _strikePrice
+            _underlyingAsset, _assetsRegistry, _expiryTime, _isCall, _strikePrice
         );
 
         data = abi.encodePacked(
@@ -275,7 +273,7 @@ library OptionsUtils {
         pure
         returns (string memory)
     {
-        uint256 strikePriceScale = 10**STRIKE_PRICE_DECIMALS;
+        uint256 strikePriceScale = 10 ** STRIKE_PRICE_DECIMALS;
         uint256 remainder = _strikePrice % strikePriceScale;
         uint256 quotient = _strikePrice / strikePriceScale;
         string memory quotientStr = Strings.toString(quotient);
@@ -291,10 +289,10 @@ library OptionsUtils {
         }
 
         // pad the number with "1 + starting zeroes"
-        remainder += 10**(STRIKE_PRICE_DECIMALS - trailingZeroes);
+        remainder += 10 ** (STRIKE_PRICE_DECIMALS - trailingZeroes);
 
         string memory tmp = Strings.toString(remainder);
-        tmp = slice(tmp, 1, (1 + STRIKE_PRICE_DECIMALS) - trailingZeroes);
+        tmp = slice(tmp, 1, 1 + STRIKE_PRICE_DECIMALS - trailingZeroes);
 
         return string(abi.encodePacked(quotientStr, ".", tmp));
     }
@@ -336,14 +334,14 @@ library OptionsUtils {
     /// @param _start the starting index
     /// @param _end the ending index (not inclusive)
     /// @return the indexed string
-    function slice(
-        string memory _s,
-        uint256 _start,
-        uint256 _end
-    ) internal pure returns (string memory) {
+    function slice(string memory _s, uint256 _start, uint256 _end)
+        internal
+        pure
+        returns (string memory)
+    {
         uint256 range = _end - _start;
         bytes memory slice_ = new bytes(range);
-        for (uint256 i = 0; i < range; ) {
+        for (uint256 i = 0; i < range;) {
             slice_[i] = bytes(_s)[_start + i];
             unchecked {
                 ++i;

@@ -8,11 +8,9 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract ERC20WithDecimals is ERC20 {
     uint8 private _decimals;
 
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        uint8 decimals_
-    ) ERC20(_name, _symbol) {
+    constructor(string memory _name, string memory _symbol, uint8 decimals_)
+        ERC20(_name, _symbol)
+    {
         _decimals = decimals_;
     }
 
@@ -85,7 +83,9 @@ contract AssetsRegistryTest is Test {
     function testAddAssetWithoutOptionalERC20Methods(
         string memory name,
         string memory symbol
-    ) public {
+    )
+        public
+    {
         SimpleERC20 asset = new SimpleERC20(name, symbol);
 
         // Should revert when trying to call asset.name()
