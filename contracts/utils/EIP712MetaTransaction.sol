@@ -3,8 +3,7 @@ pragma solidity 0.8.15;
 
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "../interfaces/IEIP712MetaTransaction.sol";
-import "../libraries/Actions.sol";
+import {ActionArgs} from "../libraries/Actions.sol";
 
 /// @title Contract to be inherited by contracts that want to support meta transactions.
 /// @author Rolla
