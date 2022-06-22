@@ -94,11 +94,6 @@ describe("Controller", async () => {
 
   const aMonth = 30 * 24 * 3600; // in seconds
 
-  const encodedTrueReturnValue = ethers.utils.defaultAbiCoder.encode(
-    ["bool"],
-    [true]
-  );
-
   const getCollateralRequirement = async (
     qTokenToMint: QToken,
     qTokenForCollateral: QToken,
@@ -2649,7 +2644,7 @@ describe("Controller", async () => {
           secondAccount.address,
           true,
           await controller.getNonce(deployer.address),
-          encodedTrueReturnValue
+          "0x"
         );
 
       expect(await qTokenCall2000.balanceOf(secondAccount.address)).to.equal(
@@ -2710,7 +2705,7 @@ describe("Controller", async () => {
           secondAccount.address,
           true,
           await controller.getNonce(deployer.address),
-          encodedTrueReturnValue
+          "0x"
         );
 
       expect(await qTokenCall3520.balanceOf(deployer.address)).to.equal(
@@ -2807,7 +2802,7 @@ describe("Controller", async () => {
           secondAccount.address,
           true,
           await controller.getNonce(deployer.address),
-          encodedTrueReturnValue
+          "0x"
         );
 
       expect(await BUSD.balanceOf(deployer.address)).to.equal(payoutAmount);
@@ -2917,7 +2912,7 @@ describe("Controller", async () => {
           secondAccount.address,
           true,
           await controller.getNonce(deployer.address),
-          encodedTrueReturnValue
+          "0x"
         );
 
       const collateralClaimed = await payoutAsset.balanceOf(deployer.address);
@@ -3015,7 +3010,7 @@ describe("Controller", async () => {
           secondAccount.address,
           true,
           await controller.getNonce(deployer.address),
-          encodedTrueReturnValue
+          "0x"
         );
 
       expect(await qTokenPut1400.balanceOf(deployer.address)).to.equal(

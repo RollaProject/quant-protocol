@@ -88,8 +88,7 @@ interface IController {
     /// CALL action) OR ANYONE WILL BE ABLE TO SPEND THEM AFTER YOU!!!
     /// @dev For documentation of each individual action, see the corresponding internal function in Controller.sol
     /// @param _actions array of ActionArgs structs, each representing an action to be executed
-    /// @return boolean indicating whether the actions were successfully executed
-    function operate(ActionArgs[] memory _actions) external returns (bool);
+    function operate(ActionArgs[] memory _actions) external;
 
     /// @notice Creates a new position with the given parameters
     function mintOptionsPosition(
@@ -115,10 +114,4 @@ interface IController {
     /// @notice Closes a neutral position
     function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
         external;
-
-    /// @notice Address of the OptionsFactory contract
-    function optionsFactory() external view returns (address);
-
-    /// @notice Address of the QuantCalculator being used
-    function quantCalculator() external view returns (address);
 }

@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import {SafeTransferLib, ERC20 as IERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
-import "@rari-capital/solmate/src/utils/ReentrancyGuard.sol";
-import "./QuantCalculator.sol";
-import "./options/QToken.sol";
-import "./options/CollateralToken.sol";
-import "./options/OptionsFactory.sol";
-import "./utils/EIP712MetaTransaction.sol";
-import "./utils/OperateProxy.sol";
-import "./interfaces/IOracleRegistry.sol";
 import "./interfaces/IController.sol";
-import "./interfaces/IQuantCalculator.sol";
-import "./interfaces/IOptionsFactory.sol";
-import "./interfaces/IAssetsRegistry.sol";
+import "./utils/EIP712MetaTransaction.sol";
+import {SafeTransferLib, ERC20 as IERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "./libraries/Actions.sol";
+import "./options/OptionsFactory.sol";
+import "./utils/OperateProxy.sol";
+import "./QuantCalculator.sol";
+import "./pricing/OracleRegistry.sol";
+import "./options/CollateralToken.sol";
+import "./options/QToken.sol";
 
 /// @title The main entry point in the Quant Protocol
 /// @author Rolla
@@ -24,19 +20,17 @@ import "./libraries/Actions.sol";
 /// @dev This contract is an upgradeable proxy, and it supports meta transactions.
 /// @dev The Controller holds all the collateral used to mint options. Options need to be created through the
 /// OptionsFactory first.
-contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
+contract Controller is IController, EIP712MetaTransaction {
     using SafeTransferLib for IERC20;
     using Actions for ActionArgs;
 
-    /// @inheritdoc IController
-    address public immutable override optionsFactory;
+    OptionsFactory public immutable optionsFactory;
 
     OperateProxy public immutable operateProxy;
 
-    /// @inheritdoc IController
-    address public immutable override quantCalculator;
+    QuantCalculator public immutable quantCalculator;
 
-    address public immutable oracleRegistry;
+    OracleRegistry public immutable oracleRegistry;
 
     CollateralToken public immutable collateralToken;
 
@@ -67,36 +61,31 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             "Controller: invalid AssetsRegistry address"
         );
 
-        oracleRegistry = _oracleRegistry;
+        oracleRegistry = OracleRegistry(_oracleRegistry);
 
         operateProxy = new OperateProxy();
         collateralToken = new CollateralToken(_name, _version, _uri);
 
-        optionsFactory = address(
-            new OptionsFactory(
-                _strikeAsset,
-                address(collateralToken),
-                address(this),
-                _oracleRegistry,
-                _assetsRegistry,
-                _qTokenImplementation
-            )
+        optionsFactory = new OptionsFactory(
+            _strikeAsset,
+            address(collateralToken),
+            address(this),
+            _oracleRegistry,
+            _assetsRegistry,
+            _qTokenImplementation
         );
 
-        quantCalculator = address(
-            new QuantCalculator(optionsFactory, _assetsRegistry, _priceRegistry)
+        quantCalculator = new QuantCalculator(
+            address(optionsFactory),
+            _assetsRegistry,
+            _priceRegistry
         );
 
-        collateralToken.setOptionsFactory(optionsFactory);
+        collateralToken.setOptionsFactory(address(optionsFactory));
     }
 
     /// @inheritdoc IController
-    function operate(ActionArgs[] memory _actions)
-        external
-        override
-        nonReentrant
-        returns (bool)
-    {
+    function operate(ActionArgs[] memory _actions) external override {
         /// WARNING: DO NOT UNDER ANY CIRCUMSTANCES APPROVE THE OperateProxy TO
         /// SPEND YOUR FUNDS (using CALL action) OR ANYONE WILL BE ABLE TO SPEND THEM AFTER YOU!!!
 
@@ -174,8 +163,6 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
                 ++i;
             }
         }
-
-        return true;
     }
 
     /// @inheritdoc IController
@@ -183,7 +170,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         address _to,
         address _qToken,
         uint256 _amount
-    ) external override nonReentrant {
+    ) external override {
         _mintOptionsPosition(_to, _qToken, _amount);
     }
 
@@ -192,16 +179,12 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         address _qTokenToMint,
         address _qTokenForCollateral,
         uint256 _amount
-    ) external override nonReentrant {
+    ) external override {
         _mintSpread(_qTokenToMint, _qTokenForCollateral, _amount);
     }
 
     /// @inheritdoc IController
-    function exercise(address _qToken, uint256 _amount)
-        external
-        override
-        nonReentrant
-    {
+    function exercise(address _qToken, uint256 _amount) external override {
         _exercise(_qToken, _amount);
     }
 
@@ -209,7 +192,6 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     function claimCollateral(uint256 _collateralTokenId, uint256 _amount)
         external
         override
-        nonReentrant
     {
         _claimCollateral(_collateralTokenId, _amount);
     }
@@ -218,7 +200,6 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
         external
         override
-        nonReentrant
     {
         _neutralizePosition(_collateralTokenId, _amount);
     }
@@ -244,9 +225,8 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         // get the collateral required to mint the specified amount of options
         // the zero address is passed as the second argument as it's only used
         // for spreads
-        (address collateral, uint256 collateralAmount) = IQuantCalculator(
-            quantCalculator
-        ).getCollateralRequirement(_qToken, address(0), _amount);
+        (address collateral, uint256 collateralAmount) = quantCalculator
+            .getCollateralRequirement(_qToken, address(0), _amount);
 
         _checkIfUnexpiredQToken(_qToken);
 
@@ -301,9 +281,8 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
 
         // Calculate the extra collateral required to create the spread.
         // A positive value for debit spreads and zero for credit spreads.
-        (address collateral, uint256 collateralAmount) = IQuantCalculator(
-            quantCalculator
-        ).getCollateralRequirement(
+        (address collateral, uint256 collateralAmount) = quantCalculator
+            .getCollateralRequirement(
                 _qTokenToMint,
                 _qTokenForCollateral,
                 _amount
@@ -392,7 +371,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             bool isSettled,
             address payoutToken,
             uint256 exerciseTotal
-        ) = IQuantCalculator(quantCalculator).getExercisePayout(
+        ) = quantCalculator.getExercisePayout(
                 address(qToken),
                 amountToExercise
             );
@@ -429,7 +408,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
             uint256 returnableCollateral,
             address collateralAsset,
             uint256 amountToClaim
-        ) = IQuantCalculator(quantCalculator).calculateClaimableCollateral(
+        ) = quantCalculator.calculateClaimableCollateral(
                 collateralTokenId,
                 _amount,
                 _msgSender()
@@ -505,9 +484,12 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
 
         // use the QuantCalculator to check how much collateral the sender/signer is due
         // for closing the neutral position
-        (address collateralType, uint256 collateralOwed) = IQuantCalculator(
-            quantCalculator
-        ).getNeutralizationPayout(qTokenShort, qTokenLong, amountToNeutralize);
+        (address collateralType, uint256 collateralOwed) = quantCalculator
+            .getNeutralizationPayout(
+                qTokenShort,
+                qTokenLong,
+                amountToNeutralize
+            );
 
         // burn the short tokens
         QToken(qTokenShort).burn(_msgSender(), amountToNeutralize);
@@ -556,7 +538,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
         bytes32 _s
     ) internal {
         require(
-            IOptionsFactory(optionsFactory).isQToken(_qToken),
+            optionsFactory.isQToken(_qToken),
             "Controller: not a QToken for calling permit"
         );
 
@@ -621,9 +603,7 @@ contract Controller is IController, EIP712MetaTransaction, ReentrancyGuard {
     /// @param _qToken The address of the QToken to check.
     function _checkIfActiveOracle(address _qToken) internal view {
         require(
-            IOracleRegistry(oracleRegistry).isOracleActive(
-                QToken(_qToken).oracle()
-            ),
+            oracleRegistry.isOracleActive(QToken(_qToken).oracle()),
             "Controller: Can't mint an options position as the oracle is inactive"
         );
     }
