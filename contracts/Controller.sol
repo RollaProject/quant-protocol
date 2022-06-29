@@ -144,10 +144,6 @@ contract Controller is IController, EIP712MetaTransaction {
                     owner, operator, approved, nonce, deadline, v, r, s
                 );
             } else {
-                require(
-                    action.actionType == ActionType.Call,
-                    "Controller: Invalid action type"
-                );
                 (address callee, bytes memory data) = action.parseCallArgs();
                 _call(callee, data);
             }
