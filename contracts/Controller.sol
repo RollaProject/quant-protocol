@@ -100,22 +100,22 @@ contract Controller is IController, EIP712MetaTransaction {
             if (action.actionType == ActionType.MintOption) {
                 (address to, address qToken, uint256 amount) =
                     action.parseMintOptionArgs();
-                _mintOptionsPosition(to, qToken, amount);
+                mintOptionsPosition(to, qToken, amount);
             } else if (action.actionType == ActionType.MintSpread) {
                 (address qTokenToMint, address qTokenForCollateral, uint256 amount)
                     = action.parseMintSpreadArgs();
-                _mintSpread(qTokenToMint, qTokenForCollateral, amount);
+                mintSpread(qTokenToMint, qTokenForCollateral, amount);
             } else if (action.actionType == ActionType.Exercise) {
                 (address qToken, uint256 amount) = action.parseExerciseArgs();
-                _exercise(qToken, amount);
+                exercise(qToken, amount);
             } else if (action.actionType == ActionType.ClaimCollateral) {
                 (uint256 collateralTokenId, uint256 amount) =
                     action.parseClaimCollateralArgs();
-                _claimCollateral(collateralTokenId, amount);
+                claimCollateral(collateralTokenId, amount);
             } else if (action.actionType == ActionType.Neutralize) {
                 (uint256 collateralTokenId, uint256 amount) =
                     action.parseNeutralizeArgs();
-                _neutralizePosition(collateralTokenId, amount);
+                neutralizePosition(collateralTokenId, amount);
             } else if (action.actionType == ActionType.QTokenPermit) {
                 (
                     address qToken,
@@ -156,58 +156,8 @@ contract Controller is IController, EIP712MetaTransaction {
 
     /// @inheritdoc IController
     function mintOptionsPosition(address _to, address _qToken, uint256 _amount)
-        external
+        public
         override
-    {
-        _mintOptionsPosition(_to, _qToken, _amount);
-    }
-
-    /// @inheritdoc IController
-    function mintSpread(
-        address _qTokenToMint,
-        address _qTokenForCollateral,
-        uint256 _amount
-    )
-        external
-        override
-    {
-        _mintSpread(_qTokenToMint, _qTokenForCollateral, _amount);
-    }
-
-    /// @inheritdoc IController
-    function exercise(address _qToken, uint256 _amount) external override {
-        _exercise(_qToken, _amount);
-    }
-
-    /// @inheritdoc IController
-    function claimCollateral(uint256 _collateralTokenId, uint256 _amount)
-        external
-        override
-    {
-        _claimCollateral(_collateralTokenId, _amount);
-    }
-
-    /// @inheritdoc IController
-    function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
-        external
-        override
-    {
-        _neutralizePosition(_collateralTokenId, _amount);
-    }
-
-    /// @notice Mints options for a given QToken, which must have been previously created in
-    /// the configured OptionsFactory.
-    /// @dev The caller (or signer in case of meta transactions) must first approve the Controller
-    /// to spend the collateral asset, and then this function can be called, pulling the collateral
-    /// from the caller/signer and minting QTokens and CollateralTokens to the given `to` address.
-    /// Note that QTokens represent a long position, giving holders the ability to exercise options
-    /// after expiry, while CollateralTokens represent a short position, giving holders the ability
-    /// to claim the collateral after expiry.
-    /// @param _to The address to which the QTokens and CollateralTokens will be minted.
-    /// @param _qToken The QToken that represents the long position for the option to be minted.
-    /// @param _amount The amount of options to be minted.
-    function _mintOptionsPosition(address _to, address _qToken, uint256 _amount)
-        internal
     {
         QToken qToken = QToken(_qToken);
 
@@ -240,18 +190,14 @@ contract Controller is IController, EIP712MetaTransaction {
             );
     }
 
-    /// @notice Creates a spread position from an option to long and another option to short.
-    /// @dev The caller (or signer in case of meta transactions) must first approve the Controller
-    /// to spend the collateral asset in cases of a debit spread.
-    /// @param _qTokenToMint The QToken for the option to be long.
-    /// @param _qTokenForCollateral The QToken for the option to be short.
-    /// @param _amount The amount of long options to be minted.
-    function _mintSpread(
+    /// @inheritdoc IController
+    function mintSpread(
         address _qTokenToMint,
         address _qTokenForCollateral,
         uint256 _amount
     )
-        internal
+        public
+        override
     {
         require(
             _qTokenToMint != _qTokenForCollateral,
@@ -322,11 +268,8 @@ contract Controller is IController, EIP712MetaTransaction {
             );
     }
 
-    /// @notice Closes a long position after the option's expiry.
-    /// @dev Pass an `_amount` of 0 to close the entire position.
-    /// @param _qToken The QToken representing the long position to be closed.
-    /// @param _amount The amount of options to exercise.
-    function _exercise(address _qToken, uint256 _amount) internal {
+    /// @inheritdoc IController
+    function exercise(address _qToken, uint256 _amount) public override {
         QToken qToken = QToken(_qToken);
         require(
             block.timestamp > qToken.expiryTime(),
@@ -363,11 +306,10 @@ contract Controller is IController, EIP712MetaTransaction {
             );
     }
 
-    /// @notice Closes a short position after the option's expiry.
-    /// @param _collateralTokenId ERC1155 token id representing the short position to be closed.
-    /// @param _amount The size of the position to close.
-    function _claimCollateral(uint256 _collateralTokenId, uint256 _amount)
-        internal
+    /// @inheritdoc IController
+    function claimCollateral(uint256 _collateralTokenId, uint256 _amount)
+        public
+        override
     {
         uint256 collateralTokenId = _collateralTokenId;
 
@@ -399,12 +341,10 @@ contract Controller is IController, EIP712MetaTransaction {
             );
     }
 
-    /// @notice Closes a neutral position, claiming all the collateral required to create it.
-    /// @dev Unlike `_exercise` and `_claimCollateral`, this function does not require the option to be expired.
-    /// @param _collateralTokenId ERC1155 token id representing the position to be closed.
-    /// @param _amount The size of the position to close.
-    function _neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
-        internal
+    /// @inheritdoc IController
+    function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
+        public
+        override
     {
         /// @dev Put these values in the stack to save gas from having to read
         /// from calldata

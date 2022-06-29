@@ -90,11 +90,26 @@ interface IController {
     /// @param _actions array of ActionArgs structs, each representing an action to be executed
     function operate(ActionArgs[] memory _actions) external;
 
-    /// @notice Creates a new position with the given parameters
+    /// @notice Mints options for a given QToken, which must have been previously created in
+    /// the configured OptionsFactory.
+    /// @dev The caller (or signer in case of meta transactions) must first approve the Controller
+    /// to spend the collateral asset, and then this function can be called, pulling the collateral
+    /// from the caller/signer and minting QTokens and CollateralTokens to the given `to` address.
+    /// Note that QTokens represent a long position, giving holders the ability to exercise options
+    /// after expiry, while CollateralTokens represent a short position, giving holders the ability
+    /// to claim the collateral after expiry.
+    /// @param _to The address to which the QTokens and CollateralTokens will be minted.
+    /// @param _qToken The QToken that represents the long position for the option to be minted.
+    /// @param _amount The amount of options to be minted.
     function mintOptionsPosition(address _to, address _qToken, uint256 _amount)
         external;
 
-    /// @notice Creates a new spread position with the given parameters
+    /// @notice Creates a spread position from an option to long and another option to short.
+    /// @dev The caller (or signer in case of meta transactions) must first approve the Controller
+    /// to spend the collateral asset in cases of a debit spread.
+    /// @param _qTokenToMint The QToken for the option to be long.
+    /// @param _qTokenForCollateral The QToken for the option to be short.
+    /// @param _amount The amount of long options to be minted.
     function mintSpread(
         address _qTokenToMint,
         address _qTokenForCollateral,
@@ -102,14 +117,22 @@ interface IController {
     )
         external;
 
-    /// @notice Exercises the given long position
+    /// @notice Closes a long position after the option's expiry.
+    /// @dev Pass an `_amount` of 0 to close the entire position.
+    /// @param _qToken The QToken representing the long position to be closed.
+    /// @param _amount The amount of options to exercise.
     function exercise(address _qToken, uint256 _amount) external;
 
-    /// @notice Claim collateral for a short position
+    /// @notice Closes a short position after the option's expiry.
+    /// @param _collateralTokenId ERC1155 token id representing the short position to be closed.
+    /// @param _amount The size of the position to close.
     function claimCollateral(uint256 _collateralTokenId, uint256 _amount)
         external;
 
-    /// @notice Closes a neutral position
+    /// @notice Closes a neutral position, claiming all the collateral required to create it.
+    /// @dev Unlike `_exercise` and `_claimCollateral`, this function does not require the option to be expired.
+    /// @param _collateralTokenId ERC1155 token id representing the position to be closed.
+    /// @param _amount The size of the position to close.
     function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
         external;
 }
