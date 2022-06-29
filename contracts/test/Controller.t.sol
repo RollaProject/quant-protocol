@@ -11,6 +11,7 @@ import {AssetsRegistry} from "../options/AssetsRegistry.sol";
 import {
     IPriceRegistry, PriceWithDecimals
 } from "../interfaces/IPriceRegistry.sol";
+import {ActionArgs, ActionType} from "../libraries/Actions.sol";
 
 contract ERC20 is SolmateERC20 {
     constructor(string memory _name, string memory _symbol, uint8 _decimals)
@@ -134,5 +135,38 @@ contract ControllerTest is Test {
 
     function testGas_mintOptionsPosition() public {
         controller.mintOptionsPosition(user, address(qTokenX), 1 ether);
+    }
+
+    function testCannotPassInvalidActionType() public {
+        ActionArgs[] memory args = new ActionArgs[](1);
+        args[0] = ActionArgs(
+            ActionType.Call,
+            address(32),
+            address(64),
+            address(96),
+            uint256(128),
+            uint256(160),
+            "0xc0"
+        );
+
+        uint256 firstArrayArgOffset;
+        uint256 actionType;
+        uint256 invalidActionType = 10;
+
+        assembly {
+            firstArrayArgOffset := mload(add(args, 0x20))
+            actionType := mload(firstArrayArgOffset)
+        }
+        assertEq(actionType, uint256(7));
+
+        assembly {
+            mstore(firstArrayArgOffset, invalidActionType)
+            actionType := mload(firstArrayArgOffset)
+        }
+        assertEq(actionType, invalidActionType);
+
+        vm.expectRevert(stdError.enumConversionError);
+
+        controller.operate(args);
     }
 }
