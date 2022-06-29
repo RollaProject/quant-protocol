@@ -12,21 +12,22 @@ enum ActionType {
     Call
 }
 
-struct ActionArgs { //type of action to perform
-    //qToken to exercise or mint
-    //secondary address depending on the action type
-    //receiving address of minting or function call
-    //amount of qTokens or collateral tokens
-    //secondary uint depending on the action type
-    //extra data for function calls
-        ActionType actionType;
-        address qToken;
-        address secondaryAddress;
-        address receiver;
-        uint256 amount;
-        uint256 secondaryUint;
-        bytes data;
-    }
+struct ActionArgs {
+// type of action to perform
+    ActionType actionType;
+    // qToken to exercise or mint
+    address qToken;
+    // secondary address depending on the action type
+    address secondaryAddress;
+    // receiving address of minting or function call
+    address receiver;
+    // amount of qTokens or collateral tokens
+    uint256 amount;
+    // secondary uint depending on the action type
+    uint256 secondaryUint;
+    // extra data for function calls
+    bytes data;
+}
 
 /// @title Library to parse arguments for actions to be executed by the Controller
 /// @author Rolla
