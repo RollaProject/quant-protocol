@@ -346,17 +346,12 @@ contract Controller is IController, EIP712MetaTransaction {
         public
         override
     {
-        /// @dev Put these values in the stack to save gas from having to read
-        /// from calldata
-        (uint256 collateralTokenId, uint256 amount) =
-            (_collateralTokenId, _amount);
-
         (address qTokenShort, address qTokenLong) =
-            collateralToken.idToInfo(collateralTokenId);
+            collateralToken.idToInfo(_collateralTokenId);
 
         //get the amount of CollateralTokens owned
         uint256 collateralTokensOwned =
-            collateralToken.balanceOf(_msgSender(), collateralTokenId);
+            collateralToken.balanceOf(_msgSender(), _collateralTokenId);
 
         //get the amount of QTokens owned
         uint256 qTokensOwned = QToken(qTokenShort).balanceOf(_msgSender());
@@ -369,12 +364,12 @@ contract Controller is IController, EIP712MetaTransaction {
 
         // make sure that the amount passed is not greater than the amount that can be neutralized
         uint256 amountToNeutralize;
-        if (amount != 0) {
+        if (_amount != 0) {
             require(
-                amount <= maxNeutralizable,
+                _amount <= maxNeutralizable,
                 "Controller: Tried to neutralize more than balance"
             );
-            amountToNeutralize = amount;
+            amountToNeutralize = _amount;
         } else {
             amountToNeutralize = maxNeutralizable;
         }
@@ -391,7 +386,7 @@ contract Controller is IController, EIP712MetaTransaction {
 
         // burn the long tokens
         collateralToken.burnCollateralToken(
-            _msgSender(), collateralTokenId, amountToNeutralize
+            _msgSender(), _collateralTokenId, amountToNeutralize
         );
 
         // tranfer the collateral owed
