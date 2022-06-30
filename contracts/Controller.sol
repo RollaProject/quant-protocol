@@ -159,10 +159,12 @@ contract Controller is IController, EIP712MetaTransaction {
         public
         override
     {
-        QToken qToken = QToken(_qToken);
+        /// -------------------------------------------------------------------
+        /// Checks
+        /// -------------------------------------------------------------------
 
-        // get the collateral required to mint the specified amount of options
-        // the zero address is passed as the second argument as it's only used
+        // Get the collateral required to mint the specified amount of options
+        // The zero address is passed as the second argument as it's only used
         // for spreads
         (address collateral, uint256 collateralAmount) =
             quantCalculator.getCollateralRequirement(_qToken, address(0), _amount);
@@ -171,13 +173,13 @@ contract Controller is IController, EIP712MetaTransaction {
 
         _checkIfActiveOracle(_qToken);
 
-        // pull the required collateral from the caller/signer
-        IERC20(collateral).safeTransferFrom(
-            _msgSender(), address(this), collateralAmount
-        );
+        /// -------------------------------------------------------------------
+        /// Effects
+        /// -------------------------------------------------------------------
 
-        // Mint the options to the sender's address
-        qToken.mint(_to, _amount);
+        // Mint the options to the recipient's address
+        QToken(_qToken).mint(_to, _amount);
+
         uint256 collateralTokenId =
             collateralToken.getCollateralTokenId(_qToken, address(0));
 
@@ -188,6 +190,15 @@ contract Controller is IController, EIP712MetaTransaction {
         emit OptionsPositionMinted(
             _to, _msgSender(), _qToken, _amount, collateral, collateralAmount
             );
+
+        /// -------------------------------------------------------------------
+        /// Interactions
+        /// -------------------------------------------------------------------
+
+        // pull the required collateral from the caller/signer
+        IERC20(collateral).safeTransferFrom(
+            _msgSender(), address(this), collateralAmount
+        );
     }
 
     /// @inheritdoc IController
@@ -199,13 +210,14 @@ contract Controller is IController, EIP712MetaTransaction {
         public
         override
     {
+        /// -------------------------------------------------------------------
+        /// Checks
+        /// -------------------------------------------------------------------
+
         require(
             _qTokenToMint != _qTokenForCollateral,
             "Controller: Can only create a spread with different tokens"
         );
-
-        QToken qTokenToMint = QToken(_qTokenToMint);
-        QToken qTokenForCollateral = QToken(_qTokenForCollateral);
 
         // Calculate the extra collateral required to create the spread.
         // A positive value for debit spreads and zero for credit spreads.
@@ -224,15 +236,12 @@ contract Controller is IController, EIP712MetaTransaction {
         // requires that both QTokens have the same oracle
         _checkIfActiveOracle(_qTokenToMint);
 
-        // Burn the QToken being shorted
-        qTokenForCollateral.burn(_msgSender(), _amount);
+        /// -------------------------------------------------------------------
+        /// Effects
+        /// -------------------------------------------------------------------
 
-        // Transfer in any collateral required for the spread
-        if (collateralAmount > 0) {
-            IERC20(collateral).safeTransferFrom(
-                _msgSender(), address(this), collateralAmount
-            );
-        }
+        // Burn the QToken being shorted
+        QToken(_qTokenForCollateral).burn(_msgSender(), _amount);
 
         // Check if the CollateralToken representing this specific spread has already been created
         // Create it if it hasn't
@@ -256,7 +265,7 @@ contract Controller is IController, EIP712MetaTransaction {
         collateralToken.mintCollateralToken(
             _msgSender(), collateralTokenId, _amount
         );
-        qTokenToMint.mint(_msgSender(), _amount);
+        QToken(_qTokenToMint).mint(_msgSender(), _amount);
 
         emit SpreadMinted(
             _msgSender(),
@@ -266,11 +275,27 @@ contract Controller is IController, EIP712MetaTransaction {
             collateral,
             collateralAmount
             );
+
+        /// -------------------------------------------------------------------
+        /// Interactions
+        /// -------------------------------------------------------------------
+
+        // Transfer in any collateral required for the spread
+        if (collateralAmount > 0) {
+            IERC20(collateral).safeTransferFrom(
+                _msgSender(), address(this), collateralAmount
+            );
+        }
     }
 
     /// @inheritdoc IController
     function exercise(address _qToken, uint256 _amount) public override {
         QToken qToken = QToken(_qToken);
+
+        /// -------------------------------------------------------------------
+        /// Checks
+        /// -------------------------------------------------------------------
+
         require(
             block.timestamp > qToken.expiryTime(),
             "Controller: Can not exercise options before their expiry"
@@ -285,25 +310,29 @@ contract Controller is IController, EIP712MetaTransaction {
         // Use the QuantCalculator to check how much the sender/signer is due.
         // Will only be a positive value for options that expired In The Money.
         (bool isSettled, address payoutToken, uint256 exerciseTotal) =
-            quantCalculator.getExercisePayout(address(qToken), amountToExercise);
+            quantCalculator.getExercisePayout(_qToken, amountToExercise);
 
         require(isSettled, "Controller: Cannot exercise unsettled options");
 
+        /// -------------------------------------------------------------------
+        /// Effects
+        /// -------------------------------------------------------------------
+
         // Burn the long tokens
         qToken.burn(_msgSender(), amountToExercise);
+
+        emit OptionsExercised(
+            _msgSender(), _qToken, amountToExercise, exerciseTotal, payoutToken
+            );
+
+        /// -------------------------------------------------------------------
+        /// Interactions
+        /// -------------------------------------------------------------------
 
         // Transfer any profit due after expiration
         if (exerciseTotal > 0) {
             IERC20(payoutToken).safeTransfer(_msgSender(), exerciseTotal);
         }
-
-        emit OptionsExercised(
-            _msgSender(),
-            address(qToken),
-            amountToExercise,
-            exerciseTotal,
-            payoutToken
-            );
     }
 
     /// @inheritdoc IController
@@ -311,19 +340,37 @@ contract Controller is IController, EIP712MetaTransaction {
         public
         override
     {
-        uint256 collateralTokenId = _collateralTokenId;
+        /// -------------------------------------------------------------------
+        /// Checks
+        /// -------------------------------------------------------------------
 
         // Use the QuantCalculator to check how much collateral the sender/signer is due.
         (
             uint256 returnableCollateral, address collateralAsset, uint256 amountToClaim
         ) = quantCalculator.calculateClaimableCollateral(
-            collateralTokenId, _amount, _msgSender()
+            _collateralTokenId, _amount, _msgSender()
         );
+
+        /// -------------------------------------------------------------------
+        /// Effects
+        /// -------------------------------------------------------------------
 
         // Burn the short tokens
         collateralToken.burnCollateralToken(
-            _msgSender(), collateralTokenId, amountToClaim
+            _msgSender(), _collateralTokenId, amountToClaim
         );
+
+        emit CollateralClaimed(
+            _msgSender(),
+            _collateralTokenId,
+            amountToClaim,
+            returnableCollateral,
+            collateralAsset
+            );
+
+        /// -------------------------------------------------------------------
+        /// Interactions
+        /// -------------------------------------------------------------------
 
         // Transfer any collateral due after expiration
         if (returnableCollateral > 0) {
@@ -331,14 +378,6 @@ contract Controller is IController, EIP712MetaTransaction {
                 _msgSender(), returnableCollateral
             );
         }
-
-        emit CollateralClaimed(
-            _msgSender(),
-            collateralTokenId,
-            amountToClaim,
-            returnableCollateral,
-            collateralAsset
-            );
     }
 
     /// @inheritdoc IController
@@ -346,6 +385,10 @@ contract Controller is IController, EIP712MetaTransaction {
         public
         override
     {
+        /// -------------------------------------------------------------------
+        /// Checks
+        /// -------------------------------------------------------------------
+
         (address qTokenShort, address qTokenLong) =
             collateralToken.idToInfo(_collateralTokenId);
 
@@ -381,6 +424,10 @@ contract Controller is IController, EIP712MetaTransaction {
             qTokenShort, qTokenLong, amountToNeutralize
         );
 
+        /// -------------------------------------------------------------------
+        /// Effects
+        /// -------------------------------------------------------------------
+
         // burn the short tokens
         QToken(qTokenShort).burn(_msgSender(), amountToNeutralize);
 
@@ -388,9 +435,6 @@ contract Controller is IController, EIP712MetaTransaction {
         collateralToken.burnCollateralToken(
             _msgSender(), _collateralTokenId, amountToNeutralize
         );
-
-        // tranfer the collateral owed
-        IERC20(collateralType).safeTransfer(_msgSender(), collateralOwed);
 
         //give the user their long tokens (if any, in case of CollateralTokens representing a spread)
         if (qTokenLong != address(0)) {
@@ -405,6 +449,13 @@ contract Controller is IController, EIP712MetaTransaction {
             collateralType,
             qTokenLong
             );
+
+        /// -------------------------------------------------------------------
+        /// Interactions
+        /// -------------------------------------------------------------------
+
+        // tranfer the collateral owed
+        IERC20(collateralType).safeTransfer(_msgSender(), collateralOwed);
     }
 
     /// @notice Allows a QToken owner to approve a spender to transfer a specified amount of tokens on their behalf.
