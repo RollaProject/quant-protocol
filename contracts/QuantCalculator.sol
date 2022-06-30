@@ -106,11 +106,6 @@ contract QuantCalculator is IQuantCalculator {
         (address _qTokenShort, address qTokenAsCollateral) =
             collateralToken.idToInfo(_collateralTokenId);
 
-        require(
-            _qTokenShort != address(0),
-            "Can not claim collateral from non-existing option"
-        );
-
         IQToken qTokenShort = IQToken(_qTokenShort);
         address oracle = qTokenShort.oracle();
         uint88 expiryTime = qTokenShort.expiryTime();
