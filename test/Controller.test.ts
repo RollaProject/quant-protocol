@@ -1895,7 +1895,7 @@ describe("Controller", async () => {
             amount: ethers.utils.parseEther("1"),
           }),
         ])
-      ).to.be.revertedWith("Can not claim collateral from non-existing option");
+      ).to.be.reverted;
     });
 
     it("Should revert when trying to claim collateral from options before their expiry", async () => {
