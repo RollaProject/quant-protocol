@@ -766,20 +766,6 @@ describe("Controller", async () => {
   beforeEach(testSetup);
 
   describe("neutralizePosition", () => {
-    it("Should revert when users try to neutralize more options than they have", async () => {
-      await expect(
-        controller.connect(secondAccount).operate([
-          encodeNeutralizeArgs({
-            collateralTokenId: await collateralToken.getCollateralTokenId(
-              qTokenCall3520.address,
-              AddressZero
-            ),
-            amount: ethers.utils.parseEther("4"),
-          }),
-        ])
-      ).to.be.revertedWith("Controller: Tried to neutralize more than balance");
-    });
-
     it("Users should be able to neutralize some of their position", async () => {
       const optionsAmount = ethers.utils.parseEther("5");
 
