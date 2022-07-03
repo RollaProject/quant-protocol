@@ -113,7 +113,7 @@ perl -0777 -i -pe 's/unchecked {\s*(.*)\s*}/$1/g' contracts/external/ERC20.sol
 # Add the ClonesWithImmutableArgsWrapper contract to the OptionsFactory
 perl -0777 -i -pe 's/QToken public immutable implementation;\n/QToken public immutable implementation;\n\n\tClonesWithImmutableArgsWrapper public immutable clonesWrapper;\n\n/g' contracts/options/OptionsFactory.sol
 perl -0777 -i -pe 's/using ClonesWithImmutableArgs for address;\n//g' contracts/options/OptionsFactory.sol
-perl -0777 -i -pe 's/import {ClonesWithImmutableArgs} from "\@rolla-finance\/clones-with-immutable-args\/ClonesWithImmutableArgs.sol";/import "..\/..\/spec\/harness\/ClonesWithImmutableArgsWrapper.sol";/g' contracts/options/OptionsFactory.sol
+perl -0777 -i -pe 's/import {ClonesWithImmutableArgs} from\s*"\@rolla-finance\/clones-with-immutable-args\/ClonesWithImmutableArgs.sol";/import "..\/..\/spec\/harness\/ClonesWithImmutableArgsWrapper.sol";/g' contracts/options/OptionsFactory.sol
 perl -0777 -i -pe 's/implementation = _implementation;\n/implementation = _implementation;\n\n\t\tclonesWrapper = new ClonesWithImmutableArgsWrapper\(\);\n/g' contracts/options/OptionsFactory.sol
 perl -0777 -i -pe 's/newQToken = address\(implementation\).cloneDeterministic\(\n/newQToken = clonesWrapper.cloneDeterministic\(\n\t\t\taddress\(implementation\),\n/g' contracts/options/OptionsFactory.sol
 perl -0777 -i -pe 's/\(qToken, exists\) = ClonesWithImmutableArgs.predictDeterministicAddress\(\n/\(qToken, exists\) = clonesWrapper.predictDeterministicAddress\(\n/g' contracts/options/OptionsFactory.sol
