@@ -52,26 +52,6 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         roundData[_roundData.roundId] = _roundData;
     }
 
-    // solhint-disable-next-line no-empty-blocks
-    function acceptOwnership() external override { //noop
-    }
-
-    // solhint-disable-next-line no-empty-blocks
-    function confirmAggregator(address _aggregator) external override { //noop
-    }
-
-    // solhint-disable-next-line no-empty-blocks
-    function proposeAggregator(address _aggregator) external override { //noop
-    }
-
-    // solhint-disable-next-line no-empty-blocks
-    function setController(address _accessController) external override { //noop
-    }
-
-    // solhint-disable-next-line no-empty-blocks
-    function transferOwnership(address _to) external override { //noop
-    }
-
     function getAnswer(uint256 _roundId)
         external
         view

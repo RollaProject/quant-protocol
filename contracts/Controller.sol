@@ -385,7 +385,10 @@ contract Controller is IController, EIP712MetaTransaction {
     }
 
     /// @inheritdoc IController
-    function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
+    function neutralizePosition(
+        uint256 _collateralTokenId,
+        uint256 _amountToNeutralize
+    )
         public
         override
     {
@@ -396,36 +399,26 @@ contract Controller is IController, EIP712MetaTransaction {
         (address qTokenShort, address qTokenLong) =
             collateralToken.idToInfo(_collateralTokenId);
 
-        //get the amount of CollateralTokens owned
-        uint256 collateralTokensOwned =
-            collateralToken.balanceOf(_msgSender(), _collateralTokenId);
+        if (_amountToNeutralize == 0) {
+            //get the amount of CollateralTokens owned
+            uint256 collateralTokensOwned =
+                collateralToken.balanceOf(_msgSender(), _collateralTokenId);
 
-        //get the amount of QTokens owned
-        uint256 qTokensOwned = QToken(qTokenShort).balanceOf(_msgSender());
+            //get the amount of QTokens owned
+            uint256 qTokensOwned = QToken(qTokenShort).balanceOf(_msgSender());
 
-        // the size of the position that can be neutralized
-        uint256 maxNeutralizable =
-            qTokensOwned < collateralTokensOwned
-            ? qTokensOwned
-            : collateralTokensOwned;
-
-        // make sure that the amount passed is not greater than the amount that can be neutralized
-        uint256 amountToNeutralize;
-        if (_amount != 0) {
-            require(
-                _amount <= maxNeutralizable,
-                "Controller: Tried to neutralize more than balance"
-            );
-            amountToNeutralize = _amount;
-        } else {
-            amountToNeutralize = maxNeutralizable;
+            // the size of the position that can be neutralized
+            _amountToNeutralize =
+                qTokensOwned < collateralTokensOwned
+                ? qTokensOwned
+                : collateralTokensOwned;
         }
 
         // use the QuantCalculator to check how much collateral the sender/signer is due
         // for closing the neutral position
         (address collateralType, uint256 collateralOwed) = quantCalculator
             .getNeutralizationPayout(
-            qTokenShort, qTokenLong, amountToNeutralize
+            qTokenShort, qTokenLong, _amountToNeutralize
         );
 
         /// -------------------------------------------------------------------
@@ -433,22 +426,22 @@ contract Controller is IController, EIP712MetaTransaction {
         /// -------------------------------------------------------------------
 
         // burn the short tokens
-        QToken(qTokenShort).burn(_msgSender(), amountToNeutralize);
+        QToken(qTokenShort).burn(_msgSender(), _amountToNeutralize);
 
         // burn the long tokens
         collateralToken.burnCollateralToken(
-            _msgSender(), _collateralTokenId, amountToNeutralize
+            _msgSender(), _collateralTokenId, _amountToNeutralize
         );
 
         //give the user their long tokens (if any, in case of CollateralTokens representing a spread)
         if (qTokenLong != address(0)) {
-            QToken(qTokenLong).mint(_msgSender(), amountToNeutralize);
+            QToken(qTokenLong).mint(_msgSender(), _amountToNeutralize);
         }
 
         emit NeutralizePosition(
             _msgSender(),
             qTokenShort,
-            amountToNeutralize,
+            _amountToNeutralize,
             collateralOwed,
             collateralType,
             qTokenLong

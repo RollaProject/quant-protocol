@@ -185,8 +185,6 @@ contract ControllerTest is Test {
 
         controller.neutralizePosition(cTokenIdX, userQTokenBalance * 2);
 
-        // uint256 userCollateralTokenBalance = 0.5 ether;
-
         // storage slot for the balanceOf mapping in the CollateralToken contract
         uint256 balanceOfSlot = 0;
 

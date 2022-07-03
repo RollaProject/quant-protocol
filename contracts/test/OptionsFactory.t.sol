@@ -4,10 +4,6 @@ pragma solidity 0.8.15;
 import "forge-std/Test.sol";
 import {OptionsFactory} from "../options/OptionsFactory.sol";
 import {CollateralToken} from "../options/CollateralToken.sol";
-import {ProxyAdmin} from
-    "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {TransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ERC20 as SolmateERC20} from "solmate/tokens/ERC20.sol";
 import {AssetsRegistry} from "../options/AssetsRegistry.sol";
 import {OracleRegistry} from "../pricing/OracleRegistry.sol";
@@ -75,17 +71,6 @@ contract OptionsFactoryTest is Test {
         );
 
         collateralToken.setOptionsFactory(address(optionsFactory));
-
-        // Deploy and configure the ChainlinkOracleManager
-        // chainlinkOracleManager = new ChainlinkOracleManager(
-        //     address(quantConfig),
-        //     BUSD.decimals(),
-        //     fallbackPeriod
-        // );
-        // quantConfig.setProtocolAddress(
-        //     keccak256("chainlinkOracleManager"),
-        //     address(chainlinkOracleManager)
-        // );
 
         vm.mockCall(
             priceRegistry,

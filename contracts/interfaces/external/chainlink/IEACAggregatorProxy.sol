@@ -16,16 +16,6 @@ interface IEACAggregatorProxy {
     event OwnershipTransferRequested(address indexed from, address indexed to);
     event OwnershipTransferred(address indexed from, address indexed to);
 
-    function acceptOwnership() external;
-
-    function confirmAggregator(address _aggregator) external;
-
-    function proposeAggregator(address _aggregator) external;
-
-    function setController(address _accessController) external;
-
-    function transferOwnership(address _to) external;
-
     function accessController() external view returns (address);
 
     function aggregator() external view returns (address);
