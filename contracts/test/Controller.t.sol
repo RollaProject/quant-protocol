@@ -8,6 +8,7 @@ import {Controller} from "../Controller.sol";
 import {QToken} from "../options/QToken.sol";
 import {OptionsFactory} from "../options/OptionsFactory.sol";
 import {AssetsRegistry} from "../options/AssetsRegistry.sol";
+import {CollateralToken} from "../options/CollateralToken.sol";
 import {
     IPriceRegistry, PriceWithDecimals
 } from "../interfaces/IPriceRegistry.sol";
@@ -27,6 +28,7 @@ contract ControllerTest is Test {
     AssetsRegistry assetsRegistry;
     QToken qTokenX;
     uint256 cTokenIdX;
+    CollateralToken collateralToken;
 
     address user = 0x56BD08AEE2bA02b1C46227e58B727d6cb621FB40;
 
@@ -61,6 +63,8 @@ contract ControllerTest is Test {
 
         OptionsFactory optionsFactory =
             OptionsFactory(controller.optionsFactory());
+
+        collateralToken = CollateralToken(controller.collateralToken());
 
         vm.mockCall(
             oracle,
@@ -168,5 +172,42 @@ contract ControllerTest is Test {
         vm.expectRevert(stdError.enumConversionError);
 
         controller.operate(args);
+    }
+
+    function testCannotNeutralizeMoreThanBalance() public {
+        uint256 userQTokenBalance = 1 ether;
+
+        deal(address(qTokenX), user, userQTokenBalance, true);
+
+        assertEq(qTokenX.balanceOf(user), userQTokenBalance);
+
+        vm.expectRevert(stdError.arithmeticError);
+
+        controller.neutralizePosition(cTokenIdX, userQTokenBalance * 2);
+
+        // uint256 userCollateralTokenBalance = 0.5 ether;
+
+        // storage slot for the balanceOf mapping in the CollateralToken contract
+        uint256 balanceOfSlot = 0;
+
+        // mapping(address => mapping(uint256 => uint256)) balanceOf;
+        bytes32 userCTokenBalanceSlot = keccak256(
+            abi.encode(cTokenIdX, keccak256(abi.encode(user, balanceOfSlot)))
+        );
+
+        // set the balance of the user for cTokenIdX in the CollateralToken contract so that it's
+        // not enough to neutralize a whole option position, while the user's QToken balance is enough
+        uint256 userCTokenBalance = userQTokenBalance / 2;
+        vm.store(
+            address(collateralToken),
+            userCTokenBalanceSlot,
+            bytes32(userCTokenBalance)
+        );
+
+        assertEq(collateralToken.balanceOf(user, cTokenIdX), userCTokenBalance);
+
+        vm.expectRevert(stdError.arithmeticError);
+
+        controller.neutralizePosition(cTokenIdX, userQTokenBalance);
     }
 }
