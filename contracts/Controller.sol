@@ -177,15 +177,8 @@ contract Controller is IController, EIP712MetaTransaction {
         /// Effects
         /// -------------------------------------------------------------------
 
-        // Mint the options to the recipient's address
+        // Mint the option's long tokens to the recipient's address
         QToken(_qToken).mint(_to, _amount);
-
-        uint256 collateralTokenId =
-            collateralToken.getCollateralTokenId(_qToken, address(0));
-
-        // There's no need to check if the collateralTokenId exists before minting because if the QToken is valid,
-        // then it's guaranteed that the respective CollateralToken has already also been created by the OptionsFactory
-        collateralToken.mintCollateralToken(_to, collateralTokenId, _amount);
 
         emit OptionsPositionMinted(
             _to, _msgSender(), _qToken, _amount, collateral, collateralAmount
@@ -199,6 +192,15 @@ contract Controller is IController, EIP712MetaTransaction {
         IERC20(collateral).safeTransferFrom(
             _msgSender(), address(this), collateralAmount
         );
+
+        // There's no need to check if the collateralTokenId exists before minting the
+        // short tokens because if the QToken is valid, then it's guaranteed that the
+        // respective CollateralToken has already also been created by the OptionsFactory
+        uint256 collateralTokenId =
+            collateralToken.getCollateralTokenId(_qToken, address(0));
+
+        // Mint the option's short tokens to the recipient's address
+        collateralToken.mintCollateralToken(_to, collateralTokenId, _amount);
     }
 
     /// @inheritdoc IController
@@ -261,10 +263,7 @@ contract Controller is IController, EIP712MetaTransaction {
             );
         }
 
-        // Mint the tokens for the new spread position
-        collateralToken.mintCollateralToken(
-            _msgSender(), collateralTokenId, _amount
-        );
+        // Mint the long tokens for the new spread position
         QToken(_qTokenToMint).mint(_msgSender(), _amount);
 
         emit SpreadMinted(
@@ -286,6 +285,11 @@ contract Controller is IController, EIP712MetaTransaction {
                 _msgSender(), address(this), collateralAmount
             );
         }
+
+        // Mint the short tokens for the new spread position
+        collateralToken.mintCollateralToken(
+            _msgSender(), collateralTokenId, _amount
+        );
     }
 
     /// @inheritdoc IController
