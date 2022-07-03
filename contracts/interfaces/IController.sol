@@ -132,7 +132,11 @@ interface IController {
     /// @notice Closes a neutral position, claiming all the collateral required to create it.
     /// @dev Unlike `_exercise` and `_claimCollateral`, this function does not require the option to be expired.
     /// @param _collateralTokenId ERC1155 token id representing the position to be closed.
-    /// @param _amount The size of the position to close. If 0 is passed, the entire neutral position will be closed.
-    function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
+    /// @param _amountToNeutralize The size of the position to close. If 0 is passed,
+    /// the entire neutral position will be closed.
+    function neutralizePosition(
+        uint256 _collateralTokenId,
+        uint256 _amountToNeutralize
+    )
         external;
 }
