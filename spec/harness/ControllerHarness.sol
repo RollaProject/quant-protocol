@@ -47,8 +47,6 @@ contract ControllerHarness is Controller {
     function operate(ActionArgs[] memory _actions)
         external
         override
-        nonReentrant
-        returns (bool)
     {}
 
     function _msgSender() internal view override returns (address sender) {
