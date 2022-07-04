@@ -4,13 +4,13 @@ pragma solidity 0.8.15;
 import "../../contracts/options/QToken.sol";
 
 contract QTokenCore is QToken {
-    address public immutable override underlyingAsset;
-    address public immutable override strikeAsset;
-    address public immutable override oracle;
-    uint88 public immutable override expiryTime;
-    bool public immutable override isCall;
-    uint256 public immutable override strikePrice;
-    address public immutable override controller;
+    address public override underlyingAsset;
+    address public override strikeAsset;
+    address public override oracle;
+    uint88 public override expiryTime;
+    bool public override isCall;
+    uint256 public override strikePrice;
+    address public override controller;
 
     constructor(
         address _underlyingAsset,

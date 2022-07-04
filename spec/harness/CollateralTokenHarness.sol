@@ -31,7 +31,11 @@ contract CollateralTokenHarness is CollateralToken {
 
     function getCollateralTokenInfoTokenAsCollateral(
         uint256 collateralTokenInfoId
-    ) public view returns (address) {
+    )
+        public
+        view
+        returns (address)
+    {
         return idToInfo[collateralTokenInfoId].qTokenAsCollateral;
     }
 
@@ -67,11 +71,9 @@ contract CollateralTokenHarness is CollateralToken {
     function getTokenSupplies(uint256 key) public view returns (uint256) {
         return tokenSupplies[key];
     }
-
-    ////////////////////////////////////////////////////////////////////////////
-    //                       Simplifiers and override                         //
+////////////////////////////////////////////////////////////////////////////
+} //                       Simplifiers and override                         //
     ////////////////////////////////////////////////////////////////////////////
     /*function ...() public view returns (uint256) {
         return ...;
     }*/
-}
