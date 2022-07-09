@@ -277,9 +277,7 @@ library FundsCalculator {
 
         if (_qTokenForCollateralStrikePrice > 0) {
             collateralPerOption =
-                mintStrikePrice.isGreaterThan(
-                    collateralStrikePrice
-                )
+                mintStrikePrice.isGreaterThan(collateralStrikePrice)
                 ? mintStrikePrice.sub(collateralStrikePrice) // Put Credit Spread
                 : int256(0).fromUnscaledInt(); // Put Debit Spread
         }
@@ -313,9 +311,7 @@ library FundsCalculator {
 
         if (_qTokenForCollateralStrikePrice > 0) {
             collateralPerOption =
-                mintStrikePrice.isGreaterThanOrEqual(
-                    collateralStrikePrice
-                )
+                mintStrikePrice.isGreaterThanOrEqual(collateralStrikePrice)
                 ? int256(0).fromUnscaledInt() // Call Debit Spread
                 : collateralStrikePrice.sub(mintStrikePrice).div(
                     collateralStrikePrice, false

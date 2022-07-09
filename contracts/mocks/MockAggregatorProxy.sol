@@ -30,9 +30,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         roundIdAnswers[_roundId] = _answer;
     }
 
-    function setLatestRoundData(RoundData calldata _latestRoundData)
-        external
-    {
+    function setLatestRoundData(RoundData calldata _latestRoundData) external {
         latestRoundDataValue = _latestRoundData;
     }
 
