@@ -305,16 +305,15 @@ contract Controller is IController, EIP712MetaTransaction {
             "Controller: Can not exercise options before their expiry"
         );
 
-        uint256 amountToExercise = _amount;
         // if the amount is 0, the entire position will be exercised
-        if (amountToExercise == 0) {
-            amountToExercise = qToken.balanceOf(_msgSender());
+        if (_amount == 0) {
+            _amount = qToken.balanceOf(_msgSender());
         }
 
         // Use the QuantCalculator to check how much the sender/signer is due.
         // Will only be a positive value for options that expired In The Money.
         (bool isSettled, address payoutToken, uint256 exerciseTotal) =
-            quantCalculator.getExercisePayout(_qToken, amountToExercise);
+            quantCalculator.getExercisePayout(_qToken, _amount);
 
         require(isSettled, "Controller: Cannot exercise unsettled options");
 
@@ -323,10 +322,10 @@ contract Controller is IController, EIP712MetaTransaction {
         /// -------------------------------------------------------------------
 
         // Burn the long tokens
-        qToken.burn(_msgSender(), amountToExercise);
+        qToken.burn(_msgSender(), _amount);
 
         emit OptionsExercised(
-            _msgSender(), _qToken, amountToExercise, exerciseTotal, payoutToken
+            _msgSender(), _qToken, _amount, exerciseTotal, payoutToken
             );
 
         /// -------------------------------------------------------------------
@@ -385,10 +384,7 @@ contract Controller is IController, EIP712MetaTransaction {
     }
 
     /// @inheritdoc IController
-    function neutralizePosition(
-        uint256 _collateralTokenId,
-        uint256 _amountToNeutralize
-    )
+    function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
         public
         override
     {
@@ -399,7 +395,7 @@ contract Controller is IController, EIP712MetaTransaction {
         (address qTokenShort, address qTokenLong) =
             collateralToken.idToInfo(_collateralTokenId);
 
-        if (_amountToNeutralize == 0) {
+        if (_amount == 0) {
             //get the amount of CollateralTokens owned
             uint256 collateralTokensOwned =
                 collateralToken.balanceOf(_msgSender(), _collateralTokenId);
@@ -408,7 +404,7 @@ contract Controller is IController, EIP712MetaTransaction {
             uint256 qTokensOwned = QToken(qTokenShort).balanceOf(_msgSender());
 
             // the size of the position that can be neutralized
-            _amountToNeutralize =
+            _amount =
                 qTokensOwned < collateralTokensOwned
                 ? qTokensOwned
                 : collateralTokensOwned;
@@ -417,31 +413,29 @@ contract Controller is IController, EIP712MetaTransaction {
         // use the QuantCalculator to check how much collateral the sender/signer is due
         // for closing the neutral position
         (address collateralType, uint256 collateralOwed) = quantCalculator
-            .getNeutralizationPayout(
-            qTokenShort, qTokenLong, _amountToNeutralize
-        );
+            .getNeutralizationPayout(qTokenShort, qTokenLong, _amount);
 
         /// -------------------------------------------------------------------
         /// Effects
         /// -------------------------------------------------------------------
 
         // burn the short tokens
-        QToken(qTokenShort).burn(_msgSender(), _amountToNeutralize);
+        QToken(qTokenShort).burn(_msgSender(), _amount);
 
         // burn the long tokens
         collateralToken.burnCollateralToken(
-            _msgSender(), _collateralTokenId, _amountToNeutralize
+            _msgSender(), _collateralTokenId, _amount
         );
 
         //give the user their long tokens (if any, in case of CollateralTokens representing a spread)
         if (qTokenLong != address(0)) {
-            QToken(qTokenLong).mint(_msgSender(), _amountToNeutralize);
+            QToken(qTokenLong).mint(_msgSender(), _amount);
         }
 
         emit NeutralizePosition(
             _msgSender(),
             qTokenShort,
-            _amountToNeutralize,
+            _amount,
             collateralOwed,
             collateralType,
             qTokenLong

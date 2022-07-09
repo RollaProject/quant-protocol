@@ -161,7 +161,7 @@ contract ControllerTest is Test {
             firstArrayArgOffset := mload(add(args, 0x20))
             actionType := mload(firstArrayArgOffset)
         }
-        assertEq(actionType, uint256(7));
+        assertEq(actionType, uint256(ActionType.Call));
 
         assembly {
             mstore(firstArrayArgOffset, invalidActionType)

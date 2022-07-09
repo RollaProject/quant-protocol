@@ -117,7 +117,7 @@ contract QuantCalculator is IQuantCalculator {
         );
         require(
             IPriceRegistry(priceRegistry).getOptionPriceStatus(
-                    oracle, expiryTime, underlyingAsset
+                oracle, expiryTime, underlyingAsset
                 )
                 == PriceStatus.SETTLED,
             "Can not claim collateral before option is settled"
