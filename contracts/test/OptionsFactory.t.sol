@@ -243,4 +243,27 @@ contract OptionsFactoryTest is Test {
             strikePrice
         );
     }
+
+    function testCannotCreateDuplicateOption() public {
+        uint256 strikePrice = 100000;
+        uint88 expiryTimestamp = uint88(block.timestamp + 3600);
+        bool isCall = true;
+
+        optionsFactory.createOption(
+            address(WBNB),
+            chainlinkOracleManager,
+            expiryTimestamp,
+            isCall,
+            strikePrice
+        );
+
+        vm.expectRevert(abi.encodeWithSignature("CreateFail()"));
+        optionsFactory.createOption(
+            address(WBNB),
+            chainlinkOracleManager,
+            expiryTimestamp,
+            isCall,
+            strikePrice
+        );
+    }
 }
