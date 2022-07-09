@@ -15,7 +15,6 @@ import { CollateralToken } from "../typechain/CollateralToken";
 import { MockERC20 } from "../typechain/MockERC20";
 import { expect, provider } from "./setup";
 import {
-  customError,
   deployAssetsRegistry,
   deployOracleRegistry,
   erc1155Uri,
@@ -248,18 +247,6 @@ describe("OptionsFactory", () => {
           ethers.utils.parseUnits("1400", await BUSD.decimals())
         )
       ).to.be.revertedWith("OptionsFactory: given expiry time is in the past");
-    });
-
-    it("Should revert when trying to create a duplicate option", async () => {
-      await optionsFactory
-        .connect(secondAccount)
-        .createOption(...samplePutOptionParameters);
-
-      await expect(
-        optionsFactory
-          .connect(secondAccount)
-          .createOption(...samplePutOptionParameters)
-      ).to.be.revertedWith(customError("CreateFail"));
     });
 
     it("Should revert when trying to create a PUT option with a strike price of 0", async () => {
