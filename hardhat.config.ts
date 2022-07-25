@@ -1,6 +1,5 @@
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
-import "@openzeppelin/hardhat-upgrades";
 import "@tenderly/hardhat-tenderly";
 import "@typechain/hardhat";
 import * as dotenv from "dotenv";

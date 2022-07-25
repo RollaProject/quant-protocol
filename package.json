@@ -1,6 +1,6 @@
 {
   "name": "@rolla-contracts/quant-protocol",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "description": "Smart contracts for the Quant Protocol.",
   "scripts": {
     "build": "hardhat compile",
@@ -47,8 +47,6 @@
     "@gnosis.pm/safe-contracts": "^1.3.0",
     "@nomiclabs/hardhat-ethers": "^2.0.1",
     "@nomiclabs/hardhat-waffle": "^2.0.2",
-    "@openzeppelin/hardhat-upgrades": "^1.16.1",
-    "@openzeppelin/upgrades-core": "^1.14.1",
     "@tenderly/hardhat-tenderly": "^1.0.13",
     "@typechain/ethers-v5": "^9.0.0",
     "@typechain/hardhat": "^4.0.0",
@@ -88,8 +86,7 @@
     "web3-eth-abi": "^1.3.6"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.5.0",
-    "@openzeppelin/contracts-upgradeable": "^4.5.1",
+    "@openzeppelin/contracts": "^4.7.1",
     "@quant-finance/solidity-datetime": "^2.1.0",
     "@rari-capital/solmate": "^6.3.0",
     "@rolla-finance/clones-with-immutable-args": "^1.10.0"
