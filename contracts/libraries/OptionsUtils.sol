@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.15;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "solady/src/utils/LibString.sol";
 import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
 import "../options/QToken.sol";
 import "../interfaces/IOracleRegistry.sol";
@@ -150,17 +150,21 @@ library OptionsUtils {
         // get option month string
         (string memory monthSymbol, string memory monthFull) = getMonth(month);
 
+        // get the day and year strings
+        string memory dayStr = getDayStr(day);
+        string memory yearStr = LibString.toString(year);
+
         // concatenated name and symbol strings
         name = string.concat(
             "ROLLA",
             " ",
             underlying,
             " ",
-            uintToChars(day),
+            dayStr,
             "-",
             monthFull,
             "-",
-            Strings.toString(year),
+            yearStr,
             " ",
             displayStrikePrice,
             " ",
@@ -174,9 +178,9 @@ library OptionsUtils {
             "-",
             underlying,
             "-",
-            uintToChars(day),
+            dayStr,
             monthSymbol,
-            Strings.toString(year),
+            yearStr,
             "-",
             displayStrikePrice,
             "-",
@@ -273,28 +277,30 @@ library OptionsUtils {
         pure
         returns (string memory)
     {
-        uint256 strikePriceScale = 10 ** STRIKE_PRICE_DECIMALS;
-        uint256 remainder = _strikePrice % strikePriceScale;
-        uint256 quotient = _strikePrice / strikePriceScale;
-        string memory quotientStr = Strings.toString(quotient);
+        unchecked {
+            uint256 strikePriceScale = 10 ** STRIKE_PRICE_DECIMALS;
+            uint256 remainder = _strikePrice % strikePriceScale;
+            uint256 quotient = _strikePrice / strikePriceScale;
+            string memory quotientStr = LibString.toString(quotient);
 
-        if (remainder == 0) {
-            return quotientStr;
+            if (remainder == 0) {
+                return quotientStr;
+            }
+
+            uint256 trailingZeroes;
+            while (remainder % 10 == 0) {
+                remainder /= 10;
+                trailingZeroes++;
+            }
+
+            // pad the number with "1 + starting zeroes"
+            remainder += 10 ** (STRIKE_PRICE_DECIMALS - trailingZeroes);
+
+            string memory tmp = LibString.toString(remainder);
+            tmp = slice(tmp, 1, 1 + STRIKE_PRICE_DECIMALS - trailingZeroes);
+
+            return string(abi.encodePacked(quotientStr, ".", tmp));
         }
-
-        uint256 trailingZeroes;
-        while (remainder % 10 == 0) {
-            remainder /= 10;
-            trailingZeroes++;
-        }
-
-        // pad the number with "1 + starting zeroes"
-        remainder += 10 ** (STRIKE_PRICE_DECIMALS - trailingZeroes);
-
-        string memory tmp = Strings.toString(remainder);
-        tmp = slice(tmp, 1, 1 + STRIKE_PRICE_DECIMALS - trailingZeroes);
-
-        return string(abi.encodePacked(quotientStr, ".", tmp));
     }
 
     /// @dev get the string representation of the option type
@@ -308,47 +314,45 @@ library OptionsUtils {
         return _isCall ? ("C", "Call") : ("P", "Put");
     }
 
-    /// @dev get the representation of a number using 2 characters, adding a leading 0 if it's one digit,
-    /// and two trailing digits if it's a 3 digit number
-    /// @return 2 characters that correspond to a number
-    function uintToChars(uint256 _number)
+    /// @dev get the representation of a day's number using 2 characters,
+    /// adding a leading 0 if it's a one digit number
+    /// @return dayStr 2 characters that correspond to a day's number
+    function getDayStr(uint256 day)
         internal
         pure
-        returns (string memory)
+        returns (string memory dayStr)
     {
-        if (_number > 99) {
-            _number %= 100;
+        assembly ("memory-safe") {
+            dayStr := mload(0x40)
+            mstore(0x40, add(dayStr, 0x22))
+            mstore(dayStr, 0x2)
+
+            switch lt(day, 10)
+            case 0 {
+                mstore8(add(dayStr, 0x20), add(0x30, mod(div(day, 10), 10)))
+                mstore8(add(dayStr, 0x21), add(0x30, mod(day, 10)))
+            }
+            default {
+                mstore8(add(dayStr, 0x20), 0x30)
+                mstore8(add(dayStr, 0x21), add(0x30, day))
+            }
         }
-
-        string memory str = Strings.toString(_number);
-
-        if (_number < 10) {
-            return string(abi.encodePacked("0", str));
-        }
-
-        return str;
     }
 
     /// @dev cut a string into string[start:end]
     /// @param _s string to cut
     /// @param _start the starting index
     /// @param _end the ending index (not inclusive)
-    /// @return the indexed string
+    /// @return slice_ the indexed string
     function slice(string memory _s, uint256 _start, uint256 _end)
         internal
         pure
-        returns (string memory)
+        returns (string memory slice_)
     {
-        uint256 range = _end - _start;
-        bytes memory slice_ = new bytes(range);
-        for (uint256 i = 0; i < range;) {
-            slice_[i] = bytes(_s)[_start + i];
-            unchecked {
-                ++i;
-            }
+        assembly ("memory-safe") {
+            slice_ := add(_s, _start)
+            mstore(slice_, sub(_end, _start))
         }
-
-        return string(slice_);
     }
 
     /// @dev get the string representations of a month
