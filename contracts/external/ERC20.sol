@@ -20,9 +20,7 @@ abstract contract ERC20 is Clone {
     event Transfer(address indexed from, address indexed to, uint256 amount);
 
     event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 amount
+        address indexed owner, address indexed spender, uint256 amount
     );
 
     /*///////////////////////////////////////////////////////////////
@@ -98,8 +96,9 @@ abstract contract ERC20 is Clone {
     {
         uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
 
-        if (allowed != type(uint256).max) allowance[from][msg.sender] =
-            allowed - amount;
+        if (allowed != type(uint256).max) {
+            allowance[from][msg.sender] = allowed - amount;
+        }
 
         balanceOf[from] -= amount;
 
@@ -225,10 +224,10 @@ abstract contract ERC20 is Clone {
     {
         assembly ("memory-safe") {
             // get the offset of the packed immutable args in calldata
-            let immutableArgsOffset := sub(
-                calldatasize(),
-                add(shr(240, calldataload(sub(calldatasize(), 2))), 2)
-            )
+            let immutableArgsOffset :=
+                sub(
+                    calldatasize(), add(shr(240, calldataload(sub(calldatasize(), 2))), 2)
+                )
 
             // get the offset of the start of the string in the calldata
             let strStart := add(immutableArgsOffset, stringArgOffset)

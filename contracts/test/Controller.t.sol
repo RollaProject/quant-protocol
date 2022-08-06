@@ -82,7 +82,11 @@ contract ControllerTest is Test {
 
         address qTokenXAddress;
         (qTokenXAddress, cTokenIdX) = optionsFactory.createOption(
-            address(WBNB), oracle, uint88(block.timestamp + 604800), true, 500 ether
+            address(WBNB),
+            oracle,
+            uint88(block.timestamp + 604800),
+            true,
+            500 ether
         );
         qTokenX = QToken(qTokenXAddress);
 

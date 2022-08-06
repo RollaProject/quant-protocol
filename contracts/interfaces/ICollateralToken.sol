@@ -20,9 +20,7 @@ interface ICollateralToken {
     /// @param qTokenAsCollateral QToken address of an option used as collateral in a spread
     /// @param id unique id of the created CollateralToken
     event CollateralTokenCreated(
-        address indexed qTokenAddress,
-        address qTokenAsCollateral,
-        uint256 id
+        address indexed qTokenAddress, address qTokenAsCollateral, uint256 id
     );
 
     /// @notice Sets the the address for the OptionsFactory

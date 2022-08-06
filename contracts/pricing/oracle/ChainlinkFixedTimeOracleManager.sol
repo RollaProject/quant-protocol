@@ -51,8 +51,7 @@ contract ChainlinkFixedTimeOracleManager is
         returns (bool)
     {
         uint24 timeInSeconds = uint24(_expiryTime % 86400);
-        return assetOracles[_underlyingAsset]
-            != address(0)
+        return assetOracles[_underlyingAsset] != address(0)
             && chainlinkFixedTimeUpdates[timeInSeconds];
     }
 

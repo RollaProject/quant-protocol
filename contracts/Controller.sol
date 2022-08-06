@@ -102,8 +102,11 @@ contract Controller is IController, EIP712MetaTransaction {
                     action.parseMintOptionArgs();
                 mintOptionsPosition(to, qToken, amount);
             } else if (action.actionType == ActionType.MintSpread) {
-                (address qTokenToMint, address qTokenForCollateral, uint256 amount)
-                    = action.parseMintSpreadArgs();
+                (
+                    address qTokenToMint,
+                    address qTokenForCollateral,
+                    uint256 amount
+                ) = action.parseMintSpreadArgs();
                 mintSpread(qTokenToMint, qTokenForCollateral, amount);
             } else if (action.actionType == ActionType.Exercise) {
                 (address qToken, uint256 amount) = action.parseExerciseArgs();
@@ -255,8 +258,7 @@ contract Controller is IController, EIP712MetaTransaction {
         if (qTokenAsCollateral == address(0)) {
             require(
                 collateralTokenId
-                    ==
-                    collateralToken.createSpreadCollateralToken(
+                    == collateralToken.createSpreadCollateralToken(
                         _qTokenToMint, _qTokenForCollateral
                     ),
                 "Controller: failed creating the collateral token to represent the spread"
@@ -349,7 +351,9 @@ contract Controller is IController, EIP712MetaTransaction {
 
         // Use the QuantCalculator to check how much collateral the sender/signer is due.
         (
-            uint256 returnableCollateral, address collateralAsset, uint256 amountToClaim
+            uint256 returnableCollateral,
+            address collateralAsset,
+            uint256 amountToClaim
         ) = quantCalculator.calculateClaimableCollateral(
             _collateralTokenId, _amount, _msgSender()
         );

@@ -37,10 +37,7 @@ contract AssetsRegistryTest is Test {
     address public quantConfig;
 
     event AssetAdded(
-        address indexed underlying,
-        string name,
-        string symbol,
-        uint8 decimals
+        address indexed underlying, string name, string symbol, uint8 decimals
     );
 
     function setUp() public {

@@ -4,14 +4,10 @@ pragma solidity ^0.8.0;
 
 interface IEACAggregatorProxy {
     event AnswerUpdated(
-        int256 indexed current,
-        uint256 indexed roundId,
-        uint256 updatedAt
+        int256 indexed current, uint256 indexed roundId, uint256 updatedAt
     );
     event NewRound(
-        uint256 indexed roundId,
-        address indexed startedBy,
-        uint256 startedAt
+        uint256 indexed roundId, address indexed startedBy, uint256 startedAt
     );
     event OwnershipTransferRequested(address indexed from, address indexed to);
     event OwnershipTransferred(address indexed from, address indexed to);

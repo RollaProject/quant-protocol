@@ -118,7 +118,7 @@ contract OptionsFactoryTest is Test {
 
     function testGas_create() public {
         optionsFactory.createOption(
-            address(WBNB), chainlinkOracleManager, 2282899998, true, 100000 ether
+            address(WBNB), chainlinkOracleManager, 2284318798, true, 100000 ether
         );
     }
 

@@ -65,7 +65,8 @@ contract OptionsFactory is IOptionsFactory {
             "OptionsFactory: invalid CollateralToken address"
         );
         require(
-            _controller != address(0), "OptionsFactory: invalid controller address"
+            _controller != address(0),
+            "OptionsFactory: invalid controller address"
         );
         require(
             _oracleRegistry != address(0),

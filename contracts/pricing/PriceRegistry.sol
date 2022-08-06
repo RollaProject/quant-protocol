@@ -66,7 +66,11 @@ contract PriceRegistry is IPriceRegistry {
             PriceWithDecimals(_settlementPrice, _settlementPriceDecimals);
 
         emit PriceStored(
-            oracle, _asset, _expiryTime, _settlementPriceDecimals, _settlementPrice
+            oracle,
+            _asset,
+            _expiryTime,
+            _settlementPriceDecimals,
+            _settlementPrice
             );
     }
 

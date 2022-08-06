@@ -118,8 +118,7 @@ contract QuantCalculator is IQuantCalculator {
         require(
             IPriceRegistry(priceRegistry).getOptionPriceStatus(
                 oracle, expiryTime, underlyingAsset
-                )
-                == PriceStatus.SETTLED,
+            ) == PriceStatus.SETTLED,
             "Can not claim collateral before option is settled"
         );
 
@@ -249,11 +248,9 @@ contract QuantCalculator is IQuantCalculator {
         uint88 expiryTime = qToken.expiryTime();
         address underlyingAsset = qToken.underlyingAsset();
 
-        isSettled =
-            IPriceRegistry(priceRegistry).getOptionPriceStatus(
-                oracle, expiryTime, underlyingAsset
-            )
-            == PriceStatus.SETTLED;
+        isSettled = IPriceRegistry(priceRegistry).getOptionPriceStatus(
+            oracle, expiryTime, underlyingAsset
+        ) == PriceStatus.SETTLED;
         if (!isSettled) {
             return (isSettled, payoutToken, payoutAmount);
         }

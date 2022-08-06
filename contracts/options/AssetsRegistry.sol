@@ -44,7 +44,8 @@ contract AssetsRegistry is Ownable, IAssetsRegistry {
         validAsset(_underlying)
     {
         require(
-            _underlying != address(0), "AssetsRegistry: invalid underlying address"
+            _underlying != address(0),
+            "AssetsRegistry: invalid underlying address"
         );
         require(bytes(_name).length > 0, "AssetsRegistry: invalid name");
         require(bytes(_symbol).length > 0, "AssetsRegistry: invalid symbol");

@@ -8,10 +8,7 @@ interface IAssetsRegistry {
     /// @param symbol symbol of the asset
     /// @param decimals the amount of decimals the asset has
     event AssetAdded(
-        address indexed underlying,
-        string name,
-        string symbol,
-        uint8 decimals
+        address indexed underlying, string name, string symbol, uint8 decimals
     );
 
     /// @notice Add a new asset to the registry

@@ -99,8 +99,7 @@ library FundsCalculator {
 
             // Check that the underlyings match
             require(
-                qTokenToMint.underlyingAsset()
-                    == qTokenForCollateral.underlyingAsset(),
+                qTokenToMint.underlyingAsset() == qTokenForCollateral.underlyingAsset(),
                 "Controller: Can't create spreads from options with different underlying assets"
             );
 

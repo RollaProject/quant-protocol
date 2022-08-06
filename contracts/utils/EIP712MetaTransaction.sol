@@ -110,7 +110,11 @@ abstract contract EIP712MetaTransaction is EIP712 {
         }
 
         emit MetaTransactionExecuted(
-            metaAction.from, payable(msg.sender), success, currentNonce, returnData
+            metaAction.from,
+            payable(msg.sender),
+            success,
+            currentNonce,
+            returnData
             );
 
         return (success, returnData);
@@ -132,10 +136,11 @@ abstract contract EIP712MetaTransaction is EIP712 {
             uint256 index = msg.data.length;
             assembly ("memory-safe") {
                 // Load the 32 bytes word from memory with the address on the lower 20 bytes, and mask those.
-                sender := and(
-                    mload(add(array, index)),
-                    0xffffffffffffffffffffffffffffffffffffffff
-                )
+                sender :=
+                    and(
+                        mload(add(array, index)),
+                        0xffffffffffffffffffffffffffffffffffffffff
+                    )
             }
         } else {
             sender = msg.sender;
