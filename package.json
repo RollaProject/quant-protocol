@@ -90,7 +90,7 @@
     "@quant-finance/solidity-datetime": "^2.1.0",
     "@rari-capital/solmate": "^6.3.0",
     "@rolla-finance/clones-with-immutable-args": "^1.10.0",
-    "solady": "^0.0.13"
+    "solady": "^0.0.16"
   },
   "files": [
     "contracts",
