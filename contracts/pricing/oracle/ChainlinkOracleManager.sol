@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
 import "../../interfaces/IPriceRegistry.sol";
@@ -10,10 +10,7 @@ import "../../interfaces/IChainlinkOracleManager.sol";
 /// @title For managing chainlink oracles for assets and submitting chainlink prices to the registry
 /// @author Rolla
 /// @notice Once an oracle is added for an asset it can't be changed!
-contract ChainlinkOracleManager is
-    ProviderOracleManager,
-    IChainlinkOracleManager
-{
+contract ChainlinkOracleManager is ProviderOracleManager, IChainlinkOracleManager {
     using QuantMath for uint256;
     using QuantMath for QuantMath.FixedPointInt;
 
@@ -28,11 +25,7 @@ contract ChainlinkOracleManager is
     uint8 public immutable override strikeAssetDecimals;
 
     /// @param _fallbackPeriodSeconds amount of seconds before fallback price submitter can submit
-    constructor(
-        address _priceRegistry,
-        uint8 _strikeAssetDecimals,
-        uint88 _fallbackPeriodSeconds
-    )
+    constructor(address _priceRegistry, uint8 _strikeAssetDecimals, uint88 _fallbackPeriodSeconds)
         ProviderOracleManager(_priceRegistry)
     {
         fallbackPeriodSeconds = _fallbackPeriodSeconds;
@@ -40,25 +33,15 @@ contract ChainlinkOracleManager is
     }
 
     /// @inheritdoc IChainlinkOracleManager
-    function setExpiryPriceInRegistryByRound(
-        address _asset,
-        uint88 _expiryTimestamp,
-        uint256 _roundIdAfterExpiry
-    )
+    function setExpiryPriceInRegistryByRound(address _asset, uint88 _expiryTimestamp, uint256 _roundIdAfterExpiry)
         external
         override
     {
-        _setExpiryPriceInRegistryByRound(
-            _asset, _expiryTimestamp, _roundIdAfterExpiry
-        );
+        _setExpiryPriceInRegistryByRound(_asset, _expiryTimestamp, _roundIdAfterExpiry);
     }
 
     /// @inheritdoc IProviderOracleManager
-    function setExpiryPriceInRegistry(
-        address _asset,
-        uint88 _expiryTimestamp,
-        bytes memory
-    )
+    function setExpiryPriceInRegistry(address _asset, uint88 _expiryTimestamp, bytes memory)
         external
         override (ProviderOracleManager, IProviderOracleManager)
     {
@@ -66,17 +49,11 @@ contract ChainlinkOracleManager is
         uint80 roundAfterExpiry = searchRoundToSubmit(_asset, _expiryTimestamp);
 
         //submit price to registry
-        _setExpiryPriceInRegistryByRound(
-            _asset, _expiryTimestamp, roundAfterExpiry
-        );
+        _setExpiryPriceInRegistryByRound(_asset, _expiryTimestamp, roundAfterExpiry);
     }
 
     /// @inheritdoc IOracleFallbackMechanism
-    function setExpiryPriceInRegistryFallback(
-        address _asset,
-        uint88 _expiryTimestamp,
-        uint256 _price
-    )
+    function setExpiryPriceInRegistryFallback(address _asset, uint88 _expiryTimestamp, uint256 _price)
         external
         override
         onlyOwner
@@ -86,15 +63,10 @@ contract ChainlinkOracleManager is
             "ChainlinkOracleManager: The fallback price period has not passed since the timestamp"
         );
 
-        emit PriceRegistrySubmission(
-            _asset, _expiryTimestamp, _price, 0, msg.sender, true
-            );
+        emit PriceRegistrySubmission(_asset, _expiryTimestamp, _price, 0, msg.sender, true);
 
         IPriceRegistry(priceRegistry).setSettlementPrice(
-            _asset,
-            _expiryTimestamp,
-            IEACAggregatorProxy(getAssetOracle(_asset)).decimals(),
-            _price
+            _asset, _expiryTimestamp, IEACAggregatorProxy(getAssetOracle(_asset)).decimals(), _price
         );
     }
 
@@ -110,8 +82,7 @@ contract ChainlinkOracleManager is
         (, int256 answer,,,) = aggregator.latestRoundData();
         require(answer > 0, "ChainlinkOracleManager: No pricing data available");
 
-        return uint256(answer).fromScaledUint(aggregator.decimals())
-            .toScaledUint(strikeAssetDecimals, true);
+        return uint256(answer).fromScaledUint(aggregator.decimals()).toScaledUint(strikeAssetDecimals, true);
     }
 
     /// @inheritdoc IProviderOracleManager
@@ -126,12 +97,7 @@ contract ChainlinkOracleManager is
     }
 
     /// @inheritdoc IChainlinkOracleManager
-    function searchRoundToSubmit(address _asset, uint88 _expiryTimestamp)
-        public
-        view
-        override
-        returns (uint80)
-    {
+    function searchRoundToSubmit(address _asset, uint88 _expiryTimestamp) public view override returns (uint80) {
         address assetOracle = getAssetOracle(_asset);
 
         IEACAggregatorProxy aggregator = IEACAggregatorProxy(assetOracle);
@@ -151,19 +117,12 @@ contract ChainlinkOracleManager is
         uint80 firstId = lowestPossibleRound;
         uint80 lastId = highestPossibleRound;
 
-        require(
-            lastId > firstId,
-            "ChainlinkOracleManager: Not enough rounds to find round after"
-        );
+        require(lastId > firstId, "ChainlinkOracleManager: Not enough rounds to find round after");
 
         //binary search until we find two values our desired timestamp lies between
         while (lastId - firstId != 1) {
-            BinarySearchResult memory result = _binarySearchStep(
-                aggregator,
-                _expiryTimestamp,
-                lowestPossibleRound,
-                highestPossibleRound
-            );
+            BinarySearchResult memory result =
+                _binarySearchStep(aggregator, _expiryTimestamp, lowestPossibleRound, highestPossibleRound);
 
             lowestPossibleRound = result.firstRound;
             highestPossibleRound = result.lastRound;
@@ -178,11 +137,7 @@ contract ChainlinkOracleManager is
     /// @param _asset asset to set price of
     /// @param _expiryTimestamp timestamp of price
     /// @param _roundIdAfterExpiry the chainlink round id immediately after the option expired
-    function _setExpiryPriceInRegistryByRound(
-        address _asset,
-        uint88 _expiryTimestamp,
-        uint256 _roundIdAfterExpiry
-    )
+    function _setExpiryPriceInRegistryByRound(address _asset, uint88 _expiryTimestamp, uint256 _roundIdAfterExpiry)
         internal
     {
         address assetOracle = getAssetOracle(_asset);
@@ -198,33 +153,22 @@ contract ChainlinkOracleManager is
         uint16 phaseId = uint16(_roundIdAfterExpiry >> phaseOffset);
 
         uint64 expiryRound = uint64(_roundIdAfterExpiry) - 1;
-        uint80 expiryRoundId =
-            uint80(uint256(phaseId) << phaseOffset | expiryRound);
+        uint80 expiryRoundId = uint80(uint256(phaseId) << phaseOffset | expiryRound);
 
         require(
             aggregator.getTimestamp(uint256(expiryRoundId)) <= _expiryTimestamp,
             "ChainlinkOracleManager: Expiry round prior to the one posted is after the expiry timestamp"
         );
 
-        (uint256 price, uint256 roundId) = _getExpiryPrice(
-            aggregator, _expiryTimestamp, _roundIdAfterExpiry, expiryRoundId
-        );
+        (uint256 price, uint256 roundId) =
+            _getExpiryPrice(aggregator, _expiryTimestamp, _roundIdAfterExpiry, expiryRoundId);
 
-        emit PriceRegistrySubmission(
-            _asset, _expiryTimestamp, price, roundId, msg.sender, false
-            );
+        emit PriceRegistrySubmission(_asset, _expiryTimestamp, price, roundId, msg.sender, false);
 
-        IPriceRegistry(priceRegistry).setSettlementPrice(
-            _asset, _expiryTimestamp, aggregator.decimals(), price
-        );
+        IPriceRegistry(priceRegistry).setSettlementPrice(_asset, _expiryTimestamp, aggregator.decimals(), price);
     }
 
-    function _getExpiryPrice(
-        IEACAggregatorProxy aggregator,
-        uint88,
-        uint256,
-        uint256 _expiryRoundId
-    )
+    function _getExpiryPrice(IEACAggregatorProxy aggregator, uint88, uint256, uint256 _expiryRoundId)
         internal
         view
         virtual
@@ -255,22 +199,15 @@ contract ChainlinkOracleManager is
         uint64 lastRoundId = uint64(_lastRoundProxy);
         uint64 firstRoundId = uint64(_firstRoundProxy);
 
-        uint80 roundToCheck =
-            uint80((uint256(firstRoundId) + uint256(lastRoundId)) / 2);
-        uint80 roundToCheckProxy =
-            uint80(uint256(phaseId) << phaseOffset | roundToCheck);
+        uint80 roundToCheck = uint80((uint256(firstRoundId) + uint256(lastRoundId)) / 2);
+        uint80 roundToCheckProxy = uint80(uint256(phaseId) << phaseOffset | roundToCheck);
 
-        uint256 roundToCheckTimestamp =
-            aggregator.getTimestamp(uint256(roundToCheckProxy));
+        uint256 roundToCheckTimestamp = aggregator.getTimestamp(uint256(roundToCheckProxy));
 
         if (roundToCheckTimestamp <= _expiryTimestamp) {
-            return BinarySearchResult(
-                roundToCheckProxy, _lastRoundProxy, roundToCheck, lastRoundId
-            );
+            return BinarySearchResult(roundToCheckProxy, _lastRoundProxy, roundToCheck, lastRoundId);
         }
 
-        return BinarySearchResult(
-            _firstRoundProxy, roundToCheckProxy, firstRoundId, roundToCheck
-        );
+        return BinarySearchResult(_firstRoundProxy, roundToCheckProxy, firstRoundId, roundToCheck);
     }
 }

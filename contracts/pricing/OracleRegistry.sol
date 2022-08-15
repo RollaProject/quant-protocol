@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IOracleRegistry.sol";
@@ -20,16 +20,8 @@ contract OracleRegistry is Ownable, IOracleRegistry {
     address[] public override oracles;
 
     /// @inheritdoc IOracleRegistry
-    function addOracle(address _oracle)
-        external
-        override
-        onlyOwner
-        returns (uint248)
-    {
-        require(
-            oracleInfo[_oracle].oracleId == 0,
-            "OracleRegistry: Oracle already exists in registry"
-        );
+    function addOracle(address _oracle) external override onlyOwner returns (uint248) {
+        require(oracleInfo[_oracle].oracleId == 0, "OracleRegistry: Oracle already exists in registry");
 
         oracles.push(_oracle);
 
@@ -42,16 +34,8 @@ contract OracleRegistry is Ownable, IOracleRegistry {
     }
 
     /// @inheritdoc IOracleRegistry
-    function deactivateOracle(address _oracle)
-        external
-        override
-        onlyOwner
-        returns (bool)
-    {
-        require(
-            oracleInfo[_oracle].isActive,
-            "OracleRegistry: Oracle is already deactivated"
-        );
+    function deactivateOracle(address _oracle) external override onlyOwner returns (bool) {
+        require(oracleInfo[_oracle].isActive, "OracleRegistry: Oracle is already deactivated");
 
         emit DeactivatedOracle(_oracle);
 
@@ -59,16 +43,8 @@ contract OracleRegistry is Ownable, IOracleRegistry {
     }
 
     /// @inheritdoc IOracleRegistry
-    function activateOracle(address _oracle)
-        external
-        override
-        onlyOwner
-        returns (bool)
-    {
-        require(
-            !oracleInfo[_oracle].isActive,
-            "OracleRegistry: Oracle is already activated"
-        );
+    function activateOracle(address _oracle) external override onlyOwner returns (bool) {
+        require(!oracleInfo[_oracle].isActive, "OracleRegistry: Oracle is already activated");
 
         emit ActivatedOracle(_oracle);
 
@@ -76,46 +52,26 @@ contract OracleRegistry is Ownable, IOracleRegistry {
     }
 
     /// @inheritdoc IOracleRegistry
-    function isOracleRegistered(address _oracle)
-        external
-        view
-        override
-        returns (bool)
-    {
+    function isOracleRegistered(address _oracle) external view override returns (bool) {
         return oracleInfo[_oracle].oracleId != 0;
     }
 
     /// @inheritdoc IOracleRegistry
-    function isOracleActive(address _oracle)
-        external
-        view
-        override
-        returns (bool)
-    {
+    function isOracleActive(address _oracle) external view override returns (bool) {
         return oracleInfo[_oracle].isActive;
     }
 
     /// @inheritdoc IOracleRegistry
-    function getOracleId(address _oracle)
-        external
-        view
-        override
-        returns (uint248)
-    {
+    function getOracleId(address _oracle) external view override returns (uint248) {
         uint248 oracleId = oracleInfo[_oracle].oracleId;
-        require(
-            oracleId != 0, "OracleRegistry: Oracle doesn't exist in registry"
-        );
+        require(oracleId != 0, "OracleRegistry: Oracle doesn't exist in registry");
         return oracleId;
     }
 
     /// @inheritdoc IOracleRegistry
     function getOraclesLength() public view override returns (uint248) {
         uint256 length = oracles.length;
-        require(
-            length <= uint256(type(uint248).max),
-            "OracleRegistry: oracles limit exceeded"
-        );
+        require(length <= uint256(type(uint248).max), "OracleRegistry: oracles limit exceeded");
         return uint248(length);
     }
 }

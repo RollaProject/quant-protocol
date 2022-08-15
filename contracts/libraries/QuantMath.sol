@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "./SignedConverter.sol";
 
@@ -24,11 +24,7 @@ library QuantMath {
      * @param a int to convert into a FixedPoint.
      * @return the converted FixedPoint.
      */
-    function fromUnscaledInt(int256 a)
-        internal
-        pure
-        returns (FixedPointInt memory)
-    {
+    function fromUnscaledInt(int256 a) internal pure returns (FixedPointInt memory) {
         return FixedPointInt(a * _SCALING_FACTOR);
     }
 
@@ -43,11 +39,7 @@ library QuantMath {
      * @param _decimals  original decimals _a has
      * @return the converted FixedPoint, with 27 decimals.
      */
-    function fromScaledUint(uint256 _a, uint256 _decimals)
-        internal
-        pure
-        returns (FixedPointInt memory)
-    {
+    function fromScaledUint(uint256 _a, uint256 _decimals) internal pure returns (FixedPointInt memory) {
         FixedPointInt memory fixedPoint;
 
         if (_decimals == _BASE_DECIMALS) {
@@ -70,11 +62,7 @@ library QuantMath {
      * @param _roundDown True to round down the result, False to round up
      * @return the converted uint256
      */
-    function toScaledUint(
-        FixedPointInt memory _a,
-        uint256 _decimals,
-        bool _roundDown
-    )
+    function toScaledUint(FixedPointInt memory _a, uint256 _decimals, bool _roundDown)
         internal
         pure
         returns (uint256)
@@ -107,11 +95,7 @@ library QuantMath {
      * @param b FixedPointInt
      * @return sum of the two signed integers
      */
-    function add(FixedPointInt memory a, FixedPointInt memory b)
-        internal
-        pure
-        returns (FixedPointInt memory)
-    {
+    function add(FixedPointInt memory a, FixedPointInt memory b) internal pure returns (FixedPointInt memory) {
         return FixedPointInt(a.value + b.value);
     }
 
@@ -121,11 +105,7 @@ library QuantMath {
      * @param b FixedPointInt
      * @return difference of two signed integers
      */
-    function sub(FixedPointInt memory a, FixedPointInt memory b)
-        internal
-        pure
-        returns (FixedPointInt memory)
-    {
+    function sub(FixedPointInt memory a, FixedPointInt memory b) internal pure returns (FixedPointInt memory) {
         return FixedPointInt(a.value - b.value);
     }
 
@@ -169,11 +149,7 @@ library QuantMath {
      * @param b FixedPointInt
      * @return min of two signed integers
      */
-    function min(FixedPointInt memory a, FixedPointInt memory b)
-        internal
-        pure
-        returns (FixedPointInt memory)
-    {
+    function min(FixedPointInt memory a, FixedPointInt memory b) internal pure returns (FixedPointInt memory) {
         return a.value < b.value ? a : b;
     }
 
@@ -183,11 +159,7 @@ library QuantMath {
      * @param b FixedPointInt
      * @return max of two signed integers
      */
-    function max(FixedPointInt memory a, FixedPointInt memory b)
-        internal
-        pure
-        returns (FixedPointInt memory)
-    {
+    function max(FixedPointInt memory a, FixedPointInt memory b) internal pure returns (FixedPointInt memory) {
         return a.value > b.value ? a : b;
     }
 
@@ -197,11 +169,7 @@ library QuantMath {
      * @param b FixedPointInt
      * @return True if equal, False if not
      */
-    function isEqual(FixedPointInt memory a, FixedPointInt memory b)
-        internal
-        pure
-        returns (bool)
-    {
+    function isEqual(FixedPointInt memory a, FixedPointInt memory b) internal pure returns (bool) {
         return a.value == b.value;
     }
 
@@ -211,11 +179,7 @@ library QuantMath {
      * @param b FixedPointInt
      * @return True if a > b, False if not
      */
-    function isGreaterThan(FixedPointInt memory a, FixedPointInt memory b)
-        internal
-        pure
-        returns (bool)
-    {
+    function isGreaterThan(FixedPointInt memory a, FixedPointInt memory b) internal pure returns (bool) {
         return a.value > b.value;
     }
 
@@ -225,14 +189,7 @@ library QuantMath {
      * @param b FixedPointInt
      * @return True if a >= b, False if not
      */
-    function isGreaterThanOrEqual(
-        FixedPointInt memory a,
-        FixedPointInt memory b
-    )
-        internal
-        pure
-        returns (bool)
-    {
+    function isGreaterThanOrEqual(FixedPointInt memory a, FixedPointInt memory b) internal pure returns (bool) {
         return a.value >= b.value;
     }
 
@@ -242,11 +199,7 @@ library QuantMath {
      * @param b FixedPointInt
      * @return True if a < b, False if not
      */
-    function isLessThan(FixedPointInt memory a, FixedPointInt memory b)
-        internal
-        pure
-        returns (bool)
-    {
+    function isLessThan(FixedPointInt memory a, FixedPointInt memory b) internal pure returns (bool) {
         return a.value < b.value;
     }
 
@@ -256,11 +209,7 @@ library QuantMath {
      * @param b FixedPointInt
      * @return True if a <= b, False if not
      */
-    function isLessThanOrEqual(FixedPointInt memory a, FixedPointInt memory b)
-        internal
-        pure
-        returns (bool)
-    {
+    function isLessThanOrEqual(FixedPointInt memory a, FixedPointInt memory b) internal pure returns (bool) {
         return a.value <= b.value;
     }
 }
