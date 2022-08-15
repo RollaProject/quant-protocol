@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -47,9 +47,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
     /// @dev called once after initial deployment and every upgrade.
     /// @param _name the user readable name of the signing domain for EIP712
     /// @param _version the current major version of the signing domain for EIP712
-    constructor(string memory _name, string memory _version)
-        EIP712(_name, _version)
-    {
+    constructor(string memory _name, string memory _version) EIP712(_name, _version) {
         name = _name;
         version = _version;
     }
@@ -62,20 +60,11 @@ abstract contract EIP712MetaTransaction is EIP712 {
     /// @param v The v-value of the signature.
     /// @return The returned data from the low-level call.
     /// @return the gas
-    function executeMetaTransaction(
-        MetaAction memory metaAction,
-        uint256 gasLimit,
-        bytes32 r,
-        bytes32 s,
-        uint8 v
-    )
+    function executeMetaTransaction(MetaAction memory metaAction, uint256 gasLimit, bytes32 r, bytes32 s, uint8 v)
         external
         returns (bool, bytes memory)
     {
-        require(
-            _verify(metaAction.from, metaAction, r, s, v),
-            "signer and signature don't match"
-        );
+        require(_verify(metaAction.from, metaAction, r, s, v), "signer and signature don't match");
 
         uint256 currentNonce = _nonces[metaAction.from];
 
@@ -87,9 +76,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
 
         // Append the metaAction.from at the end so that it can be extracted later
         // from the calling context (see _msgSender() below)
-        (bool success, bytes memory returnData) = address(this).call{
-            gas: gasLimit
-        }(
+        (bool success, bytes memory returnData) = address(this).call{gas: gasLimit}(
             abi.encodePacked(
                 // Controller.operate.selector
                 abi.encodeWithSelector(0x7b7bed54, metaAction.actions),
@@ -109,13 +96,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
             }
         }
 
-        emit MetaTransactionExecuted(
-            metaAction.from,
-            payable(msg.sender),
-            success,
-            currentNonce,
-            returnData
-            );
+        emit MetaTransactionExecuted(metaAction.from, payable(msg.sender), success, currentNonce, returnData);
 
         return (success, returnData);
     }
@@ -136,11 +117,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
             uint256 index = msg.data.length;
             assembly ("memory-safe") {
                 // Load the 32 bytes word from memory with the address on the lower 20 bytes, and mask those.
-                sender :=
-                    and(
-                        mload(add(array, index)),
-                        0xffffffffffffffffffffffffffffffffffffffff
-                    )
+                sender := and(mload(add(array, index)), 0xffffffffffffffffffffffffffffffffffffffff)
             }
         } else {
             sender = msg.sender;
@@ -154,13 +131,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
     /// @param s the s-value of the signature.
     /// @param v the v-value of the signature.
     /// @return true if the signature is valid, false otherwise.
-    function _verify(
-        address user,
-        MetaAction memory metaAction,
-        bytes32 r,
-        bytes32 s,
-        uint8 v
-    )
+    function _verify(address user, MetaAction memory metaAction, bytes32 r, bytes32 s, uint8 v)
         internal
         view
         returns (bool)
@@ -169,8 +140,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
 
         require(metaAction.deadline >= block.timestamp, "expired deadline");
 
-        address signer =
-            _hashTypedDataV4(_hashMetaAction(metaAction)).recover(v, r, s);
+        address signer = _hashTypedDataV4(_hashMetaAction(metaAction)).recover(v, r, s);
 
         return signer == user;
     }
@@ -178,11 +148,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
     /// @notice Hashes a given ActionArgs struct to be used with EIP712.
     /// @param action the ActionArgs struct to hash.
     /// @return the hash of the ActionArgs struct.
-    function _hashAction(ActionArgs memory action)
-        private
-        pure
-        returns (bytes32)
-    {
+    function _hashAction(ActionArgs memory action) private pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 _ACTION_TYPEHASH,
@@ -200,11 +166,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
     /// @notice Hashes an array of ActionArgs structs to be used with EIP712.
     /// @param actions the array of ActionArgs structs to hash.
     /// @return the array of hashes for the ActionArgs structs.
-    function _hashActions(ActionArgs[] memory actions)
-        private
-        pure
-        returns (bytes32[] memory)
-    {
+    function _hashActions(ActionArgs[] memory actions) private pure returns (bytes32[] memory) {
         bytes32[] memory hashedActions = new bytes32[](actions.length);
         uint256 length = actions.length;
         for (uint256 i = 0; i < length;) {
@@ -219,11 +181,7 @@ abstract contract EIP712MetaTransaction is EIP712 {
     /// @notice Hashes a MetaAction struct to be used with EIP712.
     /// @param metaAction the MetaAction struct to hash.
     /// @return the hash of the MetaAction struct.
-    function _hashMetaAction(MetaAction memory metaAction)
-        private
-        pure
-        returns (bytes32)
-    {
+    function _hashMetaAction(MetaAction memory metaAction) private pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 _META_ACTION_TYPEHASH,

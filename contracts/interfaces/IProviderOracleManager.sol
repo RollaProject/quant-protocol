@@ -17,12 +17,7 @@ interface IProviderOracleManager {
     /// @param _asset asset to set price of
     /// @param _expiryTimestamp timestamp of price
     /// @param _calldata additional parameter that the method may need to execute
-    function setExpiryPriceInRegistry(
-        address _asset,
-        uint88 _expiryTimestamp,
-        bytes memory _calldata
-    )
-        external;
+    function setExpiryPriceInRegistry(address _asset, uint88 _expiryTimestamp, bytes memory _calldata) external;
 
     /// @notice asset address => oracle address
     function assetOracles(address) external view returns (address);
@@ -47,11 +42,7 @@ interface IProviderOracleManager {
     /// @param _underlyingAsset the address of the underlying asset
     /// @param _expiryTime the expiry timestamp of the option
     /// @param _strikePrice the strike price of the option
-    function isValidOption(
-        address _underlyingAsset,
-        uint88 _expiryTime,
-        uint256 _strikePrice
-    )
+    function isValidOption(address _underlyingAsset, uint88 _expiryTime, uint256 _strikePrice)
         external
         view
         returns (bool);

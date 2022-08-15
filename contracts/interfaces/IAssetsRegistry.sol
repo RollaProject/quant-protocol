@@ -7,9 +7,7 @@ interface IAssetsRegistry {
     /// @param name name of the asset
     /// @param symbol symbol of the asset
     /// @param decimals the amount of decimals the asset has
-    event AssetAdded(
-        address indexed underlying, string name, string symbol, uint8 decimals
-    );
+    event AssetAdded(address indexed underlying, string name, string symbol, uint8 decimals);
 
     /// @notice Add a new asset to the registry
     /// @dev It will revert when trying to add an asset with the same address twice
@@ -18,13 +16,7 @@ interface IAssetsRegistry {
     /// @param _name name of the asset
     /// @param _symbol symbol of the asset
     /// @param _decimals the amount of decimals the asset has
-    function addAsset(
-        address _underlying,
-        string calldata _name,
-        string calldata _symbol,
-        uint8 _decimals
-    )
-        external;
+    function addAsset(address _underlying, string calldata _name, string calldata _symbol, uint8 _decimals) external;
 
     /// @notice Add a new asset to the registry, calling the optional ERC20 methods
     /// to get its name, symbol and decimals
@@ -40,20 +32,12 @@ interface IAssetsRegistry {
     function assetProperties(address asset)
         external
         view
-        returns (
-            string memory name,
-            string memory symbol,
-            uint8 decimals,
-            bool isRegistered
-        );
+        returns (string memory name, string memory symbol, uint8 decimals, bool isRegistered);
 
     /// @notice Returns the address of the asset at the given index
     /// @param index index of the asset in the registry
     /// @return asset address of the asset at the given index
-    function registeredAssets(uint256 index)
-        external
-        view
-        returns (address asset);
+    function registeredAssets(uint256 index) external view returns (address asset);
 
     /// @notice Returns the number of assets in the registry
     /// @return length number of assets in the registry

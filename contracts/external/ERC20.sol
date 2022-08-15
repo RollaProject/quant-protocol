@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import {Clone} from "@rolla-finance/clones-with-immutable-args/Clone.sol";
 
@@ -19,9 +19,7 @@ abstract contract ERC20 is Clone {
 
     event Transfer(address indexed from, address indexed to, uint256 amount);
 
-    event Approval(
-        address indexed owner, address indexed spender, uint256 amount
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 amount);
 
     /*///////////////////////////////////////////////////////////////
                               ERC20 STORAGE
@@ -59,11 +57,7 @@ abstract contract ERC20 is Clone {
                               ERC20 LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    function approve(address spender, uint256 amount)
-        public
-        virtual
-        returns (bool)
-    {
+    function approve(address spender, uint256 amount) public virtual returns (bool) {
         allowance[msg.sender][spender] = amount;
 
         emit Approval(msg.sender, spender, amount);
@@ -71,11 +65,7 @@ abstract contract ERC20 is Clone {
         return true;
     }
 
-    function transfer(address to, uint256 amount)
-        public
-        virtual
-        returns (bool)
-    {
+    function transfer(address to, uint256 amount) public virtual returns (bool) {
         balanceOf[msg.sender] -= amount;
 
         // Cannot overflow because the sum of all user
@@ -89,11 +79,7 @@ abstract contract ERC20 is Clone {
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 amount)
-        public
-        virtual
-        returns (bool)
-    {
+    function transferFrom(address from, address to, uint256 amount) public virtual returns (bool) {
         uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
 
         if (allowed != type(uint256).max) {
@@ -117,15 +103,7 @@ abstract contract ERC20 is Clone {
                              EIP-2612 LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
         virtual
     {
@@ -141,9 +119,7 @@ abstract contract ERC20 is Clone {
                         DOMAIN_SEPARATOR(),
                         keccak256(
                             abi.encode(
-                                keccak256(
-                                    "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-                                ),
+                                keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
                                 owner,
                                 spender,
                                 value,
@@ -158,10 +134,7 @@ abstract contract ERC20 is Clone {
                 s
             );
 
-            require(
-                recoveredAddress != address(0) && recoveredAddress == owner,
-                "INVALID_SIGNER"
-            );
+            require(recoveredAddress != address(0) && recoveredAddress == owner, "INVALID_SIGNER");
 
             allowance[recoveredAddress][spender] = value;
         }
@@ -174,9 +147,7 @@ abstract contract ERC20 is Clone {
 
         return keccak256(
             abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 nameHash,
                 keccak256("1"),
                 block.chainid,
@@ -217,17 +188,10 @@ abstract contract ERC20 is Clone {
     /// in which the last byte is the length of the string.
     /// @param stringArgOffset The offset of the string immutable arg in the packed data
     /// @return stringArg The string immutable arg
-    function _get128BytesStringArg(uint256 stringArgOffset)
-        private
-        pure
-        returns (string calldata stringArg)
-    {
+    function _get128BytesStringArg(uint256 stringArgOffset) private pure returns (string calldata stringArg) {
         assembly ("memory-safe") {
             // get the offset of the packed immutable args in calldata
-            let immutableArgsOffset :=
-                sub(
-                    calldatasize(), add(shr(240, calldataload(sub(calldatasize(), 2))), 2)
-                )
+            let immutableArgsOffset := sub(calldatasize(), add(shr(240, calldataload(sub(calldatasize(), 2))), 2))
 
             // get the offset of the start of the string in the calldata
             let strStart := add(immutableArgsOffset, stringArgOffset)

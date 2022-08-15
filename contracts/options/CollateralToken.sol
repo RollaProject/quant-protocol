@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -42,10 +42,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     address private _optionsFactory;
 
     modifier onlyFactory() {
-        require(
-            msg.sender == _optionsFactory,
-            "CollateralToken: caller is not OptionsFactory"
-        );
+        require(msg.sender == _optionsFactory, "CollateralToken: caller is not OptionsFactory");
 
         _;
     }
@@ -55,9 +52,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     /// @param _name name for the domain typehash in EIP712 meta transactions
     /// @param _version version for the domain typehash in EIP712 meta transactions
     /// @param uri_ URI for ERC1155 tokens metadata
-    constructor(string memory _name, string memory _version, string memory uri_)
-        EIP712(_name, _version)
-    {
+    constructor(string memory _name, string memory _version, string memory uri_) EIP712(_name, _version) {
         _uri = uri_;
     }
 
@@ -67,27 +62,16 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     }
 
     /// @inheritdoc ICollateralToken
-    function createOptionCollateralToken(address _qTokenAddress)
-        external
-        override
-        onlyFactory
-        returns (uint256 id)
-    {
+    function createOptionCollateralToken(address _qTokenAddress) external override onlyFactory returns (uint256 id) {
         id = getCollateralTokenId(_qTokenAddress, address(0));
 
-        idToInfo[id] = CollateralTokenInfo({
-            qTokenAddress: _qTokenAddress,
-            qTokenAsCollateral: address(0)
-        });
+        idToInfo[id] = CollateralTokenInfo({qTokenAddress: _qTokenAddress, qTokenAsCollateral: address(0)});
 
         emit CollateralTokenCreated(_qTokenAddress, address(0), id);
     }
 
     /// @inheritdoc ICollateralToken
-    function createSpreadCollateralToken(
-        address _qTokenAddress,
-        address _qTokenAsCollateral
-    )
+    function createSpreadCollateralToken(address _qTokenAddress, address _qTokenAsCollateral)
         external
         override
         onlyOwner
@@ -100,20 +84,13 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
             "CollateralToken: Can only create a collateral token with different tokens"
         );
 
-        idToInfo[id] = CollateralTokenInfo({
-            qTokenAddress: _qTokenAddress,
-            qTokenAsCollateral: _qTokenAsCollateral
-        });
+        idToInfo[id] = CollateralTokenInfo({qTokenAddress: _qTokenAddress, qTokenAsCollateral: _qTokenAsCollateral});
 
         emit CollateralTokenCreated(_qTokenAddress, _qTokenAsCollateral, id);
     }
 
     /// @inheritdoc ICollateralToken
-    function mintCollateralToken(
-        address recipient,
-        uint256 collateralTokenId,
-        uint256 amount
-    )
+    function mintCollateralToken(address recipient, uint256 collateralTokenId, uint256 amount)
         external
         override
         onlyOwner
@@ -122,11 +99,7 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
     }
 
     /// @inheritdoc ICollateralToken
-    function burnCollateralToken(
-        address cTokenOwner,
-        uint256 collateralTokenId,
-        uint256 amount
-    )
+    function burnCollateralToken(address cTokenOwner, uint256 collateralTokenId, uint256 amount)
         external
         override
         onlyOwner
@@ -151,15 +124,10 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
         require(nonce == nonces[cTokenOwner], "CollateralToken: invalid nonce");
 
         // solhint-disable-next-line not-rely-on-time
-        require(
-            deadline >= block.timestamp, "CollateralToken: expired deadline"
-        );
+        require(deadline >= block.timestamp, "CollateralToken: expired deadline");
 
-        bytes32 structHash = keccak256(
-            abi.encode(
-                _META_APPROVAL_TYPEHASH, cTokenOwner, operator, approved, nonce, deadline
-            )
-        );
+        bytes32 structHash =
+            keccak256(abi.encode(_META_APPROVAL_TYPEHASH, cTokenOwner, operator, approved, nonce, deadline));
 
         bytes32 hash = _hashTypedDataV4(structHash);
 

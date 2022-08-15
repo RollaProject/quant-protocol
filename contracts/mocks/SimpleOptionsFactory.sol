@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
-import {ClonesWithImmutableArgs} from
-    "@rolla-finance/clones-with-immutable-args/ClonesWithImmutableArgs.sol";
+import {ClonesWithImmutableArgs} from "@rolla-finance/clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 import {QToken} from "../options/QToken.sol";
 import {CollateralToken} from "../options/CollateralToken.sol";
 import "../libraries/OptionsUtils.sol";
@@ -54,8 +53,7 @@ contract SimpleOptionsFactory {
 
         newQToken = address(implementation).cloneDeterministic(salt, data);
 
-        newCollateralTokenId =
-            collateralToken.createOptionCollateralToken(newQToken);
+        newCollateralTokenId = collateralToken.createOptionCollateralToken(newQToken);
     }
 
     function getQToken(
@@ -83,9 +81,7 @@ contract SimpleOptionsFactory {
             controller
         );
 
-        (qToken, exists) = ClonesWithImmutableArgs.predictDeterministicAddress(
-            address(implementation), salt, data
-        );
+        (qToken, exists) = ClonesWithImmutableArgs.predictDeterministicAddress(address(implementation), salt, data);
     }
 
     function getCollateralToken(
@@ -102,15 +98,7 @@ contract SimpleOptionsFactory {
         view
         returns (uint256 id, bool exists)
     {
-        (address qToken,) = getQToken(
-            underlyingAsset,
-            strikeAsset,
-            oracle,
-            expiryTime,
-            isCall,
-            strikePrice,
-            controller
-        );
+        (address qToken,) = getQToken(underlyingAsset, strikeAsset, oracle, expiryTime, isCall, strikePrice, controller);
 
         id = collateralToken.getCollateralTokenId(qToken, qTokenAsCollateral);
 
