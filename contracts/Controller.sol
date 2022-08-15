@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "./interfaces/IController.sol";
 import "./utils/EIP712MetaTransaction.sol";
-import {
-    SafeTransferLib,
-    ERC20 as IERC20
-} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
+import {SafeTransferLib, ERC20 as IERC20} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import "./libraries/Actions.sol";
 import "./options/OptionsFactory.sol";
 import "./utils/OperateProxy.sol";
@@ -49,21 +46,10 @@ contract Controller is IController, EIP712MetaTransaction {
     )
         EIP712MetaTransaction(_name, _version)
     {
-        require(
-            _oracleRegistry != address(0),
-            "Controller: invalid OracleRegistry address"
-        );
-        require(
-            _strikeAsset != address(0), "Controller: invalid StrikeAsset address"
-        );
-        require(
-            _priceRegistry != address(0),
-            "Controller: invalid PriceRegistry address"
-        );
-        require(
-            _assetsRegistry != address(0),
-            "Controller: invalid AssetsRegistry address"
-        );
+        require(_oracleRegistry != address(0), "Controller: invalid OracleRegistry address");
+        require(_strikeAsset != address(0), "Controller: invalid StrikeAsset address");
+        require(_priceRegistry != address(0), "Controller: invalid PriceRegistry address");
+        require(_assetsRegistry != address(0), "Controller: invalid AssetsRegistry address");
 
         oracleRegistry = OracleRegistry(_oracleRegistry);
 
@@ -98,26 +84,19 @@ contract Controller is IController, EIP712MetaTransaction {
             ActionArgs memory action = _actions[i];
 
             if (action.actionType == ActionType.MintOption) {
-                (address to, address qToken, uint256 amount) =
-                    action.parseMintOptionArgs();
+                (address to, address qToken, uint256 amount) = action.parseMintOptionArgs();
                 mintOptionsPosition(to, qToken, amount);
             } else if (action.actionType == ActionType.MintSpread) {
-                (
-                    address qTokenToMint,
-                    address qTokenForCollateral,
-                    uint256 amount
-                ) = action.parseMintSpreadArgs();
+                (address qTokenToMint, address qTokenForCollateral, uint256 amount) = action.parseMintSpreadArgs();
                 mintSpread(qTokenToMint, qTokenForCollateral, amount);
             } else if (action.actionType == ActionType.Exercise) {
                 (address qToken, uint256 amount) = action.parseExerciseArgs();
                 exercise(qToken, amount);
             } else if (action.actionType == ActionType.ClaimCollateral) {
-                (uint256 collateralTokenId, uint256 amount) =
-                    action.parseClaimCollateralArgs();
+                (uint256 collateralTokenId, uint256 amount) = action.parseClaimCollateralArgs();
                 claimCollateral(collateralTokenId, amount);
             } else if (action.actionType == ActionType.Neutralize) {
-                (uint256 collateralTokenId, uint256 amount) =
-                    action.parseNeutralizeArgs();
+                (uint256 collateralTokenId, uint256 amount) = action.parseNeutralizeArgs();
                 neutralizePosition(collateralTokenId, amount);
             } else if (action.actionType == ActionType.QTokenPermit) {
                 (
@@ -131,8 +110,7 @@ contract Controller is IController, EIP712MetaTransaction {
                     bytes32 s
                 ) = action.parseQTokenPermitArgs();
                 _qTokenPermit(qToken, owner, spender, value, deadline, v, r, s);
-            } else if (action.actionType == ActionType.CollateralTokenApproval)
-            {
+            } else if (action.actionType == ActionType.CollateralTokenApproval) {
                 (
                     address owner,
                     address operator,
@@ -143,9 +121,7 @@ contract Controller is IController, EIP712MetaTransaction {
                     bytes32 r,
                     bytes32 s
                 ) = action.parseCollateralTokenApprovalArgs();
-                _collateralTokenApproval(
-                    owner, operator, approved, nonce, deadline, v, r, s
-                );
+                _collateralTokenApproval(owner, operator, approved, nonce, deadline, v, r, s);
             } else {
                 (address callee, bytes memory data) = action.parseCallArgs();
                 _call(callee, data);
@@ -158,10 +134,7 @@ contract Controller is IController, EIP712MetaTransaction {
     }
 
     /// @inheritdoc IController
-    function mintOptionsPosition(address _to, address _qToken, uint256 _amount)
-        public
-        override
-    {
+    function mintOptionsPosition(address _to, address _qToken, uint256 _amount) public override {
         /// -------------------------------------------------------------------
         /// Checks
         /// -------------------------------------------------------------------
@@ -183,53 +156,36 @@ contract Controller is IController, EIP712MetaTransaction {
         // Mint the option's long tokens to the recipient's address
         QToken(_qToken).mint(_to, _amount);
 
-        emit OptionsPositionMinted(
-            _to, _msgSender(), _qToken, _amount, collateral, collateralAmount
-            );
+        emit OptionsPositionMinted(_to, _msgSender(), _qToken, _amount, collateral, collateralAmount);
 
         /// -------------------------------------------------------------------
         /// Interactions
         /// -------------------------------------------------------------------
 
         // pull the required collateral from the caller/signer
-        IERC20(collateral).safeTransferFrom(
-            _msgSender(), address(this), collateralAmount
-        );
+        IERC20(collateral).safeTransferFrom(_msgSender(), address(this), collateralAmount);
 
         // There's no need to check if the collateralTokenId exists before minting the
         // short tokens because if the QToken is valid, then it's guaranteed that the
         // respective CollateralToken has already also been created by the OptionsFactory
-        uint256 collateralTokenId =
-            collateralToken.getCollateralTokenId(_qToken, address(0));
+        uint256 collateralTokenId = collateralToken.getCollateralTokenId(_qToken, address(0));
 
         // Mint the option's short tokens to the recipient's address
         collateralToken.mintCollateralToken(_to, collateralTokenId, _amount);
     }
 
     /// @inheritdoc IController
-    function mintSpread(
-        address _qTokenToMint,
-        address _qTokenForCollateral,
-        uint256 _amount
-    )
-        public
-        override
-    {
+    function mintSpread(address _qTokenToMint, address _qTokenForCollateral, uint256 _amount) public override {
         /// -------------------------------------------------------------------
         /// Checks
         /// -------------------------------------------------------------------
 
-        require(
-            _qTokenToMint != _qTokenForCollateral,
-            "Controller: Can only create a spread with different tokens"
-        );
+        require(_qTokenToMint != _qTokenForCollateral, "Controller: Can only create a spread with different tokens");
 
         // Calculate the extra collateral required to create the spread.
         // A positive value for debit spreads and zero for credit spreads.
-        (address collateral, uint256 collateralAmount) = quantCalculator
-            .getCollateralRequirement(
-            _qTokenToMint, _qTokenForCollateral, _amount
-        );
+        (address collateral, uint256 collateralAmount) =
+            quantCalculator.getCollateralRequirement(_qTokenToMint, _qTokenForCollateral, _amount);
 
         // Check if the QTokens are unexpired
         // Only one of them needs to be checked since `getCollateralRequirement`
@@ -250,17 +206,11 @@ contract Controller is IController, EIP712MetaTransaction {
 
         // Check if the CollateralToken representing this specific spread has already been created
         // Create it if it hasn't
-        uint256 collateralTokenId = collateralToken.getCollateralTokenId(
-            _qTokenToMint, _qTokenForCollateral
-        );
-        (, address qTokenAsCollateral) =
-            collateralToken.idToInfo(collateralTokenId);
+        uint256 collateralTokenId = collateralToken.getCollateralTokenId(_qTokenToMint, _qTokenForCollateral);
+        (, address qTokenAsCollateral) = collateralToken.idToInfo(collateralTokenId);
         if (qTokenAsCollateral == address(0)) {
             require(
-                collateralTokenId
-                    == collateralToken.createSpreadCollateralToken(
-                        _qTokenToMint, _qTokenForCollateral
-                    ),
+                collateralTokenId == collateralToken.createSpreadCollateralToken(_qTokenToMint, _qTokenForCollateral),
                 "Controller: failed creating the collateral token to represent the spread"
             );
         }
@@ -268,14 +218,7 @@ contract Controller is IController, EIP712MetaTransaction {
         // Mint the long tokens for the new spread position
         QToken(_qTokenToMint).mint(_msgSender(), _amount);
 
-        emit SpreadMinted(
-            _msgSender(),
-            _qTokenToMint,
-            _qTokenForCollateral,
-            _amount,
-            collateral,
-            collateralAmount
-            );
+        emit SpreadMinted(_msgSender(), _qTokenToMint, _qTokenForCollateral, _amount, collateral, collateralAmount);
 
         /// -------------------------------------------------------------------
         /// Interactions
@@ -283,15 +226,11 @@ contract Controller is IController, EIP712MetaTransaction {
 
         // Transfer in any collateral required for the spread
         if (collateralAmount > 0) {
-            IERC20(collateral).safeTransferFrom(
-                _msgSender(), address(this), collateralAmount
-            );
+            IERC20(collateral).safeTransferFrom(_msgSender(), address(this), collateralAmount);
         }
 
         // Mint the short tokens for the new spread position
-        collateralToken.mintCollateralToken(
-            _msgSender(), collateralTokenId, _amount
-        );
+        collateralToken.mintCollateralToken(_msgSender(), collateralTokenId, _amount);
     }
 
     /// @inheritdoc IController
@@ -302,10 +241,7 @@ contract Controller is IController, EIP712MetaTransaction {
         /// Checks
         /// -------------------------------------------------------------------
 
-        require(
-            block.timestamp > qToken.expiryTime(),
-            "Controller: Can not exercise options before their expiry"
-        );
+        require(block.timestamp > qToken.expiryTime(), "Controller: Can not exercise options before their expiry");
 
         // if the amount is 0, the entire position will be exercised
         if (_amount == 0) {
@@ -326,9 +262,7 @@ contract Controller is IController, EIP712MetaTransaction {
         // Burn the long tokens
         qToken.burn(_msgSender(), _amount);
 
-        emit OptionsExercised(
-            _msgSender(), _qToken, _amount, exerciseTotal, payoutToken
-            );
+        emit OptionsExercised(_msgSender(), _qToken, _amount, exerciseTotal, payoutToken);
 
         /// -------------------------------------------------------------------
         /// Interactions
@@ -341,39 +275,23 @@ contract Controller is IController, EIP712MetaTransaction {
     }
 
     /// @inheritdoc IController
-    function claimCollateral(uint256 _collateralTokenId, uint256 _amount)
-        public
-        override
-    {
+    function claimCollateral(uint256 _collateralTokenId, uint256 _amount) public override {
         /// -------------------------------------------------------------------
         /// Checks
         /// -------------------------------------------------------------------
 
         // Use the QuantCalculator to check how much collateral the sender/signer is due.
-        (
-            uint256 returnableCollateral,
-            address collateralAsset,
-            uint256 amountToClaim
-        ) = quantCalculator.calculateClaimableCollateral(
-            _collateralTokenId, _amount, _msgSender()
-        );
+        (uint256 returnableCollateral, address collateralAsset, uint256 amountToClaim) =
+            quantCalculator.calculateClaimableCollateral(_collateralTokenId, _amount, _msgSender());
 
         /// -------------------------------------------------------------------
         /// Effects
         /// -------------------------------------------------------------------
 
         // Burn the short tokens
-        collateralToken.burnCollateralToken(
-            _msgSender(), _collateralTokenId, amountToClaim
-        );
+        collateralToken.burnCollateralToken(_msgSender(), _collateralTokenId, amountToClaim);
 
-        emit CollateralClaimed(
-            _msgSender(),
-            _collateralTokenId,
-            amountToClaim,
-            returnableCollateral,
-            collateralAsset
-            );
+        emit CollateralClaimed(_msgSender(), _collateralTokenId, amountToClaim, returnableCollateral, collateralAsset);
 
         /// -------------------------------------------------------------------
         /// Interactions
@@ -381,43 +299,33 @@ contract Controller is IController, EIP712MetaTransaction {
 
         // Transfer any collateral due after expiration
         if (returnableCollateral > 0) {
-            IERC20(collateralAsset).safeTransfer(
-                _msgSender(), returnableCollateral
-            );
+            IERC20(collateralAsset).safeTransfer(_msgSender(), returnableCollateral);
         }
     }
 
     /// @inheritdoc IController
-    function neutralizePosition(uint256 _collateralTokenId, uint256 _amount)
-        public
-        override
-    {
+    function neutralizePosition(uint256 _collateralTokenId, uint256 _amount) public override {
         /// -------------------------------------------------------------------
         /// Checks
         /// -------------------------------------------------------------------
 
-        (address qTokenShort, address qTokenLong) =
-            collateralToken.idToInfo(_collateralTokenId);
+        (address qTokenShort, address qTokenLong) = collateralToken.idToInfo(_collateralTokenId);
 
         if (_amount == 0) {
             //get the amount of CollateralTokens owned
-            uint256 collateralTokensOwned =
-                collateralToken.balanceOf(_msgSender(), _collateralTokenId);
+            uint256 collateralTokensOwned = collateralToken.balanceOf(_msgSender(), _collateralTokenId);
 
             //get the amount of QTokens owned
             uint256 qTokensOwned = QToken(qTokenShort).balanceOf(_msgSender());
 
             // the size of the position that can be neutralized
-            _amount =
-                qTokensOwned < collateralTokensOwned
-                ? qTokensOwned
-                : collateralTokensOwned;
+            _amount = qTokensOwned < collateralTokensOwned ? qTokensOwned : collateralTokensOwned;
         }
 
         // use the QuantCalculator to check how much collateral the sender/signer is due
         // for closing the neutral position
-        (address collateralType, uint256 collateralOwed) = quantCalculator
-            .getNeutralizationPayout(qTokenShort, qTokenLong, _amount);
+        (address collateralType, uint256 collateralOwed) =
+            quantCalculator.getNeutralizationPayout(qTokenShort, qTokenLong, _amount);
 
         /// -------------------------------------------------------------------
         /// Effects
@@ -427,23 +335,14 @@ contract Controller is IController, EIP712MetaTransaction {
         QToken(qTokenShort).burn(_msgSender(), _amount);
 
         // burn the long tokens
-        collateralToken.burnCollateralToken(
-            _msgSender(), _collateralTokenId, _amount
-        );
+        collateralToken.burnCollateralToken(_msgSender(), _collateralTokenId, _amount);
 
         //give the user their long tokens (if any, in case of CollateralTokens representing a spread)
         if (qTokenLong != address(0)) {
             QToken(qTokenLong).mint(_msgSender(), _amount);
         }
 
-        emit NeutralizePosition(
-            _msgSender(),
-            qTokenShort,
-            _amount,
-            collateralOwed,
-            collateralType,
-            qTokenLong
-            );
+        emit NeutralizePosition(_msgSender(), qTokenShort, _amount, collateralOwed, collateralType, qTokenLong);
 
         /// -------------------------------------------------------------------
         /// Interactions
@@ -473,10 +372,7 @@ contract Controller is IController, EIP712MetaTransaction {
     )
         internal
     {
-        require(
-            optionsFactory.isQToken(_qToken),
-            "Controller: not a QToken for calling permit"
-        );
+        require(optionsFactory.isQToken(_qToken), "Controller: not a QToken for calling permit");
 
         QToken(_qToken).permit(_owner, _spender, _value, _deadline, _v, _r, _s);
     }
@@ -503,9 +399,7 @@ contract Controller is IController, EIP712MetaTransaction {
     )
         internal
     {
-        collateralToken.metaSetApprovalForAll(
-            _owner, _operator, _approved, _nonce, _deadline, _v, _r, _s
-        );
+        collateralToken.metaSetApprovalForAll(_owner, _operator, _approved, _nonce, _deadline, _v, _r, _s);
     }
 
     /// @notice Allows a sender/signer to make external calls to any other contract.
@@ -523,10 +417,7 @@ contract Controller is IController, EIP712MetaTransaction {
     /// @notice Checks if the given QToken has not expired yet, reverting otherwise
     /// @param _qToken The address of the QToken to check.
     function _checkIfUnexpiredQToken(address _qToken) internal view {
-        require(
-            QToken(_qToken).expiryTime() > block.timestamp,
-            "Controller: Cannot mint expired options"
-        );
+        require(QToken(_qToken).expiryTime() > block.timestamp, "Controller: Cannot mint expired options");
     }
 
     /// @notice Checks if the oracle set during the option's creation through the OptionsFactory

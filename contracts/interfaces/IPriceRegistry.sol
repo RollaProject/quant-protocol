@@ -42,11 +42,7 @@ interface IPriceRegistry {
     /// @param _expiryTime timestamp we want the price for
     /// @param _asset asset to fetch price for
     /// @return the price (with decimals) which has been submitted for the asset at the timestamp by that oracle
-    function getSettlementPriceWithDecimals(
-        address _oracle,
-        uint88 _expiryTime,
-        address _asset
-    )
+    function getSettlementPriceWithDecimals(address _oracle, uint88 _expiryTime, address _asset)
         external
         view
         returns (PriceWithDecimals memory);
@@ -57,22 +53,11 @@ interface IPriceRegistry {
     /// @param _expiryTime timestamp we want the price for
     /// @param _asset asset to fetch price for
     /// @return the price which has been submitted for the asset at the timestamp by that oracle
-    function getSettlementPrice(
-        address _oracle,
-        uint88 _expiryTime,
-        address _asset
-    )
-        external
-        view
-        returns (uint256);
+    function getSettlementPrice(address _oracle, uint88 _expiryTime, address _asset) external view returns (uint256);
 
     /// @notice Get the price status of the option.
     /// @return the price status of the option. option is either active, awaiting settlement price or settled
-    function getOptionPriceStatus(
-        address _oracle,
-        uint88 _expiryTime,
-        address _asset
-    )
+    function getOptionPriceStatus(address _oracle, uint88 _expiryTime, address _asset)
         external
         view
         returns (PriceStatus);
@@ -82,14 +67,7 @@ interface IPriceRegistry {
     /// @param _expiryTime timestamp of price
     /// @param _asset asset to check price for
     /// @return whether or not a price has been submitted for the asset at the timestamp by that oracle
-    function hasSettlementPrice(
-        address _oracle,
-        uint88 _expiryTime,
-        address _asset
-    )
-        external
-        view
-        returns (bool);
+    function hasSettlementPrice(address _oracle, uint88 _expiryTime, address _asset) external view returns (bool);
 
     // @notice The address of the OracleRegistry contract
     function oracleRegistry() external view returns (address);

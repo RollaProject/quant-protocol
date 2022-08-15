@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "../external/ERC20.sol";
 import "../interfaces/IQToken.sol";
@@ -14,22 +14,12 @@ contract QToken is ERC20, IQToken {
     /// -----------------------------------------------------------------------
 
     /// @inheritdoc IQToken
-    function underlyingAsset()
-        public
-        pure
-        override
-        returns (address _underlyingAsset)
-    {
+    function underlyingAsset() public pure override returns (address _underlyingAsset) {
         return _getArgAddress(0x101);
     }
 
     /// @inheritdoc IQToken
-    function strikeAsset()
-        external
-        pure
-        override
-        returns (address _strikeAsset)
-    {
+    function strikeAsset() external pure override returns (address _strikeAsset) {
         return _getArgAddress(0x115);
     }
 
@@ -49,12 +39,7 @@ contract QToken is ERC20, IQToken {
     }
 
     /// @inheritdoc IQToken
-    function strikePrice()
-        external
-        pure
-        override
-        returns (uint256 _strikePrice)
-    {
+    function strikePrice() external pure override returns (uint256 _strikePrice) {
         return _getArgUint256(0x149);
     }
 
@@ -74,20 +59,12 @@ contract QToken is ERC20, IQToken {
     }
 
     /// @inheritdoc IQToken
-    function mint(address account, uint256 amount)
-        external
-        override
-        onlyController
-    {
+    function mint(address account, uint256 amount) external override onlyController {
         _mint(account, amount);
     }
 
     /// @inheritdoc IQToken
-    function burn(address account, uint256 amount)
-        external
-        override
-        onlyController
-    {
+    function burn(address account, uint256 amount) external override onlyController {
         _burn(account, amount);
     }
 }

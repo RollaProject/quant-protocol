@@ -14,18 +14,10 @@ interface IQuantCalculator {
     /// @return collateralAsset the address of the asset that will be returned from the claim
     /// @return amountToClaim the amount of collateral tokens claimed. can only different to _amount
     /// when the _amount passed was 0 and the user had a collateral token balance > 0
-    function calculateClaimableCollateral(
-        uint256 _collateralTokenId,
-        uint256 _amount,
-        address _user
-    )
+    function calculateClaimableCollateral(uint256 _collateralTokenId, uint256 _amount, address _user)
         external
         view
-        returns (
-            uint256 returnableCollateral,
-            address collateralAsset,
-            uint256 amountToClaim
-        );
+        returns (uint256 returnableCollateral, address collateralAsset, uint256 amountToClaim);
 
     /// @notice Calculates the collateral required to mint an option or a spread
     /// @param _qTokenToMint the desired qToken
@@ -34,11 +26,7 @@ interface IQuantCalculator {
     /// @param _amount the amount of options/spread to mint
     /// @return collateral the address of the collateral token required
     /// @return collateralAmount the amount of collateral that is required to mint the option/spread
-    function getCollateralRequirement(
-        address _qTokenToMint,
-        address _qTokenForCollateral,
-        uint256 _amount
-    )
+    function getCollateralRequirement(address _qTokenToMint, address _qTokenForCollateral, uint256 _amount)
         external
         view
         returns (address collateral, uint256 collateralAmount);
@@ -76,11 +64,7 @@ interface IQuantCalculator {
     /// given the same parameters used for minting this will return the same amount of collateral
     /// in all cases except when there is rounding involved. in those cases, the difference will be
     /// 1 unit of collateral less for the neutralize than the mint.
-    function getNeutralizationPayout(
-        address _qTokenShort,
-        address _qTokenLong,
-        uint256 _amountToNeutralize
-    )
+    function getNeutralizationPayout(address _qTokenShort, address _qTokenLong, uint256 _amountToNeutralize)
         external
         view
         returns (address collateralType, uint256 collateralOwed);

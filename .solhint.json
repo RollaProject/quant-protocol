@@ -3,7 +3,7 @@
   "rules": {
     "code-complexity": ["error", 13],
     "function-max-lines": ["error", 120],
-    "max-line-length": ["error", 120],
+    "max-line-length": ["error", 130],
     "max-states-count": ["error", 13],
     "no-empty-blocks": "error",
     "no-unused-vars": "error",

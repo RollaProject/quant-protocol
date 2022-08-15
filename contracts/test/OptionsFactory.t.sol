@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
 import {OptionsFactory} from "../options/OptionsFactory.sol";
@@ -7,17 +7,13 @@ import {CollateralToken} from "../options/CollateralToken.sol";
 import {ERC20 as SolmateERC20} from "solmate/tokens/ERC20.sol";
 import {AssetsRegistry} from "../options/AssetsRegistry.sol";
 import {OracleRegistry} from "../pricing/OracleRegistry.sol";
-import {ChainlinkOracleManager} from
-    "../pricing/oracle/ChainlinkOracleManager.sol";
-import {ProviderOracleManager} from
-    "../pricing/oracle/ProviderOracleManager.sol";
+import {ChainlinkOracleManager} from "../pricing/oracle/ChainlinkOracleManager.sol";
+import {ProviderOracleManager} from "../pricing/oracle/ProviderOracleManager.sol";
 import {PriceRegistry} from "../pricing/PriceRegistry.sol";
 import {QToken} from "../options/QToken.sol";
 
 contract ERC20 is SolmateERC20 {
-    constructor(string memory _name, string memory _symbol, uint8 _decimals)
-        SolmateERC20(_name, _symbol, _decimals)
-    {}
+    constructor(string memory _name, string memory _symbol, uint8 _decimals) SolmateERC20(_name, _symbol, _decimals) {}
 }
 
 contract OptionsFactoryTest is Test {
@@ -92,16 +88,12 @@ contract OptionsFactoryTest is Test {
 
         vm.mockCall(
             chainlinkOracleManager,
-            abi.encodeWithSelector(
-                bytes4(keccak256(bytes("isValidOption(address,uint88,uint256)")))
-            ),
+            abi.encodeWithSelector(bytes4(keccak256(bytes("isValidOption(address,uint88,uint256)")))),
             abi.encode(true)
         );
 
         vm.mockCall(
-            oracleRegistry,
-            abi.encodeWithSelector(bytes4(keccak256(bytes("isOracleActive(address)")))),
-            abi.encode(true)
+            oracleRegistry, abi.encodeWithSelector(bytes4(keccak256(bytes("isOracleActive(address)")))), abi.encode(true)
         );
     }
 
@@ -117,9 +109,7 @@ contract OptionsFactoryTest is Test {
     }
 
     function testGas_create() public {
-        optionsFactory.createOption(
-            address(WBNB), chainlinkOracleManager, 2284318798, true, 100000 ether
-        );
+        optionsFactory.createOption(address(WBNB), chainlinkOracleManager, 2284318798, true, 100000 ether);
     }
 
     function testCreatedOptionParams(
@@ -141,9 +131,7 @@ contract OptionsFactoryTest is Test {
 
         vm.mockCall(
             oracle,
-            abi.encodeWithSelector(
-                bytes4(keccak256(bytes("isValidOption(address,uint88,uint256)")))
-            ),
+            abi.encodeWithSelector(bytes4(keccak256(bytes("isValidOption(address,uint88,uint256)")))),
             abi.encode(true)
         );
 
@@ -162,9 +150,8 @@ contract OptionsFactoryTest is Test {
 
         assetsRegistry.addAssetWithOptionalERC20Methods(address(underlying));
 
-        (address qTokenAddress,) = optionsFactory.createOption(
-            address(underlying), oracle, expiryTime, isCall, strikePrice
-        );
+        (address qTokenAddress,) =
+            optionsFactory.createOption(address(underlying), oracle, expiryTime, isCall, strikePrice);
 
         QToken qToken = QToken(qTokenAddress);
 
@@ -183,9 +170,8 @@ contract OptionsFactoryTest is Test {
         bool isCall = true;
         uint256 strikePrice = 334 ether;
 
-        (address qTokenAddress, uint256 cTokenId) = optionsFactory.createOption(
-            address(WBNB), chainlinkOracleManager, expiryTime, isCall, strikePrice
-        );
+        (address qTokenAddress, uint256 cTokenId) =
+            optionsFactory.createOption(address(WBNB), chainlinkOracleManager, expiryTime, isCall, strikePrice);
 
         QToken qToken = QToken(qTokenAddress);
 
@@ -211,36 +197,18 @@ contract OptionsFactoryTest is Test {
         uint88 expiryTimestamp = uint88(block.timestamp + 3600);
         bool isCall = true;
 
+        optionsFactory.createOption(address(WBNB), chainlinkOracleManager, expiryTimestamp, isCall, strikePrice);
+
         optionsFactory.createOption(
-            address(WBNB),
-            chainlinkOracleManager,
-            expiryTimestamp,
-            isCall,
-            strikePrice
+            address(WBNB), chainlinkOracleManager, expiryTimestamp + 4800, !isCall, strikePrice + 100000
         );
 
         optionsFactory.createOption(
-            address(WBNB),
-            chainlinkOracleManager,
-            expiryTimestamp + 4800,
-            !isCall,
-            strikePrice + 100000
+            address(WBNB), chainlinkOracleManager, expiryTimestamp + 4800, isCall, strikePrice + 100000
         );
 
         optionsFactory.createOption(
-            address(WBNB),
-            chainlinkOracleManager,
-            expiryTimestamp + 4800,
-            isCall,
-            strikePrice + 100000
-        );
-
-        optionsFactory.createOption(
-            address(WBNB),
-            address(chainlinkOracleManager),
-            expiryTimestamp,
-            !isCall,
-            strikePrice
+            address(WBNB), address(chainlinkOracleManager), expiryTimestamp, !isCall, strikePrice
         );
     }
 
@@ -249,21 +217,9 @@ contract OptionsFactoryTest is Test {
         uint88 expiryTimestamp = uint88(block.timestamp + 3600);
         bool isCall = true;
 
-        optionsFactory.createOption(
-            address(WBNB),
-            chainlinkOracleManager,
-            expiryTimestamp,
-            isCall,
-            strikePrice
-        );
+        optionsFactory.createOption(address(WBNB), chainlinkOracleManager, expiryTimestamp, isCall, strikePrice);
 
         vm.expectRevert(abi.encodeWithSignature("CreateFail()"));
-        optionsFactory.createOption(
-            address(WBNB),
-            chainlinkOracleManager,
-            expiryTimestamp,
-            isCall,
-            strikePrice
-        );
+        optionsFactory.createOption(address(WBNB), chainlinkOracleManager, expiryTimestamp, isCall, strikePrice);
     }
 }

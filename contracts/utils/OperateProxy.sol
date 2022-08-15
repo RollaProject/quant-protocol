@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../interfaces/IOperateProxy.sol";
@@ -10,10 +10,7 @@ contract OperateProxy is IOperateProxy {
     using Address for address;
 
     /// @inheritdoc IOperateProxy
-    function callFunction(address callee, bytes memory data)
-        external
-        override
-    {
+    function callFunction(address callee, bytes memory data) external override {
         require(callee.isContract(), "OperateProxy: callee is not a contract");
 
         (bool success, bytes memory returnData) = address(callee).call(data);

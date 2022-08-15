@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
 import "../options/AssetsRegistry.sol";
@@ -8,9 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract ERC20WithDecimals is ERC20 {
     uint8 private _decimals;
 
-    constructor(string memory _name, string memory _symbol, uint8 decimals_)
-        ERC20(_name, _symbol)
-    {
+    constructor(string memory _name, string memory _symbol, uint8 decimals_) ERC20(_name, _symbol) {
         _decimals = decimals_;
     }
 
@@ -36,9 +34,7 @@ contract AssetsRegistryTest is Test {
 
     address public quantConfig;
 
-    event AssetAdded(
-        address indexed underlying, string name, string symbol, uint8 decimals
-    );
+    event AssetAdded(address indexed underlying, string name, string symbol, uint8 decimals);
 
     function setUp() public {
         assetsRegistry = new AssetsRegistry();
@@ -64,12 +60,8 @@ contract AssetsRegistryTest is Test {
         address registeredAsset = assetsRegistry.registeredAssets(0);
         assertEq(registeredAsset, address(asset));
 
-        (
-            string memory registerdName,
-            string memory registeredSymbol,
-            uint8 registeredDecimals,
-            bool isRegistered
-        ) = assetsRegistry.assetProperties(registeredAsset);
+        (string memory registerdName, string memory registeredSymbol, uint8 registeredDecimals, bool isRegistered) =
+            assetsRegistry.assetProperties(registeredAsset);
 
         assertEq(registerdName, name);
         assertEq(registeredSymbol, symbol);
@@ -77,12 +69,7 @@ contract AssetsRegistryTest is Test {
         assert(isRegistered);
     }
 
-    function testAddAssetWithoutOptionalERC20Methods(
-        string memory name,
-        string memory symbol
-    )
-        public
-    {
+    function testAddAssetWithoutOptionalERC20Methods(string memory name, string memory symbol) public {
         SimpleERC20 asset = new SimpleERC20(name, symbol);
 
         // Should revert when trying to call asset.name()
