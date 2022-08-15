@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 enum ActionType {
     MintOption,
@@ -13,7 +13,7 @@ enum ActionType {
 }
 
 struct ActionArgs {
-// type of action to perform
+    // type of action to perform
     ActionType actionType;
     // qToken to exercise or mint
     address qToken;
@@ -47,26 +47,16 @@ library Actions {
     function parseMintSpreadArgs(ActionArgs memory _args)
         internal
         pure
-        returns (
-            address qTokenToMint,
-            address qTokenForCollateral,
-            uint256 amount
-        )
+        returns (address qTokenToMint, address qTokenForCollateral, uint256 amount)
     {
-        require(
-            _args.amount != 0, "Actions: cannot mint 0 options from spreads"
-        );
+        require(_args.amount != 0, "Actions: cannot mint 0 options from spreads");
 
         qTokenToMint = _args.qToken;
         qTokenForCollateral = _args.secondaryAddress;
         amount = _args.amount;
     }
 
-    function parseExerciseArgs(ActionArgs memory _args)
-        internal
-        pure
-        returns (address qToken, uint256 amount)
-    {
+    function parseExerciseArgs(ActionArgs memory _args) internal pure returns (address qToken, uint256 amount) {
         qToken = _args.qToken;
         amount = _args.amount;
     }
@@ -126,8 +116,7 @@ library Actions {
             bytes32 s
         )
     {
-        (approved, v, r, s) =
-            abi.decode(_args.data, (bool, uint8, bytes32, bytes32));
+        (approved, v, r, s) = abi.decode(_args.data, (bool, uint8, bytes32, bytes32));
 
         owner = _args.secondaryAddress;
         operator = _args.receiver;
@@ -135,11 +124,7 @@ library Actions {
         deadline = _args.secondaryUint;
     }
 
-    function parseCallArgs(ActionArgs memory _args)
-        internal
-        pure
-        returns (address callee, bytes memory data)
-    {
+    function parseCallArgs(ActionArgs memory _args) internal pure returns (address callee, bytes memory data) {
         callee = _args.receiver;
         data = _args.data;
     }

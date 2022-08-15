@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "../interfaces/external/chainlink/IEACAggregatorProxy.sol";
 
@@ -50,21 +50,11 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         roundData[_roundData.roundId] = _roundData;
     }
 
-    function getAnswer(uint256 _roundId)
-        external
-        view
-        override
-        returns (int256)
-    {
+    function getAnswer(uint256 _roundId) external view override returns (int256) {
         return roundIdAnswers[_roundId];
     }
 
-    function getTimestamp(uint256 _roundId)
-        external
-        view
-        override
-        returns (uint256)
-    {
+    function getTimestamp(uint256 _roundId) external view override returns (uint256) {
         return roundTimestamps[_roundId];
     }
 
@@ -80,13 +70,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         external
         view
         override
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
         return (
             latestRoundDataValue.roundId,
@@ -105,22 +89,10 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         external
         view
         override
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
         RoundData memory data = roundData[_roundId];
-        return (
-            data.roundId,
-            data.answer,
-            data.startedAt,
-            data.updatedAt,
-            data.answeredInRound
-        );
+        return (data.roundId, data.answer, data.startedAt, data.updatedAt, data.answeredInRound);
     }
 
     function accessController() external pure override returns (address) {
@@ -143,12 +115,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         return address(0);
     }
 
-    function phaseAggregators(uint16)
-        external
-        pure
-        override
-        returns (address)
-    {
+    function phaseAggregators(uint16) external pure override returns (address) {
         return address(0);
     }
 
@@ -164,13 +131,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         external
         pure
         override
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
         return (0, 0, 0, 0, 0);
     }
@@ -179,13 +140,7 @@ contract MockAggregatorProxy is IEACAggregatorProxy {
         external
         pure
         override
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
         return (0, 0, 0, 0, 0);
     }

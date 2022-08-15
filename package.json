@@ -76,7 +76,7 @@
     "path": "^0.12.7",
     "prettier": "^2.6.2",
     "shelljs": "^0.8.4",
-    "solc": "^0.8.15",
+    "solc": "^0.8.16",
     "solhint": "^3.3.7",
     "solidity-coverage": "^0.7.21",
     "solidity-docgen": "^0.5.13",

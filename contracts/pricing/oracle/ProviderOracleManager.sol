@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../../interfaces/IProviderOracleManager.sol";
@@ -17,27 +17,15 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
     address public immutable priceRegistry;
 
     constructor(address _priceRegistry) {
-        require(
-            _priceRegistry != address(0),
-            "ProviderOracleManager: invalid price registry address"
-        );
+        require(_priceRegistry != address(0), "ProviderOracleManager: invalid price registry address");
 
         priceRegistry = _priceRegistry;
     }
 
     /// @inheritdoc IProviderOracleManager
-    function addAssetOracle(address _asset, address _oracle)
-        external
-        override
-        onlyOwner
-    {
-        require(
-            _oracle != address(0), "ProviderOracleManager: Oracle is zero address"
-        );
-        require(
-            assetOracles[_asset] == address(0),
-            "ProviderOracleManager: Oracle already set for asset"
-        );
+    function addAssetOracle(address _asset, address _oracle) external override onlyOwner {
+        require(_oracle != address(0), "ProviderOracleManager: Oracle is zero address");
+        require(assetOracles[_asset] == address(0), "ProviderOracleManager: Oracle already set for asset");
         assets.push(_asset);
         assetOracles[_asset] = _oracle;
 
@@ -45,11 +33,7 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
     }
 
     /// @inheritdoc IProviderOracleManager
-    function setExpiryPriceInRegistry(
-        address _asset,
-        uint88 _expiryTimestamp,
-        bytes memory _calldata
-    )
+    function setExpiryPriceInRegistry(address _asset, uint88 _expiryTimestamp, bytes memory _calldata)
         external
         virtual
         override;
@@ -60,18 +44,9 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
     }
 
     /// @inheritdoc IProviderOracleManager
-    function getCurrentPrice(address _asset)
-        external
-        view
-        virtual
-        override
-        returns (uint256);
+    function getCurrentPrice(address _asset) external view virtual override returns (uint256);
 
-    function isValidOption(
-        address _underlyingAsset,
-        uint88 _expiryTime,
-        uint256 _strikePrice
-    )
+    function isValidOption(address _underlyingAsset, uint88 _expiryTime, uint256 _strikePrice)
         external
         view
         virtual
@@ -79,17 +54,9 @@ abstract contract ProviderOracleManager is Ownable, IProviderOracleManager {
         returns (bool);
 
     /// @inheritdoc IProviderOracleManager
-    function getAssetOracle(address _asset)
-        public
-        view
-        override
-        returns (address)
-    {
+    function getAssetOracle(address _asset) public view override returns (address) {
         address assetOracle = assetOracles[_asset];
-        require(
-            assetOracle != address(0),
-            "ProviderOracleManager: Oracle doesn't exist for that asset"
-        );
+        require(assetOracle != address(0), "ProviderOracleManager: Oracle doesn't exist for that asset");
         return assetOracle;
     }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "solady/src/utils/LibString.sol";
 import "@quant-finance/solidity-datetime/contracts/DateTime.sol";
@@ -46,15 +46,10 @@ library OptionsUtils {
         internal
         view
     {
-        require(
-            _expiryTime > block.timestamp,
-            "OptionsFactory: given expiry time is in the past"
-        );
+        require(_expiryTime > block.timestamp, "OptionsFactory: given expiry time is in the past");
 
         require(
-            IProviderOracleManager(_oracle).isValidOption(
-                _underlyingAsset, _expiryTime, _strikePrice
-            ),
+            IProviderOracleManager(_oracle).isValidOption(_underlyingAsset, _expiryTime, _strikePrice),
             "OptionsFactory: Oracle doesn't support the given option"
         );
 
@@ -65,37 +60,24 @@ library OptionsUtils {
 
         require(_strikePrice > 0, "strike can't be 0");
 
-        require(
-            isInAssetsRegistry(_underlyingAsset, _assetsRegistry),
-            "underlying not in the registry"
-        );
+        require(isInAssetsRegistry(_underlyingAsset, _assetsRegistry), "underlying not in the registry");
     }
 
     /// @notice Checks if a given asset is in the AssetsRegistry
     /// @param _asset address of the asset to check
     /// @param _assetsRegistry address of the AssetsRegistry contract
     /// @return isRegistered whether the asset is in the configured registry
-    function isInAssetsRegistry(address _asset, address _assetsRegistry)
-        internal
-        view
-        returns (bool isRegistered)
-    {
-        (,,, isRegistered) =
-            IAssetsRegistry(_assetsRegistry).assetProperties(_asset);
+    function isInAssetsRegistry(address _asset, address _assetsRegistry) internal view returns (bool isRegistered) {
+        (,,, isRegistered) = IAssetsRegistry(_assetsRegistry).assetProperties(_asset);
     }
 
     /// @notice Gets the amount of decimals for an option exercise payout
     /// @param _qToken address of the option's QToken contract
     /// @param _assetsRegistry address of the AssetsRegistry contract
     /// @return payoutDecimals amount of decimals for the option exercise payout
-    function getPayoutDecimals(IQToken _qToken, address _assetsRegistry)
-        internal
-        view
-        returns (uint8 payoutDecimals)
-    {
+    function getPayoutDecimals(IQToken _qToken, address _assetsRegistry) internal view returns (uint8 payoutDecimals) {
         if (_qToken.isCall()) {
-            (,, payoutDecimals,) = IAssetsRegistry(_assetsRegistry)
-                .assetProperties(_qToken.underlyingAsset());
+            (,, payoutDecimals,) = IAssetsRegistry(_assetsRegistry).assetProperties(_qToken.underlyingAsset());
         } else {
             payoutDecimals = STRIKE_PRICE_DECIMALS;
         }
@@ -107,13 +89,8 @@ library OptionsUtils {
     /// @param _asset address of the asset in the AssetsRegistry
     /// @param _assetsRegistry address of the AssetsRegistry contract
     /// @return assetSymbol_ string stored as the ERC20 token symbol
-    function assetSymbol(address _asset, address _assetsRegistry)
-        internal
-        view
-        returns (string memory assetSymbol_)
-    {
-        (, assetSymbol_,,) =
-            IAssetsRegistry(_assetsRegistry).assetProperties(_asset);
+    function assetSymbol(address _asset, address _assetsRegistry) internal view returns (string memory assetSymbol_) {
+        (, assetSymbol_,,) = IAssetsRegistry(_assetsRegistry).assetProperties(_asset);
     }
 
     /// @notice generates the name and symbol for an option
@@ -134,18 +111,15 @@ library OptionsUtils {
         view
         returns (string memory name, string memory symbol)
     {
-        string memory underlying =
-            assetSymbol(_underlyingAsset, _assetsRegistry);
+        string memory underlying = assetSymbol(_underlyingAsset, _assetsRegistry);
 
         string memory displayStrikePrice = displayedStrikePrice(_strikePrice);
 
         // convert the expiry to a readable string
-        (uint256 year, uint256 month, uint256 day) =
-            DateTime.timestampToDate(_expiryTime);
+        (uint256 year, uint256 month, uint256 day) = DateTime.timestampToDate(_expiryTime);
 
         // get option type string
-        (string memory typeSymbol, string memory typeFull) =
-            getOptionType(_isCall);
+        (string memory typeSymbol, string memory typeFull) = getOptionType(_isCall);
 
         // get option month string
         (string memory monthSymbol, string memory monthFull) = getMonth(month);
@@ -156,35 +130,13 @@ library OptionsUtils {
 
         // concatenated name and symbol strings
         name = string.concat(
-            "ROLLA",
-            " ",
-            underlying,
-            " ",
-            dayStr,
-            "-",
-            monthFull,
-            "-",
-            yearStr,
-            " ",
-            displayStrikePrice,
-            " ",
-            typeFull
+            "ROLLA", " ", underlying, " ", dayStr, "-", monthFull, "-", yearStr, " ", displayStrikePrice, " ", typeFull
         );
 
         normalizeStringImmutableArg(name);
 
         symbol = string.concat(
-            "ROLLA",
-            "-",
-            underlying,
-            "-",
-            dayStr,
-            monthSymbol,
-            yearStr,
-            "-",
-            displayStrikePrice,
-            "-",
-            typeSymbol
+            "ROLLA", "-", underlying, "-", dayStr, monthSymbol, yearStr, "-", displayStrikePrice, "-", typeSymbol
         );
 
         normalizeStringImmutableArg(symbol);
@@ -217,9 +169,8 @@ library OptionsUtils {
         view
         returns (bytes memory data)
     {
-        (string memory name, string memory symbol) = getQTokenMetadata(
-            _underlyingAsset, _assetsRegistry, _expiryTime, _isCall, _strikePrice
-        );
+        (string memory name, string memory symbol) =
+            getQTokenMetadata(_underlyingAsset, _assetsRegistry, _expiryTime, _isCall, _strikePrice);
 
         data = abi.encodePacked(
             name,
@@ -246,15 +197,9 @@ library OptionsUtils {
             // end execution with a custom DataSizeLimitExceeded error if the input data
             // is larger than 127 bytes
             if gt(len, 0x7f) {
-                mstore(
-                    DataSizeLimitExceeded_error_sig_ptr,
-                    DataSizeLimitExceeded_error_signature
-                )
+                mstore(DataSizeLimitExceeded_error_sig_ptr, DataSizeLimitExceeded_error_signature)
                 mstore(DataSizeLimitExceeded_error_datasize_ptr, len)
-                revert(
-                    DataSizeLimitExceeded_error_sig_ptr,
-                    DataSizeLimitExceeded_error_length
-                )
+                revert(DataSizeLimitExceeded_error_sig_ptr, DataSizeLimitExceeded_error_length)
             }
 
             // store the new length of the string as 128 bytes
@@ -272,11 +217,7 @@ library OptionsUtils {
     /// @dev convert the option strike price scaled to a human readable value
     /// @param _strikePrice the option strike price scaled by the strike asset decimals
     /// @return strike price string
-    function displayedStrikePrice(uint256 _strikePrice)
-        internal
-        pure
-        returns (string memory)
-    {
+    function displayedStrikePrice(uint256 _strikePrice) internal pure returns (string memory) {
         unchecked {
             uint256 strikePriceScale = 10 ** STRIKE_PRICE_DECIMALS;
             uint256 remainder = _strikePrice % strikePriceScale;
@@ -306,22 +247,14 @@ library OptionsUtils {
     /// @dev get the string representation of the option type
     /// @return a 1 character representation of the option type
     /// @return a full length string of the option type
-    function getOptionType(bool _isCall)
-        internal
-        pure
-        returns (string memory, string memory)
-    {
+    function getOptionType(bool _isCall) internal pure returns (string memory, string memory) {
         return _isCall ? ("C", "Call") : ("P", "Put");
     }
 
     /// @dev get the representation of a day's number using 2 characters,
     /// adding a leading 0 if it's a one digit number
     /// @return dayStr 2 characters that correspond to a day's number
-    function getDayStr(uint256 day)
-        internal
-        pure
-        returns (string memory dayStr)
-    {
+    function getDayStr(uint256 day) internal pure returns (string memory dayStr) {
         assembly ("memory-safe") {
             dayStr := mload(0x40)
             mstore(0x40, add(dayStr, 0x22))
@@ -344,11 +277,7 @@ library OptionsUtils {
     /// @param _start the starting index
     /// @param _end the ending index (not inclusive)
     /// @return slice_ the indexed string
-    function slice(string memory _s, uint256 _start, uint256 _end)
-        internal
-        pure
-        returns (string memory slice_)
-    {
+    function slice(string memory _s, uint256 _start, uint256 _end) internal pure returns (string memory slice_) {
         assembly ("memory-safe") {
             slice_ := add(_s, _start)
             mstore(slice_, sub(_end, _start))
@@ -358,11 +287,7 @@ library OptionsUtils {
     /// @dev get the string representations of a month
     /// @return a 3 character representation
     /// @return a full length string representation
-    function getMonth(uint256 _month)
-        internal
-        pure
-        returns (string memory, string memory)
-    {
+    function getMonth(uint256 _month) internal pure returns (string memory, string memory) {
         if (_month == 1) {
             return ("JAN", "January");
         } else if (_month == 2) {

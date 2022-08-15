@@ -1,32 +1,20 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "../libraries/QuantMath.sol";
 
 contract QuantMathTester {
     using QuantMath for QuantMath.FixedPointInt;
 
-    function fromUnscaledIntTest(int256 a)
-        external
-        pure
-        returns (QuantMath.FixedPointInt memory)
-    {
+    function fromUnscaledIntTest(int256 a) external pure returns (QuantMath.FixedPointInt memory) {
         return QuantMath.fromUnscaledInt(a);
     }
 
-    function fromScaledUintTest(uint256 a, uint256 decimals)
-        external
-        pure
-        returns (QuantMath.FixedPointInt memory)
-    {
+    function fromScaledUintTest(uint256 a, uint256 decimals) external pure returns (QuantMath.FixedPointInt memory) {
         return QuantMath.fromScaledUint(a, decimals);
     }
 
-    function toScaledUintTest(
-        QuantMath.FixedPointInt memory a,
-        uint256 decimals,
-        bool roundDown
-    )
+    function toScaledUintTest(QuantMath.FixedPointInt memory a, uint256 decimals, bool roundDown)
         external
         pure
         returns (uint256)
@@ -34,10 +22,7 @@ contract QuantMathTester {
         return QuantMath.toScaledUint(a, decimals, roundDown);
     }
 
-    function addTest(
-        QuantMath.FixedPointInt memory a,
-        QuantMath.FixedPointInt memory b
-    )
+    function addTest(QuantMath.FixedPointInt memory a, QuantMath.FixedPointInt memory b)
         external
         pure
         returns (QuantMath.FixedPointInt memory)
@@ -45,10 +30,7 @@ contract QuantMathTester {
         return a.add(b);
     }
 
-    function subTest(
-        QuantMath.FixedPointInt memory a,
-        QuantMath.FixedPointInt memory b
-    )
+    function subTest(QuantMath.FixedPointInt memory a, QuantMath.FixedPointInt memory b)
         external
         pure
         returns (QuantMath.FixedPointInt memory)
@@ -56,10 +38,7 @@ contract QuantMathTester {
         return a.sub(b);
     }
 
-    function mulTest(
-        QuantMath.FixedPointInt memory a,
-        QuantMath.FixedPointInt memory b
-    )
+    function mulTest(QuantMath.FixedPointInt memory a, QuantMath.FixedPointInt memory b)
         external
         pure
         returns (QuantMath.FixedPointInt memory)
@@ -67,10 +46,7 @@ contract QuantMathTester {
         return a.mul(b, true);
     }
 
-    function divTest(
-        QuantMath.FixedPointInt memory a,
-        QuantMath.FixedPointInt memory b
-    )
+    function divTest(QuantMath.FixedPointInt memory a, QuantMath.FixedPointInt memory b)
         external
         pure
         returns (QuantMath.FixedPointInt memory)
@@ -78,10 +54,7 @@ contract QuantMathTester {
         return a.div(b, true);
     }
 
-    function minTest(
-        QuantMath.FixedPointInt memory a,
-        QuantMath.FixedPointInt memory b
-    )
+    function minTest(QuantMath.FixedPointInt memory a, QuantMath.FixedPointInt memory b)
         external
         pure
         returns (QuantMath.FixedPointInt memory)
@@ -89,10 +62,7 @@ contract QuantMathTester {
         return QuantMath.min(a, b);
     }
 
-    function maxTest(
-        QuantMath.FixedPointInt memory a,
-        QuantMath.FixedPointInt memory b
-    )
+    function maxTest(QuantMath.FixedPointInt memory a, QuantMath.FixedPointInt memory b)
         external
         pure
         returns (QuantMath.FixedPointInt memory)
@@ -100,10 +70,7 @@ contract QuantMathTester {
         return QuantMath.max(a, b);
     }
 
-    function isEqualTest(
-        QuantMath.FixedPointInt memory a,
-        QuantMath.FixedPointInt memory b
-    )
+    function isEqualTest(QuantMath.FixedPointInt memory a, QuantMath.FixedPointInt memory b)
         external
         pure
         returns (bool)
@@ -111,10 +78,7 @@ contract QuantMathTester {
         return a.isEqual(b);
     }
 
-    function isGreaterThanTest(
-        QuantMath.FixedPointInt memory a,
-        QuantMath.FixedPointInt memory b
-    )
+    function isGreaterThanTest(QuantMath.FixedPointInt memory a, QuantMath.FixedPointInt memory b)
         external
         pure
         returns (bool)
@@ -122,10 +86,7 @@ contract QuantMathTester {
         return a.isGreaterThan(b);
     }
 
-    function isGreaterThanOrEqualTest(
-        QuantMath.FixedPointInt memory a,
-        QuantMath.FixedPointInt memory b
-    )
+    function isGreaterThanOrEqualTest(QuantMath.FixedPointInt memory a, QuantMath.FixedPointInt memory b)
         external
         pure
         returns (bool)
@@ -133,10 +94,7 @@ contract QuantMathTester {
         return a.isGreaterThanOrEqual(b);
     }
 
-    function isLessThanTest(
-        QuantMath.FixedPointInt memory a,
-        QuantMath.FixedPointInt memory b
-    )
+    function isLessThanTest(QuantMath.FixedPointInt memory a, QuantMath.FixedPointInt memory b)
         external
         pure
         returns (bool)
@@ -144,10 +102,7 @@ contract QuantMathTester {
         return a.isLessThan(b);
     }
 
-    function isLessThanOrEqualTest(
-        QuantMath.FixedPointInt memory a,
-        QuantMath.FixedPointInt memory b
-    )
+    function isLessThanOrEqualTest(QuantMath.FixedPointInt memory a, QuantMath.FixedPointInt memory b)
         external
         pure
         returns (bool)
