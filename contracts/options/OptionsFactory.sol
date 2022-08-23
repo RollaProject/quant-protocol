@@ -145,8 +145,16 @@ contract OptionsFactory is IOptionsFactory {
         );
     }
 
+    /// @notice generates the data to be used to create a new QToken clone with immutable args
+    /// @param _assetProperties underlying asset properties as stored in the AssetsRegistry
+    /// @param _underlyingAsset asset that the option references
+    /// @param _oracle price oracle for the option underlying
+    /// @param _expiryTime expiration timestamp as a unix timestamp
+    /// @param _isCall true if it's a call option, false if it's a put option
+    /// @param _strikePrice strike price with as many decimals in the strike asset
+    /// @return immutableArgsData the packed data to be used as the QToken clone immutable args
     function getImmutableArgsData(
-        bytes memory assetProperties,
+        bytes memory _assetProperties,
         address _underlyingAsset,
         address _oracle,
         uint88 _expiryTime,
@@ -190,6 +198,6 @@ contract OptionsFactory is IOptionsFactory {
             controller
         );
 
-        OptionsUtils.addNameAndSymbolToImmutableArgs(assetProperties, immutableArgsData);
+        OptionsUtils.addNameAndSymbolToImmutableArgs(_assetProperties, immutableArgsData);
     }
 }
