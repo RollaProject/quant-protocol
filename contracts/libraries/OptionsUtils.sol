@@ -83,22 +83,34 @@ library OptionsUtils {
         }
     }
 
+    /// @notice Gets the properties for an asset stored in the AssetsRegistry
+    /// @param _asset address of the asset to get the properties for
+    /// @param _assetsRegistry address of the AssetsRegistry to read the properties from
+    /// @return assetProperties the properties read from the AssetsRegistry and copied to memory
     function getAssetProperties(address _asset, address _assetsRegistry)
         internal
         view
         returns (bytes memory assetProperties)
     {
+        // get the calldata for calling `assetProperties(_asset)`
         bytes memory calld = abi.encodeCall(IAssetsRegistry.assetProperties, (_asset));
 
         assembly ("memory-safe") {
+            // get the free memory pointer
             assetProperties := mload(0x40)
 
+            // call `assetProperties` with the encoded calldata, ignoring the success value
+            // and the result from the call, which will be read from the returndata below
             pop(staticcall(gas(), _assetsRegistry, add(calld, 0x20), mload(calld), 0, 0))
 
+            // get the size of the returned data
             let returnLen := returndatasize()
 
+            // copy the whole result from the `assetProperties` call to memory
             returndatacopy(assetProperties, 0, returnLen)
 
+            // reset the free memory pointer to after the assetProperties that were
+            // just copied from returdata to memory
             mstore(0x40, add(assetProperties, returnLen))
         }
     }
