@@ -39,6 +39,8 @@ contract SimpleOptionsFactory {
         public
         returns (address newQToken, uint256 newCollateralTokenId)
     {
+        bytes memory assetProperties = OptionsUtils.getAssetProperties(underlyingAsset, assetsRegistry);
+
         bytes memory immutableArgsData;
 
         assembly ("memory-safe") {
@@ -62,7 +64,7 @@ contract SimpleOptionsFactory {
             controller
         );
 
-        OptionsUtils.addNameAndSymbolToImmutableArgs(immutableArgsData, assetsRegistry);
+        OptionsUtils.addNameAndSymbolToImmutableArgs(assetProperties, immutableArgsData);
 
         newQToken = address(implementation).cloneDeterministic(salt, immutableArgsData);
 
@@ -82,6 +84,8 @@ contract SimpleOptionsFactory {
         view
         returns (address qToken, bool exists)
     {
+        bytes memory assetProperties = OptionsUtils.getAssetProperties(underlyingAsset, assetsRegistry);
+
         bytes memory immutableArgsData;
 
         assembly ("memory-safe") {
@@ -105,7 +109,7 @@ contract SimpleOptionsFactory {
             controller
         );
 
-        OptionsUtils.addNameAndSymbolToImmutableArgs(immutableArgsData, assetsRegistry);
+        OptionsUtils.addNameAndSymbolToImmutableArgs(assetProperties, immutableArgsData);
 
         (qToken, exists) =
             ClonesWithImmutableArgs.predictDeterministicAddress(address(implementation), salt, immutableArgsData);

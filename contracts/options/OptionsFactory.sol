@@ -79,12 +79,14 @@ contract OptionsFactory is IOptionsFactory {
         override
         returns (address newQToken, uint256 newCollateralTokenId)
     {
+        bytes memory assetProperties = OptionsUtils.getAssetProperties(_underlyingAsset, assetsRegistry);
+
         OptionsUtils.validateOptionParameters(
-            oracleRegistry, _underlyingAsset, assetsRegistry, _oracle, _expiryTime, _strikePrice
+            assetProperties, oracleRegistry, _underlyingAsset, _oracle, _expiryTime, _strikePrice
         );
 
         bytes memory immutableArgsData =
-            getImmutableArgsData(_underlyingAsset, _oracle, _expiryTime, _isCall, _strikePrice);
+            getImmutableArgsData(assetProperties, _underlyingAsset, _oracle, _expiryTime, _isCall, _strikePrice);
 
         newQToken = address(implementation).cloneDeterministic(OptionsUtils.SALT, immutableArgsData);
 
@@ -133,8 +135,10 @@ contract OptionsFactory is IOptionsFactory {
         override
         returns (address qToken, bool exists)
     {
+        bytes memory assetProperties = OptionsUtils.getAssetProperties(_underlyingAsset, assetsRegistry);
+
         bytes memory immutableArgsData =
-            getImmutableArgsData(_underlyingAsset, _oracle, _expiryTime, _isCall, _strikePrice);
+            getImmutableArgsData(assetProperties, _underlyingAsset, _oracle, _expiryTime, _isCall, _strikePrice);
 
         (qToken, exists) = ClonesWithImmutableArgs.predictDeterministicAddress(
             address(implementation), OptionsUtils.SALT, immutableArgsData
@@ -142,6 +146,7 @@ contract OptionsFactory is IOptionsFactory {
     }
 
     function getImmutableArgsData(
+        bytes memory assetProperties,
         address _underlyingAsset,
         address _oracle,
         uint88 _expiryTime,
@@ -185,6 +190,6 @@ contract OptionsFactory is IOptionsFactory {
             controller
         );
 
-        OptionsUtils.addNameAndSymbolToImmutableArgs(immutableArgsData, assetsRegistry);
+        OptionsUtils.addNameAndSymbolToImmutableArgs(assetProperties, immutableArgsData);
     }
 }
