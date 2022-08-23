@@ -33,9 +33,6 @@ contract OptionsFactory is IOptionsFactory {
     QToken public immutable implementation;
 
     /// @inheritdoc IOptionsFactory
-    uint8 public immutable override optionsDecimals = 18;
-
-    /// @inheritdoc IOptionsFactory
     mapping(address => bool) public override isQToken;
 
     /// @notice Initializes a new options factory
@@ -86,19 +83,10 @@ contract OptionsFactory is IOptionsFactory {
             oracleRegistry, _underlyingAsset, assetsRegistry, _oracle, _expiryTime, _strikePrice
         );
 
-        bytes memory data = OptionsUtils.getQTokenImmutableArgs(
-            optionsDecimals,
-            _underlyingAsset,
-            strikeAsset,
-            assetsRegistry,
-            _oracle,
-            _expiryTime,
-            _isCall,
-            _strikePrice,
-            controller
-        );
+        bytes memory immutableArgsData =
+            getImmutableArgsData(_underlyingAsset, _oracle, _expiryTime, _isCall, _strikePrice);
 
-        newQToken = address(implementation).cloneDeterministic(OptionsUtils.SALT, data);
+        newQToken = address(implementation).cloneDeterministic(OptionsUtils.SALT, immutableArgsData);
 
         newCollateralTokenId = ICollateralToken(collateralToken).createOptionCollateralToken(newQToken);
 
@@ -145,11 +133,51 @@ contract OptionsFactory is IOptionsFactory {
         override
         returns (address qToken, bool exists)
     {
-        bytes memory data = OptionsUtils.getQTokenImmutableArgs(
-            optionsDecimals,
+        bytes memory immutableArgsData =
+            getImmutableArgsData(_underlyingAsset, _oracle, _expiryTime, _isCall, _strikePrice);
+
+        (qToken, exists) = ClonesWithImmutableArgs.predictDeterministicAddress(
+            address(implementation), OptionsUtils.SALT, immutableArgsData
+        );
+    }
+
+    function getImmutableArgsData(
+        address _underlyingAsset,
+        address _oracle,
+        uint88 _expiryTime,
+        bool _isCall,
+        uint256 _strikePrice
+    )
+        internal
+        view
+        returns (bytes memory immutableArgsData)
+    {
+        /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                                    Immutable Args Memory Layout
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+        /* 
+        |  immutableArgsData    | --> |         name           | --> |          symbol          | --> |      packed args       |
+        |     freeMemPtr        | --> |    freeMemPtr + 0x20   | --> |     freeMemPtr + 0xa0    | --> |  freeMemPtr + 0x120    |
+        | immutable args length | --> | name string w/o length | --> | symbol string w/o length | --> | packed args w/o length |
+        */
+
+        assembly ("memory-safe") {
+            // set the immutable args data pointer to the initial free memory pointer
+            immutableArgsData := mload(0x40)
+
+            // set the free memory pointer to 256 bytes after its current value, leaving
+            // room for the total immutable args length followed by the QToken name and
+            // symbol 128-byte strings to be placed before the other packed immutable args
+            mstore(0x40, add(immutableArgsData, 0x100))
+        }
+
+        // place the initial packed immutable args in memory, with their total length
+        // stored at immutableArgsData + 0x100 (the current free memory pointer) and
+        // with the args contents starting at immutableArgs + 0x120
+        abi.encodePacked(
+            OptionsUtils.OPTIONS_DECIMALS,
             _underlyingAsset,
             strikeAsset,
-            assetsRegistry,
             _oracle,
             _expiryTime,
             _isCall,
@@ -157,7 +185,6 @@ contract OptionsFactory is IOptionsFactory {
             controller
         );
 
-        (qToken, exists) =
-            ClonesWithImmutableArgs.predictDeterministicAddress(address(implementation), OptionsUtils.SALT, data);
+        OptionsUtils.addNameAndSymbolToImmutableArgs(immutableArgsData, assetsRegistry);
     }
 }
