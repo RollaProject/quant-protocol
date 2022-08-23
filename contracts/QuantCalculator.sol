@@ -19,10 +19,10 @@ contract QuantCalculator is IQuantCalculator {
     using QuantMath for QuantMath.FixedPointInt;
 
     /// @inheritdoc IQuantCalculator
-    uint8 public immutable override optionsDecimals;
+    uint8 public immutable override optionsDecimals = OptionsUtils.OPTIONS_DECIMALS;
 
     /// @inheritdoc IQuantCalculator
-    uint8 public immutable override strikeAssetDecimals;
+    uint8 public immutable override strikeAssetDecimals = OptionsUtils.STRIKE_PRICE_DECIMALS;
 
     /// @inheritdoc IQuantCalculator
     address public immutable override optionsFactory;
@@ -61,8 +61,6 @@ contract QuantCalculator is IQuantCalculator {
         require(_assetsRegistry != address(0), "QuantCalculator: invalid AssetsRegistry address");
         require(_priceRegistry != address(0), "QuantCalculator: invalid PriceRegistry address");
 
-        optionsDecimals = IOptionsFactory(_optionsFactory).optionsDecimals();
-        strikeAssetDecimals = OptionsUtils.STRIKE_PRICE_DECIMALS;
         optionsFactory = _optionsFactory;
         assetsRegistry = _assetsRegistry;
         priceRegistry = _priceRegistry;
