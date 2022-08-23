@@ -31,16 +31,16 @@ library OptionsUtils {
     uint256 internal constant DataSizeLimitExceeded_error_length = 0x24; // 4 + 32 == 36
 
     /// @notice Checks if the given option parameters are valid for creation in the Quant Protocol
+    /// @param _assetProperties underlying asset properties as stored in the AssetsRegistry contract
     /// @param _oracleRegistry oracle registry to validate the passed _oracle against
     /// @param _underlyingAsset asset that the option is for
-    /// @param _assetsRegistry address of the AssetsRegistry contract
     /// @param _oracle price oracle for the option underlying
     /// @param _expiryTime expiration timestamp as a unix timestamp
     /// @param _strikePrice strike price with as many decimals in the strike asset
     function validateOptionParameters(
+        bytes memory _assetProperties,
         address _oracleRegistry,
         address _underlyingAsset,
-        address _assetsRegistry,
         address _oracle,
         uint88 _expiryTime,
         uint256 _strikePrice
@@ -62,15 +62,13 @@ library OptionsUtils {
 
         require(_strikePrice > 0, "strike can't be 0");
 
-        require(isInAssetsRegistry(_underlyingAsset, _assetsRegistry), "underlying not in the registry");
-    }
-
-    /// @notice Checks if a given asset is in the AssetsRegistry
-    /// @param _asset address of the asset to check
-    /// @param _assetsRegistry address of the AssetsRegistry contract
-    /// @return isRegistered whether the asset is in the configured registry
-    function isInAssetsRegistry(address _asset, address _assetsRegistry) internal view returns (bool isRegistered) {
-        (,,, isRegistered) = IAssetsRegistry(_assetsRegistry).assetProperties(_asset);
+        bool isRegistered;
+        assembly ("memory-safe") {
+            // The isRegistered bool is the fourth property in assetProperties,
+            // thus, it's located at assetProperties + 0x60
+            isRegistered := mload(add(_assetProperties, 0x60))
+        }
+        require(isRegistered, "underlying not in the registry");
     }
 
     /// @notice Gets the amount of decimals for an option exercise payout
@@ -85,21 +83,34 @@ library OptionsUtils {
         }
     }
 
-    /// @notice get the ERC20 token symbol from the AssetsRegistry
-    /// @dev the asset is assumed to be in the AssetsRegistry since QTokens
-    /// must be created through the OptionsFactory, which performs that check
-    /// @param _asset address of the asset in the AssetsRegistry
-    /// @param _assetsRegistry address of the AssetsRegistry contract
-    /// @return assetSymbol_ string stored as the ERC20 token symbol
-    function assetSymbol(address _asset, address _assetsRegistry) internal view returns (string memory assetSymbol_) {
-        (, assetSymbol_,,) = IAssetsRegistry(_assetsRegistry).assetProperties(_asset);
+    function getAssetProperties(address _asset, address _assetsRegistry)
+        internal
+        view
+        returns (bytes memory assetProperties)
+    {
+        bytes memory calld = abi.encodeCall(IAssetsRegistry.assetProperties, (_asset));
+
+        assembly ("memory-safe") {
+            assetProperties := mload(0x40)
+
+            pop(staticcall(gas(), _assetsRegistry, add(calld, 0x20), mload(calld), 0, 0))
+
+            let returnLen := returndatasize()
+
+            returndatacopy(assetProperties, 0, returnLen)
+
+            mstore(0x40, add(assetProperties, returnLen))
+        }
     }
 
     /// @notice generates the name and symbol for an option and adds them to the immutable args
     /// in memory starting at the given pointer
+    /// @param assetProperties pointer to the underlying asset properties in memory
     /// @param immutableArgsData pointer to the start of the clone immutable args data in memory
-    /// @param assetsRegistry the AssetsRegistry contract address
-    function addNameAndSymbolToImmutableArgs(bytes memory immutableArgsData, address assetsRegistry) internal view {
+    function addNameAndSymbolToImmutableArgs(bytes memory assetProperties, bytes memory immutableArgsData)
+        internal
+        pure
+    {
         string memory underlying;
         string memory displayStrikePrice;
         string memory typeSymbol;
@@ -140,9 +151,12 @@ library OptionsUtils {
                 strikePrice := mload(add(encodedArgsStart, 0x49))
 
                 if shr(128, strikePrice) { strikePrice := and(1, strikePrice) }
+
+                // The underlying asset symbol is the second property in assetProperties,
+                // thus, it's located at assetProperties + 0x20
+                underlying := add(assetProperties, mload(add(assetProperties, 0x20)))
             }
 
-            underlying = assetSymbol(underlyingAsset, assetsRegistry);
             displayStrikePrice = displayedStrikePrice(strikePrice);
 
             // get option type string
