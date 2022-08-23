@@ -100,10 +100,6 @@ interface IOptionsFactory {
     /// @return the QToken implementation address
     function implementation() external view returns (QToken);
 
-    /// @notice get the amount of decimals used for options created by the factory
-    /// @return the amount of decimals
-    function optionsDecimals() external view returns (uint8);
-
     /// @notice checks if an address is a QToken
     /// @return true if the given address represents a registered QToken.
     /// false otherwise

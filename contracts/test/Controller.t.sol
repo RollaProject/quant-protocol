@@ -127,13 +127,13 @@ contract ControllerTest is Test {
         uint256 actionType;
         uint256 invalidActionType = 10;
 
-        assembly {
+        assembly ("memory-safe") {
             firstArrayArgOffset := mload(add(args, 0x20))
             actionType := mload(firstArrayArgOffset)
         }
         assertEq(actionType, uint256(ActionType.Call));
 
-        assembly {
+        assembly ("memory-safe") {
             mstore(firstArrayArgOffset, invalidActionType)
             actionType := mload(firstArrayArgOffset)
         }

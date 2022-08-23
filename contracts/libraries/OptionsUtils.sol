@@ -18,6 +18,8 @@ library OptionsUtils {
 
     uint8 internal constant STRIKE_PRICE_DECIMALS = 18;
 
+    uint8 internal constant OPTIONS_DECIMALS = 18;
+
     // abi.encodeWithSignature("DataSizeLimitExceeded(uint256)");
     uint256 internal constant DataSizeLimitExceeded_error_signature =
         0x5307a82000000000000000000000000000000000000000000000000000000000;
@@ -93,97 +95,118 @@ library OptionsUtils {
         (, assetSymbol_,,) = IAssetsRegistry(_assetsRegistry).assetProperties(_asset);
     }
 
-    /// @notice generates the name and symbol for an option
-    /// @param _underlyingAsset asset that the option references
-    /// @param _assetsRegistry address of the AssetsRegistry
-    /// @param _expiryTime expiration timestamp as a unix timestamp
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @return name and symbol for the QToken
-    function getQTokenMetadata(
-        address _underlyingAsset,
-        address _assetsRegistry,
-        uint88 _expiryTime,
-        bool _isCall,
-        uint256 _strikePrice
-    )
-        internal
-        view
-        returns (string memory name, string memory symbol)
-    {
-        string memory underlying = assetSymbol(_underlyingAsset, _assetsRegistry);
+    /// @notice generates the name and symbol for an option and adds them to the immutable args
+    /// in memory starting at the given pointer
+    /// @param immutableArgsData pointer to the start of the clone immutable args data in memory
+    /// @param assetsRegistry the AssetsRegistry contract address
+    function addNameAndSymbolToImmutableArgs(bytes memory immutableArgsData, address assetsRegistry) internal view {
+        string memory underlying;
+        string memory displayStrikePrice;
+        string memory typeSymbol;
+        string memory typeFull;
+        string memory monthSymbol;
+        string memory monthFull;
+        string memory dayStr;
+        string memory yearStr;
+        {
+            address underlyingAsset;
+            uint88 expiryTime;
+            bool isCall;
+            uint256 strikePrice;
 
-        string memory displayStrikePrice = displayedStrikePrice(_strikePrice);
+            // get the individual values from the packed args in memory
+            assembly ("memory-safe") {
+                // the packed args length is stored at immutableArgsData + 0x100
+                // and the packed args contents start at immutableArgsData + 0x120
+                let encodedArgsStart := add(immutableArgsData, 0x120)
 
-        // convert the expiry to a readable string
-        (uint256 year, uint256 month, uint256 day) = DateTime.timestampToDate(_expiryTime);
+                /* packed args memory layout, starting at encodedArgsStart:
+                0x00: OPTIONS_DECIMALS |   (uint8 == 1 byte)
+                0x01: underlyingAsset  | (address == 20 bytes)
+                0x15: strikeAsset      | (address == 20 bytes)
+                0x29: oracle           | (address == 20 bytes)
+                0x3d: expiryTime       |  (uint88 == 11 bytes)
+                0x48: isCall           |    (bool == 1 byte)
+                0x49: strikePrice      | (uint256 == 32 bytes)
+                0x69: controller       | (address == 20 bytes)
+                */
 
-        // get option type string
-        (string memory typeSymbol, string memory typeFull) = getOptionType(_isCall);
+                underlyingAsset := shr(96, mload(add(encodedArgsStart, 0x01)))
 
-        // get option month string
-        (string memory monthSymbol, string memory monthFull) = getMonth(month);
+                expiryTime := shr(168, mload(add(encodedArgsStart, 0x3d)))
 
-        // get the day and year strings
-        string memory dayStr = getDayStr(day);
-        string memory yearStr = LibString.toString(year);
+                isCall := shr(248, mload(add(encodedArgsStart, 0x48)))
 
-        // concatenated name and symbol strings
-        name = string.concat(
-            "ROLLA", " ", underlying, " ", dayStr, "-", monthFull, "-", yearStr, " ", displayStrikePrice, " ", typeFull
-        );
+                strikePrice := mload(add(encodedArgsStart, 0x49))
 
-        normalizeStringImmutableArg(name);
+                if shr(128, strikePrice) { strikePrice := and(1, strikePrice) }
+            }
 
-        symbol = string.concat(
+            underlying = assetSymbol(underlyingAsset, assetsRegistry);
+            displayStrikePrice = displayedStrikePrice(strikePrice);
+
+            // get option type string
+            (typeSymbol, typeFull) = getOptionType(isCall);
+
+            // convert the expiry to a readable string
+            (uint256 year, uint256 month, uint256 day) = DateTime.timestampToDate(expiryTime);
+
+            // get option month string
+            (monthSymbol, monthFull) = getMonth(month);
+
+            // get the day and year strings
+            dayStr = getDayStr(day);
+            yearStr = LibString.toString(year);
+        }
+
+        // for the current free memory pointer, after the packed args and all the strings
+        // generated and allocated above
+        uint256 newFreeMemPtr;
+
+        assembly ("memory-safe") {
+            // save the current free memory pointer so that it can be restored later after
+            // all the free memory pointer manipulations are done
+            newFreeMemPtr := mload(0x40)
+
+            // clear the 32 bytes where the packed args length was previously stored
+            mstore(add(immutableArgsData, 0x100), 0)
+
+            // set the free memory pointer to 128 bytes before the immutable args length
+            // so that the symbol string gets stored in that space
+            mstore(0x40, add(immutableArgsData, 0x80))
+        }
+
+        // generate, allocate and store the symbol string right before the packed args
+        string memory metadata = string.concat(
             "ROLLA", "-", underlying, "-", dayStr, monthSymbol, yearStr, "-", displayStrikePrice, "-", typeSymbol
         );
 
-        normalizeStringImmutableArg(symbol);
-    }
+        normalizeStringImmutableArg(metadata);
 
-    /// @notice Gets the encoded immutable arguments for creating a QToken clone
-    /// using the ClonesWithImmutableArgs library
-    /// @param _optionsDecimals the amount of decimals in QToken amounts
-    /// @param _underlyingAsset address of the option underlying asset
-    /// @param _strikeAsset asset that the option is settled on
-    /// @param _assetsRegistry address of the AssetsRegistry contract
-    /// @param _oracle price oracle for the option's underlying asset
-    /// @param _expiryTime option expiration timestamp as a unix timestamp
-    /// @param _isCall true if it's a call option, false if it's a put option
-    /// @param _strikePrice strike price with as many decimals in the strike asset
-    /// @param _controller address of the Quant Controller contract
-    /// @return data encoded data for creating a QToken clone
-    function getQTokenImmutableArgs(
-        uint8 _optionsDecimals,
-        address _underlyingAsset,
-        address _strikeAsset,
-        address _assetsRegistry,
-        address _oracle,
-        uint88 _expiryTime,
-        bool _isCall,
-        uint256 _strikePrice,
-        address _controller
-    )
-        internal
-        view
-        returns (bytes memory data)
-    {
-        (string memory name, string memory symbol) =
-            getQTokenMetadata(_underlyingAsset, _assetsRegistry, _expiryTime, _isCall, _strikePrice);
+        assembly ("memory-safe") {
+            // clear the 32 bytes where the symbol string length was stored
+            mstore(add(immutableArgsData, 0x80), 0)
 
-        data = abi.encodePacked(
-            name,
-            symbol,
-            _optionsDecimals,
-            _underlyingAsset,
-            _strikeAsset,
-            _oracle,
-            _expiryTime,
-            _isCall,
-            _strikePrice,
-            _controller
+            // set the free memory pointer to 128 bytes before the symbol string
+            // so that the name string gets stored in that space
+            mstore(0x40, immutableArgsData)
+        }
+
+        // generate, allocate and store the name string right before the symbol string
+        metadata = string.concat(
+            "ROLLA", " ", underlying, " ", dayStr, "-", monthFull, "-", yearStr, " ", displayStrikePrice, " ", typeFull
         );
+
+        normalizeStringImmutableArg(metadata);
+
+        assembly ("memory-safe") {
+            // store the total QToken immutable arguments size at its pointer,
+            // overriding the previous name string length that was stored there
+            mstore(immutableArgsData, 0x017d) // 381 bytes
+
+            // restore the free memory pointer
+            mstore(0x40, newFreeMemPtr)
+        }
     }
 
     /// @notice Normalize a string in memory so that it occupies 128 bytes to be
@@ -204,9 +227,6 @@ library OptionsUtils {
 
             // store the new length of the string as 128 bytes
             mstore(s, 0x80)
-
-            // update the free memory pointer, padding the new string length to 32 bytes
-            mstore(0x40, add(s, and(add(add(0x80, 0x20), 0x1f), not(0x1f))))
 
             // store the original length of the string in the last byte of the output
             // location in memory, i.e. the 128th byte

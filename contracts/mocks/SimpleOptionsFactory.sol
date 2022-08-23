@@ -39,11 +39,22 @@ contract SimpleOptionsFactory {
         public
         returns (address newQToken, uint256 newCollateralTokenId)
     {
-        bytes memory data = OptionsUtils.getQTokenImmutableArgs(
-            optionsDecimals,
+        bytes memory immutableArgsData;
+
+        assembly ("memory-safe") {
+            // set the immutable args data pointer to the initial free memory pointer
+            immutableArgsData := mload(0x40)
+
+            // set the free memory pointer to 288 bytes after its current value, leaving
+            // room for the total immutable args size followed by the QToken name and
+            // symbol strings to be placed before the other immutable args
+            mstore(0x40, add(immutableArgsData, 0x100))
+        }
+
+        abi.encodePacked(
+            OptionsUtils.OPTIONS_DECIMALS,
             underlyingAsset,
             strikeAsset,
-            assetsRegistry,
             oracle,
             expiryTime,
             isCall,
@@ -51,7 +62,9 @@ contract SimpleOptionsFactory {
             controller
         );
 
-        newQToken = address(implementation).cloneDeterministic(salt, data);
+        OptionsUtils.addNameAndSymbolToImmutableArgs(immutableArgsData, assetsRegistry);
+
+        newQToken = address(implementation).cloneDeterministic(salt, immutableArgsData);
 
         newCollateralTokenId = collateralToken.createOptionCollateralToken(newQToken);
     }
@@ -69,11 +82,22 @@ contract SimpleOptionsFactory {
         view
         returns (address qToken, bool exists)
     {
-        bytes memory data = OptionsUtils.getQTokenImmutableArgs(
-            optionsDecimals,
+        bytes memory immutableArgsData;
+
+        assembly ("memory-safe") {
+            // set the immutable args data pointer to the initial free memory pointer
+            immutableArgsData := mload(0x40)
+
+            // set the free memory pointer to 288 bytes after its current value, leaving
+            // room for the total immutable args size followed by the QToken name and
+            // symbol strings to be placed before the other immutable args
+            mstore(0x40, add(immutableArgsData, 0x100))
+        }
+
+        abi.encodePacked(
+            OptionsUtils.OPTIONS_DECIMALS,
             underlyingAsset,
             strikeAsset,
-            assetsRegistry,
             oracle,
             expiryTime,
             isCall,
@@ -81,7 +105,10 @@ contract SimpleOptionsFactory {
             controller
         );
 
-        (qToken, exists) = ClonesWithImmutableArgs.predictDeterministicAddress(address(implementation), salt, data);
+        OptionsUtils.addNameAndSymbolToImmutableArgs(immutableArgsData, assetsRegistry);
+
+        (qToken, exists) =
+            ClonesWithImmutableArgs.predictDeterministicAddress(address(implementation), salt, immutableArgsData);
     }
 
     function getCollateralToken(
