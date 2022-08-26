@@ -88,7 +88,6 @@ describe("Controller", async () => {
   let mockPriceRegistry: MockContract;
   let nullQToken: QToken;
   let quantCalculator: QuantCalculator;
-  let ClonesWithImmutableArgs: string;
 
   const web3 = new Web3();
 
@@ -1823,7 +1822,9 @@ describe("Controller", async () => {
       const simpleExternalOptionsFactory = <SimpleExternalOptionsFactory>(
         await SimpleExternalOptionsFactory.deploy(
           assetsRegistry.address,
-          externalQTokenImplementation.address
+          externalQTokenImplementation.address,
+          qTokenPut1400.strikeAsset(),
+          controller.address
         )
       );
 
@@ -1831,23 +1832,19 @@ describe("Controller", async () => {
         .connect(secondAccount)
         .createOption(
           await qTokenPut1400.underlyingAsset(),
-          await qTokenPut400.strikeAsset(),
           await qTokenPut1400.oracle(),
           await qTokenPut1400.expiryTime(),
           await qTokenPut400.isCall(),
-          externalStrikePrice,
-          controller.address
+          externalStrikePrice
         );
 
       const [externalQTokenAddress] =
         await simpleExternalOptionsFactory.getQToken(
           await qTokenPut1400.underlyingAsset(),
-          await qTokenPut400.strikeAsset(),
           await qTokenPut1400.oracle(),
           await qTokenPut1400.expiryTime(),
           await qTokenPut400.isCall(),
-          externalStrikePrice,
-          controller.address
+          externalStrikePrice
         );
 
       const externalQToken = <ExternalQToken>(

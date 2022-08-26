@@ -3,6 +3,8 @@ contracts/mocks/
 contracts/external/ERC20.sol
 contracts/libraries/OptionsUtils.sol
 contracts/options/QToken.sol
+contracts/options/QToken.sol
+contracts/options/OptionsFactory.sol
 contracts/utils/EIP712MetaTransaction.sol
 spec/
 .certora_config/
