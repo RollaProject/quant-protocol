@@ -32,17 +32,11 @@ contract SimpleExternalOptionsFactory {
         controller = _controller;
     }
 
-    function createOption(
-        address underlyingAsset,
-        address oracle,
-        uint88 expiryTime,
-        bool isCall,
-        uint256 strikePrice
-    )
+    function createOption(address underlyingAsset, address oracle, uint88 expiryTime, bool isCall, uint256 strikePrice)
         public
         returns (address newQToken, uint256 newCollateralTokenId)
     {
-       bytes memory assetProperties = OptionsUtils.getAssetProperties(underlyingAsset, assetsRegistry);
+        bytes memory assetProperties = OptionsUtils.getAssetProperties(underlyingAsset, assetsRegistry);
 
         bytes memory immutableArgsData =
             getImmutableArgsData(assetProperties, underlyingAsset, oracle, expiryTime, isCall, strikePrice);
@@ -52,19 +46,19 @@ contract SimpleExternalOptionsFactory {
         newCollateralTokenId = collateralToken.createOptionCollateralToken(newQToken);
     }
 
-    function getQToken(
-        address underlyingAsset,
-        address oracle,
-        uint88 expiryTime,
-        bool isCall,
-        uint256 strikePrice
-    )
+    function getQToken(address underlyingAsset, address oracle, uint88 expiryTime, bool isCall, uint256 strikePrice)
         public
         view
         returns (address qToken, bool exists)
     {
-        bytes memory immutableArgsData =
-            getImmutableArgsData(OptionsUtils.getAssetProperties(underlyingAsset, assetsRegistry), underlyingAsset, oracle, expiryTime, isCall, strikePrice);
+        bytes memory immutableArgsData = getImmutableArgsData(
+            OptionsUtils.getAssetProperties(underlyingAsset, assetsRegistry),
+            underlyingAsset,
+            oracle,
+            expiryTime,
+            isCall,
+            strikePrice
+        );
 
         (qToken, exists) =
             ClonesWithImmutableArgs.predictDeterministicAddress(address(implementation), salt, immutableArgsData);
@@ -82,7 +76,7 @@ contract SimpleExternalOptionsFactory {
         view
         returns (uint256 id, bool exists)
     {
-        (address qToken,) = getQToken(underlyingAsset,  oracle, expiryTime, isCall, strikePrice);
+        (address qToken,) = getQToken(underlyingAsset, oracle, expiryTime, isCall, strikePrice);
 
         id = collateralToken.getCollateralTokenId(qToken, qTokenAsCollateral);
 

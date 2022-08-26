@@ -451,7 +451,7 @@ export const setQTokenBalance = async (
   const newTotalSupply = totalSupply.add(amount);
 
   await setStorageAt(qToken, totalSupplySlot, toBytes32(newTotalSupply));
-};;
+};
 
 export const customError = (errorName: string, ...args: any[]): string => {
   let argumentString = "";
