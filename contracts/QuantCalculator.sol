@@ -19,7 +19,7 @@ contract QuantCalculator is IQuantCalculator {
     using QuantMath for QuantMath.FixedPointInt;
 
     /// @inheritdoc IQuantCalculator
-    uint8 public immutable override optionsDecimals = OptionsUtils.OPTIONS_DECIMALS;
+    uint8 public immutable override optionsDecimals = OPTIONS_DECIMALS;
 
     /// @inheritdoc IQuantCalculator
     uint8 public immutable override strikeAssetDecimals = OptionsUtils.STRIKE_PRICE_DECIMALS;

@@ -165,6 +165,13 @@ contract OptionsFactory is IOptionsFactory {
         view
         returns (bytes memory immutableArgsData)
     {
+        // put immutable variables in the stack since inline assembly can't otherwise access them
+        address _strikeAsset = strikeAsset;
+        address _controller = controller;
+
+        // where the manually packed args will start in memory
+        uint256 packedArgsStart;
+
         /*//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                                     Immutable Args Memory Layout
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
@@ -173,31 +180,27 @@ contract OptionsFactory is IOptionsFactory {
         |     freeMemPtr        | --> |    freeMemPtr + 0x20   | --> |     freeMemPtr + 0xa0    | --> |  freeMemPtr + 0x120    |
         | immutable args length | --> | name string w/o length | --> | symbol string w/o length | --> | packed args w/o length |
         */
-
         assembly ("memory-safe") {
             // set the immutable args data pointer to the initial free memory pointer
-            immutableArgsData := mload(0x40)
+            immutableArgsData := mload(FREE_MEM_PTR)
 
-            // set the free memory pointer to 256 bytes after its current value, leaving
-            // room for the total immutable args length followed by the QToken name and
-            // symbol 128-byte strings to be placed before the other packed immutable args
-            mstore(0x40, add(immutableArgsData, 0x100))
+            // manually pack the ending immutable args data 288 bytes after where the total
+            // immutable args length will be placed followed by the QToken name and
+            // symbol 128-byte strings
+            packedArgsStart := add(immutableArgsData, add(ONE_WORD, NAME_AND_SYMBOL_LENGTH))
+            mstore(packedArgsStart, shl(ONE_BYTE_OFFSET, and(OPTIONS_DECIMALS, MASK_8)))
+            mstore(add(packedArgsStart, 1), shl(ADDRESS_OFFSET, and(_underlyingAsset, MASK_160)))
+            mstore(add(packedArgsStart, 21), shl(ADDRESS_OFFSET, and(_strikeAsset, MASK_160)))
+            mstore(add(packedArgsStart, 41), shl(ADDRESS_OFFSET, and(_oracle, MASK_160)))
+            mstore(add(packedArgsStart, 61), shl(UINT88_OFFSET, and(_expiryTime, MASK_88)))
+            mstore(add(packedArgsStart, 72), shl(ONE_BYTE_OFFSET, and(_isCall, MASK_8)))
+            mstore(add(packedArgsStart, 73), and(_strikePrice, MASK_256))
+            mstore(add(packedArgsStart, 105), shl(ADDRESS_OFFSET, and(_controller, MASK_160)))
+
+            // update the free memory pointer to after the packed args
+            mstore(FREE_MEM_PTR, add(packedArgsStart, PACKED_ARGS_LENGTH))
         }
 
-        // place the initial packed immutable args in memory, with their total length
-        // stored at immutableArgsData + 0x100 (the current free memory pointer) and
-        // with the args contents starting at immutableArgs + 0x120
-        abi.encodePacked(
-            OptionsUtils.OPTIONS_DECIMALS,
-            _underlyingAsset,
-            strikeAsset,
-            _oracle,
-            _expiryTime,
-            _isCall,
-            _strikePrice,
-            controller
-        );
-
-        OptionsUtils.addNameAndSymbolToImmutableArgs(_assetProperties, immutableArgsData);
+        OptionsUtils.addNameAndSymbolToImmutableArgs(_assetProperties, immutableArgsData, packedArgsStart);
     }
 }

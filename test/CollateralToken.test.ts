@@ -8,7 +8,6 @@ import { expect, provider } from "./setup";
 import {
   deployAssetsRegistry,
   deployCollateralToken,
-  deployOracleRegistry,
   deployQToken,
   deploySimpleOptionsFactory,
   getApprovalForAllSignedData,
@@ -59,18 +58,13 @@ describe("CollateralToken", () => {
       .connect(deployer)
       .addAssetWithOptionalERC20Methods(BUSD.address);
 
-    const oracleRegistry = await deployOracleRegistry(deployer);
-
-    const PriceRegistry = await ethers.getContractFactory("PriceRegistry");
-    priceRegistry = await PriceRegistry.deploy(
-      await BUSD.decimals(),
-      oracleRegistry.address
-    );
-
     const oracle = ethers.Wallet.createRandom().address;
+    const controller = ethers.Wallet.createRandom().address;
 
     const simpleOptionsFactory = await deploySimpleOptionsFactory(
-      assetsRegistry.address
+      assetsRegistry.address,
+      BUSD.address,
+      controller
     );
 
     qToken = await deployQToken(
@@ -81,19 +75,6 @@ describe("CollateralToken", () => {
       assetsRegistry.address,
       oracle
     );
-
-    secondQToken = await deployQToken(
-      deployer,
-      WETH.address,
-      BUSD.address,
-      simpleOptionsFactory,
-      assetsRegistry.address,
-      ethers.Wallet.createRandom().address,
-      ethers.BigNumber.from("1618592400"),
-      true,
-      ethers.utils.parseUnits("2000", await BUSD.decimals())
-    );
-
     collateralToken = await deployCollateralToken(deployer);
   });
 
