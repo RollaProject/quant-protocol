@@ -117,7 +117,7 @@ contract SimpleExternalOptionsFactory {
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
         /* 
         |  immutableArgsData    | --> |         name           | --> |          symbol          | --> |      packed args       |
-        |     freeMemPtr        | --> |    freeMemPtr + 0x20   | --> |     freeMemPtr + 0xa0    | --> |  freeMemPtr + 0x120    |
+        |     freeMemPtr        | --> |    freeMemPtr + 32     | --> |     freeMemPtr + 160     | --> |  freeMemPtr + 288      |
         | immutable args length | --> | name string w/o length | --> | symbol string w/o length | --> | packed args w/o length |
         */
         assembly ("memory-safe") {
