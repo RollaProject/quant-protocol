@@ -32,6 +32,7 @@ describe("QToken", async () => {
   const strikePrice = ethers.utils.parseUnits("1400", 18);
   const expiryTime = ethers.BigNumber.from("1618592400"); // April 16th, 2021
   const oracle = ethers.Wallet.createRandom().address;
+  const controller = ethers.Wallet.createRandom().address;
 
   const mintOptionsToAccount = async (account: string, amount: number) => {
     await qToken
@@ -68,7 +69,11 @@ describe("QToken", async () => {
     );
 
     simpleOptionsFactory = <SimpleOptionsFactory>(
-      await SimpleOptionsFactory.deploy(assetsRegistry.address)
+      await SimpleOptionsFactory.deploy(
+        assetsRegistry.address,
+        BUSD.address,
+        await deployer.getAddress()
+      )
     );
 
     qToken = await deployQToken(

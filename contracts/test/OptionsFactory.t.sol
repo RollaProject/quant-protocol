@@ -11,7 +11,7 @@ import {ChainlinkOracleManager} from "../pricing/oracle/ChainlinkOracleManager.s
 import {ProviderOracleManager} from "../pricing/oracle/ProviderOracleManager.sol";
 import {PriceRegistry} from "../pricing/PriceRegistry.sol";
 import {QToken} from "../options/QToken.sol";
-import {OptionsUtils} from "../libraries/OptionsUtils.sol";
+import {OptionsUtils, OPTIONS_DECIMALS} from "../libraries/OptionsUtils.sol";
 
 contract ERC20 is SolmateERC20 {
     constructor(string memory _name, string memory _symbol, uint8 _decimals) SolmateERC20(_name, _symbol, _decimals) {}
@@ -156,7 +156,7 @@ contract OptionsFactoryTest is Test {
 
         QToken qToken = QToken(qTokenAddress);
 
-        assertEq(qToken.decimals(), OptionsUtils.OPTIONS_DECIMALS);
+        assertEq(qToken.decimals(), OPTIONS_DECIMALS);
         assertEq(qToken.underlyingAsset(), address(underlying));
         assertEq(qToken.strikeAsset(), address(BUSD));
         assertEq(qToken.oracle(), oracle);
@@ -179,7 +179,7 @@ contract OptionsFactoryTest is Test {
         console.log(qToken.name());
         console.log(qToken.symbol());
 
-        assertEq(qToken.decimals(), OptionsUtils.OPTIONS_DECIMALS);
+        assertEq(qToken.decimals(), OPTIONS_DECIMALS);
         assertEq(qToken.underlyingAsset(), address(WBNB));
         assertEq(qToken.strikeAsset(), address(BUSD));
         assertEq(qToken.oracle(), chainlinkOracleManager);
