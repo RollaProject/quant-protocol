@@ -64,17 +64,15 @@ const mockERC20 = async (
 };
 
 const deploySimpleOptionsFactory = async (
-  assetsRegistry: string
+  assetsRegistry: string,
+  strikeAsset: string,
+  controller: string
 ): Promise<SimpleOptionsFactory> => {
-  const ClonesWithImmutableArgsFactory = await ethers.getContractFactory(
-    "ClonesWithImmutableArgs"
-  );
-
   const SimpleOptionsFactory = await ethers.getContractFactory(
     "SimpleOptionsFactory"
   );
   const optionsFactory = <SimpleOptionsFactory>(
-    await SimpleOptionsFactory.deploy(assetsRegistry)
+    await SimpleOptionsFactory.deploy(assetsRegistry, strikeAsset, controller)
   );
 
   return optionsFactory;
@@ -97,22 +95,18 @@ const deployQToken = async (
 
   await simpleOptionsFactory.createOption(
     underlyingAsset,
-    strikeAsset,
     oracle,
     expiryTime,
     isCall,
-    strikePrice,
-    controller
+    strikePrice
   );
 
   const [qTokenAddress] = await simpleOptionsFactory.getQToken(
     underlyingAsset,
-    strikeAsset,
     oracle,
     expiryTime,
     isCall,
-    strikePrice,
-    controller
+    strikePrice
   );
 
   const QToken = await ethers.getContractFactory("QToken");
@@ -457,7 +451,7 @@ export const setQTokenBalance = async (
   const newTotalSupply = totalSupply.add(amount);
 
   await setStorageAt(qToken, totalSupplySlot, toBytes32(newTotalSupply));
-};
+};;
 
 export const customError = (errorName: string, ...args: any[]): string => {
   let argumentString = "";

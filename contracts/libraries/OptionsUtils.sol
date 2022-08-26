@@ -9,6 +9,23 @@ import "../interfaces/IProviderOracleManager.sol";
 import "../interfaces/IQToken.sol";
 import "../interfaces/IAssetsRegistry.sol";
 
+uint8 constant OPTIONS_DECIMALS = 18;
+uint256 constant ONE_WORD = 0x20;
+uint256 constant FREE_MEM_PTR = 0x40;
+uint256 constant IMMUTABLE_STRING_LENGTH = 128;
+uint256 constant NAME_AND_SYMBOL_LENGTH = 256;
+uint256 constant MAX_STRING_LENGTH = 127;
+uint256 constant PACKED_ARGS_LENGTH = 125;
+uint256 constant IMMUTABLE_ARGS_LENGTH = 381;
+uint256 constant MASK_1 = 2 ** (1) - 1;
+uint256 constant MASK_8 = 2 ** (8) - 1;
+uint256 constant MASK_88 = 2 ** (88) - 1;
+uint256 constant MASK_160 = 2 ** (160) - 1;
+uint256 constant MASK_256 = 2 ** (256) - 1;
+uint256 constant ADDRESS_OFFSET = 96;
+uint256 constant ONE_BYTE_OFFSET = 248;
+uint256 constant UINT88_OFFSET = 168;
+
 /// @title Options utilities for Quant's QToken and CollateralToken
 /// @author Rolla
 library OptionsUtils {
@@ -17,8 +34,6 @@ library OptionsUtils {
     bytes32 internal constant SALT = bytes32("ROLLA.FINANCE");
 
     uint8 internal constant STRIKE_PRICE_DECIMALS = 18;
-
-    uint8 internal constant OPTIONS_DECIMALS = 18;
 
     // abi.encodeWithSignature("DataSizeLimitExceeded(uint256)");
     uint256 internal constant DataSizeLimitExceeded_error_signature =
@@ -97,11 +112,11 @@ library OptionsUtils {
 
         assembly ("memory-safe") {
             // get the free memory pointer
-            assetProperties := mload(0x40)
+            assetProperties := mload(FREE_MEM_PTR)
 
             // call `assetProperties` with the encoded calldata, ignoring the success value
             // and the result from the call, which will be read from the returndata below
-            pop(staticcall(gas(), _assetsRegistry, add(calld, 0x20), mload(calld), 0, 0))
+            pop(staticcall(gas(), _assetsRegistry, add(calld, ONE_WORD), mload(calld), 0, 0))
 
             // get the size of the returned data
             let returnLen := returndatasize()
@@ -111,7 +126,7 @@ library OptionsUtils {
 
             // reset the free memory pointer to after the assetProperties that were
             // just copied from returdata to memory
-            mstore(0x40, add(assetProperties, returnLen))
+            mstore(FREE_MEM_PTR, add(assetProperties, returnLen))
         }
     }
 
@@ -119,7 +134,12 @@ library OptionsUtils {
     /// in memory starting at the given pointer
     /// @param assetProperties pointer to the underlying asset properties in memory
     /// @param immutableArgsData pointer to the start of the clone immutable args data in memory
-    function addNameAndSymbolToImmutableArgs(bytes memory assetProperties, bytes memory immutableArgsData)
+    /// @param packedArgsStart pointer to the start of the other args already packed in memory
+    function addNameAndSymbolToImmutableArgs(
+        bytes memory assetProperties,
+        bytes memory immutableArgsData,
+        uint256 packedArgsStart
+    )
         internal
         pure
     {
@@ -131,19 +151,16 @@ library OptionsUtils {
         string memory monthFull;
         string memory dayStr;
         string memory yearStr;
+
+        // new scope block to avoid stack too deep errors with viaIR turned off
         {
             address underlyingAsset;
             uint88 expiryTime;
             bool isCall;
             uint256 strikePrice;
 
-            // get the individual values from the packed args in memory
             assembly ("memory-safe") {
-                // the packed args length is stored at immutableArgsData + 0x100
-                // and the packed args contents start at immutableArgsData + 0x120
-                let encodedArgsStart := add(immutableArgsData, 0x120)
-
-                /* packed args memory layout, starting at encodedArgsStart:
+                /* packed args memory layout, starting at packedArgsStart:
                 0x00: OPTIONS_DECIMALS |   (uint8 == 1 byte)
                 0x01: underlyingAsset  | (address == 20 bytes)
                 0x15: strikeAsset      | (address == 20 bytes)
@@ -154,19 +171,18 @@ library OptionsUtils {
                 0x69: controller       | (address == 20 bytes)
                 */
 
-                underlyingAsset := shr(96, mload(add(encodedArgsStart, 0x01)))
+                // get the individual values from the packed args in memory
+                underlyingAsset := shr(96, mload(add(packedArgsStart, 0x01)))
 
-                expiryTime := shr(168, mload(add(encodedArgsStart, 0x3d)))
+                expiryTime := shr(168, mload(add(packedArgsStart, 0x3d)))
 
-                isCall := shr(248, mload(add(encodedArgsStart, 0x48)))
+                isCall := shr(248, mload(add(packedArgsStart, 0x48)))
 
-                strikePrice := mload(add(encodedArgsStart, 0x49))
-
-                if shr(128, strikePrice) { strikePrice := and(1, strikePrice) }
+                strikePrice := mload(add(packedArgsStart, 0x49))
 
                 // The underlying asset symbol is the second property in assetProperties,
-                // thus, it's located at assetProperties + 0x20
-                underlying := add(assetProperties, mload(add(assetProperties, 0x20)))
+                // thus, it's located at assetProperties + ONE_WORD
+                underlying := add(assetProperties, mload(add(assetProperties, ONE_WORD)))
             }
 
             displayStrikePrice = displayedStrikePrice(strikePrice);
@@ -174,7 +190,7 @@ library OptionsUtils {
             // get option type string
             (typeSymbol, typeFull) = getOptionType(isCall);
 
-            // convert the expiry to a readable string
+            // get the individual date values so we can convert the expiry to a readable string
             (uint256 year, uint256 month, uint256 day) = DateTime.timestampToDate(expiryTime);
 
             // get option month string
@@ -186,41 +202,49 @@ library OptionsUtils {
         }
 
         // for the current free memory pointer, after the packed args and all the strings
-        // generated and allocated above
+        // generated and automatically allocated in the steps above
         uint256 newFreeMemPtr;
 
         assembly ("memory-safe") {
             // save the current free memory pointer so that it can be restored later after
             // all the free memory pointer manipulations are done
-            newFreeMemPtr := mload(0x40)
+            newFreeMemPtr := mload(FREE_MEM_PTR)
 
-            // clear the 32 bytes where the packed args length was previously stored
-            mstore(add(immutableArgsData, 0x100), 0)
+            // copy the first 32 bytes of the packed args which might get partially overwritten
+            // in the automatic generation and allocation of the symbol string below
+            mstore(newFreeMemPtr, mload(packedArgsStart))
 
-            // set the free memory pointer to 128 bytes before the immutable args length
-            // so that the symbol string gets stored in that space
-            mstore(0x40, add(immutableArgsData, 0x80))
+            // set the free memory pointer to 128 bytes after the immutable args
+            // start so that the symbol string gets stored in that space
+            mstore(FREE_MEM_PTR, add(immutableArgsData, IMMUTABLE_STRING_LENGTH))
         }
 
         // generate, allocate and store the symbol string right before the packed args
-        string memory metadata = string.concat(
-            "ROLLA", "-", underlying, "-", dayStr, monthSymbol, yearStr, "-", displayStrikePrice, "-", typeSymbol
-        );
+        string memory metadata =
+            string.concat("ROLLA-", underlying, "-", dayStr, monthSymbol, yearStr, "-", displayStrikePrice, "-", typeSymbol);
 
         normalizeStringImmutableArg(metadata);
 
         assembly ("memory-safe") {
-            // clear the 32 bytes where the symbol string length was stored
-            mstore(add(immutableArgsData, 0x80), 0)
+            // recover the initial 32 bytes of the packed args that may have
+            // been partially overwritten
+            mstore(packedArgsStart, mload(newFreeMemPtr))
 
-            // set the free memory pointer to 128 bytes before the symbol string
+            // update the new free memory pointer to after the 32 bytes of the
+            // packed args that were copied earlier for the recovery above
+            newFreeMemPtr := add(newFreeMemPtr, ONE_WORD)
+
+            // clear the 32 bytes where the symbol string length was stored
+            mstore(add(immutableArgsData, IMMUTABLE_STRING_LENGTH), 0)
+
+            // set the free memory pointer to the start of the immutable args
             // so that the name string gets stored in that space
-            mstore(0x40, immutableArgsData)
+            mstore(FREE_MEM_PTR, immutableArgsData)
         }
 
         // generate, allocate and store the name string right before the symbol string
         metadata = string.concat(
-            "ROLLA", " ", underlying, " ", dayStr, "-", monthFull, "-", yearStr, " ", displayStrikePrice, " ", typeFull
+            "ROLLA ", underlying, " ", dayStr, "-", monthFull, "-", yearStr, " ", displayStrikePrice, " ", typeFull
         );
 
         normalizeStringImmutableArg(metadata);
@@ -228,10 +252,10 @@ library OptionsUtils {
         assembly ("memory-safe") {
             // store the total QToken immutable arguments size at its pointer,
             // overriding the previous name string length that was stored there
-            mstore(immutableArgsData, 0x017d) // 381 bytes
+            mstore(immutableArgsData, IMMUTABLE_ARGS_LENGTH)
 
             // restore the free memory pointer
-            mstore(0x40, newFreeMemPtr)
+            mstore(FREE_MEM_PTR, newFreeMemPtr)
         }
     }
 
@@ -245,18 +269,17 @@ library OptionsUtils {
 
             // end execution with a custom DataSizeLimitExceeded error if the input data
             // is larger than 127 bytes
-            if gt(len, 0x7f) {
+            if gt(len, MAX_STRING_LENGTH) {
                 mstore(DataSizeLimitExceeded_error_sig_ptr, DataSizeLimitExceeded_error_signature)
                 mstore(DataSizeLimitExceeded_error_datasize_ptr, len)
                 revert(DataSizeLimitExceeded_error_sig_ptr, DataSizeLimitExceeded_error_length)
             }
 
-            // store the new length of the string as 128 bytes
-            mstore(s, 0x80)
-
             // store the original length of the string in the last byte of the output
             // location in memory, i.e. the 128th byte
-            mstore(add(s, 0x80), xor(mload(add(s, 0x80)), shl(0xf8, len)))
+            mstore(
+                add(s, IMMUTABLE_STRING_LENGTH), xor(mload(add(s, IMMUTABLE_STRING_LENGTH)), shl(ONE_BYTE_OFFSET, len))
+            )
         }
     }
 
@@ -302,8 +325,8 @@ library OptionsUtils {
     /// @return dayStr 2 characters that correspond to a day's number
     function getDayStr(uint256 day) internal pure returns (string memory dayStr) {
         assembly ("memory-safe") {
-            dayStr := mload(0x40)
-            mstore(0x40, add(dayStr, 0x22))
+            dayStr := mload(FREE_MEM_PTR)
+            mstore(FREE_MEM_PTR, add(dayStr, 0x22))
             mstore(dayStr, 0x2)
 
             switch lt(day, 10)
