@@ -32,13 +32,7 @@ contract SimpleOptionsFactory {
         controller = _controller;
     }
 
-    function createOption(
-        address underlyingAsset,
-        address oracle,
-        uint88 expiryTime,
-        bool isCall,
-        uint256 strikePrice
-    )
+    function createOption(address underlyingAsset, address oracle, uint88 expiryTime, bool isCall, uint256 strikePrice)
         public
         returns (address newQToken, uint256 newCollateralTokenId)
     {
@@ -52,13 +46,7 @@ contract SimpleOptionsFactory {
         newCollateralTokenId = collateralToken.createOptionCollateralToken(newQToken);
     }
 
-    function getQToken(
-        address underlyingAsset,
-        address oracle,
-        uint88 expiryTime,
-        bool isCall,
-        uint256 strikePrice
-    )
+    function getQToken(address underlyingAsset, address oracle, uint88 expiryTime, bool isCall, uint256 strikePrice)
         public
         view
         returns (address qToken, bool exists)
@@ -110,7 +98,7 @@ contract SimpleOptionsFactory {
         uint256 _strikePrice
     )
         internal
-        view 
+        view
         returns (bytes memory immutableArgsData)
     {
         // put immutable variables in the stack since inline assembly can't otherwise access them
