@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@rari-capital/solmate/src/tokens/ERC1155.sol";
+import "solmate/src/tokens/ERC1155.sol";
 import "../interfaces/ICollateralToken.sol";
 
 /// @title Tokens representing a Quant user's short positions
