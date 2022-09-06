@@ -853,10 +853,10 @@
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.7.1.tgz#33d0a857b76b18d313e6bb6ed28cdaf367e90cfe"
   integrity sha512-UXmAjKARsXORHlHZu5GCD7ZbRKm6nU8UHnbuT/QJJa2JEOEcbvV/X8w/sUk62Sl9VZuuljM1akrZLyAtzUgsxw==
 
-"@quant-finance/solidity-datetime@^2.1.0":
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/@quant-finance/solidity-datetime/-/solidity-datetime-2.1.0.tgz#0d155a56ce4462e5be6ba9e860cb631914246f16"
-  integrity sha512-3kxxJ7fsVlN9QvTZlBISqiIPGq3ijMZRITPsajmKR+vIQLknPZ/e9sBR4VNiA76K/NTk1rty7yvTkR/qE7CV3g==
+"@quant-finance/solidity-datetime@2.2.0":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@quant-finance/solidity-datetime/-/solidity-datetime-2.2.0.tgz#50f2d00a571d8cc2d962257b40b70fc44450dcaa"
+  integrity sha512-iO0EnqPKTzGCgQOkI9lerpJc0XKUhMNurSjHcA7p7nlP2K2z3U4kk9OC9eQkZUrdBtltft+kIibiDdIOYWuQMg==
 
 "@rari-capital/solmate@^6.3.0":
   version "6.3.0"
@@ -9043,10 +9043,10 @@ snapdragon@^0.8.1:
     source-map-resolve "^0.5.0"
     use "^3.1.0"
 
-solady@^0.0.16:
-  version "0.0.16"
-  resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.16.tgz#4ce452c414ad9e67739928edd0123a2efe54b3a1"
-  integrity sha512-GOluFPNVIDTlZ9lhO26EkuWtI9E5BGbJ7pJuOwWZIHFm/8+qdTs7IceG01dU33gOds6E35GI/JXa6ZG+fWepPQ==
+solady@^0.0.19:
+  version "0.0.19"
+  resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.19.tgz#b987d0b82a776f5c8dfbc28086afa2bcb6f160ef"
+  integrity sha512-Qp3OqhP34bgcc8vHq7esWZ7rffVCqkPjjoBkhgwlwwbvVWYy+FhK8EmOTsj240spgPnxKNnfrGgdALBcAUakXg==
 
 solc@0.7.3:
   version "0.7.3"
