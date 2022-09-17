@@ -97,7 +97,10 @@ interface IController {
     /// @param _to The address to which the QTokens and CollateralTokens will be minted.
     /// @param _qToken The QToken that represents the long position for the option to be minted.
     /// @param _amount The amount of options to be minted.
-    function mintOptionsPosition(address _to, address _qToken, uint256 _amount) external;
+    /// @return collateralTokenId the ERC1155 token id for the option's minted collateral token.
+    function mintOptionsPosition(address _to, address _qToken, uint256 _amount)
+        external
+        returns (uint256 collateralTokenId);
 
     /// @notice Creates a spread position from an option to long and another option to short.
     /// @dev The caller (or signer in case of meta transactions) must first approve the Controller
