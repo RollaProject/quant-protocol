@@ -134,7 +134,11 @@ contract Controller is IController, EIP712MetaTransaction {
     }
 
     /// @inheritdoc IController
-    function mintOptionsPosition(address _to, address _qToken, uint256 _amount) public override {
+    function mintOptionsPosition(address _to, address _qToken, uint256 _amount)
+        public
+        override
+        returns (uint256 collateralTokenId)
+    {
         /// -------------------------------------------------------------------
         /// Checks
         /// -------------------------------------------------------------------
@@ -168,7 +172,7 @@ contract Controller is IController, EIP712MetaTransaction {
         // There's no need to check if the collateralTokenId exists before minting the
         // short tokens because if the QToken is valid, then it's guaranteed that the
         // respective CollateralToken has already also been created by the OptionsFactory
-        uint256 collateralTokenId = collateralToken.getCollateralTokenId(_qToken, address(0));
+        collateralTokenId = collateralToken.getCollateralTokenId(_qToken, address(0));
 
         // Mint the option's short tokens to the recipient's address
         collateralToken.mintCollateralToken(_to, collateralTokenId, _amount);
