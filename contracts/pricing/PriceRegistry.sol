@@ -33,14 +33,12 @@ contract PriceRegistry is IPriceRegistry {
         uint88 _expiryTime,
         uint8 _settlementPriceDecimals,
         uint256 _settlementPrice
-    )
-        external
-        override
-    {
+    ) external override {
         address oracle = msg.sender;
 
         require(
-            IOracleRegistry(oracleRegistry).isOracleRegistered(oracle) && IOracleRegistry(oracleRegistry).isOracleActive(oracle),
+            IOracleRegistry(oracleRegistry).isOracleRegistered(oracle)
+                && IOracleRegistry(oracleRegistry).isOracleActive(oracle),
             "PriceRegistry: Price submitter is not an active oracle"
         );
 

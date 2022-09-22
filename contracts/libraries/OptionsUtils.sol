@@ -60,10 +60,7 @@ library OptionsUtils {
         address _oracle,
         uint88 _expiryTime,
         uint256 _strikePrice
-    )
-        internal
-        view
-    {
+    ) internal view {
         require(_expiryTime > block.timestamp, "OptionsFactory: given expiry time is in the past");
 
         require(
@@ -138,10 +135,7 @@ library OptionsUtils {
         bytes memory assetProperties,
         bytes memory immutableArgsData,
         uint256 packedArgsStart
-    )
-        internal
-        pure
-    {
+    ) internal pure {
         string memory underlying;
         string memory displayStrikePrice;
         string memory typeSymbol;

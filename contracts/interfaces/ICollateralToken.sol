@@ -72,8 +72,7 @@ interface ICollateralToken {
         uint8 v,
         bytes32 r,
         bytes32 s
-    )
-        external;
+    ) external;
 
     /// @notice mapping of CollateralToken ids to their respective info struct
     function idToInfo(uint256) external view returns (address, address);

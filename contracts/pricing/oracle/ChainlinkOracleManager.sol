@@ -188,11 +188,7 @@ contract ChainlinkOracleManager is ProviderOracleManager, IChainlinkOracleManage
         uint88 _expiryTimestamp,
         uint80 _firstRoundProxy,
         uint80 _lastRoundProxy
-    )
-        internal
-        view
-        returns (BinarySearchResult memory)
-    {
+    ) internal view returns (BinarySearchResult memory) {
         uint16 phaseOffset = 64;
         uint16 phaseId = uint16(_lastRoundProxy >> phaseOffset);
 
