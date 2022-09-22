@@ -31,9 +31,7 @@ interface IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    )
-        external
-        returns (address, uint256);
+    ) external returns (address, uint256);
 
     /// @notice get the CollateralToken id for a given option, and whether it has
     /// already been created
@@ -52,10 +50,7 @@ interface IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    )
-        external
-        view
-        returns (uint256, bool);
+    ) external view returns (uint256, bool);
 
     /// @notice get the QToken address for a given option, and whether it has
     /// already been created
@@ -72,10 +67,7 @@ interface IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    )
-        external
-        view
-        returns (address, bool);
+    ) external view returns (address, bool);
 
     /// @notice get the strike asset used for options created by the factory
     /// @return the strike asset address

@@ -47,12 +47,7 @@ contract ChainlinkFixedTimeOracleManager is ChainlinkOracleManager, IChainlinkFi
         uint88 _expiryTimestamp,
         uint256 _roundIdAfterExpiry,
         uint256 _expiryRoundId
-    )
-        internal
-        view
-        override
-        returns (uint256, uint256)
-    {
+    ) internal view override returns (uint256, uint256) {
         int256 price;
         uint256 roundId;
 
