@@ -94,7 +94,9 @@ contract OptionsFactoryTest is Test {
         );
 
         vm.mockCall(
-            oracleRegistry, abi.encodeWithSelector(bytes4(keccak256(bytes("isOracleActive(address)")))), abi.encode(true)
+            oracleRegistry,
+            abi.encodeWithSelector(bytes4(keccak256(bytes("isOracleActive(address)")))),
+            abi.encode(true)
         );
     }
 
@@ -121,9 +123,7 @@ contract OptionsFactoryTest is Test {
         uint32 expiryTime,
         bool isCall,
         uint256 strikePrice
-    )
-        public
-    {
+    ) public {
         vm.mockCall(
             oracle,
             abi.encodeWithSelector(bytes4(keccak256(bytes("getAssetOracle(address)")))),
@@ -222,5 +222,40 @@ contract OptionsFactoryTest is Test {
 
         vm.expectRevert(abi.encodeWithSignature("CreateFail()"));
         optionsFactory.createOption(address(WBNB), chainlinkOracleManager, expiryTimestamp, isCall, strikePrice);
+    }
+
+    function testGetAssetProperties(
+        string memory underlyingName,
+        string memory underlyingSymbol,
+        uint8 underlyingDecimals
+    ) public {
+        vm.assume(bytes(underlyingName).length > 0);
+        vm.assume(bytes(underlyingSymbol).length > 0);
+
+        ERC20 underlying = new ERC20(
+            underlyingName,
+            underlyingSymbol,
+            underlyingDecimals
+        );
+
+        assetsRegistry.addAssetWithOptionalERC20Methods(address(underlying));
+
+        bytes memory assetProperties = OptionsUtils.getAssetProperties(address(underlying), address(assetsRegistry));
+
+        string memory recoveredName;
+        string memory recoveredSymbol;
+        uint8 recoveredDecimals;
+        bool recoveredIsRegistered;
+        assembly ("memory-safe") {
+            recoveredName := mload(assetProperties)
+            recoveredSymbol := mload(add(assetProperties, 0x20))
+            recoveredDecimals := shr(248, shl(248, mload(add(assetProperties, 0x40))))
+            recoveredIsRegistered := shr(248, shl(248, mload(add(assetProperties, 0x60))))
+        }
+
+        assertEq(underlyingName, recoveredName);
+        assertEq(underlyingSymbol, recoveredSymbol);
+        assertEq(underlyingDecimals, recoveredDecimals);
+        assertEq(true, recoveredIsRegistered);
     }
 }

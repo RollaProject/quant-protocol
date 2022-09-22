@@ -68,7 +68,9 @@ contract ControllerTest is Test {
         );
 
         vm.mockCall(
-            oracleRegistry, abi.encodeWithSelector(bytes4(keccak256(bytes("isOracleActive(address)")))), abi.encode(true)
+            oracleRegistry,
+            abi.encodeWithSelector(bytes4(keccak256(bytes("isOracleActive(address)")))),
+            abi.encode(true)
         );
 
         address qTokenXAddress;
@@ -95,7 +97,9 @@ contract ControllerTest is Test {
         );
 
         assertEq(
-            IPriceRegistry(priceRegistry).hasSettlementPrice(address(BUSD), uint88(futureTimestamp), address(controller)),
+            IPriceRegistry(priceRegistry).hasSettlementPrice(
+                address(BUSD), uint88(futureTimestamp), address(controller)
+            ),
             true
         );
 
