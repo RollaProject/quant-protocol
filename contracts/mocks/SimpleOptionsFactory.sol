@@ -67,11 +67,7 @@ contract SimpleOptionsFactory {
         uint88 expiryTime,
         bool isCall,
         uint256 strikePrice
-    )
-        public
-        view
-        returns (uint256 id, bool exists)
-    {
+    ) public view returns (uint256 id, bool exists) {
         (address qToken,) = getQToken(underlyingAsset, oracle, expiryTime, isCall, strikePrice);
 
         id = collateralToken.getCollateralTokenId(qToken, qTokenAsCollateral);
@@ -96,11 +92,7 @@ contract SimpleOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    )
-        internal
-        view
-        returns (bytes memory immutableArgsData)
-    {
+    ) internal view returns (bytes memory immutableArgsData) {
         // put immutable variables in the stack since inline assembly can't otherwise access them
         address _strikeAsset = strikeAsset;
         address _controller = controller;
