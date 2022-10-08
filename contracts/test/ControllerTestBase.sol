@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import "forge-std/Test.sol";
 import {ERC20 as SolmateERC20} from "solmate/src/tokens/ERC20.sol";
 import {ERC1155TokenReceiver} from "solmate/src/tokens/ERC1155.sol";
-import {Controller} from "../Controller.sol";
+import {Controller, Actions, ActionType, ActionArgs} from "../Controller.sol";
 import {QuantCalculator} from "../QuantCalculator.sol";
 import {QToken} from "../options/QToken.sol";
 import {OptionsFactory} from "../options/OptionsFactory.sol";
@@ -29,6 +29,7 @@ contract ControllerTestBase is Test {
     QToken qTokenXPut;
     QToken qTokenPut1400;
     QToken qTokenPut400;
+    QToken qTokenCall2000;
     QToken qTokenCall2880;
     QToken qTokenCall3520;
     uint256 cTokenIdXCall;
@@ -36,6 +37,7 @@ contract ControllerTestBase is Test {
     uint256 cTokenIdYCall;
     uint256 cTokenIdPut1400;
     uint256 cTokenIdPut400;
+    uint256 cTokenIdCall2000;
     uint256 cTokenIdCall2880;
     uint256 cTokenIdCall3520;
     uint88 expiryTimestamp;
@@ -50,6 +52,24 @@ contract ControllerTestBase is Test {
     ERC20 WBNB; // 18 decimals
     ERC20 WBTC; // 8 decimals
     ERC20 WETH; // 18 decimals
+
+    function expireAndSettleOption(address _oracle, uint88 _expiryTime, address _underlying, uint256 _expiryPrice)
+        internal
+    {
+        vm.mockCall(priceRegistry, abi.encodeWithSelector(IPriceRegistry.hasSettlementPrice.selector), abi.encode(true));
+        vm.mockCall(
+            priceRegistry,
+            abi.encodeWithSelector(IPriceRegistry.getOptionPriceStatus.selector, _oracle, _expiryTime, _underlying),
+            abi.encode(PriceStatus.SETTLED)
+        );
+        vm.mockCall(
+            priceRegistry,
+            abi.encodeWithSelector(
+                IPriceRegistry.getSettlementPriceWithDecimals.selector, _oracle, _expiryTime, _underlying
+            ),
+            abi.encode((_expiryPrice / (10 ** (BUSD.decimals() - 8))), uint8(8))
+        );
+    }
 
     function setUp() public virtual {
         string memory protocolName = "Quant Protocol";
@@ -129,6 +149,11 @@ contract ControllerTestBase is Test {
         (qTokenPut400Address, cTokenIdPut400) =
             optionsFactory.createOption(address(WETH), oracle, expiryTimestamp, false, 400 ether);
         qTokenPut400 = QToken(qTokenPut400Address);
+
+        address qTokenCall2000Address;
+        (qTokenCall2000Address, cTokenIdCall2000) =
+            optionsFactory.createOption(address(WETH), oracle, expiryTimestamp, true, 2000 ether);
+        qTokenCall2000 = QToken(qTokenCall2000Address);
 
         address qTokenCall2880Address;
         (qTokenCall2880Address, cTokenIdCall2880) =
