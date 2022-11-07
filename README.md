@@ -40,3 +40,13 @@ Security is our highest priority. Our team has created a protocol that we believ
 ## Licensing
 
 The license for Quant Protocol is the Business Source License 1.1 (`BUSL-1.1`), see <code>[LICENSE](https://github.com/RollaProject/quant-protocol/blob/main/LICENSE)</code>.
+
+## Generating coverage reports with Foundry
+
+```
+forge coverage --report lcov
+```
+
+```
+ genhtml lcov.info -o report --branch-coverage
+```
