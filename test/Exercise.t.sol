@@ -2,8 +2,8 @@
 pragma solidity 0.8.16;
 
 import "./ControllerTestBase.sol";
-import {ExternalQToken} from "../mocks/ExternalQToken.sol";
-import {SimpleExternalOptionsFactory} from "../mocks/SimpleExternalOptionsFactory.sol";
+import {ExternalQToken} from "../src/mocks/ExternalQToken.sol";
+import {SimpleExternalOptionsFactory} from "../src/mocks/SimpleExternalOptionsFactory.sol";
 
 contract ExerciseTest is ControllerTestBase {
     function testCannotExerciseInvalidOption() public {
