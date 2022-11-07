@@ -4,13 +4,13 @@ pragma solidity 0.8.16;
 import "forge-std/Test.sol";
 import {ERC20 as SolmateERC20} from "solmate/src/tokens/ERC20.sol";
 import {ERC1155TokenReceiver} from "solmate/src/tokens/ERC1155.sol";
-import {Controller} from "../Controller.sol";
-import {QToken} from "../options/QToken.sol";
-import {OptionsFactory} from "../options/OptionsFactory.sol";
-import {AssetsRegistry} from "../options/AssetsRegistry.sol";
-import {CollateralToken} from "../options/CollateralToken.sol";
-import {IPriceRegistry, PriceWithDecimals} from "../interfaces/IPriceRegistry.sol";
-import {ActionArgs, ActionType} from "../libraries/Actions.sol";
+import {Controller} from "../src/Controller.sol";
+import {QToken} from "../src/options/QToken.sol";
+import {OptionsFactory} from "../src/options/OptionsFactory.sol";
+import {AssetsRegistry} from "../src/options/AssetsRegistry.sol";
+import {CollateralToken} from "../src/options/CollateralToken.sol";
+import {IPriceRegistry, PriceWithDecimals} from "../src/interfaces/IPriceRegistry.sol";
+import {ActionArgs, ActionType} from "../src/libraries/Actions.sol";
 
 contract ERC20 is SolmateERC20 {
     constructor(string memory _name, string memory _symbol, uint8 _decimals) SolmateERC20(_name, _symbol, _decimals) {}
