@@ -42,7 +42,7 @@ contract QTokenTest is Test {
         string symbol;
         uint8 decimals;
         address oracle;
-        uint88 expiryTime;
+        uint32 expiryTime;
         bool isCall;
         uint256 strikePrice;
         uint256 ownerPrivKey;
@@ -87,17 +87,17 @@ contract QTokenTest is Test {
         string memory symbol,
         uint8 decimals,
         address oracle,
-        uint88 expiryTime,
+        uint32 expiryTime,
         bool isCall,
         uint256 strikePrice
     ) public {
         uint256 nameLength = bytes(name).length;
         uint256 symbolLength = bytes(symbol).length;
-        vm.assume(nameLength > 0 && nameLength < 10);
-        vm.assume(symbolLength > 0 && symbolLength < 5);
+        vm.assume(nameLength > 0 && nameLength <= 15);
+        vm.assume(symbolLength > 0 && symbolLength <= 15);
         vm.assume(oracle != address(0));
         strikePrice = bound(strikePrice, 1, type(uint256).max);
-        expiryTime = uint88(bound(expiryTime, block.timestamp, type(uint88).max));
+        expiryTime = uint32(bound(expiryTime, block.timestamp, type(uint88).max));
 
         ERC20 underlying = new ERC20(name, symbol, decimals);
         assetsRegistry.addAssetWithOptionalERC20Methods(address(underlying));
@@ -305,17 +305,17 @@ contract QTokenTest is Test {
         string memory symbol,
         uint8 decimals,
         address oracle,
-        uint88 expiryTime,
+        uint32 expiryTime,
         bool isCall,
         uint256 strikePrice
     ) public {
         uint256 nameLength = bytes(name).length;
         uint256 symbolLength = bytes(symbol).length;
-        vm.assume(nameLength > 0 && nameLength < 10);
-        vm.assume(symbolLength > 0 && symbolLength < 5);
+        vm.assume(nameLength > 0 && nameLength <= 15);
+        vm.assume(symbolLength > 0 && symbolLength <= 15);
         vm.assume(oracle != address(0));
         strikePrice = bound(strikePrice, 1, type(uint256).max);
-        expiryTime = uint88(bound(expiryTime, block.timestamp, type(uint88).max));
+        expiryTime = uint32(bound(expiryTime, block.timestamp, type(uint88).max));
 
         ERC20 underlying = new ERC20(name, symbol, decimals);
         assetsRegistry.addAssetWithOptionalERC20Methods(address(underlying));
@@ -375,11 +375,11 @@ contract QTokenTest is Test {
     function testPermit(PermitTestArgs memory testArgs) public {
         uint256 nameLength = bytes(testArgs.name).length;
         uint256 symbolLength = bytes(testArgs.symbol).length;
-        vm.assume(nameLength > 0 && nameLength < 10);
-        vm.assume(symbolLength > 0 && symbolLength < 5);
+        vm.assume(nameLength > 0 && nameLength <= 15);
+        vm.assume(symbolLength > 0 && symbolLength <= 15);
         vm.assume(testArgs.oracle != address(0));
         testArgs.strikePrice = bound(testArgs.strikePrice, 1, type(uint256).max);
-        testArgs.expiryTime = uint88(bound(testArgs.expiryTime, block.timestamp, type(uint88).max));
+        testArgs.expiryTime = uint32(bound(testArgs.expiryTime, block.timestamp, type(uint32).max));
         testArgs.deadline = bound(testArgs.deadline, block.timestamp, type(uint256).max);
         testArgs.ownerPrivKey = bound(testArgs.ownerPrivKey, 1, SECP256K1_PRIV_KEY_LIMIT);
         address owner = vm.addr(testArgs.ownerPrivKey);
@@ -474,11 +474,11 @@ contract QTokenTest is Test {
     function testCannotExecuteExpiredPermit(PermitTestArgs memory testArgs) public {
         uint256 nameLength = bytes(testArgs.name).length;
         uint256 symbolLength = bytes(testArgs.symbol).length;
-        vm.assume(nameLength > 0 && nameLength < 10);
-        vm.assume(symbolLength > 0 && symbolLength < 5);
+        vm.assume(nameLength > 0 && nameLength <= 15);
+        vm.assume(symbolLength > 0 && symbolLength <= 15);
         vm.assume(testArgs.oracle != address(0));
         testArgs.strikePrice = bound(testArgs.strikePrice, 1, type(uint256).max);
-        testArgs.expiryTime = uint88(bound(testArgs.expiryTime, block.timestamp, type(uint88).max));
+        testArgs.expiryTime = uint32(bound(testArgs.expiryTime, block.timestamp, type(uint32).max));
         testArgs.deadline = bound(testArgs.deadline, block.timestamp, type(uint256).max - 1);
         testArgs.ownerPrivKey = bound(testArgs.ownerPrivKey, 1, SECP256K1_PRIV_KEY_LIMIT);
         address owner = vm.addr(testArgs.ownerPrivKey);
@@ -519,11 +519,11 @@ contract QTokenTest is Test {
     function testCannotExecutePermitWithInvalidSignature(PermitTestArgs memory testArgs) public {
         uint256 nameLength = bytes(testArgs.name).length;
         uint256 symbolLength = bytes(testArgs.symbol).length;
-        vm.assume(nameLength > 0 && nameLength < 10);
-        vm.assume(symbolLength > 0 && symbolLength < 5);
+        vm.assume(nameLength > 0 && nameLength <= 15);
+        vm.assume(symbolLength > 0 && symbolLength <= 15);
         vm.assume(testArgs.oracle != address(0));
         testArgs.strikePrice = bound(testArgs.strikePrice, 1, type(uint256).max);
-        testArgs.expiryTime = uint88(bound(testArgs.expiryTime, block.timestamp, type(uint88).max));
+        testArgs.expiryTime = uint32(bound(testArgs.expiryTime, block.timestamp, type(uint32).max));
         testArgs.deadline = bound(testArgs.deadline, block.timestamp, type(uint256).max);
         testArgs.ownerPrivKey = bound(testArgs.ownerPrivKey, 1, SECP256K1_PRIV_KEY_LIMIT);
         address owner = vm.addr(testArgs.ownerPrivKey);
