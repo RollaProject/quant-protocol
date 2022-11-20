@@ -89,7 +89,7 @@
     "@openzeppelin/contracts": "^4.7.1",
     "@quant-finance/solidity-datetime": "2.2.0",
     "@rolla-finance/clones-with-immutable-args": "1.12.0",
-    "solady": "^0.0.19",
+    "solady": "^0.0.54",
     "solmate": "^6.5.0"
   },
   "files": [
