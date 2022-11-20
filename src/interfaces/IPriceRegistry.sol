@@ -24,6 +24,8 @@ interface IPriceRegistry {
         uint256 _settlementPrice
     );
 
+    event DisputePeriodSet(uint32 _disputePeriod);
+
     /// @notice Set the price at settlement for a particular asset, expiry
     /// @param _asset asset to set price for
     /// @param _expiryTime timestamp of price to set
@@ -35,6 +37,24 @@ interface IPriceRegistry {
         uint8 _settlementPriceDecimals,
         uint256 _settlementPrice
     ) external;
+
+    /// @notice Dispute a price at settlement for a particular asset, expiry and oracle
+    /// @param _asset asset to set price for
+    /// @param _expiryTime timestamp of price to set
+    /// @param _oracle oracle to dispute price for
+    /// @param _settlementPriceDecimals number of decimals in settlement price
+    /// @param _settlementPrice the correct price at settlement
+    function disputeSettlementPrice(
+        address _oracle,
+        address _asset,
+        uint88 _expiryTime,
+        uint8 _settlementPriceDecimals,
+        uint256 _settlementPrice
+    ) external;
+
+    /// @notice Set the dispute period for the PriceRegistry
+    /// @param disputePeriod_ the new dispute period
+    function setDisputePeriod(uint32 disputePeriod_) external;
 
     /// @notice Fetch the settlement price with decimals from an oracle for an asset at a particular timestamp.
     /// @param _oracle oracle which price should come from
