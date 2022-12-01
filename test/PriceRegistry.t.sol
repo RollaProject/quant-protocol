@@ -58,6 +58,12 @@ contract PriceRegistryTest is Test {
         priceRegistry.getSettlementPriceWithDecimals(oracle, expiryTime, asset);
         assertEq(priceRegistry.hasSettlementPrice(oracle, expiryTime, asset), false);
         assertEq(
+            uint256(priceRegistry.getOptionPriceStatus(oracle, expiryTime, asset)), uint256(PriceStatus.DISPUTABLE)
+        );
+
+        vm.warp(expiryTime + disputePeriod + 1);
+
+        assertEq(
             uint256(priceRegistry.getOptionPriceStatus(oracle, expiryTime, asset)),
             uint256(PriceStatus.AWAITING_SETTLEMENT_PRICE)
         );
@@ -87,7 +93,7 @@ contract PriceRegistryTest is Test {
         uint8 settlementPriceDecimals
     ) public {
         settlementPriceDecimals = uint8(bound(settlementPriceDecimals, 0, 32));
-        expiryTime = uint88(bound(expiryTime, block.timestamp + 1, type(uint88).max));
+        expiryTime = uint88(bound(expiryTime, block.timestamp + 1, type(uint88).max - disputePeriod));
         vm.assume(_settlementPrice > 0);
         uint256 settlementPrice = _settlementPrice * 10 ** settlementPriceDecimals;
 
@@ -100,6 +106,12 @@ contract PriceRegistryTest is Test {
         vm.expectRevert("PriceRegistry: No settlement price has been set");
         priceRegistry.getSettlementPriceWithDecimals(oracle, expiryTime, asset);
         assertEq(priceRegistry.hasSettlementPrice(oracle, expiryTime, asset), false);
+        assertEq(
+            uint256(priceRegistry.getOptionPriceStatus(oracle, expiryTime, asset)), uint256(PriceStatus.DISPUTABLE)
+        );
+
+        vm.warp(expiryTime + disputePeriod + 1);
+
         assertEq(
             uint256(priceRegistry.getOptionPriceStatus(oracle, expiryTime, asset)),
             uint256(PriceStatus.AWAITING_SETTLEMENT_PRICE)
