@@ -44,6 +44,27 @@ contract ClaimCollateralTest is ControllerTestBase {
         vm.stopPrank();
     }
 
+    function testCannotClaimCollateralDuringDisputePeriod() public {
+        vm.startPrank(user);
+
+        uint256 initialBlockTimestamp = block.timestamp;
+        vm.warp(expiryTimestamp + 3600);
+
+        vm.mockCall(priceRegistry, abi.encodeWithSelector(IPriceRegistry.hasSettlementPrice.selector), abi.encode(true));
+        vm.mockCall(
+            priceRegistry,
+            abi.encodeWithSelector(IPriceRegistry.getOptionPriceStatus.selector, oracle, expiryTimestamp, address(WETH)),
+            abi.encode(PriceStatus.DISPUTABLE)
+        );
+
+        vm.expectRevert(bytes("Can not claim collateral before option is settled"));
+        controller.claimCollateral(cTokenIdPut400, 1 ether);
+
+        vm.warp(initialBlockTimestamp);
+
+        vm.stopPrank();
+    }
+
     function testClaimFullCollateralITMPut() public {
         vm.startPrank(user);
 
