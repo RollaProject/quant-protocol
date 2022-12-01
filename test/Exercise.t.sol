@@ -31,6 +31,20 @@ contract ExerciseTest is ControllerTestBase {
         controller.exercise(address(qTokenPut1400), 2 ether);
     }
 
+    function testCannotExerciseOptionDuringDisputePeriod() public {
+        vm.warp(expiryTimestamp + 3600);
+
+        vm.mockCall(priceRegistry, abi.encodeWithSelector(IPriceRegistry.hasSettlementPrice.selector), abi.encode(true));
+        vm.mockCall(
+            priceRegistry,
+            abi.encodeWithSelector(IPriceRegistry.getOptionPriceStatus.selector, oracle, expiryTimestamp, address(WETH)),
+            abi.encode(PriceStatus.DISPUTABLE)
+        );
+
+        vm.expectRevert(bytes("Controller: Cannot exercise unsettled options"));
+        controller.exercise(address(qTokenPut1400), 2 ether);
+    }
+
     function testExerciseITMPut() public {
         vm.startPrank(user);
 
