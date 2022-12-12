@@ -10,12 +10,12 @@ import {
 } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { hexToNumber } from "web3-utils";
-import MockERC20JSON from "../artifacts/contracts/mocks/MockERC20.sol/MockERC20.json";
-import AssetsRegistryJSON from "../artifacts/contracts/options/AssetsRegistry.sol/AssetsRegistry.json";
-import CollateralTokenJSON from "../artifacts/contracts/options/CollateralToken.sol/CollateralToken.json";
-import OptionsFactoryJSON from "../artifacts/contracts/options/OptionsFactory.sol/OptionsFactory.json";
-import OracleRegistryJSON from "../artifacts/contracts/pricing/OracleRegistry.sol/OracleRegistry.json";
-import QuantCalculatorJSON from "../artifacts/contracts/QuantCalculator.sol/QuantCalculator.json";
+import MockERC20JSON from "../artifacts/src/mocks/MockERC20.sol/MockERC20.json";
+import AssetsRegistryJSON from "../artifacts/src/options/AssetsRegistry.sol/AssetsRegistry.json";
+import CollateralTokenJSON from "../artifacts/src/options/CollateralToken.sol/CollateralToken.json";
+import OptionsFactoryJSON from "../artifacts/src/options/OptionsFactory.sol/OptionsFactory.json";
+import OracleRegistryJSON from "../artifacts/src/pricing/OracleRegistry.sol/OracleRegistry.json";
+import QuantCalculatorJSON from "../artifacts/src/QuantCalculator.sol/QuantCalculator.json";
 import {
   AssetsRegistry,
   OptionsFactory,

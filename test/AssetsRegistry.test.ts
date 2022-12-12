@@ -2,7 +2,7 @@ import { deployContract } from "ethereum-waffle";
 import { Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
-import BasicTokenJSON from "../artifacts/contracts/mocks/BasicERC20.sol/BasicERC20.json";
+import BasicTokenJSON from "../artifacts/src/mocks/BasicERC20.sol/BasicERC20.json";
 import { AssetsRegistry, MockERC20 } from "../typechain";
 import { expect, provider } from "./setup";
 import { deployAssetsRegistry, mockERC20 } from "./testUtils";

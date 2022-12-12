@@ -50,6 +50,7 @@ const config: HardhatUserConfig = {
       },
     },
   },
+
   solidity: {
     version: "0.8.16",
     settings: {
@@ -106,7 +107,7 @@ const config: HardhatUserConfig = {
       `https://api.bscscan.com/api?module=proxy&action=eth_gasPrice&apikey=${process.env.BSCSCAN_API_KEY}`,
   },
 
-  paths: { cache: "hh-cache" },
+  paths: { cache: "hh-cache", sources: "src" },
 
   tenderly: {
     project: process.env.ETH_NETWORK
