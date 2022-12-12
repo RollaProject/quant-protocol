@@ -119,9 +119,6 @@ contract PriceRegistry is OwnableRoles, IPriceRegistry {
         returns (PriceStatus)
     {
         if (block.timestamp >= _expiryTime) {
-            if (block.timestamp <= _expiryTime + _disputePeriod) {
-                return PriceStatus.DISPUTABLE;
-            }
             if (hasSettlementPrice(_oracle, _expiryTime, _asset)) {
                 return PriceStatus.SETTLED;
             }

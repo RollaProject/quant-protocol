@@ -5,8 +5,7 @@ pragma solidity ^0.8.0;
 enum PriceStatus {
     ACTIVE,
     AWAITING_SETTLEMENT_PRICE,
-    SETTLED,
-    DISPUTABLE
+    SETTLED
 }
 
 struct PriceWithDecimals {
