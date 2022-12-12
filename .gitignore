@@ -138,8 +138,3 @@ out/
 
 # Hardhat compilation cache
 hh-cache/
-
-# get_abis script compilation artifacts and dependency files
-scripts/get_abis/*.o
-scripts/get_abis/.depend
-scripts/get_abis/simdjson.*
