@@ -363,7 +363,7 @@ contract OptionsFactoryTest is Test {
         uint88 expiryTime = 2282899998;
         bool isCall = true;
         uint256 strikePrice = 334 ether;
-        address expectedQTokenAddress = 0x6AA20d86e076925df46d604CEF9ADE8369a82A7d;
+        address expectedQTokenAddress = 0xCee1Ebdd0A7CE27ceF91164D999c003F54965e22;
         bool exists;
         address qTokenAddress;
 

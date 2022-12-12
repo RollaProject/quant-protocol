@@ -215,7 +215,7 @@ contract OracleRegistryTest is Test {
 
         assertEq(oracleRegistry.getOraclesLength(), maxOraclesLength);
 
-        vm.expectRevert();
+        vm.expectRevert("OracleRegistry: oracles limit exceeded");
         oracleRegistry.addOracle(oracle);
     }
 
@@ -232,7 +232,7 @@ contract OracleRegistryTest is Test {
 
         assertEq(oracleRegistry.getOraclesLength(), maxOraclesLength);
 
-        vm.expectRevert();
+        vm.expectRevert("OracleRegistry: oracles limit exceeded");
         oracleRegistry.addOracle(oracle);
     }
 }

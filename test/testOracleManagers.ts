@@ -3,8 +3,8 @@ import { MockContract } from "ethereum-waffle";
 import { Contract, ContractFactory, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
-import AGGREGATOR from "../artifacts/src/interfaces/external/chainlink/IEACAggregatorProxy.sol/IEACAggregatorProxy.json";
-import ORACLE_REGISTRY from "../artifacts/src/pricing/OracleRegistry.sol/OracleRegistry.json";
+import AGGREGATOR from "../artifacts/contracts/interfaces/external/chainlink/IEACAggregatorProxy.sol/IEACAggregatorProxy.json";
+import ORACLE_REGISTRY from "../artifacts/contracts/pricing/OracleRegistry.sol/OracleRegistry.json";
 import {
   ChainlinkFixedTimeOracleManager,
   ChainlinkOracleManager,
@@ -32,8 +32,6 @@ export const testProviderOracleManager = async (
   const oracleTwo = "0x0000000000000000000000000000000000000020";
   const oracleThree = "0x0000000000000000000000000000000000000030";
 
-  const disputePeriod = 2 * 60 * 60; // 2 hours
-
   async function setUpTests() {
     [owner, normalUserAccount] = provider.getWallets();
 
@@ -48,7 +46,7 @@ export const testProviderOracleManager = async (
     const PriceRegistry = await ethers.getContractFactory("PriceRegistry");
 
     priceRegistry = <PriceRegistry>(
-      await PriceRegistry.deploy(6, disputePeriod, mockOracleRegistry.address)
+      await PriceRegistry.deploy(6, mockOracleRegistry.address)
     );
 
     oracleManager = await deployOracleManager(priceRegistry, 18, 0);
@@ -139,8 +137,6 @@ export const testChainlinkOracleManager = async (
   const assetOne = "0x0000000000000000000000000000000000000001";
   const assetTwo = "0x0000000000000000000000000000000000000002";
 
-  const disputePeriod = 2 * 60 * 60; // 2 hours
-
   async function setUpTests() {
     [owner, normalUserAccount] = provider.getWallets();
 
@@ -152,7 +148,7 @@ export const testChainlinkOracleManager = async (
     PriceRegistry = await ethers.getContractFactory("PriceRegistry");
 
     priceRegistry = <PriceRegistry>(
-      await PriceRegistry.deploy(18, disputePeriod, mockOracleRegistry.address)
+      await PriceRegistry.deploy(18, mockOracleRegistry.address)
     );
 
     oracleManager = await deployOracleManager(priceRegistry, 18, 0);

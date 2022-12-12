@@ -5,8 +5,8 @@ import { BigNumber, constants, ContractInterface, Wallet } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe } from "mocha";
 import Web3 from "web3";
-import ORACLE_MANAGER from "../artifacts/src/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
-import PRICE_REGISTRY from "../artifacts/src/pricing/PriceRegistry.sol/PriceRegistry.json";
+import ORACLE_MANAGER from "../artifacts/contracts/pricing/oracle/ChainlinkOracleManager.sol/ChainlinkOracleManager.json";
+import PRICE_REGISTRY from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
 import {
   AssetsRegistry,
   ExternalQToken,

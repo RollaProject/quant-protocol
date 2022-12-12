@@ -4,7 +4,7 @@ import { BigNumber, Contract, ContractFactory, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { Address } from "hardhat-deploy/dist/types";
 import { beforeEach, describe } from "mocha";
-import ORACLE_REGISTRY from "../artifacts/src/pricing/OracleRegistry.sol/OracleRegistry.json";
+import ORACLE_REGISTRY from "../artifacts/contracts/pricing/OracleRegistry.sol/OracleRegistry.json";
 import {
   ChainlinkFixedTimeOracleManager,
   ChainlinkOracleManager,
@@ -32,8 +32,6 @@ describe("Chainlink Oracle Manager", async function () {
   const assetOne = "0x0000000000000000000000000000000000000001";
   const assetTwo = "0x0000000000000000000000000000000000000002";
 
-  const disputePeriod = 2 * 60 * 60; // 2 hours
-
   async function setUpTests() {
     [owner, normalUserAccount] = provider.getWallets();
 
@@ -53,7 +51,7 @@ describe("Chainlink Oracle Manager", async function () {
     PriceRegistry = await ethers.getContractFactory("PriceRegistry");
 
     priceRegistry = <PriceRegistry>(
-      await PriceRegistry.deploy(6, disputePeriod, mockOracleRegistry.address)
+      await PriceRegistry.deploy(6, mockOracleRegistry.address)
     );
 
     chainlinkOracleManager = <ChainlinkOracleManager>(

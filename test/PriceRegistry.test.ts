@@ -2,8 +2,8 @@ import { deployMockContract } from "ethereum-waffle";
 import { Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
-import OracleRegistryJSON from "../artifacts/src/pricing/OracleRegistry.sol/OracleRegistry.json";
-import PriceRegistryJSON from "../artifacts/src/pricing/PriceRegistry.sol/PriceRegistry.json";
+import OracleRegistryJSON from "../artifacts/contracts/pricing/OracleRegistry.sol/OracleRegistry.json";
+import PriceRegistryJSON from "../artifacts/contracts/pricing/PriceRegistry.sol/PriceRegistry.json";
 import { PriceRegistry } from "../typechain";
 import { expect, provider } from "./setup";
 
@@ -16,7 +16,6 @@ describe("PriceRegistry", () => {
   let oracle: string;
   const assetOne = "0x000000000000000000000000000000000000000b";
   const strikeAssetDecimals = 18;
-  const disputePeriod = 2 * 60 * 60; // 2 hours
 
   beforeEach(async () => {
     [admin, secondAccount] = provider.getWallets();
@@ -43,7 +42,6 @@ describe("PriceRegistry", () => {
     priceRegistry = <PriceRegistry>(
       await deployContract(admin, PriceRegistryJSON, [
         strikeAssetDecimals,
-        disputePeriod,
         mockOracleRegistry.address,
       ])
     );

@@ -1,7 +1,7 @@
 import { Signer } from "ethers";
 import { ethers, waffle } from "hardhat";
 import { beforeEach, describe, it } from "mocha";
-import OracleRegistryJSON from "../artifacts/src/pricing/OracleRegistry.sol/OracleRegistry.json";
+import OracleRegistryJSON from "../artifacts/contracts/pricing/OracleRegistry.sol/OracleRegistry.json";
 import { OracleRegistry } from "../typechain";
 import { expect, provider } from "./setup";
 
