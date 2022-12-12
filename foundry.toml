@@ -22,7 +22,7 @@ via_ir = true
 bytecode_hash = "none"
 
 [fuzz]
-max_test_rejects = 1677721600
+max_global_rejects = 16777216
 # runs = 100_000
 
 [profile.ci]
