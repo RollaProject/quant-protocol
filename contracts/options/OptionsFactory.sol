@@ -74,7 +74,11 @@ contract OptionsFactory is IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) external override returns (address newQToken, uint256 newCollateralTokenId) {
+    )
+        external
+        override
+        returns (address newQToken, uint256 newCollateralTokenId)
+    {
         bytes memory assetProperties = OptionsUtils.getAssetProperties(_underlyingAsset, assetsRegistry);
 
         OptionsUtils.validateOptionParameters(
@@ -103,7 +107,12 @@ contract OptionsFactory is IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) external view override returns (uint256 id, bool exists) {
+    )
+        external
+        view
+        override
+        returns (uint256 id, bool exists)
+    {
         (address qToken,) = getQToken(_underlyingAsset, _oracle, _expiryTime, _isCall, _strikePrice);
 
         id = ICollateralToken(collateralToken).getCollateralTokenId(qToken, _qTokenAsCollateral);
@@ -120,7 +129,12 @@ contract OptionsFactory is IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) public view override returns (address qToken, bool exists) {
+    )
+        public
+        view
+        override
+        returns (address qToken, bool exists)
+    {
         bytes memory assetProperties = OptionsUtils.getAssetProperties(_underlyingAsset, assetsRegistry);
 
         bytes memory immutableArgsData =
@@ -146,7 +160,11 @@ contract OptionsFactory is IOptionsFactory {
         uint88 _expiryTime,
         bool _isCall,
         uint256 _strikePrice
-    ) internal view returns (bytes memory immutableArgsData) {
+    )
+        internal
+        view
+        returns (bytes memory immutableArgsData)
+    {
         // put immutable variables in the stack since inline assembly can't otherwise access them
         address _strikeAsset = strikeAsset;
         address _controller = controller;

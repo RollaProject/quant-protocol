@@ -217,5 +217,8 @@ contract BasicERC20 is Context, IERC20 {
         address from,
         address to,
         uint256 amount // solhint-disable-next-line no-empty-blocks
-    ) internal virtual {}
+    )
+        internal
+        virtual
+    {}
 }

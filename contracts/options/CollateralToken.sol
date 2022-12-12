@@ -117,7 +117,10 @@ contract CollateralToken is ERC1155, ICollateralToken, EIP712, Ownable {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external override {
+    )
+        external
+        override
+    {
         require(nonce == nonces[cTokenOwner], "CollateralToken: invalid nonce");
 
         // solhint-disable-next-line not-rely-on-time

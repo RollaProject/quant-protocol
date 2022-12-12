@@ -43,7 +43,9 @@ contract Controller is IController, EIP712MetaTransaction {
         address _priceRegistry,
         address _assetsRegistry,
         QToken _qTokenImplementation
-    ) EIP712MetaTransaction(_name, _version) {
+    )
+        EIP712MetaTransaction(_name, _version)
+    {
         require(_oracleRegistry != address(0), "Controller: invalid OracleRegistry address");
         require(_strikeAsset != address(0), "Controller: invalid StrikeAsset address");
         require(_priceRegistry != address(0), "Controller: invalid PriceRegistry address");
@@ -371,7 +373,9 @@ contract Controller is IController, EIP712MetaTransaction {
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) internal {
+    )
+        internal
+    {
         require(optionsFactory.isQToken(_qToken), "Controller: not a QToken for calling permit");
 
         QToken(_qToken).permit(_owner, _spender, _value, _deadline, _v, _r, _s);
@@ -396,7 +400,9 @@ contract Controller is IController, EIP712MetaTransaction {
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) internal {
+    )
+        internal
+    {
         collateralToken.metaSetApprovalForAll(_owner, _operator, _approved, _nonce, _deadline, _v, _r, _s);
     }
 

@@ -34,7 +34,8 @@ interface IPriceRegistry {
         uint88 _expiryTime,
         uint8 _settlementPriceDecimals,
         uint256 _settlementPrice
-    ) external;
+    )
+        external;
 
     /// @notice Fetch the settlement price with decimals from an oracle for an asset at a particular timestamp.
     /// @param _oracle oracle which price should come from
