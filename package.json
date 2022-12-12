@@ -1,6 +1,6 @@
 {
   "name": "@rolla-experimental/quant-protocol",
-  "version": "0.17.1",
+  "version": "0.17.2",
   "description": "Smart contracts for the Quant Protocol.",
   "scripts": {
     "build": "hardhat compile",
@@ -94,7 +94,7 @@
   },
   "files": [
     "src",
-    "artifacts/contracts",
+    "artifacts/src",
     "typechain",
     "abis"
   ]
