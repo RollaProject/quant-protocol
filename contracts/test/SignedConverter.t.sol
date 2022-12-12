@@ -2,7 +2,7 @@
 pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
-import {SignedConverter} from "../src/libraries/SignedConverter.sol";
+import {SignedConverter} from "../libraries/SignedConverter.sol";
 
 contract SignedConverterTest is Test {
     function testCannotConvertNegativeIntToUint(int16 n) public {

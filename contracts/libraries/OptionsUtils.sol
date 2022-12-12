@@ -165,7 +165,6 @@ library OptionsUtils {
                 */
 
                 // get the individual values from the packed args in memory
-                // TODO: use the offset constants
                 underlyingAsset := and(MASK_160, shr(96, mload(add(packedArgsStart, 0x01))))
 
                 expiryTime := and(MASK_88, shr(168, mload(add(packedArgsStart, 0x3d))))
@@ -181,13 +180,13 @@ library OptionsUtils {
 
             displayStrikePrice = displayedStrikePrice(strikePrice);
 
-            // get option type strings
+            // get option type string
             (typeSymbol, typeFull) = getOptionType(isCall);
 
             // get the individual date values so we can convert the expiry to a readable string
             (uint256 year, uint256 month, uint256 day) = DateTime.timestampToDate(expiryTime);
 
-            // get option month strings
+            // get option month string
             (monthSymbol, monthFull) = getMonth(month);
 
             // get the day and year strings
@@ -195,7 +194,7 @@ library OptionsUtils {
             yearStr = LibString.toString(year);
         }
 
-        // the current free memory pointer, after the packed args and all the strings
+        // for the current free memory pointer, after the packed args and all the strings
         // generated and automatically allocated in the steps above
         uint256 newFreeMemPtr;
 
@@ -246,7 +245,7 @@ library OptionsUtils {
 
         assembly ("memory-safe") {
             // store the total QToken immutable arguments size at its pointer,
-            // overwritting the previous name string length that was stored there
+            // overriding the previous name string length that was stored there
             mstore(immutableArgsData, IMMUTABLE_ARGS_LENGTH)
 
             // restore the free memory pointer

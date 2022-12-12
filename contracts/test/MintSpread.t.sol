@@ -206,48 +206,4 @@ contract MintSpreadTest is ControllerTestBase {
 
         vm.stopPrank();
     }
-
-    function testCreateSpreadCollateralTokenBeforehand() public {
-        uint256 optionsAmount = 6 ether;
-        address collateral = address(WETH);
-        uint256 call2880CollateralAmount = optionsAmount;
-        uint256 totalRequiredCollateral = call2880CollateralAmount;
-        address qTokenAsCollateral;
-        uint256 spreadCTokenId;
-
-        spreadCTokenId = collateralToken.getCollateralTokenId(address(qTokenCall3520), address(qTokenCall2880));
-
-        (, qTokenAsCollateral) = collateralToken.idToInfo(spreadCTokenId);
-        assertEq(qTokenAsCollateral, address(0));
-
-        // simulate the spread CollateralToken having already been created by the Controller
-        // (e.g., when another user minted the same spread beforehand)
-        vm.prank(address(controller)); // only the Controller can create CollateralTokens
-        spreadCTokenId = collateralToken.createSpreadCollateralToken(address(qTokenCall3520), address(qTokenCall2880));
-
-        (, qTokenAsCollateral) = collateralToken.idToInfo(spreadCTokenId);
-        assertEq(qTokenAsCollateral, address(qTokenCall2880));
-
-        vm.startPrank(user);
-
-        // mint the option to be used as collateral for the spread
-        deal(collateral, user, call2880CollateralAmount, true);
-        ERC20(collateral).approve(address(controller), type(uint256).max);
-        controller.mintOptionsPosition(user, address(qTokenCall2880), optionsAmount);
-
-        // mint the spread using the previously minted option as collateral
-        controller.mintSpread(address(qTokenCall3520), address(qTokenCall2880), optionsAmount);
-
-        // check balances
-        assertEq(ERC20(collateral).balanceOf(address(controller)), totalRequiredCollateral);
-        assertEq(ERC20(collateral).balanceOf(user), 0);
-
-        assertEq(qTokenCall2880.balanceOf(user), 0);
-        assertEq(collateralToken.balanceOf(user, cTokenIdCall2880), optionsAmount);
-
-        assertEq(qTokenCall3520.balanceOf(user), optionsAmount);
-        assertEq(collateralToken.balanceOf(user, spreadCTokenId), optionsAmount);
-
-        vm.stopPrank();
-    }
 }

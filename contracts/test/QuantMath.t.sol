@@ -2,7 +2,7 @@
 pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
-import {QuantMath} from "../src/libraries/QuantMath.sol";
+import {QuantMath} from "../libraries/QuantMath.sol";
 
 contract QuantMathTest is Test {
     function testMultiplicationOverflow() public {

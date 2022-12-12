@@ -2,16 +2,16 @@
 pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
-import {OptionsFactory} from "../src/options/OptionsFactory.sol";
-import {CollateralToken} from "../src/options/CollateralToken.sol";
+import {OptionsFactory} from "../options/OptionsFactory.sol";
+import {CollateralToken} from "../options/CollateralToken.sol";
 import {ERC20 as SolmateERC20} from "solmate/src/tokens/ERC20.sol";
-import {AssetsRegistry} from "../src/options/AssetsRegistry.sol";
-import {OracleRegistry} from "../src/pricing/OracleRegistry.sol";
-import {ChainlinkOracleManager} from "../src/pricing/oracle/ChainlinkOracleManager.sol";
-import {ProviderOracleManager} from "../src/pricing/oracle/ProviderOracleManager.sol";
-import {PriceRegistry} from "../src/pricing/PriceRegistry.sol";
-import {QToken} from "../src/options/QToken.sol";
-import {OptionsUtils, OPTIONS_DECIMALS} from "../src/libraries/OptionsUtils.sol";
+import {AssetsRegistry} from "../options/AssetsRegistry.sol";
+import {OracleRegistry} from "../pricing/OracleRegistry.sol";
+import {ChainlinkOracleManager} from "../pricing/oracle/ChainlinkOracleManager.sol";
+import {ProviderOracleManager} from "../pricing/oracle/ProviderOracleManager.sol";
+import {PriceRegistry} from "../pricing/PriceRegistry.sol";
+import {QToken} from "../options/QToken.sol";
+import {OptionsUtils, OPTIONS_DECIMALS} from "../libraries/OptionsUtils.sol";
 
 contract ERC20 is SolmateERC20 {
     constructor(string memory _name, string memory _symbol, uint8 _decimals) SolmateERC20(_name, _symbol, _decimals) {}

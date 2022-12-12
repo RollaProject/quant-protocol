@@ -4,14 +4,14 @@ pragma solidity 0.8.16;
 import "forge-std/Test.sol";
 import {ERC20 as SolmateERC20} from "solmate/src/tokens/ERC20.sol";
 import {ERC1155TokenReceiver} from "solmate/src/tokens/ERC1155.sol";
-import {Controller, Actions, ActionType, ActionArgs} from "../src/Controller.sol";
-import {QuantCalculator} from "../src/QuantCalculator.sol";
-import {QToken} from "../src/options/QToken.sol";
-import {OptionsFactory} from "../src/options/OptionsFactory.sol";
-import {AssetsRegistry} from "../src/options/AssetsRegistry.sol";
-import {CollateralToken} from "../src/options/CollateralToken.sol";
-import {IPriceRegistry, PriceWithDecimals, PriceStatus} from "../src/interfaces/IPriceRegistry.sol";
-import {ActionArgs, ActionType} from "../src/libraries/Actions.sol";
+import {Controller, Actions, ActionType, ActionArgs} from "../Controller.sol";
+import {QuantCalculator} from "../QuantCalculator.sol";
+import {QToken} from "../options/QToken.sol";
+import {OptionsFactory} from "../options/OptionsFactory.sol";
+import {AssetsRegistry} from "../options/AssetsRegistry.sol";
+import {CollateralToken} from "../options/CollateralToken.sol";
+import {IPriceRegistry, PriceWithDecimals, PriceStatus} from "../interfaces/IPriceRegistry.sol";
+import {ActionArgs, ActionType} from "../libraries/Actions.sol";
 
 contract ERC20 is SolmateERC20 {
     constructor(string memory _name, string memory _symbol, uint8 _decimals) SolmateERC20(_name, _symbol, _decimals) {}
@@ -45,11 +45,8 @@ contract ControllerTestBase is Test {
     OptionsFactory optionsFactory;
     QuantCalculator quantCalculator;
 
-    address user = 0x31600b6eFf4b91F4ac2dA58Ee3076A6CBD54E6a3;
-    address secondaryAccount = 0xf9e01860E3b4e1e7C840b3b2565935D60E2E276A;
-    uint256 userPrivKey = uint256(bytes32(0xba03f7828e0845c28f4eafc7991604090c151205f01bd08a0ed7f349e0a1b76e));
-    uint256 secondaryAccountPrivKey =
-        uint256(bytes32(0x0eeba11b63268770497270ab548c90df2649fc3d9117685bc766cd74e763413c));
+    address user = 0x56BD08AEE2bA02b1C46227e58B727d6cb621FB40;
+    address secondaryAccount = 0x0B6bB4458C21d96087F2Decc540b3936397B1d2a;
 
     ERC20 BUSD; // 18 decimals
     ERC20 WBNB; // 18 decimals
@@ -72,18 +69,6 @@ contract ControllerTestBase is Test {
             ),
             abi.encode((_expiryPrice / (10 ** (BUSD.decimals() - 8))), uint8(8))
         );
-    }
-
-    function getSignedData(uint256 privKey, bytes32 dataToSign) internal returns (bytes memory signature) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, dataToSign);
-
-        // construct the signature byte array from the individual components
-        signature = new bytes(65);
-        assembly {
-            mstore(add(signature, 0x20), r)
-            mstore(add(signature, 0x40), s)
-            mstore8(add(signature, 0x60), v)
-        }
     }
 
     function setUp() public virtual {

@@ -343,29 +343,4 @@ contract NeutralizePositionTest is ControllerTestBase {
 
         vm.stopPrank();
     }
-
-    function testCallNeutralizeWithZeroAmount() public {
-        vm.startPrank(user);
-
-        uint256 optionsAmount = 7 ether;
-        uint256 remainingAmount = 0;
-        uint256 collateralAmount = optionsAmount;
-
-        // mint the option to the user
-        deal(address(WETH), user, collateralAmount, true);
-        WETH.approve(address(controller), type(uint256).max);
-        controller.mintOptionsPosition(user, address(qTokenCall3520), optionsAmount);
-
-        // neutralize all of the user's position, passing 0 as the amount to neutralize
-        controller.neutralizePosition(cTokenIdCall3520, 0);
-
-        // check balances
-        assertEq(qTokenCall3520.balanceOf(user), remainingAmount);
-        assertEq(collateralToken.balanceOf(user, cTokenIdCall3520), remainingAmount);
-
-        assertEq(WETH.balanceOf(user), collateralAmount);
-        assertEq(WETH.balanceOf(address(controller)), 0);
-
-        vm.stopPrank();
-    }
 }
