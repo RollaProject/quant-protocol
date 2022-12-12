@@ -3,7 +3,7 @@ pragma solidity 0.8.16;
 
 import "./interfaces/IController.sol";
 import "./utils/EIP712MetaTransaction.sol";
-import {SafeTransferLib, ERC20 as IERC20} from "solmate/src/utils/SafeTransferLib.sol";
+import {SafeTransferLib, ERC20 as IERC20} from "solmate/utils/SafeTransferLib.sol";
 import "./libraries/Actions.sol";
 import "./options/OptionsFactory.sol";
 import "./utils/OperateProxy.sol";

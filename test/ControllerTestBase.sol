@@ -2,8 +2,8 @@
 pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
-import {ERC20 as SolmateERC20} from "solmate/src/tokens/ERC20.sol";
-import {ERC1155TokenReceiver} from "solmate/src/tokens/ERC1155.sol";
+import {ERC20 as SolmateERC20} from "solmate//tokens/ERC20.sol";
+import {ERC1155TokenReceiver} from "solmate//tokens/ERC1155.sol";
 import {Controller, Actions, ActionType, ActionArgs} from "../src/Controller.sol";
 import {QuantCalculator} from "../src/QuantCalculator.sol";
 import {QToken} from "../src/options/QToken.sol";
