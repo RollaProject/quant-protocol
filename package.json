@@ -1,6 +1,6 @@
 {
   "name": "@rolla-contracts/quant-protocol",
-  "version": "0.16.2",
+  "version": "0.16.1",
   "description": "Smart contracts for the Quant Protocol.",
   "scripts": {
     "build": "hardhat compile",
@@ -88,9 +88,9 @@
   "dependencies": {
     "@openzeppelin/contracts": "^4.7.1",
     "@quant-finance/solidity-datetime": "2.2.0",
+    "@rari-capital/solmate": "^6.3.0",
     "@rolla-finance/clones-with-immutable-args": "1.12.0",
-    "solady": "^0.0.19",
-    "solmate": "^6.5.0"
+    "solady": "^0.0.19"
   },
   "files": [
     "contracts",

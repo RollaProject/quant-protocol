@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import "forge-std/Test.sol";
 import {OptionsFactory} from "../options/OptionsFactory.sol";
 import {CollateralToken} from "../options/CollateralToken.sol";
-import {ERC20 as SolmateERC20} from "solmate/src/tokens/ERC20.sol";
+import {ERC20 as SolmateERC20} from "solmate/tokens/ERC20.sol";
 import {AssetsRegistry} from "../options/AssetsRegistry.sol";
 import {OracleRegistry} from "../pricing/OracleRegistry.sol";
 import {ChainlinkOracleManager} from "../pricing/oracle/ChainlinkOracleManager.sol";

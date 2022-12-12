@@ -858,6 +858,11 @@
   resolved "https://registry.yarnpkg.com/@quant-finance/solidity-datetime/-/solidity-datetime-2.2.0.tgz#50f2d00a571d8cc2d962257b40b70fc44450dcaa"
   integrity sha512-iO0EnqPKTzGCgQOkI9lerpJc0XKUhMNurSjHcA7p7nlP2K2z3U4kk9OC9eQkZUrdBtltft+kIibiDdIOYWuQMg==
 
+"@rari-capital/solmate@^6.3.0":
+  version "6.3.0"
+  resolved "https://registry.yarnpkg.com/@rari-capital/solmate/-/solmate-6.3.0.tgz#01050e276e71dc4cd4169cf8002b447eb07d90c3"
+  integrity sha512-SWPbnfZUCe4ahHNqcb0qsPrzzAzMZMoA3x6SxZn04g0dLm0xupVeHonM3LK13uhPGIULF8HzXg8CgXE/fEnMlQ==
+
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
   resolved "https://registry.yarnpkg.com/@resolver-engine/core/-/core-0.3.3.tgz#590f77d85d45bc7ecc4e06c654f41345db6ca967"
@@ -9159,11 +9164,6 @@ solidity-docgen@^0.5.13:
     minimatch "^3.0.4"
     semver "^7.3.2"
     solc "^0.6.7"
-
-solmate@^6.5.0:
-  version "6.5.0"
-  resolved "https://registry.yarnpkg.com/solmate/-/solmate-6.5.0.tgz#c22d50451ba475ba2694b60f2d5d778506abaa44"
-  integrity sha512-B6pISDcja6QwbLN35FHLjTqnE3RlwgB8rV1EgCrfftEeWFHNz870yLpNoTEieaJFYYRaavcN5qzmWuYBQVErjQ==
 
 source-map-resolve@^0.5.0:
   version "0.5.3"
