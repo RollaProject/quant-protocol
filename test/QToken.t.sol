@@ -2,7 +2,7 @@
 pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
-import {ERC20 as SolmateERC20} from "solmate//tokens/ERC20.sol";
+import {ERC20 as SolmateERC20} from "solmate/src/tokens/ERC20.sol";
 import {SimpleOptionsFactory} from "../src/mocks/SimpleOptionsFactory.sol";
 import {AssetsRegistry} from "../src/options/AssetsRegistry.sol";
 import {QToken} from "../src/options/QToken.sol";

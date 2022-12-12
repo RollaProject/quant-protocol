@@ -12,7 +12,6 @@ remappings = [
   'hardhat/=node_modules/hardhat/',
   'ds-test/=lib/ds-test/src/',
   'forge-std/=lib/forge-std/src/',
-  'solmate/=lib/solmate/src/',
   'contracts/=contracts/',
 ]
 # See more config options https://github.com/gakonst/foundry/tree/master/config
