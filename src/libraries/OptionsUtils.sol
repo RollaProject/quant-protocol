@@ -374,8 +374,10 @@ library OptionsUtils {
             return ("OCT", "October");
         } else if (_month == 11) {
             return ("NOV", "November");
-        } else {
+        } else if (_month == 12) {
             return ("DEC", "December");
+        } else {
+            revert("OptionsUtils: invalid month");
         }
     }
 }
