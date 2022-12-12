@@ -143,3 +143,5 @@ hh-cache/
 scripts/get_abis/*.o
 scripts/get_abis/.depend
 scripts/get_abis/simdjson.*
+scripts/get_abis/get_abis
+scripts/get_abis/get_abis.exe
