@@ -577,6 +577,18 @@ contract OptionsFactoryTest is Test {
     ) public {
         uint256 strikePrice = 0;
 
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSelector(bytes4(keccak256(bytes("getAssetOracle(address)")))),
+            abi.encode(address(BUSD)) // can be any non-zero address
+        );
+
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSelector(bytes4(keccak256(bytes("isValidOption(address,uint88,uint256)")))),
+            abi.encode(true)
+        );
+
         expiryTime = uint32(bound(expiryTime, TIMESTAMP + 1, type(uint32).max));
         uint256 underlyingNameLength = bytes(underlyingName).length;
         uint256 underlyingSymbolLength = bytes(underlyingSymbol).length;
@@ -590,23 +602,6 @@ contract OptionsFactoryTest is Test {
         );
 
         assetsRegistry.addAssetWithOptionalERC20Methods(address(underlying));
-
-        vm.mockCall(
-            oracle,
-            abi.encodeWithSelector(bytes4(keccak256(bytes("getAssetOracle(address)"))), address(underlying)),
-            abi.encode(address(BUSD)) // can be any non-zero address
-        );
-
-        vm.mockCall(
-            oracle,
-            abi.encodeWithSelector(
-                bytes4(keccak256(bytes("isValidOption(address,uint88,uint256)"))),
-                address(underlying),
-                expiryTime,
-                strikePrice
-            ),
-            abi.encode(true)
-        );
 
         vm.expectRevert("strike can't be 0");
 
