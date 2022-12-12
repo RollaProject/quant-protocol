@@ -1,22 +1,17 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.16;
 
-import "solady/src/auth/OwnableRoles.sol";
 import "../interfaces/IPriceRegistry.sol";
 import "../interfaces/IOracleRegistry.sol";
 import "../libraries/QuantMath.sol";
 
 /// @title For centrally managing a log of settlement prices, for each option.
 /// @author Rolla
-contract PriceRegistry is OwnableRoles, IPriceRegistry {
+contract PriceRegistry is IPriceRegistry {
     using QuantMath for uint256;
     using QuantMath for QuantMath.FixedPointInt;
 
-    uint32 private _disputePeriod;
-
     uint8 private immutable _strikeAssetDecimals;
-
-    uint256 private immutable _disputerRole = _ROLE_0;
 
     /// @inheritdoc IPriceRegistry
     address public immutable oracleRegistry;
@@ -25,13 +20,11 @@ contract PriceRegistry is OwnableRoles, IPriceRegistry {
     mapping(address => mapping(address => mapping(uint88 => PriceWithDecimals))) private _settlementPrices;
 
     /// @param strikeAssetDecimals_ address of quant central configuration
-    constructor(uint8 strikeAssetDecimals_, uint32 diputePeriod_, address oracleRegistry_) {
-        require(oracleRegistry_ != address(0), "PriceRegistry: invalid oracle registry address");
+    constructor(uint8 strikeAssetDecimals_, address _oracleRegistry) {
+        require(_oracleRegistry != address(0), "PriceRegistry: invalid oracle registry address");
 
         _strikeAssetDecimals = strikeAssetDecimals_;
-        _disputePeriod = diputePeriod_;
-        oracleRegistry = oracleRegistry_;
-        _initializeOwner(msg.sender);
+        oracleRegistry = _oracleRegistry;
     }
 
     /// @inheritdoc IPriceRegistry
@@ -58,33 +51,6 @@ contract PriceRegistry is OwnableRoles, IPriceRegistry {
         _settlementPrices[oracle][_asset][_expiryTime] = PriceWithDecimals(_settlementPrice, _settlementPriceDecimals);
 
         emit PriceStored(oracle, _asset, _expiryTime, _settlementPriceDecimals, _settlementPrice);
-    }
-
-    /// @inheritdoc IPriceRegistry
-    function disputeSettlementPrice(
-        address _oracle,
-        address _asset,
-        uint88 _expiryTime,
-        uint8 _settlementPriceDecimals,
-        uint256 _settlementPrice
-    ) external override {
-        require(hasAnyRole(msg.sender, _disputerRole), "PriceRegistry: Caller is not a disputer");
-        require(
-            _settlementPrices[_oracle][_asset][_expiryTime].price != 0,
-            "PriceRegistry: Settlement price has not been set"
-        );
-        require(block.timestamp <= _expiryTime + _disputePeriod, "PriceRegistry: Dispute period has ended");
-
-        _settlementPrices[_oracle][_asset][_expiryTime] = PriceWithDecimals(_settlementPrice, _settlementPriceDecimals);
-
-        emit PriceStored(_oracle, _asset, _expiryTime, _settlementPriceDecimals, _settlementPrice);
-    }
-
-    /// @inheritdoc IPriceRegistry
-    function setDisputePeriod(uint32 disputePeriod_) external override onlyOwner {
-        _disputePeriod = disputePeriod_;
-
-        emit DisputePeriodSet(disputePeriod_);
     }
 
     /// @inheritdoc IPriceRegistry
@@ -118,7 +84,7 @@ contract PriceRegistry is OwnableRoles, IPriceRegistry {
         override
         returns (PriceStatus)
     {
-        if (block.timestamp >= _expiryTime) {
+        if (block.timestamp > _expiryTime) {
             if (hasSettlementPrice(_oracle, _expiryTime, _asset)) {
                 return PriceStatus.SETTLED;
             }
