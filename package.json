@@ -1,6 +1,6 @@
 {
   "name": "@rolla-contracts/quant-protocol",
-  "version": "0.16.1",
+  "version": "0.16.0",
   "description": "Smart contracts for the Quant Protocol.",
   "scripts": {
     "build": "hardhat compile",
