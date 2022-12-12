@@ -1,6 +1,6 @@
 {
   "name": "@rolla-experimental/quant-protocol",
-  "version": "0.17.1",
+  "version": "0.17.0",
   "description": "Smart contracts for the Quant Protocol.",
   "scripts": {
     "build": "hardhat compile",
@@ -93,7 +93,7 @@
     "solmate": "^6.5.0"
   },
   "files": [
-    "src",
+    "contracts",
     "artifacts/contracts",
     "typechain",
     "abis"
