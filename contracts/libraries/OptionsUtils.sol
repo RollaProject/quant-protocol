@@ -17,7 +17,6 @@ uint256 constant NAME_AND_SYMBOL_LENGTH = 256;
 uint256 constant MAX_STRING_LENGTH = 127;
 uint256 constant PACKED_ARGS_LENGTH = 125;
 uint256 constant IMMUTABLE_ARGS_LENGTH = 381;
-uint256 constant ASSET_PROPERTIES_LENGTH = 256;
 uint256 constant MASK_1 = 2 ** (1) - 1;
 uint256 constant MASK_8 = 2 ** (8) - 1;
 uint256 constant MASK_88 = 2 ** (88) - 1;
@@ -82,9 +81,7 @@ library OptionsUtils {
         assembly ("memory-safe") {
             // The isRegistered bool is the fourth property in assetProperties,
             // thus, it's located at assetProperties + 0x60
-            // Left and right shifts with the ONE_BYTE_OFFSET constant are applied to the data loaded
-            // from memory in order to clean the upper 248 bits, recovering the original boolean value
-            isRegistered := shr(ONE_BYTE_OFFSET, shl(ONE_BYTE_OFFSET, mload(add(_assetProperties, 0x60))))
+            isRegistered := mload(add(_assetProperties, 0x60))
         }
         require(isRegistered, "underlying not in the registry");
     }
@@ -117,15 +114,19 @@ library OptionsUtils {
             // get the free memory pointer
             assetProperties := mload(FREE_MEM_PTR)
 
-            // call `assetProperties` with the encoded calldata, placing the result from the call in memory
-            pop(
-                staticcall(
-                    gas(), _assetsRegistry, add(calld, ONE_WORD), mload(calld), assetProperties, ASSET_PROPERTIES_LENGTH
-                )
-            )
+            // call `assetProperties` with the encoded calldata, ignoring the success value
+            // and the result from the call, which will be read from the returndata below
+            pop(staticcall(gas(), _assetsRegistry, add(calld, ONE_WORD), mload(calld), 0, 0))
 
-            // reset the free memory pointer to after the assetProperties
-            mstore(FREE_MEM_PTR, add(assetProperties, ASSET_PROPERTIES_LENGTH))
+            // get the size of the returned data
+            let returnLen := returndatasize()
+
+            // copy the whole result from the `assetProperties` call to memory
+            returndatacopy(assetProperties, 0, returnLen)
+
+            // reset the free memory pointer to after the assetProperties that were
+            // just copied from returdata to memory
+            mstore(FREE_MEM_PTR, add(assetProperties, returnLen))
         }
     }
 
@@ -219,9 +220,8 @@ library OptionsUtils {
         }
 
         // generate, allocate and store the symbol string right before the packed args
-        string memory metadata = string.concat(
-            "ROLLA-", underlying, "-", dayStr, monthSymbol, yearStr, "-", displayStrikePrice, "-", typeSymbol
-        );
+        string memory metadata =
+            string.concat("ROLLA-", underlying, "-", dayStr, monthSymbol, yearStr, "-", displayStrikePrice, "-", typeSymbol);
 
         normalizeStringImmutableArg(metadata);
 
