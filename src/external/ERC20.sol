@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.16;
 
-import {Clone} from "@rolla-finance/clones-with-immutable-args/Clone.sol";
+import {Clone} from "@rolla-finance/clones-with-immutable-args/src/Clone.sol";
 
 /// @notice Modern and gas efficient ERC20 + EIP-2612 implementation.
 /// @author zefram.eth (https://github.com/ZeframLou/vested-erc20/blob/main/src/lib/ERC20.sol)

@@ -1055,10 +1055,10 @@
     path-browserify "^1.0.0"
     url "^0.11.0"
 
-"@rolla-finance/clones-with-immutable-args@1.12.0":
-  version "1.12.0"
-  resolved "https://registry.yarnpkg.com/@rolla-finance/clones-with-immutable-args/-/clones-with-immutable-args-1.12.0.tgz#5194967be740f37fec20cbcff9e798542fa4fe8c"
-  integrity sha512-TeDlQqPLj0ofMcstAImEOhx8voepPDsh/xGaqgedl+wpMIbZk0DnCOalAKN3ENq4MB2SBi+OVqPuPN5UbTSPOg==
+"@rolla-finance/clones-with-immutable-args@1.12.1":
+  version "1.12.1"
+  resolved "https://registry.yarnpkg.com/@rolla-finance/clones-with-immutable-args/-/clones-with-immutable-args-1.12.1.tgz#2715d70a062fbe7ee9ac412e87c3c026064178d9"
+  integrity sha512-7M08JO/M57yF1BjiR3M1RdZxoRkqXuIsB6l7N/lbbEccEKcX2r6D0F7zHR4DnnsVtiynd3VUqNqcHqzjYqjCJA==
 
 "@scure/base@~1.1.0":
   version "1.1.1"
