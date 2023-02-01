@@ -43,7 +43,7 @@ contract ChainlinkOracleManager is ProviderOracleManager, IChainlinkOracleManage
     /// @inheritdoc IProviderOracleManager
     function setExpiryPriceInRegistry(address _asset, uint88 _expiryTimestamp, bytes memory)
         external
-        override (ProviderOracleManager, IProviderOracleManager)
+        override(ProviderOracleManager, IProviderOracleManager)
     {
         //search and get round
         uint80 roundAfterExpiry = searchRoundToSubmit(_asset, _expiryTimestamp);
@@ -74,7 +74,7 @@ contract ChainlinkOracleManager is ProviderOracleManager, IChainlinkOracleManage
     function getCurrentPrice(address _asset)
         external
         view
-        override (ProviderOracleManager, IProviderOracleManager)
+        override(ProviderOracleManager, IProviderOracleManager)
         returns (uint256)
     {
         address assetOracle = getAssetOracle(_asset);
@@ -90,7 +90,7 @@ contract ChainlinkOracleManager is ProviderOracleManager, IChainlinkOracleManage
         external
         view
         virtual
-        override (ProviderOracleManager, IProviderOracleManager)
+        override(ProviderOracleManager, IProviderOracleManager)
         returns (bool)
     {
         return assetOracles[_underlyingAsset] != address(0);

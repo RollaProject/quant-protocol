@@ -28,7 +28,7 @@ contract ChainlinkFixedTimeOracleManager is ChainlinkOracleManager, IChainlinkFi
     function isValidOption(address _underlyingAsset, uint88 _expiryTime, uint256)
         external
         view
-        override (ChainlinkOracleManager, IProviderOracleManager)
+        override(ChainlinkOracleManager, IProviderOracleManager)
         returns (bool)
     {
         uint24 timeInSeconds = uint24(_expiryTime % 86400);
