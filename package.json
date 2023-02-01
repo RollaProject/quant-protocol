@@ -1,6 +1,6 @@
 {
   "name": "@quant-finance/quant-protocol",
-  "version": "0.17.5",
+  "version": "0.17.6",
   "description": "Smart contracts for the Quant Protocol.",
   "scripts": {
     "build": "hardhat compile",
@@ -76,7 +76,7 @@
     "path": "^0.12.7",
     "prettier": "^2.6.2",
     "shelljs": "^0.8.4",
-    "solc": "^0.8.16",
+    "solc": "0.8.17",
     "solhint": "^3.3.7",
     "solidity-coverage": "^0.7.21",
     "solidity-docgen": "^0.5.13",

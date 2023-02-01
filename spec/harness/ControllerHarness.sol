@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 import "../../contracts/libraries/Actions.sol";
 import "../../contracts/Controller.sol";
@@ -20,34 +20,18 @@ contract ControllerHarness is Controller {
         address _assetsRegistry,
         QToken _implementation
     )
-        Controller(
-            _name,
-            _version,
-            _uri,
-            _oracleRegistry,
-            _strikeAsset,
-            _priceRegistry,
-            _assetsRegistry,
-            _implementation
-        )
+        Controller(_name, _version, _uri, _oracleRegistry, _strikeAsset, _priceRegistry, _assetsRegistry, _implementation)
     {}
 
     ////////////////////////////////////////////////////////////////////////////
     //                        Getters for The Internals                       //
     ////////////////////////////////////////////////////////////////////////////
 
-    function getTokenBalanceOf(address t, address u)
-        public
-        view
-        returns (uint256)
-    {
+    function getTokenBalanceOf(address t, address u) public view returns (uint256) {
         return IERC20(t).balanceOf(u);
     }
 
-    function operate(ActionArgs[] memory _actions)
-        external
-        override
-    {}
+    function operate(ActionArgs[] memory _actions) external override {}
 
     function _msgSender() internal view override returns (address sender) {
         return msg.sender;

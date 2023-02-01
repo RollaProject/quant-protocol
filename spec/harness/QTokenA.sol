@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 import "./QTokenCore.sol";
 
@@ -12,15 +12,5 @@ contract QTokenA is QTokenCore {
         bool _isCall,
         uint256 _strikePrice,
         address _controller
-    )
-        QTokenCore(
-            _underlyingAsset,
-            _strikeAsset,
-            _oracle,
-            _expiryTime,
-            _isCall,
-            _strikePrice,
-            _controller
-        )
-    {}
+    ) QTokenCore(_underlyingAsset, _strikeAsset, _oracle, _expiryTime, _isCall, _strikePrice, _controller) {}
 }

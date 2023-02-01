@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 import "../../interfaces/external/chainlink/IEACAggregatorProxy.sol";
 import "../../interfaces/IPriceRegistry.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: agpl-3.0
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 // with mint
 contract DummyERC20Impl {
@@ -34,20 +34,13 @@ contract DummyERC20Impl {
         return b[account];
     }
 
-    function transfer(address recipient, uint256 amount)
-        external
-        returns (bool)
-    {
+    function transfer(address recipient, uint256 amount) external returns (bool) {
         b[msg.sender] = sub(b[msg.sender], amount);
         b[recipient] = add(b[recipient], amount);
         return true;
     }
 
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256)
-    {
+    function allowance(address owner, address spender) external view returns (uint256) {
         return a[owner][spender];
     }
 
@@ -56,11 +49,7 @@ contract DummyERC20Impl {
         return true;
     }
 
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) external returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool) {
         b[sender] = sub(b[sender], amount);
         b[recipient] = add(b[recipient], amount);
         a[sender][msg.sender] = sub(a[sender][msg.sender], amount);

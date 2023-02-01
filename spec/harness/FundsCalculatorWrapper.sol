@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 import {FundsCalculator} from "../../contracts/libraries/FundsCalculator.sol";
 import {QuantMath} from "../../contracts/libraries/QuantMath.sol";
@@ -61,9 +61,7 @@ contract FundsCalculatorWrapper {
         uint8 _strikeAssetDecimals
     ) public returns (int256 collateralPerOptionValue) {
         collateralAmount = FundsCalculator.getPutCollateralRequirement(
-            _qTokenToMintStrikePrice,
-            _qTokenForCollateralStrikePrice,
-            _strikeAssetDecimals
+            _qTokenToMintStrikePrice, _qTokenForCollateralStrikePrice, _strikeAssetDecimals
         );
 
         collateralPerOptionValue = collateralAmount.value;
@@ -77,24 +75,19 @@ contract FundsCalculatorWrapper {
         uint8 _strikeAssetDecimals
     ) public returns (int256 collateralPerOptionValue) {
         collateralAmount = FundsCalculator.getCallCollateralRequirement(
-            _qTokenToMintStrikePrice,
-            _qTokenForCollateralStrikePrice,
-            _underlyingDecimals,
-            _strikeAssetDecimals
+            _qTokenToMintStrikePrice, _qTokenForCollateralStrikePrice, _underlyingDecimals, _strikeAssetDecimals
         );
 
         collateralPerOptionValue = collateralAmount.value;
     }
 
     function getPayoutForPutWrapper() public returns (int256 payoutAmount) {
-        QuantMath.FixedPointInt memory payoutAmountStruct = FundsCalculator
-            .getPayoutForPut(payoutInput);
+        QuantMath.FixedPointInt memory payoutAmountStruct = FundsCalculator.getPayoutForPut(payoutInput);
         payoutAmount = payoutAmountStruct.value;
     }
 
     function getPayoutForCallWrapper() public returns (int256 payoutAmount) {
-        QuantMath.FixedPointInt memory payoutAmountStruct = FundsCalculator
-            .getPayoutForCall(payoutInput);
+        QuantMath.FixedPointInt memory payoutAmountStruct = FundsCalculator.getPayoutForCall(payoutInput);
         payoutAmount = payoutAmountStruct.value;
     }
 
@@ -108,18 +101,10 @@ contract FundsCalculatorWrapper {
         uint8 _expiryDecimals
     ) public returns (int256 payoutAmount) {
         QuantMath.FixedPointInt memory payoutAmountStruct;
-        PriceWithDecimals memory expiryPrice = PriceWithDecimals(
-            _expiryPrice,
-            _expiryDecimals
-        );
+        PriceWithDecimals memory expiryPrice = PriceWithDecimals(_expiryPrice, _expiryDecimals);
 
         payoutAmountStruct = FundsCalculator.getPayoutAmount(
-            _isCall,
-            _strikePrice,
-            _amount,
-            _optionsDecimals,
-            _strikeAssetDecimals,
-            expiryPrice
+            _isCall, _strikePrice, _amount, _optionsDecimals, _strikeAssetDecimals, expiryPrice
         );
 
         payoutAmount = payoutAmountStruct.value;
@@ -136,16 +121,12 @@ contract FundsCalculatorWrapper {
         return _a <= _b;
     }
 
-    function checkAplusBeqC(
-        int256 _a,
-        int256 _b,
-        int256 _c
-    ) public returns (bool) {
+    function checkAplusBeqC(int256 _a, int256 _b, int256 _c) public returns (bool) {
         return _c == _a + _b;
     }
 
     function uintToInt(uint256 a) public returns (int256) {
-        require(a < 2**255, "FundsCalculatorWrapper: out of int range");
+        require(a < 2 ** 255, "FundsCalculatorWrapper: out of int range");
 
         return int256(a);
     }
