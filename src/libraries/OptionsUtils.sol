@@ -165,12 +165,11 @@ library OptionsUtils {
                 */
 
                 // get the individual values from the packed args in memory
-                // TODO: use the offset constants
-                underlyingAsset := and(MASK_160, shr(96, mload(add(packedArgsStart, 0x01))))
+                underlyingAsset := and(MASK_160, shr(ADDRESS_OFFSET, mload(add(packedArgsStart, 0x01))))
 
-                expiryTime := and(MASK_88, shr(168, mload(add(packedArgsStart, 0x3d))))
+                expiryTime := and(MASK_88, shr(UINT88_OFFSET, mload(add(packedArgsStart, 0x3d))))
 
-                isCall := and(MASK_8, shr(248, mload(add(packedArgsStart, 0x48))))
+                isCall := and(MASK_8, shr(ONE_BYTE_OFFSET, mload(add(packedArgsStart, 0x48))))
 
                 strikePrice := mload(add(packedArgsStart, 0x49))
 
