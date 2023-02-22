@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.17;
+pragma solidity 0.8.18;
 
 import {ClonesWithImmutableArgs} from "@rolla-finance/clones-with-immutable-args/src/ClonesWithImmutableArgs.sol";
 import {QToken} from "./QToken.sol";

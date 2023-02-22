@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.17;
+pragma solidity 0.8.18;
 
 import "solady/src/utils/LibString.sol";
 import "@quant-finance/solidity-datetime/contracts/DateTime.sol";

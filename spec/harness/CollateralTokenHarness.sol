@@ -1,4 +1,4 @@
-pragma solidity 0.8.17;
+pragma solidity 0.8.18;
 
 import "../../contracts/options/CollateralToken.sol";
 
